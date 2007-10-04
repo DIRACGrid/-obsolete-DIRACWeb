@@ -1,0 +1,5 @@
+SetHandler mod_python
+PythonHandler mod_python.wsgi
+PythonPath "['/home/adria/development/DIRAC3/DIRAC/Interface/Web'] + sys.path"
+PythonOption wsgi.application startup::app
+PythonOption SCRIPT_NAME /DIRAC

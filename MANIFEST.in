@@ -1,0 +1,2 @@
+recursive-include dirac/public *
+recursive-include dirac/templates *
