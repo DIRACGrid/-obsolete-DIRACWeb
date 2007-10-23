@@ -11,6 +11,7 @@ pageTitle = webBase.htmlPageTitle()
 <html>
  <head>
   <title>DIRAC: ${ pageTitle }</title>
+  <link rel="SHORTCUT ICON" href='${ h.url_for( "/images/favicon.ico" )}'>
   ${ h.stylesheet_link_tag( "/yui/reset-fonts-grids/reset-fonts-grids.css" ) }
   ${ h.stylesheet_link_tag( "dirac.css" ) } 
   <!-- Font size -->
@@ -20,8 +21,9 @@ pageTitle = webBase.htmlPageTitle()
   <!-- js -->
   ${ h.javascript_include_tag( "/yui/yahoo-dom-event/yahoo-dom-event.js" ) }
   ${ h.javascript_include_tag( "/yui/container/container_core-min.js" ) }
+  ${ h.javascript_include_tag( "/yui/yahoo/yahoo-min.js" ) }
   ${ h.javascript_include_tag( "/yui/event/event-min.js" ) }
-  ${ h.javascript_include_tag( "/yui/menu/menu-min.js" ) }
+  ${ h.javascript_include_tag( "/yui/menu/menu.js" ) }
   <!-- init YUI -->
   <script>
    function initMenuBar() { 
@@ -62,7 +64,7 @@ for area in webBase.schemaAreas():
   <div class='topUserInfo'>
    ${webBase.htmlUserInfo()}
   </div>
-  <hr class='topUserBorder'/> 
+  <hr class='pageHorizontalDelimiter'/> 
   <table class='header'>
    <tr>
     <td>${ h.image_tag( 'DIRAC.png', alt = 'DIRAC' ) }</td>
@@ -92,6 +94,7 @@ for area in webBase.schemaAreas():
    _uacct = "UA-2149799-1";
    urchinTracker();
   </script>
+  </div>
  </body>
 </html>
 

@@ -19,3 +19,9 @@ class GeneralController(BaseController):
   def logos(self):
     c.imagePath = "%s/public/images/logos/" % os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
     return render( "/about/logos.mako" )
+    
+  def haiku(self):
+    return render( "/about/haiku.mako" )
+
+  def meetings(self):
+    return render( "/about/meetings.mako" )

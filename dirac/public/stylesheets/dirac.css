@@ -63,7 +63,7 @@ div.topUserInfo {
   padding : 1px;
 }
 
-hr.topUserBorder {
+hr.pageHorizontalDelimiter {
   clear : both;
   border : 0px;
   width : 100%;
@@ -129,4 +129,12 @@ table.menuBar td.menuPath {
   text-align : left;
   padding : 2px 0px 2px 30px;
   font-size: smaller;
+}
+
+
+/* Footer */
+
+p.footer {
+  text-align: center;
+  font-size: xx-small;
 }
