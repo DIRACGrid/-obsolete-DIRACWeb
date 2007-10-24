@@ -161,4 +161,128 @@ class ConfigurationController(BaseController):
     session.save()
     return S_OK()
     
+  @jsonify
+  def createSection( self ):
+    try:
+      parentPath = str( request.params[ 'path' ] )
+      parentPath = parentPath.strip()
+      if len( parentPath ) == 0:
+        return S_ERROR( "Parent path is not valid" )
+      sectionName = str( request.params[ 'sectionName' ] )
+      sectionName = sectionName.strip()
+      if len( sectionName ) == 0:
+        return S_ERROR( "Put any name for the section!" )
+      modificator = self.__getModificator()
+      modificator.loadFromBuffer( session[ 'cfgData' ] )
+      sectionPath = "%s/%s" % ( parentPath, sectionName )
+      log.info( "Creating section %s" % sectionPath )
+      if modificator.createSection( sectionPath ):
+        session[ 'cfgData' ] = str( modificator )
+        session.save()
+        return S_OK( ( sectionName, modificator.getComment( sectionPath ) ) )
+      else:
+        return S_ERROR( "Section can't be created. It already exists?" )
+    except Exception, e:
+      return S_ERROR( "Can't create section: %s" % str( e ) )
     
+  @jsonify
+  def createOption( self ):
+    try:
+      parentPath = str( request.params[ 'path' ] )
+      parentPath = parentPath.strip()
+      if len( parentPath ) == 0:
+        return S_ERROR( "Parent path is not valid" )
+      optionName = str( request.params[ 'optionName' ] )
+      optionName = optionName.strip()
+      if len( optionName ) == 0:
+        return S_ERROR( "Put any name for the option!" )
+      if "/" in optionName:
+        return S_ERROR( "Options can't have a / in the name" )
+      optionValue = str( request.params[ 'optionValue' ] )
+      optionValue = optionValue.strip()
+      if len( optionValue ) == 0:
+        return S_ERROR( "Options should have values!" )
+      modificator = self.__getModificator()
+      modificator.loadFromBuffer( session[ 'cfgData' ] )
+      optionPath = "%s/%s" % ( parentPath, optionName )
+      log.info( "Creating option %s" % optionPath )
+      if not modificator.existsOption( optionPath ):
+        modificator.setOptionValue( optionPath, optionValue )
+        session[ 'cfgData' ] = str( modificator )
+        session.save()
+        return S_OK( ( optionName, modificator.getValue( optionPath ), modificator.getComment( optionPath ) ) )
+      else:
+        return S_ERROR( "Option can't be created. It already exists?" )
+    except Exception, e:
+      return S_ERROR( "Can't create option: %s" % str( e ) )
+      
+  @jsonify
+  def renameKey( self ):
+    try:
+      keyPath = str( request.params[ 'path' ] )
+      keyPath = keyPath.strip()
+      if len( keyPath ) == 0:
+        return S_ERROR( "Entity path is not valid" )
+      newName = str( request.params[ 'newName' ] )
+      newName = newName.strip()
+      if len( newName ) == 0:
+        return S_ERROR( "Put any name for the entity!" )    
+      modificator = self.__getModificator()
+      modificator.loadFromBuffer( session[ 'cfgData' ] )
+      if modificator.existsOption( keyPath ) or modificator.existsSection( keyPath ) :
+        if modificator.renameKey( keyPath, newName ):
+          session[ 'cfgData' ] = str( modificator )
+          session.save()
+          return S_OK()
+        else:
+          return S_ERROR( "There was a problem while renaming" )
+      else:
+        return S_ERROR( "Entity doesn't exist" )
+    except Exception, e:
+      return S_ERROR( "Can't rename entity: %s" % str( e ) )
+      
+  @jsonify
+  def deleteKey( self ):
+    try:
+      keyPath = str( request.params[ 'path' ] )
+      keyPath = keyPath.strip()
+      if len( keyPath ) == 0:
+        return S_ERROR( "Entity path is not valid" )  
+      modificator = self.__getModificator()
+      modificator.loadFromBuffer( session[ 'cfgData' ] )
+      if modificator.removeOption( keyPath ) or modificator.removeSection( keyPath ):
+        session[ 'cfgData' ] = str( modificator )
+        session.save()
+        return S_OK()
+      else:
+        return S_ERROR( "Entity doesn't exist" )
+    except Exception, e:
+      return S_ERROR( "Can't rename entity: %s" % str( e ) )
+      
+  @jsonify
+  def copyKey( self ):
+    try:
+      originalPath = str( request.params[ 'path' ] )
+      originalPath = originalPath.strip()
+      if len( originalPath ) == 0:
+        return S_ERROR( "Parent path is not valid" )
+      newName = str( request.params[ 'newName' ] )
+      newName = newName.strip()
+      if len( newName ) == 0:
+        return S_ERROR( "Put any name for the new key!" )
+      modificator = self.__getModificator()
+      modificator.loadFromBuffer( session[ 'cfgData' ] )
+      if modificator.copyKey( originalPath, newName ):
+        session[ 'cfgData' ] = str( modificator )
+        session.save()
+        pathList = List.fromChar( originalPath, "/" )
+        newPath = "/%s/%s" % ( "/".join( pathList[:-1] ), newName )
+        if modificator.existsSection( newPath ):
+          return S_OK( ( newName, modificator.getComment( newPath ) ) )
+        else:
+          return S_OK( ( newName, modificator.getValue( newPath ), modificator.getComment( newPath ) ) )
+      else:
+        return S_ERROR( "Section can't be created. It already exists?" )
+    except Exception, e:
+      raise  
+      return S_ERROR( "Can't create section: %s" % str( e ) )

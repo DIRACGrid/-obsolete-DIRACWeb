@@ -21,10 +21,11 @@ function initTreeMagic( treeName, rootNode )
                                                         {
                                                          trigger : triggersList,
                                                          itemdata : [
-                                                          { text: "Add subsection", onclick: { fn: dummy } },
-                                                          { text: "Add option", onclick: { fn: dummy } },
-                                                          { text: "Rename section", onclick: { fn: dummy } },
-                                                          { text: "Delete section", onclick: { fn: dummy } },
+                                                          { text: "Add subsection", onclick: { fn: contextAddSubsection } },
+                                                          { text: "Add option", onclick: { fn: contextAddOption } },
+                                                          { text: "Copy section", onclick: { fn: copyNode } },
+                                                          { text: "Rename section", onclick: { fn: contextRenameNode } },
+                                                          { text: "Delete section", onclick: { fn: contextDeleteNode } }
                                                          ]
                                                         }
                                                        );
@@ -34,9 +35,10 @@ function initTreeMagic( treeName, rootNode )
                                                        { 
                                                         trigger : [],
                                                         itemdata : [
-                                                         { text: "Edit value", onclick: { fn: dummy } },
-                                                         { text: "Rename option", onclick: { fn: dummy } },
-                                                         { text: "Delete option", onclick: { fn: dummy } }
+                                                         { text: "Edit value", onclick: { fn: contextEditOption } },
+                                                         { text: "Copy option", onclick: { fn: copyNode } },
+                                                         { text: "Rename option", onclick: { fn: contextRenameNode } },
+                                                         { text: "Delete option", onclick: { fn: contextDeleteNode } }
                                                         ]
                                                        }
                                                      );
@@ -80,20 +82,26 @@ function updateContextMenuTriggers()
 
 /* Generate tree nodes */
 
-function createTreeNode( parentNode, csObject )
+function generateLabelForCSObject( csPath, csObject )
 {
-  var nodeLabel;
-  var csPath = parentNode.data.id[0] + "/" + csObject[0];  
   if( csObject.length == 2)
   {
     //Section
-    nodeLabel = "<span id='sdd-" + csPath + "'>" + csObject[0] + "</span>";
+    nodeLabel = "<span id='sdd-" + csPath + "' class='sectionNode'>" + csObject[0] + "</span>";
   }
   else
   {
     //option
-    nodeLabel = "<span id='odd-" + csPath + "'>" + csObject[0] + " = " + csObject[1] + "</span>"; 
+    nodeLabel = "<span id='odd-" + csPath + "' class='optionNode'>" + csObject[0] + " = " + csObject[1] + "</span>"; 
   }
+  return nodeLabel
+}
+
+function createTreeNode( parentNode, csObject )
+{
+  var nodeLabel;
+  var csPath = parentNode.data.id[0] + "/" + csObject[0];  
+  var nodeLabel = generateLabelForCSObject( csPath, csObject );
   var nodeDef = {
     label : nodeLabel,
     id : [
@@ -182,7 +190,181 @@ function loadNodeData( rootNode, fnLoadComplete )
   YAHOO.util.Connect.asyncRequest('GET', sURL, callback); 
 }
 
+/*Add subsection*/
+function contextAddSubsection()
+{
+  var subSectionName = window.prompt("Enter a name for the new section: ", "");
+  if( subSectionName == null ) return;
+  sendQuery( "createSection", { 
+          'path' : selectedTextNode.data.id[0], 
+          'sectionName' : subSectionName 
+          }, 
+          serverCreateSection, [ selectedTextNode, subSectionName ] );
+}
+
+function serverCreateSection( respObj )
+{
+  var retDict = eval("(" + respObj.responseText + ")");
+  if( retDict[ 'OK' ] )
+  {
+    var parentNode = respObj.argument[0];
+    if( parentNode.isDynamic() && ! parentNode.dynamicLoadComplete )
+    {
+      parentNode.expand()
+    }
+    else
+    {
+      var sectionNode = createTreeNode( parentNode, retDict[ 'Value' ] );
+      parentNode.refresh(); 
+      setDDForBranch( parentNode );
+      parentNode.collapse();
+      parentNode.expand();
+      sectionNode.expand();
+      updateContextMenuTriggers();
+    }
+  }
+  else
+    alert( "There was a problem creating subsection : " + retDict[ 'Message' ] )
+}
+
+/*Add option*/
+function contextAddOption()
+{
+  var optionName = window.prompt("Enter a name for the new option: ", "");
+  if( optionName == null ) return;
+  var optionValue = window.prompt( "What's the value of option " + optionName + "? ", "" );
+  if( optionValue == null ) return;
+  sendQuery( "createOption", { 
+          'path' : selectedTextNode.data.id[0], 
+          'optionName' : optionName,
+          'optionValue' : optionValue 
+          }, 
+          serverCreateOption, [ selectedTextNode ] );
+}
+
+function serverCreateOption( respObj )
+{
+  var retDict = eval("(" + respObj.responseText + ")");
+  if( retDict[ 'OK' ] )
+  {
+    var parentNode = respObj.argument[0];
+    if( parentNode.isDynamic() && ! parentNode.dynamicLoadComplete )
+    {
+      parentNode.expand()
+    }
+    else
+    {
+      var optionNode = createTreeNode( parentNode, retDict[ 'Value' ] );
+      parentNode.refresh();
+      setDDForBranch( parentNode );
+      updateContextMenuTriggers();
+    }
+  }
+  else
+    alert( "There was a problem creating option : " + retDict[ 'Message' ] )
+}
+
+/*Rename node*/
+function contextRenameNode()
+{
+  var newName = window.prompt("Enter a new name for " + selectedTextNode.data.id[1][0] + ": ", "");
+  if( newName == null ) return;
+  sendQuery( "renameKey", { 
+          'path' : selectedTextNode.data.id[0], 
+          'newName' : newName
+          }, 
+          serverRenameNode, [ selectedTextNode, newName ] );  
+}
+
+function setParentPathRecursive( csParentPath, node )
+{
+  node.data.id[0] = csParentPath + "/" + node.data.id[1][0];
+  node.getLabelEl().innerHTML = generateLabelForCSObject( node.data.id[0], node.data.id[1] );
+  for( var i=0; i < node.children.length; i++ )
+    setParentPathRecursive( node.data.id[0], node.children[i] );
+}
+
+function serverRenameNode( respObj )
+{
+  var retDict = eval("(" + respObj.responseText + ")");
+  if( retDict[ 'OK' ] )
+  {
+    var renamingNode = respObj.argument[0];
+    var newName = respObj.argument[1];
+    var pathList = renamingNode.data.id[0].split( "/" );
+    var parentPath = pathList.slice( 0, pathList.length - 1 ).join( "/" );
+    renamingNode.data.id[1][0] = newName;
+    setParentPathRecursive( parentPath, renamingNode );
+    setDDForBranch( renamingNode );
+  }
+  else
+    alert( "There was a problem renaming : " + retDict[ 'Message' ] )
+}
+
+/* Delete node */
+function contextDeleteNode()
+{
+  alert
+  answer = window.confirm( "Are you sure you want to delete " + selectedTextNode.data.id[1][0] + "?" );
+  if( answer )
+  {
+    sendQuery( "deleteKey", { 
+          'path' : selectedTextNode.data.id[0], 
+          }, 
+          serverKeyDelete, [ selectedTextNode ] );    
+  }
+}
+
+function serverKeyDelete( respObj )
+{
+  var retDict = eval("(" + respObj.responseText + ")");
+  if( retDict[ 'OK' ] )
+  {
+    var node = respObj.argument[0];
+    parentNode = node.parent;
+    csTree.removeNode( node );
+    parentNode.refresh();
+    setDDForBranch( parentNode );
+    updateContextMenuTriggers();
+  }
+  else
+    alert( "There was a problem renaming : " + retDict[ 'Message' ] )
+}
+
+/* Copy node */
+function copyNode()
+{
+  var nodeName = window.prompt( "What's the name for the copy?", selectedTextNode.data.id[1][0] + " copy" );
+  if( nodeName == null ) return;
+  sendQuery( "copyKey", { 
+          'path' : selectedTextNode.data.id[0], 
+          'newName' : nodeName
+          }, 
+          serverCopyNode, [ selectedTextNode ] );  
+}
+
+function serverCopyNode( respObj )
+{
+  var retDict = eval("(" + respObj.responseText + ")");
+  if( retDict[ 'OK' ] )
+  {
+    var parentNode = respObj.argument[0].parent;
+    var node = createTreeNode( parentNode, retDict[ 'Value' ] );
+    parentNode.refresh(); 
+    setDDForBranch( parentNode );
+  }
+  else
+    alert( "There was a problem renaming : " + retDict[ 'Message' ] )
+}
+
 /*Modify option value*/
+function contextEditOption()
+{
+  var optionValue = window.prompt( "What's the value of option " + selectedTextNode.data.id[1][0] + "? ", "" );
+  if( optionValue == null ) return;
+  sendQuery( "setOptionValue", { 'path' : selectedTextNode.data.id[0], 'value' : optionValue }, serverSetOptionValue, [ selectedTextNode, optionValue ] );
+}
+
 function editOption( node )
 {
   if( node.data.id[1].length < 3 ) return;
@@ -208,23 +390,23 @@ function commitOption( e, node )
   var optionData = node.data.id[1];
   var newHTML = "<img src='../../../yui/treeview/assets/skins/sam/treeview-loading.gif', alt = 'Processing..'/>" + optionData[0] + " = " + optionValue;
   node.getLabelEl().innerHTML = newHTML;
-  sendQuery( "setOptionValue", { 'path' : node.data.id[0], 'value' : optionValue }, setOptionOK, [ e, node, optionValue ] );
+  sendQuery( "setOptionValue", { 'path' : node.data.id[0], 'value' : optionValue }, serverSetOptionValue, [ node, optionValue ] );
 }
 
 /* Commit option value change */
-function setOptionOK ( respObj )
+function serverSetOptionValue ( respObj )
 {
   var returnObject = eval("(" + respObj.responseText + ")");
-  var node = respObj.argument[1];
+  var node = respObj.argument[0];
   if ( returnObject[ 'OK' ] )
   {
-    node.data.id[1][1] = respObj.argument[2];
+    node.data.id[1][1] = respObj.argument[1];
   }
   else
   {
     alert( "Failed to set value : " + returnObject[ 'Message' ] );
   }
-  blurOption( respObj.argument[0], node );
+  blurOption( "dummy", node );
 }
 
 
@@ -239,20 +421,41 @@ function sendQuery( action, params, successCallback, callbackArgs )
   postArgs = postArgs.substring( 0, postArgs.length - 1 );
   var callbackObj =
   {
-    success : successCallback,
+    success : successRemoteQuery,
     failure : failedRemoteQuery,
     timeout : 5000,
-    argument : callbackArgs
+    argument : [ successCallback, callbackArgs ]
   }
+  showLoading();
   var transaction = YAHOO.util.Connect.asyncRequest( 'POST' , action , callbackObj, postArgs );
 }
+
 /* AJAX FAILED REMOTE QUERY */
 function failedRemoteQuery( respObj )
 {
+  hideLoading();
   alert( "Failed " + respObj.argument[ 'action' ] );
 }
 
+/* AJAX SUCEEDED REMOTE QUERY */
+function successRemoteQuery( respObj )
+{
+  hideLoading();
+  var userCallback = respObj.argument[0];
+  respObj.argument = respObj.argument[1];
+  userCallback( respObj );
+}
 
+function showLoading()
+{
+  YAHOO.util.Dom.setStyle( 'loading', "visibility", "visible" );
+}
+
+
+function hideLoading()
+{
+  YAHOO.util.Dom.setStyle( 'loading', "visibility", "hidden" );
+}
 
 /* DDCfgEntry object */
 
@@ -381,27 +584,19 @@ YAHOO.extend(DDCfgEntry, YAHOO.util.DDProxy, {
     {
       YAHOO.log( "Moving " + this.id + " below " + dropNode.data.id[0] );
       var parentDropNode = dropNode.parent;
-      //var parentDragNode = this.config[ 'node' ].parent;
       var newNode = createTreeNode( parentNode, this.config[ 'node' ].data.id[1] );
-      //csTree.removeNode( this.config[ 'node' ] );
       csTree.removeNode( newNode );
       newNode.insertAfter( dropNode );
       parentDropNode.refresh();
-      //parentDragNode.refresh();
       setDDForBranch( parentDropNode );
-      //setDDForBranch( parentDragNode );
     },
     
     insertNodeInside: function( dropNode )
     {
       YAHOO.log( "Moving " + this.id + " inside " + dropNode.data.id[0] )
-      var parentDragNode = this.config[ 'node' ].parent;
       var newNode = createTreeNode( dropNode, this.config[ 'node' ].data.id[1] );
-      csTree.removeNode( this.config[ 'node' ] );
       dropNode.refresh();
-      parentDragNode.refresh();
       setDDForBranch( dropNode );
-      setDDForBranch( parentDragNode );
     },
 
     onDragDrop: function(e, id) {
