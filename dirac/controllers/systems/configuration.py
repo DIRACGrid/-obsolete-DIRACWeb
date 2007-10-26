@@ -17,6 +17,8 @@ log = logging.getLogger(__name__)
 
 class ConfigurationController(BaseController):
 
+  maxFileSize = 1024*1024*10 #10MB
+
   def index(self):
     # Return a rendered template
     #   return render('/some/template.mako')
@@ -27,9 +29,13 @@ class ConfigurationController(BaseController):
     if not authorizeAction():  
       return render( "/error.mako" )
     rpcClient = getRPCClient( "Configuration/Server" )
-    print "GOT RPC CLIENT"
-    c.data = rpcClient.getCommitHistory()
-    return render( "/systems/configuration/history.mako" )
+    retVal = rpcClient.getCommitHistory()
+    if retVal[ 'OK' ]:
+      c.changes = retVal[ 'Value' ]
+      return render( "/systems/configuration/history.mako" )
+    else:
+      c.error = retVal[ 'Message' ]
+      return render( "/error.mako" )
 
   def __getModificator( self ):
     rpcClient = getRPCClient( gConfig.getValue( "/DIRAC/Configuration/MasterServer", "Configuration/Server" ) )
@@ -57,7 +63,9 @@ class ConfigurationController(BaseController):
       return render( "/error.mako" )
 
   def manageRemoteConfig( self ):
-    if not 'cfgData' in session:
+    if not 'cfgData' in session or not 'csName' in session:
+      if 'csFilename'  in session:
+        del( session[ 'csFilename' ] )
       log.info( "Loading configuration..." )
       retVal = self.__getRemoteConfiguration()
       if not retVal[ 'OK' ]:
@@ -70,7 +78,88 @@ class ConfigurationController(BaseController):
       c.csName = session[ 'csName' ]
     return render( "/systems/configuration/manageRemote.mako" )
 
+  def uploadUserConfig( self ):
+    return render( "/systems/configuration/uploadUserConfig.mako" )
+  
+  def doUploadConfig( self ):
+    file = request.POST[ 'cfgFile' ]
+    if len( file.value ) > self.maxFileSize:
+      c.error = "File size %s is too big" % len( file.value )
+      return render( "/error.mako" )
+    if 'csName' in session:
+      del( session[ 'csName' ] )
+    session[ 'csFilename' ] = file.filename
+    session[ 'cfgData' ] = file.value 
+    session.save()
+    return redirect_to( helpers.url_for( action='manageUserConfig' ) )
+
+  def manageUserConfig( self ):
+    if not 'csFilename' in session:
+      return redirect_to( helpers.url_for( action='uploadUserConfig' ) )
+    c.csName = session[ 'csFilename' ]
+    return render( "/systems/configuration/manageUser.mako" )
+
+  def showTextConfiguration( self ):
+    response.headers['Content-type'] = 'text/plain'
+    if 'download' in request.params and request.params[ 'download' ] in ( 'yes', 'true', '1' ):
+      version = ""
+      try:
+        cfg = CFG()
+        cfg.loadFromBuffer( session[ 'cfgData' ] )
+        cfg = cfg[ 'DIRAC' ][ 'Configuration' ]
+        version = ".%s.%s" % ( cfg[ 'Name' ], cfg[ 'Version' ].replace( ":", "" ).replace( "-", "" ) )
+      except Exception, e:
+        print e
+      print 'attachment; filename="cs%s.cfg"' % version.replace( " ", "_" )
+      response.headers['Content-Disposition'] = 'attachment; filename="cs%s.cfg"' % version.replace( " ", "" )
+      response.headers['Content-Length'] = len( session[ 'cfgData' ] )
+      response.headers['Content-Transfer-Encoding'] = 'Binary'
+    return session[ 'cfgData' ]
+
+  def showDiff( self ):
+    if not authorizeAction():
+      return S_ERROR( "You are not authorized to commit configurations!! Bad boy!" )
+    modifier = self.__getModificator()
+    modifier.loadFromBuffer( session[ 'cfgData' ] )
+    remoteData = modifier.getRemoteData()
+    diffGen = modifier.showDiff( remoteData )    
+    c.diffList = self.__generateHTMLDiff( diffGen )
+    return render( "/systems/configuration/diff.mako" )
+
+  def __generateHTMLDiff( self, diffGen ):
+    diffList = []
+    oldChange = False
+    for diffLine in diffGen:
+      if diffLine[0] == "-":
+        diffList.append( ( "del", diffLine[1:], "" ) )
+      elif diffLine[0] == "+":
+        if oldChange:
+          diffList[-1] = ( "mod", diffList[-1][1], diffLine[1:] )
+          oldChange = False
+        else:
+          diffList.append( ( "add", "", diffLine[1:] ) )
+      elif diffLine[0] == "?":
+        if diffList[-1][0] == 'del':
+          oldChange = True
+        elif diffList[-1][0] == "mod":
+          diffList[-1] = ( "conflict", diffList[-1][1], diffList[-1][2] )
+        elif diffList[-1][0] == "add":
+          diffList[-2] = ( "mod", diffList[-2][1], diffList[-1][2] )
+          del( diffList[-1] )
+      else:
+        diffList.append( ( "", diffLine[1:], diffLine[1:] ) )
+    return diffList
+    
   #AJAX CALLS
+  @jsonify
+  def commitConfiguration( self ):
+    if not authorizeAction():
+      return S_ERROR( "You are not authorized to commit configurations!! Bad boy!" )
+    modifier = self.__getModificator()
+    modifier.loadFromBuffer( session[ 'cfgData' ] )
+    return modifier.commit()
+
+
   @jsonify
   def expandSection( self ):
     cfgData = CFG()
@@ -109,6 +198,19 @@ class ConfigurationController(BaseController):
     else:
       return S_ERROR( "Can't update %s" % optionPath )
       
+  @jsonify
+  def setComment( self ):
+    keyPath = request.params[ 'path' ]
+    commentValue = request.params[ 'value' ]
+    
+    modCfg = self.__getModificator()
+    modCfg.loadFromBuffer( session[ 'cfgData' ] )
+    modCfg.setComment( keyPath, commentValue )
+    log.info( "Set comment %s = %s" % ( keyPath, commentValue ) )
+    session[ 'cfgData' ] = str( modCfg ) 
+    session.save()
+    return S_OK( modCfg.getComment( keyPath ) )    
+
   @jsonify
   def moveKeyInside( self ):
     originPath = request.params[ 'entry' ]

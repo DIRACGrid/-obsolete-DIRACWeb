@@ -4,6 +4,9 @@ var optionNodesMap = {};
 var selectedTextNode;
 var sectionContextMenu;
 var optionContextMenu;
+var commentDialog;
+var commentsMap = {};
+var optionValueDialog;
 
 var csRootNode;
 var csTree;
@@ -23,6 +26,7 @@ function initTreeMagic( treeName, rootNode )
                                                          itemdata : [
                                                           { text: "Add subsection", onclick: { fn: contextAddSubsection } },
                                                           { text: "Add option", onclick: { fn: contextAddOption } },
+                                                          { text: "Edit comment", onclick: { fn: contextEditComment } },
                                                           { text: "Copy section", onclick: { fn: copyNode } },
                                                           { text: "Rename section", onclick: { fn: contextRenameNode } },
                                                           { text: "Delete section", onclick: { fn: contextDeleteNode } }
@@ -36,6 +40,7 @@ function initTreeMagic( treeName, rootNode )
                                                         trigger : [],
                                                         itemdata : [
                                                          { text: "Edit value", onclick: { fn: contextEditOption } },
+                                                         { text: "Edit comment", onclick: { fn: contextEditComment } },
                                                          { text: "Copy option", onclick: { fn: copyNode } },
                                                          { text: "Rename option", onclick: { fn: contextRenameNode } },
                                                          { text: "Delete option", onclick: { fn: contextDeleteNode } }
@@ -45,7 +50,32 @@ function initTreeMagic( treeName, rootNode )
                                                         
   optionContextMenu.triggerContextMenuEvent.subscribe( findContextMenuNode, optionNodesMap );
   optionContextMenu.render( treeName );
+  
+  commentDialog = new YAHOO.widget.Dialog( "commentDialog", 
+			{ width : "600px",
+			  fixedcenter : true,
+			  visible : false, 
+			  constraintoviewport : true,
+			  buttons : [ 
+			   { text:"Submit", handler:dialogCommentSubmit, isDefault:true },
+		     { text:"Cancel", handler:function(){ this.cancel();} } 
+		    ]
+			 } );
+  commentDialog.render();
+  
+  optionValueDialog = new YAHOO.widget.Dialog( "valueDialog", 
+			{ width : "600px",
+			  fixedcenter : true,
+			  visible : false, 
+			  constraintoviewport : true,
+			  buttons : [ 
+			   { text:"Submit", handler:dialogOptionValueSubmit, isDefault:true },
+		     { text:"Cancel", handler:function(){ this.cancel();} } 
+		    ]
+			 } );
+  optionValueDialog.render();
 }
+
 
 //"contextmenu" event handler for the element(s) that triggered the display of the context menu
 function findContextMenuNode( p_oEvent, func, nodesMap ) {
@@ -97,6 +127,63 @@ function generateLabelForCSObject( csPath, csObject )
   return nodeLabel
 }
 
+function getProcessedComment( csObject )
+{
+  var comment;
+  if( csObject.length == 2 )
+  {  
+    comment = csObject[1];
+  }
+  else
+    comment = csObject[2];
+  if( comment.length > 0 )
+  {
+    var commentLength = comment.length;
+    while( comment.length > 0 && comment[ commentLength - 1 ] == "\n" )
+      comment = comment.slice( 0, commentLength - 1 );
+    var commentLines = comment.split( "\n" );
+    var numLines = commentLines.length;
+    var lastCommiter = "";
+    if( commentLines[ numLines - 1 ].indexOf( "@@-" ) == 0 )
+    {
+      lastCommiter = commentLines[ numLines - 1 ];
+      lastCommiter = lastCommiter.slice( 3, lastCommiter.length );
+      commentLines = commentLines.slice( 0, numLines - 1 );
+    }
+    return[ commentLines, lastCommiter ];
+  }
+  else
+    return [ [], "" ]
+}
+
+function generateCommentTooltip( csPath, csObject )
+{
+  var spanId = "dd-" + csPath;
+  if( csObject.length == 2 )
+  {
+    spanId = "s" + spanId;
+  }
+  else
+  {
+    spanId = "o" + spanId;
+  }
+  var commentData = getProcessedComment( csObject );
+  if( commentData[0].length || commentData[1].length )
+  {
+    commentHTML = "<div style='text-align:left'>" + commentData[0].join( "<br/>" ) + "</div>";
+    if( commentData[1].length > 0 )
+      commentHTML += "<br/><span style='font-weight:bold;font-size:smaller;'>"+commentData[1]+"</span>";
+   
+    if( spanId in commentsMap )
+    {
+      commentsMap[ spanId ].cfg.setProperty( "text", commentHTML );
+    }
+    else 
+      commentsMap[ spanId ] = new YAHOO.widget.Tooltip( "tooltip" + csPath, { context: spanId, text: commentHTML } );
+  }
+   
+}
+
 function createTreeNode( parentNode, csObject )
 {
   var nodeLabel;
@@ -120,6 +207,7 @@ function createTreeNode( parentNode, csObject )
   {
     optionNodesMap[ treeNode.labelElId ] = treeNode;
   }
+  generateCommentTooltip( csPath, csObject );
   setDDForNode( treeNode );
   return treeNode;
 }
@@ -280,6 +368,7 @@ function setParentPathRecursive( csParentPath, node )
 {
   node.data.id[0] = csParentPath + "/" + node.data.id[1][0];
   node.getLabelEl().innerHTML = generateLabelForCSObject( node.data.id[0], node.data.id[1] );
+  generateCommentTooltip( node.data.id[0], node.data.id[1] );
   for( var i=0; i < node.children.length; i++ )
     setParentPathRecursive( node.data.id[0], node.children[i] );
 }
@@ -304,7 +393,6 @@ function serverRenameNode( respObj )
 /* Delete node */
 function contextDeleteNode()
 {
-  alert
   answer = window.confirm( "Are you sure you want to delete " + selectedTextNode.data.id[1][0] + "?" );
   if( answer )
   {
@@ -359,10 +447,34 @@ function serverCopyNode( respObj )
 
 /*Modify option value*/
 function contextEditOption()
+{  
+  optionValueDialog.hide();
+  optionValueDialog.setHeader( "Enter value for " + selectedTextNode.data.id[0].slice(1) )
+  optionValueDialog.form.textValue.value = selectedTextNode.data.id[1][1].split( "," ).join( "\n" );
+  optionValueDialog.cfg[ 'node' ] = selectedTextNode;
+  optionValueDialog.show();
+  
+}
+
+function dialogOptionValueSubmit()
 {
-  var optionValue = window.prompt( "What's the value of option " + selectedTextNode.data.id[1][0] + "? ", "" );
-  if( optionValue == null ) return;
-  sendQuery( "setOptionValue", { 'path' : selectedTextNode.data.id[0], 'value' : optionValue }, serverSetOptionValue, [ selectedTextNode, optionValue ] );
+
+  var valueList = optionValueDialog.getData().textValue.split( "\n" );
+  optionValueDialog.cancel();
+  var value = "";
+  for( var i = 0; i< valueList.length; i++)
+    if( valueList[ i ].length > 0 )
+      value += valueList[ i ] + ",";
+  value = value.slice( 0, value.length - 1 );
+  
+  sendQuery( "setOptionValue", 
+      { 
+        'path' : optionValueDialog.cfg[ 'node' ].data.id[0], 
+        'value' : value 
+      }, 
+      serverSetOptionValue, 
+      [ optionValueDialog.cfg[ 'node' ], value ]
+    );
 }
 
 function editOption( node )
@@ -409,6 +521,46 @@ function serverSetOptionValue ( respObj )
   blurOption( "dummy", node );
 }
 
+
+/*Modify comment*/
+
+function contextEditComment()
+{
+  commentDialog.hide();
+  commentDialog.setHeader( "Enter comment for " + selectedTextNode.data.id[0].slice(1) )
+  commentDialog.form.textValue.value = getProcessedComment( selectedTextNode.data.id[1] )[0].join("\n");
+  commentDialog.cfg[ 'node' ] = selectedTextNode;
+  commentDialog.show();
+}
+
+function dialogCommentSubmit()
+{
+  var commentValue = commentDialog.getData().textValue;
+  commentDialog.cancel();
+  sendQuery( "setComment", { 
+          'path' : commentDialog.cfg[ 'node' ].data.id[0], 
+          'value' : commentValue
+          }, 
+          serverSetComment, [ commentDialog.cfg[ 'node' ] ] );  
+}
+
+function serverSetComment( respObj )
+{
+  var retDict = eval("(" + respObj.responseText + ")");
+  if( retDict[ 'OK' ] )
+  {
+    var commentText = retDict[ 'Value' ];
+    var node = respObj.argument[0];
+    if( node.data.id[1].length == 2 )
+      node.data.id[1][1] = commentText;
+    else
+      node.data.id[1][2] = commentText;
+    var node = respObj.argument[0];
+    generateCommentTooltip( node.data.id[0], node.data.id[1] );
+  }
+  else
+    alert( "There was a problem setting comment : " + retDict[ 'Message' ] )
+}
 
 /* AJAX REMOTE QUERY */
 function sendQuery( action, params, successCallback, callbackArgs )
@@ -701,3 +853,24 @@ YAHOO.extend(DDCfgEntry, YAHOO.util.DDProxy, {
 });
 
 })(); 
+
+
+function commitConfiguration()
+{
+  if( window.confirm( "Are you sure you want to commit the configuration?" ) )
+  {
+    sendQuery( "commitConfiguration", {}, serverCommitConfiguration, [] );  
+  }
+}
+
+function serverCommitConfiguration( respObj )
+{
+  var retDict = eval("(" + respObj.responseText + ")");
+  if( retDict[ 'OK' ] )
+  {
+    alert( "Configuration successfully commited" );
+    window.location = "resetConfigurationToRemote";
+  }
+  else
+    alert( "Commit failed: " + retDict[ 'Message' ] )
+}

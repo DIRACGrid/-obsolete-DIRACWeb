@@ -1,3 +1,4 @@
+import logging
 import os.path
 from pylons import request
 #from paste.deploy import CONFIG
@@ -10,6 +11,8 @@ from DIRAC import gLogger
 from DIRAC.Core.DISET.AuthManager import AuthManager
  
 gAuthManager = AuthManager( "%s/Authorization" % gWebConfig.getWebSection() )
+
+log = logging.getLogger(__name__)
 
 def checkUserCredentials():
   userDN = ""
@@ -43,6 +46,6 @@ def authorizeAction():
   checkUserCredentials()
   routeDict = request.environ[ 'pylons.routes_dict' ]
   actionPath = "%s/%s" % ( routeDict[ 'controller' ], routeDict[ 'action' ] )
-  print "AUTHORIZING %s for %s" % ( actionPath, session )
+  log.info( "AUTHORIZING %s for %s" % ( actionPath, session[ 'DN' ] ) )
   c.error = "You shouldn't be here :) (not enough karma maybe?)"
   return gAuthManager.authQuery( actionPath, session )

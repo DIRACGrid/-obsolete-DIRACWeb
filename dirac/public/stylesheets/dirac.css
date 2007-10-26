@@ -20,20 +20,20 @@ h1 {
   width : 95%;
   font-size: xx-large;
   font-variant: small-caps;
-  margin : 10px;
+  margin : 10px auto 10px auto;
 }
 
 h2 {
   width : 90%;
   font-size: x-large;
   font-variant: small-caps;
-  margin : 10px;
+  margin : 10px auto 10px auto;
 }
 
 h3 {
   width : 90%;
   font-size: large;
-  margin : 10px;
+  margin : 10px auto 10px auto;
 }
 
 p {
