@@ -119,11 +119,10 @@ class ConfigurationController(BaseController):
 
   def showDiff( self ):
     if not authorizeAction():
-      return S_ERROR( "You are not authorized to commit configurations!! Bad boy!" )
+      return S_ERROR( "You are not authorized to get diff's!! Bad boy!" )
     modifier = self.__getModificator()
     modifier.loadFromBuffer( session[ 'cfgData' ] )
-    remoteData = modifier.getRemoteData()
-    diffGen = modifier.showDiff( remoteData )
+    diffGen = modifier.showDiff()
     c.diffList = self.__generateHTMLDiff( diffGen )
     return render( "/systems/configuration/diff.mako" )
 
