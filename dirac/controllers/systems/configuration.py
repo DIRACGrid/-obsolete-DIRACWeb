@@ -12,6 +12,7 @@ from DIRAC.ConfigurationSystem.private.CFG import CFG
 from DIRAC.ConfigurationSystem.Client.Config import gConfig
 import DIRAC.Core.Utilities.List as List
 from DIRAC import S_OK, S_ERROR
+from DIRAC import gLogger
 
 log = logging.getLogger(__name__)
 
@@ -26,7 +27,7 @@ class ConfigurationController(BaseController):
     return 'Hello World'
 
   def showHistory( self ):
-    if not authorizeAction():  
+    if not authorizeAction():
       return render( "/error.mako" )
     rpcClient = getRPCClient( "Configuration/Server" )
     retVal = rpcClient.getCommitHistory()
@@ -51,13 +52,13 @@ class ConfigurationController(BaseController):
       session[ 'csName' ] = modCfg.getValue( "/DIRAC/Configuration/Name" )
       session.save()
       c.cfgData = modCfg.cfgData
-      c.csName = session[ 'csName' ] 
+      c.csName = session[ 'csName' ]
     return retVal
 
   def resetConfigurationToRemote( self ):
     retVal = self.__getRemoteConfiguration()
     if retVal[ 'OK' ]:
-      return redirect_to( helpers.url_for( action='manageRemoteConfig' ) )
+      return redirect_to( 'manageRemoteConfig' )
     else:
       c.error = "Can't reset configuration<br/>%s" % retVal[ 'Message' ]
       return render( "/error.mako" )
@@ -66,13 +67,13 @@ class ConfigurationController(BaseController):
     if not 'cfgData' in session or not 'csName' in session:
       if 'csFilename'  in session:
         del( session[ 'csFilename' ] )
-      log.info( "Loading configuration..." )
+      gLogger.info( "Loading configuration from server..." )
       retVal = self.__getRemoteConfiguration()
       if not retVal[ 'OK' ]:
         c.error = "Can't get configuration from server<br/>%s" % retVal[ 'Message' ]
         return render( "/error.mako" )
     else:
-      log.info( "Recovering configuration" )
+      gLogger.info( "Recovering configuration" )
       c.cfgData = CFG()
       c.cfgData.loadFromBuffer( session[ 'cfgData' ] )
       c.csName = session[ 'csName' ]
@@ -80,7 +81,7 @@ class ConfigurationController(BaseController):
 
   def uploadUserConfig( self ):
     return render( "/systems/configuration/uploadUserConfig.mako" )
-  
+
   def doUploadConfig( self ):
     file = request.POST[ 'cfgFile' ]
     if len( file.value ) > self.maxFileSize:
@@ -89,13 +90,13 @@ class ConfigurationController(BaseController):
     if 'csName' in session:
       del( session[ 'csName' ] )
     session[ 'csFilename' ] = file.filename
-    session[ 'cfgData' ] = file.value 
+    session[ 'cfgData' ] = file.value
     session.save()
-    return redirect_to( helpers.url_for( action='manageUserConfig' ) )
+    return redirect_to( 'manageUserConfig' )
 
   def manageUserConfig( self ):
     if not 'csFilename' in session:
-      return redirect_to( helpers.url_for( action='uploadUserConfig' ) )
+      return redirect_to( 'uploadUserConfig' )
     c.csName = session[ 'csFilename' ]
     return render( "/systems/configuration/manageUser.mako" )
 
@@ -122,7 +123,7 @@ class ConfigurationController(BaseController):
     modifier = self.__getModificator()
     modifier.loadFromBuffer( session[ 'cfgData' ] )
     remoteData = modifier.getRemoteData()
-    diffGen = modifier.showDiff( remoteData )    
+    diffGen = modifier.showDiff( remoteData )
     c.diffList = self.__generateHTMLDiff( diffGen )
     return render( "/systems/configuration/diff.mako" )
 
@@ -149,7 +150,7 @@ class ConfigurationController(BaseController):
       else:
         diffList.append( ( "", diffLine[1:], diffLine[1:] ) )
     return diffList
-    
+
   #AJAX CALLS
   @jsonify
   def commitConfiguration( self ):
@@ -165,15 +166,15 @@ class ConfigurationController(BaseController):
     cfgData = CFG()
     cfgData.loadFromBuffer( session[ 'cfgData' ] )
     sectionPath = str( request.params[ 'section' ] )
-    log.info( "Expanding %s" % sectionPath )
+    gLogger.info( "Expanding section" "%s" % sectionPath )
     try:
       sectionCfg = cfgData
       for section in [ section for section in sectionPath.split( "/" ) if not section.strip() == "" ]:
         sectionCfg = sectionCfg[ section ]
     except Exception, v:
-      log.error( "Section %s does not exist: %s" % ( sectionPath, str(v) ) ) 
+      gLogger.error( "Section %s does not exist", "%s" % ( sectionPath, str(v) ) )
       return S_ERROR( "Section %s does not exist: %s" % ( sectionPath, str(v) ) )
-    log.info( "Section to expand %s" % sectionPath )
+    gLogger.verbose( "Section to expand %s" % sectionPath )
     retData = []
     for entryName in sectionCfg.listAll():
       if sectionCfg.isSection( entryName ):
@@ -181,44 +182,44 @@ class ConfigurationController(BaseController):
       else:
         retData.append( ( entryName, sectionCfg[ entryName ], sectionCfg.getComment( entryName ) ) )
     return S_OK( retData )
-    
+
   @jsonify
   def setOptionValue( self ):
     optionPath = request.params[ 'path' ]
     optionValue = request.params[ 'value' ]
-    
+
     modCfg = self.__getModificator()
     modCfg.loadFromBuffer( session[ 'cfgData' ] )
     modCfg.setOptionValue( optionPath, optionValue )
     if modCfg.getValue( optionPath ) == optionValue:
-      log.info( "Set option value %s = %s" % ( optionPath, optionValue ) )
-      session[ 'cfgData' ] = str( modCfg ) 
+      gLogger.info( "Set option value", "%s = %s" % ( optionPath, optionValue ) )
+      session[ 'cfgData' ] = str( modCfg )
       session.save()
       return S_OK()
     else:
       return S_ERROR( "Can't update %s" % optionPath )
-      
+
   @jsonify
   def setComment( self ):
     keyPath = request.params[ 'path' ]
     commentValue = request.params[ 'value' ]
-    
+
     modCfg = self.__getModificator()
     modCfg.loadFromBuffer( session[ 'cfgData' ] )
     modCfg.setComment( keyPath, commentValue )
-    log.info( "Set comment %s = %s" % ( keyPath, commentValue ) )
-    session[ 'cfgData' ] = str( modCfg ) 
+    gLogger.info( "Set comment", "%s = %s" % ( keyPath, commentValue ) )
+    session[ 'cfgData' ] = str( modCfg )
     session.save()
-    return S_OK( modCfg.getComment( keyPath ) )    
+    return S_OK( modCfg.getComment( keyPath ) )
 
   @jsonify
   def moveKeyInside( self ):
     originPath = request.params[ 'entry' ]
-    destPath = request.params[ 'destination' ]   
-    
+    destPath = request.params[ 'destination' ]
+
     cfgData = CFG()
-    cfgData.loadFromBuffer( session[ 'cfgData' ] ) 
-    
+    cfgData.loadFromBuffer( session[ 'cfgData' ] )
+
     originDict = cfgData.getRecursive( originPath )
     if not originDict:
       return S_ERROR( "Moving entity does not exist" )
@@ -233,18 +234,18 @@ class ConfigurationController(BaseController):
       destDict[ 'value' ].addKey( **originDict )
     except Exception, e:
       return S_ERROR( "Can't move inside %s: %s" % ( destPath, str( e ) ) )
-    session[ 'cfgData' ] = str( cfgData ) 
+    session[ 'cfgData' ] = str( cfgData )
     session.save()
     return S_OK()
-    
+
   @jsonify
   def moveKeyAfter( self ):
     originPath = str( request.params[ 'entry' ] )
     destPath = str( request.params[ 'destination' ] )
-    
+
     cfgData = CFG()
-    cfgData.loadFromBuffer( session[ 'cfgData' ] ) 
-    
+    cfgData.loadFromBuffer( session[ 'cfgData' ] )
+
     originDict = cfgData.getRecursive( originPath )
     if not originDict:
       return S_ERROR( "Moving entity does not exist" )
@@ -253,16 +254,16 @@ class ConfigurationController(BaseController):
     if not destDict:
       return S_ERROR( "Destination does not exist" )
     destParentDict = cfgData.getRecursive( destPath, -1 )
-    
+
     try:
       originParentDict[ 'value' ].deleteKey( originDict[ 'key' ] )
       destParentDict[ 'value' ].addKey( beforeKey = destDict[ 'key' ], **originDict )
     except Exception, e:
       return S_ERROR( "Can't move after %s: %s" % ( destPath, str( e ) ) )
-    session[ 'cfgData' ] = str( cfgData ) 
+    session[ 'cfgData' ] = str( cfgData )
     session.save()
     return S_OK()
-    
+
   @jsonify
   def createSection( self ):
     try:
@@ -277,7 +278,7 @@ class ConfigurationController(BaseController):
       modificator = self.__getModificator()
       modificator.loadFromBuffer( session[ 'cfgData' ] )
       sectionPath = "%s/%s" % ( parentPath, sectionName )
-      log.info( "Creating section %s" % sectionPath )
+      gLogger.info( "Creating section", "%s" % sectionPath )
       if modificator.createSection( sectionPath ):
         session[ 'cfgData' ] = str( modificator )
         session.save()
@@ -286,7 +287,7 @@ class ConfigurationController(BaseController):
         return S_ERROR( "Section can't be created. It already exists?" )
     except Exception, e:
       return S_ERROR( "Can't create section: %s" % str( e ) )
-    
+
   @jsonify
   def createOption( self ):
     try:
@@ -307,7 +308,7 @@ class ConfigurationController(BaseController):
       modificator = self.__getModificator()
       modificator.loadFromBuffer( session[ 'cfgData' ] )
       optionPath = "%s/%s" % ( parentPath, optionName )
-      log.info( "Creating option %s" % optionPath )
+      gLogger.info( "Creating option", "%s = %s" % ( optionPath, optionValue ) )
       if not modificator.existsOption( optionPath ):
         modificator.setOptionValue( optionPath, optionValue )
         session[ 'cfgData' ] = str( modificator )
@@ -317,7 +318,7 @@ class ConfigurationController(BaseController):
         return S_ERROR( "Option can't be created. It already exists?" )
     except Exception, e:
       return S_ERROR( "Can't create option: %s" % str( e ) )
-      
+
   @jsonify
   def renameKey( self ):
     try:
@@ -328,7 +329,7 @@ class ConfigurationController(BaseController):
       newName = str( request.params[ 'newName' ] )
       newName = newName.strip()
       if len( newName ) == 0:
-        return S_ERROR( "Put any name for the entity!" )    
+        return S_ERROR( "Put any name for the entity!" )
       modificator = self.__getModificator()
       modificator.loadFromBuffer( session[ 'cfgData' ] )
       if modificator.existsOption( keyPath ) or modificator.existsSection( keyPath ) :
@@ -342,14 +343,14 @@ class ConfigurationController(BaseController):
         return S_ERROR( "Entity doesn't exist" )
     except Exception, e:
       return S_ERROR( "Can't rename entity: %s" % str( e ) )
-      
+
   @jsonify
   def deleteKey( self ):
     try:
       keyPath = str( request.params[ 'path' ] )
       keyPath = keyPath.strip()
       if len( keyPath ) == 0:
-        return S_ERROR( "Entity path is not valid" )  
+        return S_ERROR( "Entity path is not valid" )
       modificator = self.__getModificator()
       modificator.loadFromBuffer( session[ 'cfgData' ] )
       if modificator.removeOption( keyPath ) or modificator.removeSection( keyPath ):
@@ -360,7 +361,7 @@ class ConfigurationController(BaseController):
         return S_ERROR( "Entity doesn't exist" )
     except Exception, e:
       return S_ERROR( "Can't rename entity: %s" % str( e ) )
-      
+
   @jsonify
   def copyKey( self ):
     try:
@@ -386,5 +387,5 @@ class ConfigurationController(BaseController):
       else:
         return S_ERROR( "Section can't be created. It already exists?" )
     except Exception, e:
-      raise  
+      raise
       return S_ERROR( "Can't create section: %s" % str( e ) )
