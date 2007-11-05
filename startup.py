@@ -1,3 +1,6 @@
+import os
+import os.path
 from paste.deploy import loadapp
-app = loadapp("config:/home/adria/development/DIRAC3/DIRAC/Interface/Web/production.ini")
+here = os.path.dirname( os.path.realpath( __file__ ) )
+app = loadapp( "config:%s/production.ini" % here )
 
