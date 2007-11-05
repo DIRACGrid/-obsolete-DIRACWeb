@@ -31,12 +31,12 @@ def htmlUserInfo():
   if dn:
     htmlData += " (%s)" % dn
   else:
-    htmlData += " (unsecure connection)"
+    htmlData += " (<a href='https://%s%s'>certificate login</a>)" % ( str( request.environ[ 'REMOTE_ADDR' ] ), str( request.environ[ 'REQUEST_URI' ] ) )
   return htmlData
-  
+
 def htmlSetups():
   selectedSetup = "<strong>%s</strong>" % sessionManager.getSelectedSetup()
-  availableSetups = [ ( setupName, helpers.url_for( controller='web/userdata', action='changeSetup', id=setupName ) ) for setupName in gWebConfig.getSetups() ] 
+  availableSetups = [ ( setupName, helpers.url_for( controller='web/userdata', action='changeSetup', id=setupName ) ) for setupName in gWebConfig.getSetups() ]
   return yuiWidgets.dropDownMenu( "UserSetupPos", selectedSetup, availableSetups )
 
 def htmlPageTitle():
@@ -45,7 +45,7 @@ def htmlPageTitle():
 
 def schemaAreas():
   return gWebConfig.getSchemaSections( "" )
-	
+
 def jsSchemaSection( area, section ):
   jsTxt = "["
   for subSection in gWebConfig.getSchemaSections( section ):
@@ -60,7 +60,7 @@ def jsSchemaSection( area, section ):
       jsTxt += "{ text : '%s', url : '%s' }," % ( page.capitalize(), helpers.url_for( pagePath ) )
   jsTxt += "]"
   return jsTxt
-  
+
 def htmlSchemaAreas( areasList = False):
   actualWebPath = currentPath()
   dirList = [ dir.strip() for dir in actualWebPath.split( "/" ) if not dir.strip() == "" ]
@@ -75,10 +75,10 @@ def htmlSchemaAreas( areasList = False):
       htmlData += "<div class='label'>"
     htmlData += "%s</div></td>\n" % area.capitalize()
   return htmlData
-  
+
 def htmlPath():
   path = currentPath()
   schemaPath = gWebConfig.getSchemaPathFromURL( path )
   dirList = [ dir.capitalize() for dir in schemaPath.split( "/" ) if not dir.strip() == "" ]
   return " > ".join( dirList )
-      
+
