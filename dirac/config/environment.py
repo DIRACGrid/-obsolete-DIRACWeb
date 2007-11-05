@@ -41,4 +41,9 @@ def load_environment(global_conf, app_conf):
     Script.registerSwitch( "r", "reload", "Reload for pylons" )
     Script.localCfg.addCFGFile( "%s/web.cfg" % root )
     Script.localCfg.addDefaultEntry( "/DIRAC/Security/UseServerCertificate", "yes" )
-    Script.parseCommandLine( scriptName = "DIRACWeb", ignoreErrors = True )
+    Script.parseCommandLine( scriptName = "Website", ignoreErrors = True )
+    from DIRAC.LoggingSystem.Client.Logger import gLogger
+    gLogger._systemName = "Framework"
+    gLogger.initialize( "Web", "/Website" )
+    gLogger.info( "Loaded DIRAC environment" )
+
