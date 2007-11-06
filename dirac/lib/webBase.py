@@ -31,7 +31,7 @@ def htmlUserInfo():
   if dn:
     htmlData += " (%s)" % dn
   else:
-    htmlData += " (<a href='https://%s%s'>certificate login</a>)" % ( str( request.environ[ 'REMOTE_ADDR' ] ), str( request.environ[ 'REQUEST_URI' ] ) )
+    htmlData += " (<a href='https://%s%s'>certificate login</a>)" % ( str( request.environ[ 'HTTP_HOST' ] ), str( request.environ[ 'REQUEST_URI' ] ) )
   return htmlData
 
 def htmlSetups():
