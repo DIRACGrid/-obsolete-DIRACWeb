@@ -37,13 +37,12 @@ def load_environment(global_conf, app_conf):
     config['dirac.root'] = diracRootPath
     if diracRootPath not in sys.path:
       sys.path.append( diracRootPath )
+    from DIRAC.LoggingSystem.Client.Logger import gLogger
+    gLogger.registerBackends( [ 'stderr' ] )
     from DIRAC.Core.Base import Script
     Script.registerSwitch( "r", "reload", "Reload for pylons" )
     Script.localCfg.addCFGFile( "%s/web.cfg" % root )
     Script.localCfg.addDefaultEntry( "/DIRAC/Security/UseServerCertificate", "yes" )
     Script.parseCommandLine( scriptName = "Website", ignoreErrors = True )
-    from DIRAC.LoggingSystem.Client.Logger import gLogger
     gLogger._systemName = "Framework"
     gLogger.initialize( "Web", "/Website" )
-    gLogger.info( "Loaded DIRAC environment" )
-
