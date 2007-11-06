@@ -32,7 +32,10 @@ class ConfigurationController(BaseController):
     rpcClient = getRPCClient( "Configuration/Server" )
     retVal = rpcClient.getCommitHistory()
     if retVal[ 'OK' ]:
-      c.changes = retVal[ 'Value' ]
+      changesList = [ ( entry[1], entry[0] ) for entry in retVal[ 'Value' ] ]
+      changesList.sort()
+      changesList.reverse()
+      c.changes = changesList
       return render( "/systems/configuration/history.mako" )
     else:
       c.error = retVal[ 'Message' ]
@@ -49,7 +52,7 @@ class ConfigurationController(BaseController):
     retVal = modCfg.loadFromRemote()
     if retVal[ 'OK' ]:
       session[ 'cfgData' ] = str( modCfg )
-      session[ 'csName' ] = modCfg.getValue( "/DIRAC/Configuration/Name" )
+      session[ 'csName' ] = "LHCb Configuration" 
       session.save()
       c.cfgData = modCfg.cfgData
       c.csName = session[ 'csName' ]
