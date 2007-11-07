@@ -21,8 +21,8 @@
 </style>
 
 <script>
-function getRadioValue( radioObj )
-{
+ function getRadioValue( radioObj )
+ {
 	var radioLength = radioObj.length;
 	if( radioLength == null )
 		if( radioObj.checked )
@@ -69,13 +69,73 @@ function getRadioValue( radioObj )
 	 	document.versions.submit();
 	}
  }
+ function getSelectedIndex( radioObj )
+ {
+	var radioLength = radioObj.length;
+	if( radioLength == null )
+		if( radioObj.checked )
+			return 0;
+	for( var i = 0; i< radioLength; i++ )
+	{
+		if( radioObj[i].checked )
+			return i;
+	}
+	return 0;
+ }
+ function checkEnabledDiff()
+ {
+ 	var selectedFrom = getSelectedIndex( document.versions.fromVersion );
+ 	var selectedTo = getSelectedIndex( document.versions.toVersion );
+ 	fromObj = document.versions.fromVersion;
+	for( var i = 0; i< fromObj.length; i++ )
+	{
+		if( i <= selectedTo )
+			fromObj[ i ].style.visibility = "hidden";
+		else
+			fromObj[ i ].style.visibility = "visible";
+	}
+ 	toObj = document.versions.toVersion;
+	for( var i = 0; i< toObj.length; i++ )
+	{
+		if( i >= selectedFrom )
+			toObj[ i ].style.visibility = "hidden";
+		else
+			toObj[ i ].style.visibility = "visible";
+	}
+ }
+ function initRadios()
+ {
+ 	toObj = document.versions.toVersion;
+	for( var i = 0; i< toObj.length; i++ )
+	{
+		if( i == 0 )
+			toObj[ i ].checked = true;
+		else
+			toObj[ i ].checked = false;
+	}
+ 	fromObj = document.versions.fromVersion;
+	for( var i = 0; i< fromObj.length; i++ )
+	{
+		if( i == 1 )
+			fromObj[ i ].checked = true;
+		else
+			fromObj[ i ].checked = false;
+	}
+ 	rollObj = document.versions.rollbackVersion;
+	for( var i = 0; i< rollObj.length; i++ )
+	{
+		rollObj[ i ].checked = false;
+	}
+	checkEnabledDiff();
+ }
+ YAHOO.util.Event.onContentReady( 'versionsForm', initRadios );
 </script>
 
 </%def>
 
 <h2>History of configuration changes</h2>
 
-<form name='versions'>
+<form id='versionsForm' name='versions'>
 <table class='cfgChanges'>
  <tr>
   <th colspan='3'></th><th colspan='2'>Show differences</th>
@@ -89,15 +149,15 @@ function getRadioValue( radioObj )
   <td><input type='radio' name='rollbackVersion' value='${entry[0]}'/></td>
   <td>${entry[0]}</td>
   <td>${entry[1]}</td>
-%if index == 1:
-  <td><input type='radio' name='fromVersion' value='${entry[0]}' checked/></td>
-%else:
-  <td><input type='radio' name='fromVersion' value='${entry[0]}'/></td>
-%endif
 %if index == 0:
-  <td><input type='radio' name='toVersion' value='${entry[0]}' checked/></td>
+  <td><input type='radio' onclick='javascript:checkEnabledDiff()' name='fromVersion' value='${entry[0]}'/></td>
+  <td><input type='radio' onclick='javascript:checkEnabledDiff()' name='toVersion' value='${entry[0]}' checked/></td>
+%elif index == 1:
+  <td><input type='radio' onclick='javascript:checkEnabledDiff()' name='fromVersion' value='${entry[0]}' checked/></td>
+  <td><input type='radio' onclick='javascript:checkEnabledDiff()' name='toVersion' value='${entry[0]}'/></td>
 %else:
-  <td><input type='radio' name='toVersion' value='${entry[0]}'/></td>
+  <td><input type='radio' onclick='javascript:checkEnabledDiff()' name='fromVersion' value='${entry[0]}' /></td>
+  <td><input type='radio' onclick='javascript:checkEnabledDiff()' name='toVersion' value='${entry[0]}'/></td>
 %endif
  </tr>
 %endfor
