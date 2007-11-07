@@ -23,7 +23,7 @@
  div#treeContainer a {
   color : #000;
  }
- div#loading img 
+ div#loading img
  {
   height : 12px;
   width : auto;
@@ -39,7 +39,7 @@ ${cfgTree.head_tags()}
 
 <table class='split'>
  <tr>
-  <td class='pageTree'>  
+  <td class='pageTree'>
    ${cfgTree.treeAnchor()}
   </td>
   <td class='pageOptions'>
@@ -50,7 +50,7 @@ ${cfgTree.head_tags()}
     <li>${h.link_to( "View configuration as text", popup=['new_window', 'height=300,width=600,scrollbars=yes,resizable=yes'] , url = h.url_for( action='showTextConfiguration' ) )}</li>
     <li>${h.link_to( "Download configuration text", url = "%s?download=yes" % h.url_for( action='showTextConfiguration' ) )}</li>
     <li>-</li>
-    <li>${h.link_to( "Show differences with server", popup=['new_window', 'height=300,width=600,scrollbars=yes,resizable=yes'] , url = h.url_for( action='showDiff' ) )}</li>
+    <li>${h.link_to( "Show differences with server", popup=['new_window', 'height=300,width=600,scrollbars=yes,resizable=yes'] , url = h.url_for( action='showCurrentDiff' ) )}</li>
     <li>${h.link_to( "Reset current configuration", confirm = "Are ou sure you want to lose all modifications?", url = h.url_for( action='resetConfigurationToRemote' ) )}</li>
     <li><a href='#' onclick='commitConfiguration()'>Commit configuration to server</a></li>
    </ul>

@@ -20,7 +20,7 @@ function initTreeMagic( treeName, rootNode )
   sectionNodesMap[ rootNode.labelElId ] = rootNode;
   var triggersList = [];
   for(key in sectionNodesMap) triggersList.push( key );
-  sectionContextMenu = new YAHOO.widget.ContextMenu( "sectionContextMenuId", 
+  sectionContextMenu = new YAHOO.widget.ContextMenu( "sectionContextMenuId",
                                                         {
                                                          trigger : triggersList,
                                                          itemdata : [
@@ -35,8 +35,8 @@ function initTreeMagic( treeName, rootNode )
                                                        );
   sectionContextMenu.triggerContextMenuEvent.subscribe( findContextMenuNode, sectionNodesMap );
   sectionContextMenu.render( treeName );
-  optionContextMenu = new YAHOO.widget.ContextMenu( "optionContextMenuId", 
-                                                       { 
+  optionContextMenu = new YAHOO.widget.ContextMenu( "optionContextMenuId",
+                                                       {
                                                         trigger : [],
                                                         itemdata : [
                                                          { text: "Edit value", onclick: { fn: contextEditOption } },
@@ -47,30 +47,30 @@ function initTreeMagic( treeName, rootNode )
                                                         ]
                                                        }
                                                      );
-                                                        
+
   optionContextMenu.triggerContextMenuEvent.subscribe( findContextMenuNode, optionNodesMap );
   optionContextMenu.render( treeName );
-  
-  commentDialog = new YAHOO.widget.Dialog( "commentDialog", 
+
+  commentDialog = new YAHOO.widget.Dialog( "commentDialog",
 			{ width : "600px",
 			  fixedcenter : true,
-			  visible : false, 
+			  visible : false,
 			  constraintoviewport : true,
-			  buttons : [ 
+			  buttons : [
 			   { text:"Submit", handler:dialogCommentSubmit, isDefault:true },
-		     { text:"Cancel", handler:function(){ this.cancel();} } 
+		     { text:"Cancel", handler:function(){ this.cancel();} }
 		    ]
 			 } );
   commentDialog.render();
-  
-  optionValueDialog = new YAHOO.widget.Dialog( "valueDialog", 
+
+  optionValueDialog = new YAHOO.widget.Dialog( "valueDialog",
 			{ width : "600px",
 			  fixedcenter : true,
-			  visible : false, 
+			  visible : false,
 			  constraintoviewport : true,
-			  buttons : [ 
+			  buttons : [
 			   { text:"Submit", handler:dialogOptionValueSubmit, isDefault:true },
-		     { text:"Cancel", handler:function(){ this.cancel();} } 
+		     { text:"Cancel", handler:function(){ this.cancel();} }
 		    ]
 			 } );
   optionValueDialog.render();
@@ -101,11 +101,11 @@ function findContextMenuNode( p_oEvent, func, nodesMap ) {
 function updateContextMenuTriggers()
 {
   var triggersList = [];;
-  for(key in sectionNodesMap) 
+  for(key in sectionNodesMap)
    triggersList.push( key );
   sectionContextMenu.cfg.setProperty( 'trigger', triggersList );
   triggersList = [];
-  for(key in optionNodesMap) 
+  for(key in optionNodesMap)
     triggersList.push( key );
   optionContextMenu.cfg.setProperty( 'trigger', triggersList );
 }
@@ -122,7 +122,7 @@ function generateLabelForCSObject( csPath, csObject )
   else
   {
     //option
-    nodeLabel = "<span id='odd-" + csPath + "' class='optionNode'>" + csObject[0] + " = " + csObject[1] + "</span>"; 
+    nodeLabel = "<span id='odd-" + csPath + "' class='optionNode'>" + csObject[0] + " = " + csObject[1] + "</span>";
   }
   return nodeLabel
 }
@@ -131,7 +131,7 @@ function getProcessedComment( csObject )
 {
   var comment;
   if( csObject.length == 2 )
-  {  
+  {
     comment = csObject[1];
   }
   else
@@ -173,21 +173,21 @@ function generateCommentTooltip( csPath, csObject )
     commentHTML = "<div style='text-align:left'>" + commentData[0].join( "<br/>" ) + "</div>";
     if( commentData[1].length > 0 )
       commentHTML += "<br/><span style='font-weight:bold;font-size:smaller;'>"+commentData[1]+"</span>";
-   
+
     if( spanId in commentsMap )
     {
       commentsMap[ spanId ].cfg.setProperty( "text", commentHTML );
     }
-    else 
+    else
       commentsMap[ spanId ] = new YAHOO.widget.Tooltip( "tooltip" + csPath, { context: spanId, text: commentHTML } );
   }
-   
+
 }
 
 function createTreeNode( parentNode, csObject )
 {
   var nodeLabel;
-  var csPath = parentNode.data.id[0] + "/" + csObject[0];  
+  var csPath = parentNode.data.id[0] + "/" + csObject[0];
   var nodeLabel = generateLabelForCSObject( csPath, csObject );
   var nodeDef = {
     label : nodeLabel,
@@ -262,7 +262,7 @@ function loadNodeData( rootNode, fnLoadComplete )
     updateContextMenuTriggers();
     oResponse.argument.fnLoadComplete();
     },
-    
+
     failure: function(oResponse) {
       YAHOO.log("Failed to process XHR transaction.", "info", "example");
       oResponse.argument.fnLoadComplete();
@@ -273,9 +273,9 @@ function loadNodeData( rootNode, fnLoadComplete )
     },
     timeout: 7000
   };
-  
-  
-  YAHOO.util.Connect.asyncRequest('GET', sURL, callback); 
+
+
+  YAHOO.util.Connect.asyncRequest('GET', sURL, callback);
 }
 
 /*Add subsection*/
@@ -283,10 +283,10 @@ function contextAddSubsection()
 {
   var subSectionName = window.prompt("Enter a name for the new section: ", "");
   if( subSectionName == null ) return;
-  sendQuery( "createSection", { 
-          'path' : selectedTextNode.data.id[0], 
-          'sectionName' : subSectionName 
-          }, 
+  sendQuery( "createSection", {
+          'path' : selectedTextNode.data.id[0],
+          'sectionName' : subSectionName
+          },
           serverCreateSection, [ selectedTextNode, subSectionName ] );
 }
 
@@ -303,7 +303,7 @@ function serverCreateSection( respObj )
     else
     {
       var sectionNode = createTreeNode( parentNode, retDict[ 'Value' ] );
-      parentNode.refresh(); 
+      parentNode.refresh();
       setDDForBranch( parentNode );
       parentNode.collapse();
       parentNode.expand();
@@ -322,11 +322,11 @@ function contextAddOption()
   if( optionName == null ) return;
   var optionValue = window.prompt( "What's the value of option " + optionName + "? ", "" );
   if( optionValue == null ) return;
-  sendQuery( "createOption", { 
-          'path' : selectedTextNode.data.id[0], 
+  sendQuery( "createOption", {
+          'path' : selectedTextNode.data.id[0],
           'optionName' : optionName,
-          'optionValue' : optionValue 
-          }, 
+          'optionValue' : optionValue
+          },
           serverCreateOption, [ selectedTextNode ] );
 }
 
@@ -357,11 +357,11 @@ function contextRenameNode()
 {
   var newName = window.prompt("Enter a new name for " + selectedTextNode.data.id[1][0] + ": ", "");
   if( newName == null ) return;
-  sendQuery( "renameKey", { 
-          'path' : selectedTextNode.data.id[0], 
+  sendQuery( "renameKey", {
+          'path' : selectedTextNode.data.id[0],
           'newName' : newName
-          }, 
-          serverRenameNode, [ selectedTextNode, newName ] );  
+          },
+          serverRenameNode, [ selectedTextNode, newName ] );
 }
 
 function setParentPathRecursive( csParentPath, node )
@@ -396,10 +396,10 @@ function contextDeleteNode()
   answer = window.confirm( "Are you sure you want to delete " + selectedTextNode.data.id[1][0] + "?" );
   if( answer )
   {
-    sendQuery( "deleteKey", { 
-          'path' : selectedTextNode.data.id[0], 
-          }, 
-          serverKeyDelete, [ selectedTextNode ] );    
+    sendQuery( "deleteKey", {
+          'path' : selectedTextNode.data.id[0],
+          },
+          serverKeyDelete, [ selectedTextNode ] );
   }
 }
 
@@ -424,11 +424,11 @@ function copyNode()
 {
   var nodeName = window.prompt( "What's the name for the copy?", selectedTextNode.data.id[1][0] + " copy" );
   if( nodeName == null ) return;
-  sendQuery( "copyKey", { 
-          'path' : selectedTextNode.data.id[0], 
+  sendQuery( "copyKey", {
+          'path' : selectedTextNode.data.id[0],
           'newName' : nodeName
-          }, 
-          serverCopyNode, [ selectedTextNode ] );  
+          },
+          serverCopyNode, [ selectedTextNode ] );
 }
 
 function serverCopyNode( respObj )
@@ -438,7 +438,7 @@ function serverCopyNode( respObj )
   {
     var parentNode = respObj.argument[0].parent;
     var node = createTreeNode( parentNode, retDict[ 'Value' ] );
-    parentNode.refresh(); 
+    parentNode.refresh();
     setDDForBranch( parentNode );
   }
   else
@@ -447,13 +447,13 @@ function serverCopyNode( respObj )
 
 /*Modify option value*/
 function contextEditOption()
-{  
+{
   optionValueDialog.hide();
   optionValueDialog.setHeader( "Enter value for " + selectedTextNode.data.id[0].slice(1) )
   optionValueDialog.form.textValue.value = selectedTextNode.data.id[1][1].split( "," ).join( "\n" );
   optionValueDialog.cfg[ 'node' ] = selectedTextNode;
   optionValueDialog.show();
-  
+
 }
 
 function dialogOptionValueSubmit()
@@ -466,13 +466,13 @@ function dialogOptionValueSubmit()
     if( valueList[ i ].length > 0 )
       value += valueList[ i ] + ",";
   value = value.slice( 0, value.length - 1 );
-  
-  sendQuery( "setOptionValue", 
-      { 
-        'path' : optionValueDialog.cfg[ 'node' ].data.id[0], 
-        'value' : value 
-      }, 
-      serverSetOptionValue, 
+
+  sendQuery( "setOptionValue",
+      {
+        'path' : optionValueDialog.cfg[ 'node' ].data.id[0],
+        'value' : value
+      },
+      serverSetOptionValue,
       [ optionValueDialog.cfg[ 'node' ], value ]
     );
 }
@@ -537,11 +537,11 @@ function dialogCommentSubmit()
 {
   var commentValue = commentDialog.getData().textValue;
   commentDialog.cancel();
-  sendQuery( "setComment", { 
-          'path' : commentDialog.cfg[ 'node' ].data.id[0], 
+  sendQuery( "setComment", {
+          'path' : commentDialog.cfg[ 'node' ].data.id[0],
           'value' : commentValue
-          }, 
-          serverSetComment, [ commentDialog.cfg[ 'node' ] ] );  
+          },
+          serverSetComment, [ commentDialog.cfg[ 'node' ] ] );
 }
 
 function serverSetComment( respObj )
@@ -624,8 +624,8 @@ YAHOO.extend(DDCfgEntry, YAHOO.util.DDProxy, {
     TYPE: "DDCfgEntry",
 
     initSection: function(id, sGroup, config) {
-        if (!id) { 
-            return; 
+        if (!id) {
+            return;
         }
 
         //var el = this.getDragEl()
@@ -644,7 +644,7 @@ YAHOO.extend(DDCfgEntry, YAHOO.util.DDProxy, {
         //YAHOO.log(id + " startpos: " + this.startPos, "info", "example");
     },
 
-    pushStyle: function( idHtml, propName, value ) 
+    pushStyle: function( idHtml, propName, value )
     {
       if( this.originalStyles[ idHtml ] == null ) this.originalStyles[ idHtml ] = {};
       this.originalStyles[ idHtml ][ propName ] = YAHOO.util.Dom.getStyle( idHtml, propName );
@@ -656,7 +656,7 @@ YAHOO.extend(DDCfgEntry, YAHOO.util.DDProxy, {
       if( this.originalStyles[ idHtml ] == null ) return;
       if( this.originalStyles[ idHtml ][ propName ] == null ) return;
 
-      YAHOO.util.Dom.setStyle( idHtml, propName, this.originalStyles[ idHtml ][ propName ] ); 
+      YAHOO.util.Dom.setStyle( idHtml, propName, this.originalStyles[ idHtml ][ propName ] );
       delete this.originalStyles[ idHtml ][ propName ];
     },
 
@@ -671,7 +671,7 @@ YAHOO.extend(DDCfgEntry, YAHOO.util.DDProxy, {
     popAllElementStyles: function( idHtml )
     {
       for( var propName in this.originalStyles[ idHtml ] )
-      {    
+      {
         YAHOO.util.Dom.setStyle( idHtml, propName, this.originalStyles[ idHtml ][ propName ] );
         delete this.originalStyles[ idHtml ][ propName ];
       }
@@ -680,7 +680,7 @@ YAHOO.extend(DDCfgEntry, YAHOO.util.DDProxy, {
     startDrag: function(x, y) {
       var dragEl = this.getDragEl();
       var realEl = this.getEl();
-      
+
       dragEl.innerHTML = realEl.innerHTML;
       dragEl.className = realEl.className;
 
@@ -701,7 +701,7 @@ YAHOO.extend(DDCfgEntry, YAHOO.util.DDProxy, {
         var pathLevel = pathList[ pathId ];
         var siblingsList = targetNode.children;
         for( var siblingId = 0; siblingId < siblingsList.length; siblingId++ )
-        { 
+        {
           var childNode = siblingsList[ siblingId ];
           if( pathLevel == childNode.data.id[1][0] )
           {
@@ -731,24 +731,26 @@ YAHOO.extend(DDCfgEntry, YAHOO.util.DDProxy, {
       parentDragNode.refresh();
       setDDForBranch( parentDragNode );
     },
-    
+
     insertNodeAfter: function( dropNode )
     {
       YAHOO.log( "Moving " + this.id + " below " + dropNode.data.id[0] );
       var parentDropNode = dropNode.parent;
-      var newNode = createTreeNode( parentNode, this.config[ 'node' ].data.id[1] );
-      csTree.removeNode( newNode );
-      newNode.insertAfter( dropNode );
+      //var newNode = createTreeNode( parentNode, this.config[ 'node' ].data.id[1] );
+      //newNode.insertAfter( dropNode );
+      this.config[ 'node' ].insertAfter( dropNode );
       parentDropNode.refresh();
       setDDForBranch( parentDropNode );
     },
-    
+
     insertNodeInside: function( dropNode )
     {
       YAHOO.log( "Moving " + this.id + " inside " + dropNode.data.id[0] )
       var newNode = createTreeNode( dropNode, this.config[ 'node' ].data.id[1] );
       dropNode.refresh();
       setDDForBranch( dropNode );
+      dropNode.collapse();
+      dropNode.expand();
     },
 
     onDragDrop: function(e, id) {
@@ -763,19 +765,19 @@ YAHOO.extend(DDCfgEntry, YAHOO.util.DDProxy, {
         //Drop below this node
       if( id.charAt( 0 ) == "s" && ! this.dragBelowTarget( id ) )
       {
-        sendQuery( "moveKeyInside", { 
-                      'entry' : this.config[ 'node' ].data.id[0], 
+        sendQuery( "moveKeyInside", {
+                      'entry' : this.config[ 'node' ].data.id[0],
                       'destination' : dropNode.data.id[0],
-                      }, 
+                      },
                       this.serverMoveOK, [ this, 'inside', dropNode ] );
       }
       else
       {
-        sendQuery( "moveKeyAfter", { 
-                      'entry' : this.config[ 'node' ].data.id[0], 
+        sendQuery( "moveKeyAfter", {
+                      'entry' : this.config[ 'node' ].data.id[0],
                       'destination' : dropNode.data.id[0],
-                      'mode' : 'after' 
-                      }, 
+                      'mode' : 'after'
+                      },
                       this.serverMoveOK, [ this, 'after', dropNode ] );
       }
       this.popAllStyles();
@@ -784,23 +786,28 @@ YAHOO.extend(DDCfgEntry, YAHOO.util.DDProxy, {
     serverMoveOK : function( respObj )
     {
       var retDict = eval("(" + respObj.responseText + ")");
-      var dd = respObj.argument[0]
-      var mode = respObj.argument[1];
-      var dropNode = respObj.argument[2];
-      dd.deleteThisNodeFromTree()
-      if( mode == 'after' )
-        dd.insertNodeAfter( dropNode );
-      else
+      if( retDict[ 'OK' ] )
       {
-        if( dropNode.isDynamic() && ! dropNode.dynamicLoadComplete )
-        {
-          //New section will come from server when expanding
-          dropNode.expand()
-        }
-        else
-          dd.insertNodeInside( dropNode );
-      }
-      updateContextMenuTriggers();
+	      var dd = respObj.argument[0]
+	      var mode = respObj.argument[1];
+	      var dropNode = respObj.argument[2];
+	      if( mode == 'after' )
+	        dd.insertNodeAfter( dropNode );
+	      else
+	      {
+    		dd.deleteThisNodeFromTree()
+	        if( dropNode.isDynamic() && ! dropNode.dynamicLoadComplete )
+	        {
+	          //New section will come from server when expanding
+	          dropNode.expand()
+	        }
+	        else
+	          dd.insertNodeInside( dropNode );
+	      }
+	      updateContextMenuTriggers();
+	  }
+	  else
+    	alert( "There was a problem creating option : " + retDict[ 'Message' ] )
     },
 
     onDragEnter: function(e, id) {
@@ -819,24 +826,24 @@ YAHOO.extend(DDCfgEntry, YAHOO.util.DDProxy, {
     {
       var elem = YAHOO.util.Dom.get( id );
       if( elem.style.pixelHeight )
-        return elem.style.pixelHeight; 
+        return elem.style.pixelHeight;
       if( elem.offsetHeight )
         return elem.offsetHeight;
       return YAHOO.util.Dom.getStyle( id, "height" )
     },
 
-    dragBelowTarget: function( id ) 
+    dragBelowTarget: function( id )
     {
       var yDragPos = YAHOO.util.Dom.getY( this.getDragEl() );
       var yTargetPos = YAHOO.util.Dom.getY( id );
-      var yOffset = yTargetPos - yDragPos;  
+      var yOffset = yTargetPos - yDragPos;
       //var yHeight = this.getElementHeight( id );
       //var pPos = ( yOffset * 100 / yHeight );
       //YAHOO.log("pPos " + yOffset);
       return yOffset < 0;
     },
 
-    onDragOver: function(e, id) 
+    onDragOver: function(e, id)
     {
       if( id.charAt( 0 ) == "s" && ! this.dragBelowTarget( id ) )
         YAHOO.util.Dom.setStyle( id, "border-width", "1px" );
@@ -844,7 +851,7 @@ YAHOO.extend(DDCfgEntry, YAHOO.util.DDProxy, {
         YAHOO.util.Dom.setStyle( id, "border-width", "0px 0px 1px 0px" );
     },
 
-    onDragOut: function(e, id) 
+    onDragOut: function(e, id)
     {
       this.popAllElementStyles( id );
       this.popStyle( this.getDragEl().id, "opacity" );
@@ -852,14 +859,14 @@ YAHOO.extend(DDCfgEntry, YAHOO.util.DDProxy, {
 
 });
 
-})(); 
+})();
 
 
 function commitConfiguration()
 {
   if( window.confirm( "Are you sure you want to commit the configuration?" ) )
   {
-    sendQuery( "commitConfiguration", {}, serverCommitConfiguration, [] );  
+    sendQuery( "commitConfiguration", {}, serverCommitConfiguration, [] );
   }
 }
 

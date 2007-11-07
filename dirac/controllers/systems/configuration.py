@@ -52,7 +52,7 @@ class ConfigurationController(BaseController):
     retVal = modCfg.loadFromRemote()
     if retVal[ 'OK' ]:
       session[ 'cfgData' ] = str( modCfg )
-      session[ 'csName' ] = "LHCb Configuration" 
+      session[ 'csName' ] = "LHCb Configuration"
       session.save()
       c.cfgData = modCfg.cfgData
       c.csName = session[ 'csName' ]
@@ -76,10 +76,16 @@ class ConfigurationController(BaseController):
         c.error = "Can't get configuration from server<br/>%s" % retVal[ 'Message' ]
         return render( "/error.mako" )
     else:
-      gLogger.info( "Recovering configuration" )
-      c.cfgData = CFG()
-      c.cfgData.loadFromBuffer( session[ 'cfgData' ] )
-      c.csName = session[ 'csName' ]
+      try:
+        gLogger.info( "Recovering configuration" )
+        c.cfgData = CFG()
+        c.cfgData.loadFromBuffer( session[ 'cfgData' ] )
+        c.csName = session[ 'csName' ]
+      except Exception, e:
+        c.error = "There was an error with your modifications. %s" % str(e)
+        c.link = ( 'resetConfigurationToRemote', "Click here to reset your configuration" )
+        gLogger.error( "There was an error with modified configuration %s" % str( e ) )
+        return render( "/error.mako" )
     return render( "/systems/configuration/manageRemote.mako" )
 
   def uploadUserConfig( self ):
@@ -123,9 +129,21 @@ class ConfigurationController(BaseController):
   def showDiff( self ):
     if not authorizeAction():
       return S_ERROR( "You are not authorized to get diff's!! Bad boy!" )
+    fromDate = str( request.POST[ 'fromVersion' ] )
+    toDate = str( request.POST[ 'toVersion' ] )
+    modifier = self.__getModificator()
+    diffGen = modifier.getVersionDiff( fromDate, toDate )
+    c.titles = ( "From version %s" % fromDate, "To version %s" % toDate )
+    c.diffList = self.__generateHTMLDiff( diffGen )
+    return render( "/systems/configuration/diff.mako" )
+
+  def showCurrentDiff( self ):
+    if not authorizeAction():
+      return S_ERROR( "You are not authorized to get diff's!! Bad boy!" )
     modifier = self.__getModificator()
     modifier.loadFromBuffer( session[ 'cfgData' ] )
-    diffGen = modifier.showDiff()
+    diffGen = modifier.showCurrentDiff()
+    c.titles = ( "Server's version", "User's current version" )
     c.diffList = self.__generateHTMLDiff( diffGen )
     return render( "/systems/configuration/diff.mako" )
 
@@ -152,6 +170,18 @@ class ConfigurationController(BaseController):
       else:
         diffList.append( ( "", diffLine[1:], diffLine[1:] ) )
     return diffList
+
+  def rollbackToVersion( self ):
+    if not authorizeAction():
+      return S_ERROR( "You are not authorized to get diff's!! Bad boy!" )
+    rollbackVersion = str( request.POST[ 'rollbackVersion' ] )
+    modifier = self.__getModificator()
+    retVal = modifier.rollbackToVersion( rollbackVersion )
+    if retVal[ 'OK' ]:
+      redirect_to( 'showHistory' )
+    else:
+      c.error = retVal[ 'Message' ]
+      return render( "/error.mako" )
 
   #AJAX CALLS
   @jsonify
@@ -231,6 +261,8 @@ class ConfigurationController(BaseController):
       return S_ERROR( "Destination is not a section" )
     if not destDict:
       return S_ERROR( "Destination does not exist" )
+    if destDict['value'].existsKey( originDict['key'] ):
+      return S_ERROR( "Another entry with the same name already exists" )
     try:
       originParentDict[ 'value' ].deleteKey( originDict[ 'key' ] )
       destDict[ 'value' ].addKey( **originDict )
@@ -256,7 +288,11 @@ class ConfigurationController(BaseController):
     if not destDict:
       return S_ERROR( "Destination does not exist" )
     destParentDict = cfgData.getRecursive( destPath, -1 )
-
+    originParentPath = "/".join( originPath.split( "/" )[:-1] )
+    destParentPath = "/".join( destPath.split( "/" )[:-1] )
+    if originParentPath != destParentPath and \
+        destParentDict['value'].existsKey( originDict['key'] ):
+      return S_ERROR( "Another entry with the same name already exists" )
     try:
       originParentDict[ 'value' ].deleteKey( originDict[ 'key' ] )
       destParentDict[ 'value' ].addKey( beforeKey = destDict[ 'key' ], **originDict )

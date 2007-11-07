@@ -34,7 +34,7 @@
  <body>
   <table>
    <tr>
-    <th>Server's version</th><th>User's current version</th>
+    <th>${c.titles[0]}</th><th>${c.titles[1]}</th>
    </tr>
 %for line in c.diffList:
 	<tr class='${line[0]}'>
