@@ -18,7 +18,7 @@
  ul.pageOptions {
   padding : 10px;
   border : 1px solid #AAA;
-  background-color : #FFD;
+  background-color : #EEE;
  }
  div#treeContainer a {
   color : #000;
@@ -44,7 +44,7 @@ ${cfgTree.head_tags()}
   </td>
   <td class='pageOptions'>
    <div id='loading'>
-    ${ h.image_tag( "loading.gif", alt="loading" ) } Loading...
+    ${ h.image_tag( "loading.gif", alt="loading" ) } Processing...
    </div>
    <ul class='pageOptions'>
     <li>${h.link_to( "View configuration as text", popup=['new_window', 'height=300,width=600,scrollbars=yes,resizable=yes'] , url = h.url_for( action='showTextConfiguration' ) )}</li>

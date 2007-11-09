@@ -3,9 +3,22 @@
 
 <%def name="head_tags()">
 <style>
- table.cfgChanges {
+ table.pageSchema {
   margin-left : auto;
   margin-right : auto;
+ }
+ table.pageSchema td.commands {
+  vertical-align : top;
+  padding : 0% 5% 0% 5%;
+ }
+ div.commands {
+  border : 1px solid #AAA;
+  background : #EEE;
+  text-align : right;
+  padding : 5%;
+ }
+ table.cfgChanges {
+  border : 1px solid #AAA;
  }
  table.cfgChanges th {
   font-weight : bold;
@@ -136,32 +149,46 @@
 <h2>History of configuration changes</h2>
 
 <form id='versionsForm' name='versions'>
-<table class='cfgChanges'>
- <tr>
-  <th colspan='3'></th><th colspan='2'>Show differences</th>
- </tr>
- <tr>
-  <th>Select</th><th>Version</th><th>Commiter</th><th>From</th><th>To</th>
- </tr>
+ <table class='pageSchema'>
+  <tr>
+   <td>
+    <table class='cfgChanges'>
+     <tr>
+      <th colspan='3'></th><th colspan='2'>Show differences</th>
+     </tr>
+     <tr>
+      <th>Select</th><th>Version</th><th>Commiter</th><th>From</th><th>To</th>
+     </tr>
 %for index in range( len( c.changes ) ) :
 <% entry = c.changes[ index ] %>
- <tr>
-  <td><input type='radio' name='rollbackVersion' value='${entry[0]}'/></td>
-  <td>${entry[0]}</td>
-  <td>${entry[1]}</td>
+     <tr>
 %if index == 0:
-  <td><input type='radio' onclick='javascript:checkEnabledDiff()' name='fromVersion' value='${entry[0]}'/></td>
-  <td><input type='radio' onclick='javascript:checkEnabledDiff()' name='toVersion' value='${entry[0]}' checked/></td>
-%elif index == 1:
-  <td><input type='radio' onclick='javascript:checkEnabledDiff()' name='fromVersion' value='${entry[0]}' checked/></td>
-  <td><input type='radio' onclick='javascript:checkEnabledDiff()' name='toVersion' value='${entry[0]}'/></td>
+      <td></td>
 %else:
-  <td><input type='radio' onclick='javascript:checkEnabledDiff()' name='fromVersion' value='${entry[0]}' /></td>
-  <td><input type='radio' onclick='javascript:checkEnabledDiff()' name='toVersion' value='${entry[0]}'/></td>
+      <td><input type='radio' name='rollbackVersion' value='${entry[0]}'/></td>
 %endif
- </tr>
+      <td>${entry[0]}</td>
+      <td>${entry[1]}</td>
+%if index == 0:
+      <td><input type='radio' onclick='javascript:checkEnabledDiff()' name='fromVersion' value='${entry[0]}'/></td>
+      <td><input type='radio' onclick='javascript:checkEnabledDiff()' name='toVersion' value='${entry[0]}' checked/></td>
+%elif index == 1:
+      <td><input type='radio' onclick='javascript:checkEnabledDiff()' name='fromVersion' value='${entry[0]}' checked/></td>
+      <td><input type='radio' onclick='javascript:checkEnabledDiff()' name='toVersion' value='${entry[0]}'/></td>
+%else:
+      <td><input type='radio' onclick='javascript:checkEnabledDiff()' name='fromVersion' value='${entry[0]}' /></td>
+      <td><input type='radio' onclick='javascript:checkEnabledDiff()' name='toVersion' value='${entry[0]}'/></td>
+%endif
+     </tr>
 %endfor
-</table>
-<input type='submit' value='Rollback configuration' onclick='javascript:checkRollback()'/>
-<input type='submit' value='Show differences' onclick='javascript:checkDiff()'/>
+    </table>
+   </td>
+   <td class='commands'>
+    <div class='commands'>
+     <input type='submit' value='Show differences' onclick='javascript:checkDiff()'/>
+     <input type='submit' value='Rollback configuration' onclick='javascript:checkRollback()'/>
+    </div>
+   </td>
+  </tr>
+ </table>
 </form>

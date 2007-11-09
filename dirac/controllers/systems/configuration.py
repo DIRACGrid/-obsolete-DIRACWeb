@@ -188,9 +188,11 @@ class ConfigurationController(BaseController):
   def commitConfiguration( self ):
     if not authorizeAction():
       return S_ERROR( "You are not authorized to commit configurations!! Bad boy!" )
+    gLogger.always( "User %s is commiting a new configuration version" % sessionManager.getUserDN() )
     modifier = self.__getModificator()
     modifier.loadFromBuffer( session[ 'cfgData' ] )
-    return modifier.commit()
+    retDict = modifier.commit()
+    return retDict
 
 
   @jsonify

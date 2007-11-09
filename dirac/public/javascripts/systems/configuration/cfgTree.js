@@ -575,7 +575,7 @@ function sendQuery( action, params, successCallback, callbackArgs )
   {
     success : successRemoteQuery,
     failure : failedRemoteQuery,
-    timeout : 5000,
+    timeout : 60000,
     argument : [ successCallback, callbackArgs ]
   }
   showLoading();
@@ -586,7 +586,8 @@ function sendQuery( action, params, successCallback, callbackArgs )
 function failedRemoteQuery( respObj )
 {
   hideLoading();
-  alert( "Failed " + respObj.argument[ 'action' ] );
+
+  alert( "Failed remote query: " + respObj.statusText );
 }
 
 /* AJAX SUCEEDED REMOTE QUERY */
