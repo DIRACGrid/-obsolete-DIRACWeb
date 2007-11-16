@@ -13,5 +13,5 @@ class MonitoringController(BaseController):
     return 'Hello World'
 
 
-  def showByCategory(self):
-    return render( "/systems/monitoring/byCategory.mako" )
+  def viewMaker(self):
+    return render( "/systems/monitoring/viewMaker.mako" )
