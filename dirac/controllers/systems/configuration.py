@@ -8,7 +8,7 @@ from dirac.lib.credentials import authorizeAction
 from dirac.lib.diset import getRPCClient
 import dirac.lib.sessionManager as sessionManager
 from DIRAC.ConfigurationSystem.private.Modificator import Modificator
-from DIRAC.ConfigurationSystem.private.CFG import CFG
+from DIRAC.ConfigurationSystem.Client.CFG import CFG
 from DIRAC.ConfigurationSystem.Client.Config import gConfig
 import DIRAC.Core.Utilities.List as List
 from DIRAC import S_OK, S_ERROR
