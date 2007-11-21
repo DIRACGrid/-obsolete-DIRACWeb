@@ -206,7 +206,7 @@ class ConfigurationController(BaseController):
       for section in [ section for section in sectionPath.split( "/" ) if not section.strip() == "" ]:
         sectionCfg = sectionCfg[ section ]
     except Exception, v:
-      gLogger.error( "Section %s does not exist", "%s" % ( sectionPath, str(v) ) )
+      gLogger.error( "Section does not exist", "%s -> %s" % ( sectionPath, str(v) ) )
       return S_ERROR( "Section %s does not exist: %s" % ( sectionPath, str(v) ) )
     gLogger.verbose( "Section to expand %s" % sectionPath )
     retData = []
