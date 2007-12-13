@@ -58,7 +58,7 @@
  		alert( "Both versions are the same!" );
  		return false;
  	}
- 	windowOpts = "['new_window', 'height=300,width=600,scrollbars=yes,resizable=yes']";
+ 	windowOpts = "['new_window', 'scrollbars=1,resizable=1,height=300,width=600']";
  	window.open( "", "Version differences", windowOpts );
  	document.versions.target="Version differences";
  	document.versions.method="post";
@@ -146,7 +146,7 @@
 
 </%def>
 
-<h2>History of configuration changes</h2>
+<h2>History of last 100 configuration changes</h2>
 
 <form id='versionsForm' name='versions'>
  <table class='pageSchema'>
@@ -159,7 +159,7 @@
      <tr>
       <th>Select</th><th>Version</th><th>Commiter</th><th>From</th><th>To</th>
      </tr>
-%for index in range( len( c.changes ) ) :
+%for index in range( len( c.changes ) )[:100] :
 <% entry = c.changes[ index ] %>
      <tr>
 %if index == 0:
