@@ -37,14 +37,14 @@ class WebConfig:
     if not setupsList[ 'OK' ]:
       return []
     return setupsList[ 'Value' ]
-    
+
   def getSchemaSections( self, path ):
     retDict = gConfig.getSections( "%s/Schema/%s" % ( self.webSection, path ), listOrdered = True )
     if retDict[ 'OK' ]:
       return retDict[ 'Value' ]
     else:
       return []
-    
+
   def getSchemaPages( self, path ):
     retDict = gConfig.getOptions( "%s/Schema/%s" % ( self.webSection, path ), listOrdered = True )
     if retDict[ 'OK' ]:
@@ -55,19 +55,18 @@ class WebConfig:
   def getSchemaPageData( self, path ):
     return gConfig.getValue( "%s/Schema/%s" % ( self.webSection, path ), [] )
 
-  def getPageTitle( self, controllerPath ):
-    pathList = [ entry for entry in controllerPath.split("/") if not entry.strip() == "" ]
-    area = pathList[0]
-    root = ""
-    for dir in pathList:
-      for page in self.getSchemaPages( "%s/%s" % ( root, dir ) ):
-        valList = self.getSchemaPageData( "%s/%s/%s" % ( root, dir,  page ) )
-        if len( valList ) > 1:
-          if ( "/%s/%s" % ( area, valList[0] ) ).replace( "//", "/" ) == controllerPath:
-            return valList[1]
-      root += "/%s" % dir
-    return controllerPath.replace( "/", " " ).capitalize()
-    
+  def getPageTitle( self, controllerPath, section = "" ):
+    normControllerPath = "/".join( [ dir for dir in controllerPath.split("/") if not dir.strip() == "" ][1:] )
+    for page in self.getSchemaPages( section ):
+      pageData = self.getSchemaPageData( "%s/%s" % ( section, page ) )
+      if pageData[0] == normControllerPath:
+        return pageData[1]
+    for subSection in self.getSchemaSections( section ):
+      foundPage = self.getPageTitle( controllerPath, "%s/%s" % ( section, subSection ) )
+      if foundPage != "":
+        return foundPage
+    return ""
+
   def getSchemaPathFromURL( self, controllerPath, section = "" ):
     normControllerPath = "/".join( [ dir for dir in controllerPath.split("/") if not dir.strip() == "" ][1:] )
     for page in self.getSchemaPages( section ):
@@ -79,5 +78,5 @@ class WebConfig:
       if foundPage != "":
         return "%s/%s" % ( subSection, foundPage )
     return ""
-    
+
 gWebConfig = WebConfig()

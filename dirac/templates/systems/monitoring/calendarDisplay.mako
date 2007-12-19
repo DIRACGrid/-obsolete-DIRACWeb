@@ -1,5 +1,4 @@
 # -*- coding: utf-8 -*-
-<%inherit file="/base.mako" />
 
 <%def name="head_tags()">
 ${ h.stylesheet_link_tag( "/yui/calendar/assets/skins/sam/calendar.css" ) }
@@ -8,7 +7,7 @@ ${ h.javascript_include_tag( "/yui/calendar/calendar-min.js" ) }
   var acCalendar;
   var acSelectedEdit;
   function initCalendars() {
-    acCalendar = new YAHOO.widget.Calendar( "calHTMLID","calDisplay", { close : true , title : "Select date" } ); 
+    acCalendar = new YAHOO.widget.Calendar( "calHTMLID","calDisplay", { close : true , title : "Select date" } );
     acCalendar.render();
     acCalendar.hide();
   }
@@ -30,7 +29,7 @@ ${ h.javascript_include_tag( "/yui/calendar/calendar-min.js" ) }
   YAHOO.util.Event.onContentReady( 'dateSelection', initCalendars );
 </script>
 <style>
-#calDisplay { display:none; position:absolute; left:10px; top:300px; z-index:1 } 
+#calDisplay { display:none; position:absolute; left:10px; top:300px; z-index:1 }
 table#dateSelection { border : 0px; margin: auto;}
 table#dateSelection td{ text-align : center; padding : 5px 5px 5px 	px;}
 </style>
@@ -39,12 +38,14 @@ table#dateSelection td{ text-align : center; padding : 5px 5px 5px 	px;}
 <%def name="calendarAnchor()">
   <table id='dateSelection'>
    <tr>
-    <td><a href='#' onclick='javascript:showCalendar("fromDate")'>From</a></td>
-    <td><input type='text' name='fromDate' id='fromDate'/></td>
+    <td>From</td>
+    <td><input type='text' name='fromDate' id='fromDate' size='10'/></td>
+    <td><a href='#' onclick='javascript:showCalendar("fromDate")'>${h.image_tag( 'cal.png', alt='calendar' )}</a></td>
    </tr>
    <tr>
-    <td><a href='#' onclick='javascript:showCalendar("toDate")'>To</a></td>
-    <td><input type='text' name='toDate' id='toDate'/></td>
+    <td>To</td>
+    <td><input type='text' name='toDate' id='toDate' size='10'/></td>
+    <td><a href='#' onclick='javascript:showCalendar("toDate")'>${h.image_tag( 'cal.png', alt='calendar' )}</a></td>
    </tr>
   </table>
   <div id='calDisplay'></div>

@@ -46,3 +46,9 @@ def load_environment(global_conf, app_conf):
     Script.parseCommandLine( scriptName = "Website", ignoreErrors = True )
     gLogger._systemName = "Framework"
     gLogger.initialize( "Web", "/Website" )
+
+    from DIRAC import gMonitor, gConfig
+    gMonitor.setComponentType( gMonitor.COMPONENT_WEB )
+    gMonitor.initialize()
+    gMonitor.registerActivity( "pagesServed", "Pages served", "Framework", "pages", gMonitor.OP_SUM )
+

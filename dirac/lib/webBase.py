@@ -3,15 +3,20 @@ import dirac.lib.yuiWidgets as yuiWidgets
 from dirac.lib.webconfig import gWebConfig
 import dirac.lib.helpers as helpers
 from pylons import request
+from DIRAC import gMonitor
 
 def currentPath():
   path = request.environ[ 'PATH_INFO' ]
   scriptName = request.environ[ 'SCRIPT_NAME' ]
+  if 'QUERY_STRING' in request.environ and len( request.environ[ 'QUERY_STRING' ] ) > 0:
+    queryString = "?%s" % request.environ[ 'QUERY_STRING' ]
+  else:
+    queryString = ""
   i = path.find( scriptName )
   if i == -1:
-    return path
+    return "%s%s" % ( path, queryString )
   else:
-    return path[ :i ] + path[ i+len(scriptName): ]
+    return "%s%s%s" % ( path[ :i ], path[ i+len(scriptName): ], queryString )
 
 def htmlShortcuts():
   htmlData = ""
@@ -40,6 +45,7 @@ def htmlSetups():
   return yuiWidgets.dropDownMenu( "UserSetupPos", selectedSetup, availableSetups )
 
 def htmlPageTitle():
+  gMonitor.addMark( "pagesServed" )
   path = currentPath()
   return gWebConfig.getPageTitle( path )
 

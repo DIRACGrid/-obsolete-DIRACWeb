@@ -1,3 +1,6 @@
+# $Header: /tmp/libdirac/tmp.stZoy15380/dirac/DIRAC3/DIRAC/Interfaces/Web/dirac/controllers/systems/configuration.py,v 1.12 2007/12/19 18:42:23 acasajus Exp $
+__RCSID__ = "$Id: configuration.py,v 1.12 2007/12/19 18:42:23 acasajus Exp $"
+
 import logging
 
 from dirac.lib.base import *
