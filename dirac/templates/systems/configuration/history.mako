@@ -58,7 +58,7 @@
  		alert( "Both versions are the same!" );
  		return false;
  	}
- 	windowOpts = "['new_window', 'scrollbars=1,resizable=1,height=300,width=600']";
+ 	windowOpts = "['new_window', 'height=300,width=600,scrollbars=yes,resizable=yes']";
  	window.open( "", "Version differences", windowOpts );
  	document.versions.target="Version differences";
  	document.versions.method="post";
