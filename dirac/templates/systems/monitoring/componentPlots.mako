@@ -13,7 +13,7 @@ ${renderView.head_tags()}
 <script>
  function initSystemPlots()
  {
- 	setMonitoringViewId(4);
+ 	setMonitoringViewId(1);
  	setMonitoringVariableData( { 'sources.componentName' : '${c.componentName}' } );
  	plotMonitoringView();
  }
@@ -26,5 +26,5 @@ ${renderView.head_tags()}
 
 
 <div id='plotContainer'>
-${renderView.monitoringViewAnchor()}
+${renderView.monitoringViewAnchor(False)}
 </div>
