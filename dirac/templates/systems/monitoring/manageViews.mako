@@ -76,10 +76,11 @@ ${renderView.head_tags()}
   <td>
    <table class='views'>
     <tr>
-     <th>Plot</th><th></th><th>Dinamic view</th><th>Name</th>
+     <th>Id</th><th>Plot</th><th></th><th>Dinamic view</th><th>Name</th>
     </tr>
 %for i in range( len( c.viewsList ) ):
     <tr>
+     <td>${c.viewsList[i][0]}</td>
      <td><input type='radio' name='selectView' value='${c.viewsList[i][0]}' onclick='javascript:setViewId(${c.viewsList[i][0]})'/></td>
      <td>${h.link_to( "delete", confirm = "Are you sure you want to delete this view?", url = "%s?id=%s" % ( h.url_for( controller = 'systems/monitoring', action = 'deleteView' ), c.viewsList[i][0] ) )}</td>
      <td>${ len( c.viewsList[i][2] ) > 0}</td>
