@@ -233,7 +233,7 @@ function enableSelect( idSelector )
 function generatePlotRequest()
 {
 	var maxGrouping = 2;
-	var minFields = 2;
+	var minFields = 1;
 	var i = 0;
 	var groupList = [];
 	var fieldsCond = {};
