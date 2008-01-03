@@ -17,7 +17,7 @@ ${calDisplay.head_tags()}
 <style>
  table.monitoringContainer
  {
- 	border : 1px solid #004;
+ 	border : 1px solid #004080;
  	margin-left : auto;
  	margin-right : auto;
  }
@@ -27,9 +27,11 @@ ${calDisplay.head_tags()}
  }
  td.monitoringControl
  {
- 	background : #FCFEFF;
+ 	background : #fcfeff;
  	color : #030100;
  	text-align : left;
+ 	padding :  3px;
+ 	border-right : 1px solid #004080;
  }
  table.monitoringControl th
  {
