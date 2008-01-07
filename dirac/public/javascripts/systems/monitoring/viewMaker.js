@@ -24,6 +24,26 @@ function initViewMaker()
 	initField( 0 );
 	stubEl = document.getElementById( 'plotRequestStub' );
 	stubEl.value= "";
+	initGroupByCheckboxes();
+}
+
+function initGroupByCheckboxes()
+{
+	var groupUl = document.getElementById( "groupCheckboxes" );
+	var kids = groupUl.childNodes;
+	while( groupUl.childNodes.length > 0 )
+	{
+		groupUl.removeChild( groupUl.childNodes[0] );
+	}
+	var liEl = document.createElement( "li" );
+	liEl.innerHTML = "Group plots by"
+	groupUl.appendChild( liEl );
+	for( key in fieldsDict )
+	{
+		var liEl = document.createElement( "li" );
+		liEl.innerHTML = key + " <input type='checkbox' id='group-"+key+"'/>";
+		groupUl.appendChild( liEl );
+	}
 }
 
 function disableSelectors( startingIndex )
@@ -54,8 +74,6 @@ function disableSelectors( startingIndex )
   		document.getElementById( "variable-"+i ).checked = false;
   		document.getElementById( "variableValue-"+i ).value = "";
 		YAHOO.util.Dom.setStyle( "fieldContainer-"+i, "visibility", "hidden" );
-		groupsEl = document.getElementById( "group-"+i );
-		groupsEl.checked = false;
 		i+=1;
 	}
 	stackEl = document.getElementById( "stackOption" );
@@ -243,11 +261,6 @@ function generatePlotRequest()
 		var dbField = fieldsDict[ field ];
 		if( field == "" )
 			break;
-		groupEl = document.getElementById( "group-"+i );
-		if( groupEl.checked )
-		{
-			groupList.push( dbField );
-		}
 		var valList = [];
 		valEl = document.getElementById( "values-"+i );
 		for( valIndex in valEl.options )
@@ -259,6 +272,15 @@ function generatePlotRequest()
 		}
 		if( valList.length > 0 )
 			fieldsCond[ dbField ] = valList;
+	}
+	for( key in fieldsDict )
+	{
+		var groupEl = document.getElementById( "group-" + key );
+		if( groupEl.checked )
+		{
+			var dbField = fieldsDict[ key ];
+			groupList.push( dbField );
+		}
 	}
 	if( groupList.length > maxGrouping )
 	{

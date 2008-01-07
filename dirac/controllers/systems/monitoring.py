@@ -90,6 +90,42 @@ class MonitoringController(BaseController):
       return render( "/error.mako" )
     return redirect_to( 'manageViews' )
 
+  def manageActivities( self ):
+    """
+    Return template for managing views
+    """
+    if not authorizeAction():
+      return render( "/error.mako" )
+    rpcClient = getRPCClient( "Monitoring/Server" )
+    retVal = rpcClient.getActivities()
+    if not retVal[ 'OK' ]:
+      c.error = retVal[ 'Message' ]
+      return render( "/error.mako" )
+    c.activitiesDict = retVal[ 'Value' ]
+    return render( "/systems/monitoring/manageActivities.mako" )
+
+  def deleteActivity( self ):
+    """
+    Delete a view
+    """
+    if not authorizeAction():
+      return render( "/error.mako" )
+    if not 'sid' in request.params or not 'aid' in request.params:
+      c.error = "Missing ids to delete!"
+      return render( "/error.mako" )
+    try:
+      sid = int( request.params[ 'sid' ] )
+      aid = int( request.params[ 'aid' ] )
+    except Exception, e:
+      c.error = "id is not valid"
+      return render( "/error.mako" )
+    rpcClient = getRPCClient( "Monitoring/Server" )
+    retVal = rpcClient.deleteActivity( sid, aid )
+    if not retVal[ 'OK' ]:
+      c.error = "Error while deleting activity %s" % retVal[ 'Message' ]
+      return render( "/error.mako" )
+    return redirect_to( 'manageActivities' )
+
   @jsonify
   def queryAttribs( self ):
     """

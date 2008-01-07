@@ -82,9 +82,6 @@ ${ h.javascript_include_tag( "json2.js" ) }
 %for i in range( numFields ):
    <table class='field' id='fieldContainer-${i}'>
     <tr>
-     <td><input type='checkbox' id='group-${i}'/> Group by this field</td><td></td>
-    <tr>
-    <tr>
      <td><select type='select' id='type-${i}' onChange='javascript:fieldSelected(${i})'></select></td>
 %if i < numFields - 1:
      <td rowspan='2'><a href='#' onclick='javascript:enableSelect(${i+1})'>NEXT</td>
@@ -109,8 +106,11 @@ ${ h.javascript_include_tag( "json2.js" ) }
    ${ h.image_tag( "loading.gif", alt="loading" ) } Processing...
    </div>
    <ul class='commands'>
+    <ul id='groupCheckboxes'>
+     <li>Group by</li>
+    </ul>
     <li>Plot description${h.link_to( "?", popup=['new_window', 'height=300,width=600,scrollbars=yes,resizable=yes'] , url = h.url_for( action='variablesHelp.html' ) )}<input type='text' id='plotLabel' size='30'/></li>
-    <li>Stack activities<input type='checkbox' id='stackOption'/></li>
+    <li>Stack activities <input type='checkbox' id='stackOption'/></li>
     <li><input type='submit' value='Test View' onclick='javascript:requestPlots()'/></li>
     <li>Plot request<input type='text' id='plotRequestStub' size='30' readonly/></li>
     <li>View name<input type='text' id='viewName' size='30'/></li>
