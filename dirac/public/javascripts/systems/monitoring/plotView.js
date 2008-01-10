@@ -8,23 +8,8 @@ var gURLRoot="";
 function initMonitoringViews( urlRoot )
 {
 	gURLRoot = urlRoot + "/";
-	setMonitoringPlotTime('hour');
-	setMonitoringPlotSize(0);
-	var timeEl = document.monitoringPlotsForm.timeSelect;
-	if( ! timeEl )
-		return;
-	timeEl[0].checked = true;
-	for(var i = 1 ; i < timeEl.length - 1 ; i++)
-	{
-		timeEl[i].checked = false;
-	}
-	var sizeEl = document.monitoringPlotsForm.sizeSelect;
-	sizeEl[0].checked = true;
-	for(var i = 1 ; i < sizeEl.length - 1 ; i++)
-	{
-		sizeEl[i].checked = false;
-	}
-
+	setMonitoringPlotTime('day');
+	setMonitoringPlotSize(1);
 }
 
 
@@ -50,14 +35,50 @@ function setMonitoringPlotTime( timeLength )
 		default:
 			alert( "Invalid time length selected!" );
 	}
+	var timeEl = document.monitoringPlotsForm.timeSelect;
+	if( ! timeEl )
+		return;
+	for(var i = 0 ; i < timeEl.length - 1 ; i++)
+	{
+		timeEl[i].checked = false;
+	}
+	switch( timeLength )
+	{
+		case 'hour':
+			timeEl[0].checked = true;
+			break;
+		case 'day':
+			timeEl[1].checked = true;
+			break;
+		case 'week':
+			timeEl[1].checked = true;
+			break;
+		case 'month':
+			timeEl[2].checked = true;
+			break;
+		case 'manual':
+			timeEl[3].checked = true;
+			break;
+	}
 }
 
 function setMonitoringPlotSize( sizeId )
 {
 	if( sizeId < 0 || sizeId > 4 )
+	{
 		alert( "Invalid size! ");
+		return;
+	}
 	else
 		gPlotSize = sizeId;
+	var sizeEl = document.monitoringPlotsForm.sizeSelect;
+	if( ! sizeEl )
+		return;
+	for(var i = 0 ; i < sizeEl.length - 1 ; i++)
+	{
+		sizeEl[i].checked = false;
+	}
+	sizeEl[sizeId].checked = true;
 }
 
 function setMonitoringViewId( viewId )
@@ -134,7 +155,7 @@ function updatePlots( plotsList, plotsRequest )
 		imgEl.src = "getPlotImg?file="+plotsList[i];
 		imgEl.id = plotsList[i];
 		YAHOO.util.Dom.setStyle( imgEl, "margin", "1px" );
-		YAHOO.util.Dom.setStyle( imgEl, "display", "inline" );
+		YAHOO.util.Dom.setStyle( imgEl, "display", "block" );
 		containerEl.appendChild( imgEl );
 	}
 }
