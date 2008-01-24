@@ -62,8 +62,11 @@ def jsSchemaSection( area, section ):
   for page in gWebConfig.getSchemaPages( section ):
     pageData = gWebConfig.getSchemaPageData( "%s/%s" % ( section, page ) )
     if len( pageData ) < 3 or 'all' in pageData[2:] or sessionManager.getSelectedGroup() in pageData[2:]:
-      pagePath = "/%s/%s" % ( area, pageData[0] )
-      jsTxt += "{ text : '%s', url : '%s' }," % ( page.capitalize(), helpers.url_for( pagePath ) )
+      if pageData[0].find( "http" ) == 0:
+        pagePath = pageData[0]
+      else:
+        pagePath = helpers.url_for( "/%s/%s" % ( area, pageData[0] ) )
+      jsTxt += "{ text : '%s', url : '%s' }," % ( page.capitalize(), pagePath )
   jsTxt += "]"
   return jsTxt
 
