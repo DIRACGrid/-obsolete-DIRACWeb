@@ -81,7 +81,7 @@ ${renderView.head_tags()}
 %for i in range( len( c.viewsList ) ):
     <tr>
      <td>${c.viewsList[i][0]}</td>
-     <td><input type='radio' name='selectView' value='${c.viewsList[i][0]}' onchange='javascript:setMonitoringVariableData(${c.viewsList[i][0]})'/></td>
+     <td><input type='radio' name='selectView' value='${c.viewsList[i][0]}' onchange='javascript:setMonitoringViewId(${c.viewsList[i][0]})'/></td>
      <td>${h.link_to( "delete", confirm = "Are you sure you want to delete this view?", url = "%s?id=%s" % ( h.url_for( controller = 'systems/monitoring', action = 'deleteView' ), c.viewsList[i][0] ) )}</td>
      <td>${ len( c.viewsList[i][2] ) > 0}</td>
      <td>${c.viewsList[i][1]}</td>
