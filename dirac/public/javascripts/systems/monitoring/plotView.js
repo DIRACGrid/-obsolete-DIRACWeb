@@ -51,13 +51,13 @@ function setMonitoringPlotTime( timeLength )
 			timeEl[1].checked = true;
 			break;
 		case 'week':
-			timeEl[1].checked = true;
-			break;
-		case 'month':
 			timeEl[2].checked = true;
 			break;
-		case 'manual':
+		case 'month':
 			timeEl[3].checked = true;
+			break;
+		case 'manual':
+			timeEl[4].checked = true;
 			break;
 	}
 }
