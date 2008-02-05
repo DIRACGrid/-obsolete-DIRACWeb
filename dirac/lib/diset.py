@@ -4,7 +4,7 @@ from DIRAC.Core.DISET.RPCClient import RPCClient
 from DIRAC.Core.DISET.TransferClient import TransferClient
 
 def __prepareArgs( kwargs ):
-	if str( sessionManager.getUserDN() ):
+	if sessionManager.getUserDN():
 		kwargs[ 'delegatedGroup' ] =  str( sessionManager.getSelectedGroup() )
 		kwargs[ 'delegatedDN' ] = str( sessionManager.getUserDN() )
 	kwargs[ 'useCertificates' ] = True

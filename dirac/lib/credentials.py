@@ -27,12 +27,16 @@ def checkUserCredentials():
         else:
             gLogger.error( "Apache is not properly configured" )
   #Set the DN
-  session[ 'DN' ] = userDN
+  if userDN:
+    session[ 'DN' ] = userDN
+  else:
+    if 'DN' in session:
+      del( session[ 'DN' ] )
   #Set the username
-  username = gAuthManager.findUsername( session[ 'DN' ] )
+  username = gAuthManager.findUsername( userDN )
   if not username:
     username = "anonymous"
-  gLogger.info( "Got username for user" " => %s for %s" % ( username, session[ 'DN' ] ) )
+  gLogger.info( "Got username for user" " => %s for %s" % ( username, userDN ) )
   session[ 'username' ] = username
   #Set the available groups
   session[ 'availableGroups' ] = gAuthManager.getGroupsForUsername( session[ 'username' ] )
@@ -46,6 +50,10 @@ def authorizeAction():
   checkUserCredentials()
   routeDict = request.environ[ 'pylons.routes_dict' ]
   actionPath = "%s/%s" % ( routeDict[ 'controller' ], routeDict[ 'action' ] )
-  log.info( "AUTHORIZING %s for %s" % ( actionPath, session[ 'DN' ] ) )
+  if 'DN' in session:
+    userDN = session[ 'DN' ]
+  else:
+    userDN = 'anonymous'
+  log.info( "AUTHORIZING %s for %s" % ( actionPath, userDN ) )
   c.error = "You shouldn't be here :) (not enough karma maybe?)"
   return gAuthManager.authQuery( actionPath, session )
