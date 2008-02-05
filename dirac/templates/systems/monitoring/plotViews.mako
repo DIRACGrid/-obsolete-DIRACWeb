@@ -80,7 +80,7 @@ ${renderView.head_tags()}
 </script>
 </%def>
 
-<h2>Manage monitoring views</h2>
+<h2>Plot monitoring views</h2>
 
 <form id='plotsFormId' name='plotsForm'>
 <table class='pageSchema'>
@@ -88,20 +88,16 @@ ${renderView.head_tags()}
   <td>
    <table class='views'>
     <tr>
-     <th>Id</th>
-     <th>Plot</th>
-     <th></th>
-     <th>Dinamic view</th>
-     <th>Name</th>
+     <th>Select</th>
+     <th>View</th>
     </tr>
 %for i in range( len( c.viewsList ) ):
+%if len( c.viewsList[i][2] ) == 0:
     <tr>
-     <td>${c.viewsList[i][0]}</td>
      <td><input type='radio' name='selectView' value='${c.viewsList[i][0]}' onchange='javascript:setMonitoringViewId(${c.viewsList[i][0]})'/></td>
-     <td>${h.link_to( "delete", confirm = "Are you sure you want to delete this view?", url = "%s?id=%s" % ( h.url_for( controller = 'systems/monitoring', action = 'deleteView' ), c.viewsList[i][0] ) )}</td>
-     <td>${ len( c.viewsList[i][2] ) > 0}</td>
-     <td>${c.viewsList[i][1]}</td>
+     <td><a href='#' onclick='javascript:setMonitoringViewId(${c.viewsList[i][0]})'>${c.viewsList[i][1]}</a></td>
     <tr>
+%endif
 %endfor
    </table>
   </td>

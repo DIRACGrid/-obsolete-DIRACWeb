@@ -37,6 +37,19 @@ ${calDisplay.head_tags()}
  {
  	font-weight : bold;
  }
+ div#loading
+ {
+ 	height : 30px;
+ 	width : auto;
+ 	vertical-align : top;
+ 	visibility : hidden;
+ 	padding : 5px;
+ }
+ div#loading img
+ {
+ 	height : 20px;
+ 	width : auto;
+ }
 </style>
 </%def>
 
@@ -70,6 +83,13 @@ ${calDisplay.head_tags()}
       <td><input type='radio' name='timeSelect' onchange='javascript:setMonitoringPlotTime("manual")'/>Manual select ${calDisplay.calendarAnchor()}</td>
       <td><input type='submit' value='plot' onclick='javascript:plotMonitoringView();return false'/></td>
      </tr>
+     <tr>
+      <td colspan='2'>
+       <div id='loading'>
+        ${ h.image_tag( "loading.gif", alt="loading" ) } Processing...
+       </div>
+      </td>
+     </tr
     </table>
    </td>
 %endif

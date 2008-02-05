@@ -69,6 +69,20 @@ class MonitoringController(BaseController):
     c.viewsList = retVal[ 'Value' ]
     return render( "/systems/monitoring/manageViews.mako" )
 
+  def plotStaticViews( self ):
+    """
+    Return template for showing views
+    """
+    if not authorizeAction():
+      return render( "/error.mako" )
+    rpcClient = getRPCClient( "Monitoring/Server" )
+    retVal = rpcClient.getViews( False )
+    if not retVal[ 'OK' ]:
+      c.error = retVal[ 'Message' ]
+      return render( "/error.mako" )
+    c.viewsList = retVal[ 'Value' ]
+    return render( "/systems/monitoring/plotViews.mako" )
+
   def deleteView( self ):
     """
     Delete a view
