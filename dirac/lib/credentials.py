@@ -9,7 +9,7 @@ from pylons.decorators.cache import beaker_cache
 
 from DIRAC import gLogger
 from DIRAC.Core.DISET.AuthManager import AuthManager
- 
+
 gAuthManager = AuthManager( "%s/Authorization" % gWebConfig.getWebSection() )
 
 log = logging.getLogger(__name__)
@@ -43,7 +43,14 @@ def checkUserCredentials():
   #Check selected group
   if 'group' in session:
     if not session[ 'group' ] in session[ 'availableGroups' ]:
-      session[ 'group' ] = 'noGroup'
+      del( session[ 'group' ] )
+  if 'group' not in session:
+    for group in gWebConfig.getDefaultGroups():
+      if group in session[ 'availableGroups' ]:
+        session[ 'group' ] = group
+        break
+  if 'group' not in session:
+    session[ 'group' ] = "noGroup"
   session.save()
 
 def authorizeAction():
