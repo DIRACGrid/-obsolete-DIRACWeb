@@ -117,14 +117,30 @@ function generateLabelForCSObject( csPath, csObject )
   if( csObject.length == 2)
   {
     //Section
-    nodeLabel = "<span id='sdd-" + csPath + "' class='sectionNode'>" + csObject[0] + "</span>";
+    var nodeLabel = "<span id='sdd-" + csPath + "' class='sectionNode'>" + csObject[0] + "</span>";
   }
   else
   {
-    //option
-    nodeLabel = "<span id='odd-" + csPath + "' class='optionNode'>" + csObject[0] + " = " + csObject[1] + "</span>";
+    //HERE
+    if( csObject[1].indexOf( "," ) > -1 )
+    {
+  		var opValueList = csObject[1].split( "," );
+  		var opContents = "<ul style='text-align:left;margin-left:15px;'>"
+  		var opValueList = csObject[1].split( "," );
+    	for( var i = 1; i <  opValueList.length; i++ )
+    	{
+			opContents += "<li> "+opValueList[i]+" </li>";
+    	}
+    	opContents += "</ul>";
+    	var nodeLabel = "<div id='odd-" + csPath + "' class='optionNode' style='text-align:left;'>" + csObject[0] + " = </div>"+opContents+"";
+    }
+    else
+    {
+    	//option
+    	var nodeLabel = "<span id='odd-" + csPath + "' class='optionNode'>" + csObject[0] + " = " + csObject[1] + "</span>";
+    }
   }
-  return nodeLabel
+  return nodeLabel;
 }
 
 function getProcessedComment( csObject )
@@ -491,8 +507,10 @@ function editOption( node )
 function blurOption( e, node )
 {
   var optionData = node.data.id[1];
-  var ddId = "odd-" + node.data.id[0];
-  node.getLabelEl().innerHTML = "<span id='"+ddId+"'>" + optionData[0] + " = " + optionData[1] + "</span>";
+  //var ddId = "odd-" + node.data.id[0];
+  //node.getLabelEl().innerHTML = "<span id='"+ddId+"'>" + optionData[0] + " = " + optionData[1] + "</span>";
+  node.getLabelEl().innerHTML = generateLabelForCSObject( node.data.id[0], optionData );
+  setDDForBranch( node );
 }
 /* New option value entered */
 function commitOption( e, node )
