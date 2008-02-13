@@ -66,7 +66,7 @@ def jsSchemaSection( area, section ):
         pagePath = pageData[0]
       else:
         pagePath = helpers.url_for( "/%s/%s" % ( area, pageData[0] ) )
-      jsTxt += "{ text : '%s', url : '%s' }," % ( page.capitalize(), pagePath )
+      jsTxt += "{ text : '%s', url : '%s' }," % ( page, pagePath )
   jsTxt += "]"
   return jsTxt
 
@@ -88,6 +88,6 @@ def htmlSchemaAreas( areasList = False):
 def htmlPath():
   path = currentPath()
   schemaPath = gWebConfig.getSchemaPathFromURL( path )
-  dirList = [ dir.capitalize() for dir in schemaPath.split( "/" ) if not dir.strip() == "" ]
+  dirList = [ dir for dir in schemaPath.split( "/" ) if not dir.strip() == "" ]
   return " > ".join( dirList )
 
