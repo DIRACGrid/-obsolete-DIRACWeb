@@ -11,21 +11,22 @@ ${ h.javascript_include_tag( "/yui/container/container-min.js" ) }
 ${ h.javascript_include_tag( "/yui/logger/logger-min.js" ) }
 ${ h.javascript_include_tag( "systems/configuration/cfgTree.js" ) }
 <script>
- var csTree; 
+ var csTree;
  /*Generate the tree */
- function treeInit() { 
-  //yuiLogger = new YAHOO.widget.LogReader(); 
-  //YAHOO.widget.Logger.enableBrowserConsole();
-  //yuiLogger.thresholdMax = 100;
-  csTree = new YAHOO.widget.TreeView( "treeContainer" ); 
+ function treeInit() {
+  yuiLogger = new YAHOO.widget.LogReader();
+  YAHOO.widget.Logger.enableBrowserConsole();
+  yuiLogger.thresholdMax = 100;
+  yuiLogger.hide();
+  csTree = new YAHOO.widget.TreeView( "treeContainer" );
   nodeDef = { label : "<span class='sectionNode'>${c.csName}</span>", id : [ "/", [ "/", "" ] ] };
   var startNode = new YAHOO.widget.TextNode( nodeDef, csTree.getRoot(), false);
   startNode.setDynamicLoad( loadNodeData, 1 );
   csTree.subscribe( "labelClick", editOption );
   csTree.draw();
-  
+
   initTreeMagic( "treeContainer", startNode );
-  
+
   startNode.expand();
  }
  /* Show time! */
@@ -55,7 +56,7 @@ div#treeContainer {
    </div>
    <p class='howto'>
    To reorder sections and options just drag and drop. You can drop inside sections and below sections and options.
-   All modification options are in contextual menus. 
+   All modification options are in contextual menus.
    </p>
    <p class='howto'>There are two ways for modifying an option:</p>
    <ul class='howto'>
@@ -69,20 +70,20 @@ div#treeContainer {
    </ul>
    <div id='commentDialog'>
     <div class="hd">Insert comment</div>
-    <div class="bd"> 
+    <div class="bd">
      <form>
       <textarea name='textValue' style='width:90%;height:90%;' rows='5'>comment</textarea>
      </form>
-    </div> 
+    </div>
    </div>
    <div id='valueDialog'>
     <div class="hd">Insert value for option</div>
-    <div class="bd"> 
+    <div class="bd">
      <form>
       <textarea name='textValue' style='width:90%;height:90%;' rows='20'>value</textarea>
      </form>
      Each line will be separated by commas in the final value
-    </div> 
+    </div>
    </div>
 
 </%def>
