@@ -29,13 +29,13 @@
 
 <h1>DIRAC logos</h1>
 
-<% 
+<%
 import os
 %>
 
 <table class='imgTable'>
 %for file in os.listdir( c.imagePath ):
- <tr><td>${ h.link_to( h.image_tag( 'logos/%s' % file, alt = file ), url = "/images/logos/%s" % file ) }</td><td>${file}</td></tr>
+ <tr><td>${ h.link_to( h.image_tag( 'logos/%s' % file, alt = file ), url = h.url_for( "/images/logos/%s" % file ) ) }</td><td>${file}</td></tr>
 %endfor
 </table>
 
