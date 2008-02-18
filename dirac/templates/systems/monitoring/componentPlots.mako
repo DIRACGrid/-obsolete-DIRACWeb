@@ -13,7 +13,7 @@ ${renderView.head_tags()}
 <script>
  function initSystemPlots()
  {
- 	setMonitoringViewId(1);
+ 	setMonitoringViewId( "Dynamic component view" );
  	setMonitoringVariableData( { 'sources.componentName' : '${c.componentName}' } );
  	plotMonitoringView();
  }

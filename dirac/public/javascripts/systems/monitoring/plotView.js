@@ -1,7 +1,7 @@
 
 var gPlotSize=-1;
 var gPlotTime="unknown";
-var gViewId=-1;
+var gViewName="";
 var gVarData="";
 var gURLRoot="";
 
@@ -81,9 +81,9 @@ function setMonitoringPlotSize( sizeId )
 	sizeEl[sizeId].checked = true;
 }
 
-function setMonitoringViewId( viewId )
+function setMonitoringViewId( viewName )
 {
-	gViewId = viewId;
+	gViewName = viewName;
 }
 
 function setMonitoringVariableData( varData )
@@ -93,12 +93,12 @@ function setMonitoringVariableData( varData )
 
 function plotMonitoringView()
 {
-	if( gViewId == -1 )
+	if( gViewName == "" )
 	{
 		alert( "Select a valid view!" );
 		return
 	}
-	request = { 'id' : gViewId,
+	request = { 'id' : gViewName,
 				'timeLength' : gPlotTime,
 				'size' : gPlotSize,
 				'varData' : gVarData

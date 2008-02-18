@@ -94,8 +94,8 @@ ${renderView.head_tags()}
 %for i in range( len( c.viewsList ) ):
 %if len( c.viewsList[i][2] ) == 0:
     <tr>
-     <td><input type='radio' name='selectView' value='${c.viewsList[i][0]}' onchange='javascript:setMonitoringViewId(${c.viewsList[i][0]})'/></td>
-     <td><a href='#' onclick='javascript:setMonitoringViewId(${c.viewsList[i][0]})'>${c.viewsList[i][1]}</a></td>
+     <td><input type='radio' name='selectView' value='${c.viewsList[i][0]}' onchange='javascript:setMonitoringViewId("${c.viewsList[i][1]}")'/></td>
+     <td><a href='#' onclick='javascript:setMonitoringViewId("${c.viewsList[i][1]}")'>${c.viewsList[i][1]}</a></td>
     <tr>
 %endif
 %endfor
