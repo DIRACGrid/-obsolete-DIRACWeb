@@ -120,7 +120,7 @@ class MonitoringController(BaseController):
 
   def deleteActivity( self ):
     """
-    Delete a view
+    Delete an activity
     """
     if not authorizeAction():
       return render( "/error.mako" )
@@ -137,6 +137,27 @@ class MonitoringController(BaseController):
     retVal = rpcClient.deleteActivity( sid, aid )
     if not retVal[ 'OK' ]:
       c.error = "Error while deleting activity %s" % retVal[ 'Message' ]
+      return render( "/error.mako" )
+    return redirect_to( 'manageActivities' )
+
+  def deleteActivities( self ):
+    """
+    Delete a list of activities
+    """
+    if not authorizeAction():
+      return render( "/error.mako" )
+    if not 'dl' in request.params:
+      c.error = "Missing ids to delete!"
+      return render( "/error.mako" )
+    try:
+      deletionList = simplejson.loads( request.params[ 'dl' ] )
+    except Exception, e:
+      c.error = "ids are not valid"
+      return render( "/error.mako" )
+    rpcClient = getRPCClient( "Monitoring/Server" )
+    retVal = rpcClient.deleteActivities( deletionList )
+    if not retVal[ 'OK' ]:
+      c.error = "Error while deleting activities %s" % retVal[ 'Message' ]
       return render( "/error.mako" )
     return redirect_to( 'manageActivities' )
 
