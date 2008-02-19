@@ -68,9 +68,7 @@ function status(value){
   }
 }
 function parseInput(response,mode){
-  response = response.replace("]]","");
-  response = response.replace("[[","");
-  var responseArray = response.split("], [");
+  var responseArray = response;
   if(responseArray.length == 0){
     xz.hide();
     alert("Can't parse server response: " + response);
@@ -82,12 +80,12 @@ function parseInput(response,mode){
     total = responseArray.pop();
     jobLegend = responseArray.pop();
     for(var i = 0; i < responseArray.length; i++){
-      var t = responseArray[i].split("', '");
+      t = responseArray[i];
       t[0] = t[0].replace("'","");
       t[8] = t[8].replace("'","");
       t[9] = status(t[1]);
-      id = t[0] * 1;
-      returnArray[i]={JobId:id,StIcon:t[9],Status:t[1],MinorStatus:t[2],ApplicationStatus:t[3],Site:t[4],JobName:t[5],LastUpdate:t[6],SubmissionTime:t[8],Owner:t[7]};
+      t[0] = t[0] * 1;
+      returnArray[i]={JobId:t[0],StIcon:t[9],Status:t[1],MinorStatus:t[2],ApplicationStatus:t[3],Site:t[4],JobName:t[5],LastUpdate:t[6],SubmissionTime:t[8],Owner:t[7]};
     }
   }else if(mode == "prod"){
     total = responseArray.pop();
@@ -134,6 +132,7 @@ function parseInput(response,mode){
 }
 function parseRequest(r){
   var req = r.responseText;
+  req = JSON.parse(req);
   wait.hide();
   if ((req == "There are no jobs to fit your criteria")||(req == "There is no summary for the job(s)")) {
     xz.hide();
@@ -159,13 +158,8 @@ function parseRequest(r){
       sortedBy = YAHOO.example.Basic.myDataTable.getColumn(sortedBy);
       YAHOO.example.Basic.myDataTable.sortColumn(sortedBy);
       YAHOO.example.Basic.myDataTable.sortColumn(sortedBy);
-//      var sortKey = YAHOO.example.Basic.myDataTable._configs.sortedBy.value.key;
       total = parseInt(total);
-//      if((total > counter) && (page > 1)){
-        showPage(total);
-//      }else{
-//        showPage(0);
-//      }
+      showPage(total);
     }else if(type == "prod"){
       YAHOO.example.Data = {"startIndex":0,"sort":null,"dir":"asc",jobs:newJobs};
       YAHOO.example.Basic.myDataTable.initializeTable(YAHOO.example.Data.jobs);
@@ -404,7 +398,8 @@ function submit(id){
   page = createURL("submit",id)
   url = url + "&page=" + page;
   wait.render(document.body);wait.show();
-  var myAjax = YAHOO.util.Connect.asyncRequest('POST',url,{success:parseRequest,failure:connectBad,argument:"jobs"},"");
+  
+  var myAjax = YAHOO.util.Connect.asyncRequest('POST',url,{success:parseRequest,failure:connectBad,argument:"jobs",timeout:60000},"");
 }
 function actionJob(some_useless_rubbish_here,mode,job){
   var id = createURL(mode,job);

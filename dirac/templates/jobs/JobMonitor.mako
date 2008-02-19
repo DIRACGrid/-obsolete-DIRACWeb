@@ -12,6 +12,7 @@ ${ h.javascript_include_tag( "/yui/connection/connection-min.js" ) }
 ${ h.javascript_include_tag( "/yui/calendar/calendar-min.js" ) }
 ${ h.javascript_include_tag( "/yui/button/button-min.js" ) }
 ${ h.javascript_include_tag( "/javascripts/jobs/JobMonitor.js" ) }
+${ h.javascript_include_tag( "json2.js" ) }
 ${ h.stylesheet_link_tag( "/yui/datatable/assets/skins/sam/datatable.css" ) }
 ${ h.stylesheet_link_tag( "/yui/container/assets/container.css" ) }
 ${ h.stylesheet_link_tag( "/yui/calendar/assets/skins/sam/calendar.css" ) }
