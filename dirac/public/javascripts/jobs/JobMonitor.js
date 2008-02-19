@@ -4,6 +4,13 @@ var counter = 25;
 var total = "";
 var page = 0;
 var jobLegend = "";
+var gURLRoot = "";
+
+function initWebRoot( url )
+{
+	gURLRoot = url;
+}
+
 function showkal(){
   if(document.getElementById("kalendar") == null){
     var k = new YAHOO.widget.Panel("kalendar",{visible:true,draggable:false,close:true,constraintoviewport:true,context:["jobupdate","tl","bl"],zindex:3000});
@@ -43,19 +50,19 @@ function handleSelect(type,args,obj) {
 }
 function status(value){
   if(value == "Done"){
-    return "<img src='/images/monitoring/done.gif'>";
+    return "<img src='"+gURLRoot+"/monitoring/done.gif'>";
   }else if(value == "Failed"){
-    return "<img src='/images/monitoring/failed.gif'>";
+    return "<img src='"+gURLRoot+"/monitoring/failed.gif'>";
   }else if(value == "Waiting"){
-    return "<img src='/images/monitoring/waiting.gif'>";
+    return "<img src='"+gURLRoot+"/monitoring/waiting.gif'>";
   }else if(value == "Deleted"){
-    return "<img src='/images/monitoring/deleted.gif'>";
+    return "<img src='"+gURLRoot+"/monitoring/deleted.gif'>";
   }else if(value == "Matched"){
-    return "<img src='/images/monitoring/matched.gif'>";
+    return "<img src='"+gURLRoot+"/monitoring/matched.gif'>";
   }else if(value == "Running"){
-    return "<img src='/images/monitoring/running.gif'>";
+    return "<img src='"+gURLRoot+"/monitoring/running.gif'>";
   }else{
-    return "<img src='/images/monitoring/unknown.gif'>";
+    return "<img src='"+gURLRoot+"/monitoring/unknown.gif'>";
   }
 }
 function parseInput(response,mode){
@@ -149,7 +156,7 @@ function parseRequest(r){
       var sortedBy = YAHOO.example.Basic.myDataTable._configs.sortedBy.value.key;
       sortedBy = YAHOO.example.Basic.myDataTable.getColumn(sortedBy);
       YAHOO.example.Basic.myDataTable.sortColumn(sortedBy);
-      YAHOO.example.Basic.myDataTable.sortColumn(sortedBy); 
+      YAHOO.example.Basic.myDataTable.sortColumn(sortedBy);
 //      var sortKey = YAHOO.example.Basic.myDataTable._configs.sortedBy.value.key;
       total = parseInt(total);
 //      if((total > counter) && (page > 1)){
@@ -161,7 +168,7 @@ function parseRequest(r){
       YAHOO.example.Data = {"startIndex":0,"sort":null,"dir":"asc",jobs:newJobs};
       YAHOO.example.Basic.myDataTable.initializeTable(YAHOO.example.Data.jobs);
       total = parseInt(total);
-      showPage(total);  
+      showPage(total);
     }else if(type == "log"){
       var temp_defs = [
         {key:"Source", sortable:true, resizeable:true},
@@ -470,14 +477,14 @@ function fuckinMenu(id,x,y){
       {text:"Get StdErr",url:"javascript:pilot('tmp','err'," + id + ")"}
     ]}}
   ]);
-  job_menu.setItemGroupTitle("Job ID: " + id, 0); 
+  job_menu.setItemGroupTitle("Job ID: " + id, 0);
   job_menu.render(document.body);
   job_menu.cfg.setProperty("xy", [x,y]);
   job_menu.show();
 }
 xz = new YAHOO.widget.Panel("xz",{visible:false,draggable:true,close:true,constraintoviewport:true});
 wait = new YAHOO.widget.Panel("w",{visible:false,draggable:false,close:false,fixedcenter:true,modal:true});
-wait.setBody("<img src='/images/loading/loading-3.gif' width='66' height='66'>");
+wait.setBody("<img src='"+gURLRoot+"/loading/loading-3.gif' width='66' height='66'>");
 job_menu = new YAHOO.widget.Menu("xxx_menu", {xy:[0,0],showdelay:"250",position:"dynamic",zindex:4000});
 YAHOO.util.Event.addListener("submit_filter","click",submit);
 YAHOO.util.Event.addListener("jobupdate","click",showkal);
@@ -521,7 +528,7 @@ YAHOO.util.Event.addListener(window, "load", function() {
     sortedBy = this.myDataTable.getColumn(sortedBy);
     this.myDataTable.sortColumn(sortedBy);
     this.myDataTable.sortColumn(sortedBy);
-    this.myDataTable.subscribe("rowMouseoverEvent", this.myDataTable.onEventHighlightRow); 
+    this.myDataTable.subscribe("rowMouseoverEvent", this.myDataTable.onEventHighlightRow);
     this.myDataTable.subscribe("rowMouseoutEvent", this.myDataTable.onEventUnhighlightRow);
     this.myDataTable.subscribe("rowClickEvent", function(e){
       x = e.event.pageX;
