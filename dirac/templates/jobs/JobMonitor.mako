@@ -3,18 +3,19 @@
 
 <%def name="head_tags()">
 <!-- Dependencies for data table -->
-<script type="text/javascript" src="/yui/element/element-beta-min.js"></script>
-<script type="text/javascript" src="/yui/datasource/datasource-beta-min.js"></script>
-<script type="text/javascript" src="/yui/dragdrop/dragdrop-min.js"></script>
-<script type="text/javascript" src="/yui/datatable/datatable-beta-min.js"></script>
-<script type="text/javascript" src="/yui/container/container-min.js"></script>
-<script type="text/javascript" src="/yui/connection/connection-min.js"></script>
-<script type="text/javascript" src="/yui/calendar/calendar-min.js"></script>
-<script type="text/javascript" src="/yui/button/button-min.js"></script>
-<script type="text/javascript" src="/javascripts/jobs/JobMonitor.js"></script>
-<link type="text/css" rel="stylesheet" href="/yui/datatable/assets/skins/sam/datatable.css">
-<link type="text/css" rel="stylesheet" href="/yui/container/assets/container.css">
-<link type="text/css" rel="stylesheet" href="/yui/calendar/assets/skins/sam/calendar.css">
+${ h.javascript_include_tag( "/yui/element/element-beta-min.js" ) }
+${ h.javascript_include_tag( "/yui/datasource/datasource-beta-min.js" ) }
+${ h.javascript_include_tag( "/yui/dragdrop/dragdrop-min.js" ) }
+${ h.javascript_include_tag( "/yui/datatable/datatable-beta-min.js" ) }
+${ h.javascript_include_tag( "/yui/container/container-min.js" ) }
+${ h.javascript_include_tag( "/yui/connection/connection-min.js" ) }
+${ h.javascript_include_tag( "/yui/calendar/calendar-min.js" ) }
+${ h.javascript_include_tag( "/yui/button/button-min.js" ) }
+${ h.javascript_include_tag( "/javascripts/jobs/JobMonitor.js" ) }
+${ h.stylesheet_link_tag( "/yui/datatable/assets/skins/sam/datatable.css" ) }
+${ h.stylesheet_link_tag( "/yui/container/assets/container.css" ) }
+${ h.stylesheet_link_tag( "/yui/calendar/assets/skins/sam/calendar.css" ) }
+
 <style type="text/css">
 .env {
   z-index: 2000;
@@ -39,7 +40,7 @@
 .job_widget{
   clear:left;
   background-color: #EDF5FF;
-  border: 1px solid #B2D2FF; 
+  border: 1px solid #B2D2FF;
   padding: 10px;
   margin-bottom: 10px;
 }
