@@ -355,7 +355,7 @@ function createURL(mode,id){
   if (c == false){
     return 0;
   }
-  var url = "/jobs/JobMonitor/action";
+  var url = "action";
   if(mode=="delete"){
     job = "deleteJobs=" + job;
   }else if(mode=="kill"){
@@ -411,41 +411,41 @@ function actionJob(some_useless_rubbish_here,mode,job){
   if(id == 0){
     return
   }
-  var url = '/jobs/JobMonitor/action?' + id;
+  var url = 'action?' + id;
   wait.render(document.body);wait.show();
   var myAjax = YAHOO.util.Connect.asyncRequest('POST',url,{success:parseRequest,failure:connectBad,argument:"act"},"");
 }
 function getJdl(id){
   if((id == null) || (id == "")) return;
-  var url = "/jobs/JobMonitor/action?getJDL=" + id;
+  var url = "action?getJDL=" + id;
   wait.render(document.body);wait.show();
   var myAjax = YAHOO.util.Connect.asyncRequest("GET",url,{success:parseRequest,failure:connectBad,argument:"jdl"},"");
   setupPanel(id);
 }
 function getStandardOutput(id){
   if((id == null) || (id == "")) return;
-  var url = "/jobs/JobMonitor/action?getStandardOutput=" + id;
+  var url = "action?getStandardOutput=" + id;
   wait.render(document.body);wait.show();
   var myAjax = YAHOO.util.Connect.asyncRequest('GET',url,{success:parseRequest,failure:connectBad,argument:"jdl"},"");
   setupPanel(id);
 }
 function getBasicInfo(id){
   if((id == null) || (id == "")) return;
-  var url = "/jobs/JobMonitor/action?getBasicInfo=" + id;
+  var url = "action?getBasicInfo=" + id;
   wait.render(document.body);wait.show();
   var myAjax = YAHOO.util.Connect.asyncRequest('GET',url,{success:parseRequest,failure:connectBad,argument:"info"},"");
   setupPanel(id);
 }
 function getParams(id){
   if((id == null) || (id == "")) return;
-  var url = "/jobs/JobMonitor/action?getParams=" + id;
+  var url = "action?getParams=" + id;
   wait.render(document.body);wait.show();
   var myAjax = YAHOO.util.Connect.asyncRequest('GET',url,{success:parseRequest,failure:connectBad,argument:"info"},"");
   setupPanel(id);
 }
 function getLoggingInfo(id){
  if((id == null) || (id == "")) return;
-  var url = "/jobs/JobMonitor/action?LoggingInfo=" + id;
+  var url = "action?LoggingInfo=" + id;
   wait.render(document.body);wait.show();
   var myAjax = YAHOO.util.Connect.asyncRequest('GET',url,{success:parseRequest,failure:connectBad,argument:"log"},"");
   setupPanel(id);
@@ -453,9 +453,9 @@ function getLoggingInfo(id){
 function pilot(some_useless_rubbish_here,mode,id){
   if((id == null) || (id == "")) return;
   if(mode == "out"){
-    var url = "/jobs/JobMonitor/action?pilotStdOut=" + id;
+    var url = "action?pilotStdOut=" + id;
   }else if(mode == "err"){
-    var url = "/jobs/JobMonitor/action?pilotStdErr=" + id;
+    var url = "action?pilotStdErr=" + id;
   }
   wait.render(document.body);wait.show();
   var myAjax = YAHOO.util.Connect.asyncRequest('GET',url,{success:parseRequest,failure:connectBad,argument:"jdl"},"");

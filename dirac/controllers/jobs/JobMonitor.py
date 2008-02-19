@@ -117,7 +117,7 @@ class JobmonitorController(BaseController):
       c.getowner = "Error during RPC call"
     return 88
 ################################################################################
-  def index(self):
+  def display(self):
     pagestart = time()
     result = self.__parseRequest()
     self.__drawFilters()
