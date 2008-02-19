@@ -80,7 +80,7 @@ function parseInput(response,mode){
     total = responseArray.pop();
     jobLegend = responseArray.pop();
     for(var i = 0; i < responseArray.length; i++){
-      t = responseArray[i];
+      var t = responseArray[i];
       t[0] = t[0].replace("'","");
       t[8] = t[8].replace("'","");
       t[9] = status(t[1]);
@@ -91,7 +91,7 @@ function parseInput(response,mode){
     total = responseArray.pop();
     jobLegend = responseArray.pop();
     for(var i = 0; i < responseArray.length; i++){
-      var t = responseArray[i].split(", ");
+      var t = responseArray[i];
       t[0] = t[0].replace(/'/g,"");
       t[1] = t[1].replace(/'/g,"");
       t[2] = t[2].replace(/'/g,"");
@@ -102,21 +102,21 @@ function parseInput(response,mode){
     }
   }else if(mode == "room"){
     for(var i = 0; i < responseArray.length; i++){
-      var t = responseArray[i].split(", ");
+      var t = responseArray[i];
       t[0] = t[0].replace(/'/g,"");
       t[4] = t[4].replace(/'/g,"");
       returnArray[i]={Site:"tier1", Stat:tier1[0], Total:tier1[1], Up:tier1[2], Dwn:tier1[3], nOK:tier1[4]};
     }
   }else if(mode == "info"){
     for(var i = 0; i < responseArray.length; i++){
-      var t = responseArray[i].split(", ");
+      var t = responseArray[i];
       t[0] = t[0].replace(/'/g,"");
       t[1] = t[1].replace(/'/g,"");
       returnArray[i]={Name:t[0], Value:t[1]};
     }
   }else if(mode="log"){
     for(var i = 0; i < responseArray.length; i++){
-      var t = responseArray[i].split(", ");
+      var t = responseArray[i];
       t[0] = t[0].replace(/'/g,"");
       t[1] = t[1].replace(/'/g,"");
       t[2] = t[2].replace(/'/g,"");
@@ -312,7 +312,6 @@ function changePage(sel){
   submit();
 }
 function createURL(mode,id){
-//  clear();
   if(mode == "submit"){
     if((id == null) || (id == "")){
       var page = 0;
@@ -398,8 +397,7 @@ function submit(id){
   page = createURL("submit",id)
   url = url + "&page=" + page;
   wait.render(document.body);wait.show();
-  
-  var myAjax = YAHOO.util.Connect.asyncRequest('POST',url,{success:parseRequest,failure:connectBad,argument:"jobs",timeout:60000},"");
+  var myAjax = YAHOO.util.Connect.asyncRequest('POST',url,{success:parseRequest,failure:connectBad,argument:"jobs"},"");
 }
 function actionJob(some_useless_rubbish_here,mode,job){
   var id = createURL(mode,job);
