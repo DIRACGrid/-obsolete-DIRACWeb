@@ -9,6 +9,8 @@ var gURLRoot = "";
 function initWebRoot( url )
 {
 	gURLRoot = url;
+	wait = new YAHOO.widget.Panel("w",{visible:false,draggable:false,close:false,fixedcenter:true,modal:true});
+	wait.setBody("<img src='"+gURLRoot+"/loading/loading-3.gif' width='66' height='66'>");
 }
 
 function showkal(){
@@ -483,8 +485,6 @@ function fuckinMenu(id,x,y){
   job_menu.show();
 }
 xz = new YAHOO.widget.Panel("xz",{visible:false,draggable:true,close:true,constraintoviewport:true});
-wait = new YAHOO.widget.Panel("w",{visible:false,draggable:false,close:false,fixedcenter:true,modal:true});
-wait.setBody("<img src='"+gURLRoot+"/loading/loading-3.gif' width='66' height='66'>");
 job_menu = new YAHOO.widget.Menu("xxx_menu", {xy:[0,0],showdelay:"250",position:"dynamic",zindex:4000});
 YAHOO.util.Event.addListener("submit_filter","click",submit);
 YAHOO.util.Event.addListener("jobupdate","click",showkal);

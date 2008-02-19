@@ -202,6 +202,8 @@ Sort by:
   <div class="clear"></div>
 </div>
 <script type="text/javascript">
+
+  initWebRoot( '${h.url_for( '/images' )}' );
   response = "${c.listResult}";
   response = response.replace("]]","");
   response = response.replace("[[","");
