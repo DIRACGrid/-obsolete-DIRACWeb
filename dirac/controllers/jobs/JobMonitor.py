@@ -5,6 +5,7 @@ from dirac.lib.base import *
 from dirac.lib.diset import getRPCClient
 from dirac.lib.credentials import authorizeAction
 from dirac.lib.sessionManager import *
+from DIRAC import gLogger
 
 log = logging.getLogger(__name__)
 
@@ -130,33 +131,41 @@ class JobmonitorController(BaseController):
         c.listResult.append([result["SummaryStatus"]])
         c.listResult.append([result["TotalJobs"]])
         c.listResult.append([1])
-        print "\033[0;31mINDEX PAGE PROCESSING:\033[0m",time() - pagestart
+        gLogger.info("\033[0;31mINDEX PAGE PROCESSING:\033[0m %s" % ( time() - pagestart ) )
         return render("/jobs/JobMonitor.mako")
       else:
         return "There is no summary for the job(s)"
     else:
       return result["Message"]
 ################################################################################
+  @jsonify
   def submit(self):
+    gLogger.info("SUBMIT BEGIN")
     pagestart = time()
     result = self.__parseRequest()
+    gLogger.info("parseRequest:",result)
     self.__drawFilters()
     result = RPC.getJobPageSummary(result,globalSort,pageNumber,numberOfJobs)
+    gLogger.info("getJobPageSummary:",result)
     if result["OK"]:
       result = result["Value"]
+      gLogger.info("result['Value']:",result)
       if result.has_key("SummaryDict") and len(result["SummaryDict"]) > 0:
         jobSummary = result["SummaryDict"]
         listResult = self.__getJobSummary(jobSummary)
+        gLogger.info("listResult:",listResult)
         listResult.append([result["SummaryStatus"]])
         listResult.append([result["TotalJobs"]])
         listResult.append([pageNumber + 1])
         print "\033[0;31mSUBMIT PAGE PROCESSING:\033[0m",time() - pagestart
+        gLogger.info("Complited listResult:",listResult)
         return listResult
       else:
         return "There is no summary for the job(s)"
     else:
       return result["Message"]
 ################################################################################
+  @jsonify
   def action(self):
     pagestart = time()
     if request.params.has_key("getJDL") and len(request.params["getJDL"]) > 0:
