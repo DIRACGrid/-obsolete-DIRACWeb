@@ -294,9 +294,9 @@ function parseFilter(){
   var status = document.getElementById("status").value;
   var site = document.getElementById("site").value;
   var g_sort = document.getElementById("global_sort").value;
-  var url = "/jobs/JobMonitor/submit?counter=" + counter;
+  var url = "submit?counter=" + counter;
   if (job_id != ""){
-    url = "/jobs/JobMonitor/submit?jobid=" + job_id;
+    url = "submit?jobid=" + job_id;
   }else{
     url = url + "&job_up=" + job_up;
     url = url + "&owner=" + owner + "&applic=" + application;
