@@ -140,25 +140,19 @@ class JobmonitorController(BaseController):
 ################################################################################
   @jsonify
   def submit(self):
-    gLogger.info("SUBMIT BEGIN")
     pagestart = time()
     result = self.__parseRequest()
-    gLogger.info("parseRequest:",result)
     self.__drawFilters()
     result = RPC.getJobPageSummary(result,globalSort,pageNumber,numberOfJobs)
-    gLogger.info("getJobPageSummary:",result)
     if result["OK"]:
       result = result["Value"]
-      gLogger.info("result['Value']:",result)
       if result.has_key("SummaryDict") and len(result["SummaryDict"]) > 0:
         jobSummary = result["SummaryDict"]
         listResult = self.__getJobSummary(jobSummary)
-        gLogger.info("listResult:",listResult)
         listResult.append([result["SummaryStatus"]])
         listResult.append([result["TotalJobs"]])
         listResult.append([pageNumber + 1])
         print "\033[0;31mSUBMIT PAGE PROCESSING:\033[0m",time() - pagestart
-        gLogger.info("Complited listResult:",listResult)
         return listResult
       else:
         return "There is no summary for the job(s)"
@@ -240,10 +234,7 @@ class JobmonitorController(BaseController):
     print "LoggingInfo:",id
     result = RPC.getJobLoggingInfo(id)
     if result["OK"]:
-#      print str(result["Value"])
-      info = str(result["Value"])
-      info = info.replace("(","[")
-      info = info.replace(")","]")
+      info = result["Value"]
       return info
     else:
       error = result["Message"]
