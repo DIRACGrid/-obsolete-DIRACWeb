@@ -5,4 +5,7 @@
   <!-- add some head tags here -->
 </%def>
 
-<h1>DIRAC preferred restaurants:</h1>
+<h1>Hello!</h1>
+
+
+<h6>Bow before the mighty DIRAC for it handles your jobs (and data)! ;)</h6>
