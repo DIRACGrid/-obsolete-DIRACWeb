@@ -530,8 +530,8 @@ YAHOO.util.Event.addListener(window, "load", function() {
   YAHOO.example.Basic = new function() {
     var myColumnDefs = [
       {label:"Site", key:"Site", sortable:true, resizeable:true},
-      {label:"Waiting", key:"Run", formatter:YAHOO.widget.DataTable.formatNumber, sortable:true, resizeable:true},
-      {label:"Running", key:"Wait", formatter:YAHOO.widget.DataTable.formatNumber, sortable:true, resizeable:true},
+      {label:"Waiting", key:"Wait", formatter:YAHOO.widget.DataTable.formatNumber, sortable:true, resizeable:true},
+      {label:"Running", key:"Run", formatter:YAHOO.widget.DataTable.formatNumber, sortable:true, resizeable:true},
       {label:"Done", key:"Done", formatter:YAHOO.widget.DataTable.formatNumber, sortable:true, resizeable:true},
       {label:"Failed", key:"Fail", formatter:YAHOO.widget.DataTable.formatNumber, sortable:true, resizeable:true}
     ];
