@@ -3,19 +3,19 @@
 
 <%def name="head_tags()">
 <!-- Dependencies for data table -->
-<script type="text/javascript" src="/yui/element/element-beta-min.js"></script>
-<script type="text/javascript" src="/yui/datasource/datasource-beta-min.js"></script>
-<script type="text/javascript" src="/yui/dragdrop/dragdrop-min.js"></script>
-<script type="text/javascript" src="/yui/datatable/datatable-beta-min.js"></script>
-<script type="text/javascript" src="/yui/container/container-min.js"></script>
-<script type="text/javascript" src="/yui/connection/connection-min.js"></script>
-<script type="text/javascript" src="/yui/calendar/calendar-min.js"></script>
-<script type="text/javascript" src="/yui/button/button-min.js"></script>
-<script type="text/javascript" src="/javascripts/jobs/SiteSummary.js"></script>
-<link type="text/css" rel="stylesheet" href="/yui/datatable/assets/skins/sam/datatable.css">
-<link type="text/css" rel="stylesheet" href="/yui/container/assets/container.css">
-<link type="text/css" rel="stylesheet" href="/yui/calendar/assets/skins/sam/calendar.css">
-<!--<link type="text/css" rel="stylesheet" href="/yui/container/assets/skins/sam/container.css">-->
+${ h.javascript_include_tag( "/yui/element/element-beta-min.js" ) }
+${ h.javascript_include_tag( "/yui/datasource/datasource-beta-min.js" ) }
+${ h.javascript_include_tag( "/yui/dragdrop/dragdrop-min.js" ) }
+${ h.javascript_include_tag( "/yui/datatable/datatable-beta-min.js" ) }
+${ h.javascript_include_tag( "/yui/container/container-min.js" ) }
+${ h.javascript_include_tag( "/yui/connection/connection-min.js" ) }
+${ h.javascript_include_tag( "/yui/calendar/calendar-min.js" ) }
+${ h.javascript_include_tag( "/yui/button/button-min.js" ) }
+${ h.javascript_include_tag( "/javascripts/jobs/SiteSummary.js" ) }
+${ h.javascript_include_tag( "json2.js" ) }
+${ h.stylesheet_link_tag( "/yui/datatable/assets/skins/sam/datatable.css" ) }
+${ h.stylesheet_link_tag( "/yui/container/assets/container.css" ) }
+${ h.stylesheet_link_tag( "/yui/calendar/assets/skins/sam/calendar.css" ) }
 <style type="text/css">
 .env {
   z-index: 2000;
@@ -96,11 +96,11 @@
 </div>
 
 <script type="text/javascript">
+  initWebRoot( '${h.url_for( '/images' )}' );
   response = "${c.listResult}";
   response = response.replace("]]","");
   response = response.replace("[[","");
   var jobArray = response.split("], [");
-//  var total = jobArray.pop();
   var prod = new Array();
   var t = "";
   for (var i = 0; i < jobArray.length; i++) {
@@ -117,5 +117,4 @@
     prod[i] = {Site:t[0], Wait:t[1], Run:t[2], Done:t[3], Fail:t[4]};
   }
   YAHOO.example.Data = {"startIndex":0,"sort":null,"dir":"asc",productions:prod}
-//  tot(total);
 </script>

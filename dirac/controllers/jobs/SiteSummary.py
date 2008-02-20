@@ -5,18 +5,15 @@ from dirac.lib.base import *
 from dirac.lib.diset import getRPCClient
 from dirac.lib.credentials import authorizeAction
 from dirac.lib.sessionManager import *
+from DIRAC import gLogger
 
 log = logging.getLogger(__name__)
 
-RPC = getRPCClient("dips://volhcb03.cern.ch:9130/WorkloadManagement/JobMonitoring")
-#RPC = getRPCClient("WorkloadManagement/JobMonitoring")
-#MANAGERRPC = getRPCClient("WorkloadManagement/JobManager")
-#PILOTRPC = getRPCClient("WorkloadManagement/WMSAdministrator")
-#numberOfJobs = 25
-#pageNumber = 0
-#globalSort = "jobID"
+#RPC = getRPCClient("dips://volhcb03.cern.ch:9130/WorkloadManagement/JobMonitoring")
+RPC = getRPCClient("WorkloadManagement/JobMonitoring")
 
 class SitesummaryController(BaseController):
+################################################################################
   def index(self):
     pagestart = time()
     result = RPC.getSiteSummary()
@@ -41,6 +38,7 @@ class SitesummaryController(BaseController):
           tmp.append(int(stat["Failed"]))
           c.listResult.append(tmp)
       c.listResult.append(total)
+      gLogger.info("RESULT",c.listResult)
       return render("/jobs/SiteSummary.mako")
     else:
       return result["Message"]
