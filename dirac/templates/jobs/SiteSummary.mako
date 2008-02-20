@@ -62,37 +62,31 @@ ${ h.stylesheet_link_tag( "/yui/calendar/assets/skins/sam/calendar.css" ) }
 .clear{
   clear:both;
 }
+.link{
+  color: #003D76;
+  cursor: pointer;
+}
 </style>
 </%def>
 
 <div class="job_widget">
-<!--
-  <table style="width:100%;"><tr>
-    <td style="text-align:left;">
-      Select:
-      <a href="javascript:selectAll('all');">All</a>
-      <a href="javascript:selectAll('none');">None</a>
-      Action:
-      <a href="">Start</a>
-      <a href="">Stop</a>
-      <a id="delProd1" href="">Delete</a>
-    </td>
-  </tr></table>
--->
+  <div class="left">
+    <span class="link" id="top_JRef">Refresh</span>
+  </div>
+  <div class="right">
+    <span id="top_page"></span>
+    <span id="top_jobs_counter"></span>
+  </div>
+  <div class="clear"></div>
   <div id="job_status_div"></div>
-<!--
-  <table style="width:100%;"><tr>
-    <td style="text-align:left;">
-      Select:
-      <a href="javascript:selectAll('all');">All</a>
-      <a href="javascript:selectAll('none');">None</a>
-      Action:
-      <a href="">Start</a>
-      <a href="">Stop</a>
-      <a id="delProd2" href="">Delete</a>
-    </td>
-  </tr></table>
--->
+  <div class="left">
+    <span class="link" id="bottom_JRef">Refresh</span>
+  </div>
+  <div class="right">
+    <span id="bottom_page"></span>
+    <span id="bottom_jobs_counter"></span>
+  </div>
+  <div class="clear"></div>
 </div>
 
 <script type="text/javascript">
@@ -101,6 +95,7 @@ ${ h.stylesheet_link_tag( "/yui/calendar/assets/skins/sam/calendar.css" ) }
   response = response.replace("]]","");
   response = response.replace("[[","");
   var jobArray = response.split("], [");
+  var date = jobArray.pop();
   var prod = new Array();
   var t = "";
   for (var i = 0; i < jobArray.length; i++) {
@@ -117,4 +112,6 @@ ${ h.stylesheet_link_tag( "/yui/calendar/assets/skins/sam/calendar.css" ) }
     prod[i] = {Site:t[0], Wait:t[1], Run:t[2], Done:t[3], Fail:t[4]};
   }
   YAHOO.example.Data = {"startIndex":0,"sort":null,"dir":"asc",productions:prod}
+  date = date.replace(/'/g,"");
+  showTime(date);
 </script>

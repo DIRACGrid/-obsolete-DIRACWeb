@@ -4,6 +4,7 @@ var counter = 25;
 var total = "";
 var page = 0;
 var jobLegend = "";
+var gURLRoot = "";
 function initWebRoot(url){
   gURLRoot = url;
   wait = new YAHOO.widget.Panel("w",{visible:false,draggable:false,close:false,fixedcenter:true,modal:true});
@@ -47,20 +48,24 @@ function handleSelect(type,args,obj) {
   z.parentNode.removeChild(z);
 }
 function status(value){
-  if((value == "Done")||(value == "Finished")||(value == "Completed")){
-    return "<img src='/images/monitoring/done.gif'>";
+  if(value == "Done"){
+    return "<img src='"+gURLRoot+"/monitoring/done.gif'>";
   }else if(value == "Failed"){
-    return "<img src='/images/monitoring/failed.gif'>";
+    return "<img src='"+gURLRoot+"/monitoring/failed.gif'>";
   }else if(value == "Waiting"){
-    return "<img src='/images/monitoring/waiting.gif'>";
+    return "<img src='"+gURLRoot+"/monitoring/waiting.gif'>";
+  }else if(value == "Deleted"){
+    return "<img src='"+gURLRoot+"/monitoring/deleted.gif'>";
+  }else if(value == "Matched"){
+    return "<img src='"+gURLRoot+"/monitoring/matched.gif'>";
+  }else if(value == "Running"){
+    return "<img src='"+gURLRoot+"/monitoring/running.gif'>";
   }else{
-    return "<img src='/images/monitoring/unknown.gif'>";
+    return "<img src='"+gURLRoot+"/monitoring/unknown.gif'>";
   }
 }
 function parseInput(response,mode){
-  response = response.replace("]]","");
-  response = response.replace("[[","");
-  var responseArray = response.split("], [");
+  var responseArray = response;
   if(responseArray.length == 0){
     xz.hide();
     alert("Can't parse server response: " + response);
@@ -72,18 +77,18 @@ function parseInput(response,mode){
     total = responseArray.pop();
     jobLegend = responseArray.pop();
     for(var i = 0; i < responseArray.length; i++){
-      var t = responseArray[i].split("', '");
+      var t = responseArray[i];
       t[0] = t[0].replace("'","");
       t[8] = t[8].replace("'","");
       t[9] = status(t[1]);
-      id = t[0] * 1;
-      returnArray[i]={JobId:id,StIcon:t[9],Status:t[1],MinorStatus:t[2],ApplicationStatus:t[3],Site:t[4],JobName:t[5],LastUpdate:t[6],SubmissionTime:t[8],Owner:t[7]};
+      t[0] = t[0] * 1;
+      returnArray[i]={JobId:t[0],StIcon:t[9],Status:t[1],MinorStatus:t[2],ApplicationStatus:t[3],Site:t[4],JobName:t[5],LastUpdate:t[6],SubmissionTime:t[8],Owner:t[7]};
     }
   }else if(mode == "prod"){
     total = responseArray.pop();
     jobLegend = responseArray.pop();
     for(var i = 0; i < responseArray.length; i++){
-      var t = responseArray[i].split(", ");
+      var t = responseArray[i];
       t[0] = t[0].replace(/'/g,"");
       t[1] = t[1].replace(/'/g,"");
       t[2] = t[2].replace(/'/g,"");
@@ -94,21 +99,31 @@ function parseInput(response,mode){
     }
   }else if(mode == "room"){
     for(var i = 0; i < responseArray.length; i++){
-      var t = responseArray[i].split(", ");
+      var t = responseArray[i];
       t[0] = t[0].replace(/'/g,"");
       t[4] = t[4].replace(/'/g,"");
       returnArray[i]={Site:"tier1", Stat:tier1[0], Total:tier1[1], Up:tier1[2], Dwn:tier1[3], nOK:tier1[4]};
     }
   }else if(mode == "info"){
     for(var i = 0; i < responseArray.length; i++){
-      var t = responseArray[i].split(", ");
+      var t = responseArray[i];
       t[0] = t[0].replace(/'/g,"");
       t[1] = t[1].replace(/'/g,"");
       returnArray[i]={Name:t[0], Value:t[1]};
     }
-  }else if(mode == "log"){
+  }else if(mode == "refresh"){
+    total = responseArray.pop();
     for(var i = 0; i < responseArray.length; i++){
-      var t = responseArray[i].split(", ");
+      var t = responseArray[i];
+      t[1] = t[1]*1;
+      t[2] = t[2]*1;
+      t[3] = t[3]*1;
+      t[4] = t[4]*1;
+      returnArray[i] = {Site:t[0], Wait:t[1], Run:t[2], Done:t[3], Fail:t[4]};
+    }
+  }else if(mode="log"){
+    for(var i = 0; i < responseArray.length; i++){
+      var t = responseArray[i];
       t[0] = t[0].replace(/'/g,"");
       t[1] = t[1].replace(/'/g,"");
       t[2] = t[2].replace(/'/g,"");
@@ -119,23 +134,12 @@ function parseInput(response,mode){
       }
       returnArray[i]={DateTime:t[3], Status:t[0], MinorStatus:t[1], Source:t[4], ApplicationStatus:t[2]};
     }
-  }else if(mode == "fts"){
-    for(var i = 0; i < responseArray.length; i++){
-      var t = responseArray[i].split(", ");
-      t[0] = t[0].replace(/'/g,"");
-      t[1] = t[1].replace(/'/g,"");
-      t[2] = t[2].replace(/'/g,"");
-      t[3] = t[3].replace(/'/g,"");
-      t[4] = t[4].replace(/'/g,"");
-      t[5] = t[5].replace(/'/g,"");
-      t[1] = status(t[1]);
-      returnArray[i]={File:t[0],Status:t[1],TransferTime:t[2],Error:t[3],Retries:t[4],Size:t[5]};
-    }
   }
   return returnArray
 }
 function parseRequest(r){
   var req = r.responseText;
+  req = JSON.parse(req);
   wait.hide();
   if ((req == "There are no jobs to fit your criteria")||(req == "There is no summary for the job(s)")) {
     xz.hide();
@@ -150,6 +154,7 @@ function parseRequest(r){
         return
       }else{
         alert("Operation finished successfully");
+        submit();
         return
       }
     }
@@ -160,19 +165,14 @@ function parseRequest(r){
       var sortedBy = YAHOO.example.Basic.myDataTable._configs.sortedBy.value.key;
       sortedBy = YAHOO.example.Basic.myDataTable.getColumn(sortedBy);
       YAHOO.example.Basic.myDataTable.sortColumn(sortedBy);
-      YAHOO.example.Basic.myDataTable.sortColumn(sortedBy); 
-//      var sortKey = YAHOO.example.Basic.myDataTable._configs.sortedBy.value.key;
+      YAHOO.example.Basic.myDataTable.sortColumn(sortedBy);
       total = parseInt(total);
-//      if((total > counter) && (page > 1)){
-        showPage(total);
-//      }else{
-//        showPage(0);
-//      }
+      showPage(total);
     }else if(type == "prod"){
       YAHOO.example.Data = {"startIndex":0,"sort":null,"dir":"asc",jobs:newJobs};
       YAHOO.example.Basic.myDataTable.initializeTable(YAHOO.example.Data.jobs);
       total = parseInt(total);
-      showPage(total);  
+      showPage(total);
     }else if(type == "log"){
       var temp_defs = [
         {key:"Source", sortable:true, resizeable:true},
@@ -194,19 +194,10 @@ function parseRequest(r){
       temp_datas.responseSchema = {fields: ["Name","Value"]};
       temp_datas.responseType = YAHOO.util.DataSource.TYPE_JSARRAY;
       var temp_table = new YAHOO.widget.DataTable("xz_body",temp_defs,temp_datas);
-    }else if(type == "fts"){
-      var temp_defs = [
-        {key:"File", lable:"File", sortable:true, resizeable:true},
-        {key:"Status", lable:"Status", sortable:true, resizeable:true},
-        {key:"TransferTime", lable:"TransferTime", sortable:true, resizeable:true},
-        {key:"Error", lable:"Error", sortable:true, resizeable:true},
-        {key:"Retries", lable:"Retries", sortable:true, resizeable:true},
-        {key:"Size", lable:"Size", sortable:true, resizeable:true}
-      ];
-      var temp_datas = new YAHOO.util.DataSource(data);
-      temp_datas.responseSchema = {fields: ["File","Status","TransferTime","Error","Retries","Size"]};
-      temp_datas.responseType = YAHOO.util.DataSource.TYPE_JSARRAY;
-      var temp_table = new YAHOO.widget.DataTable("xz_body",temp_defs,temp_datas);
+    }else if(type == "refresh"){
+      YAHOO.example.Data = {"startIndex":0,"sort":null,"dir":"asc",productions:data};
+      YAHOO.example.Basic.myDataTable.initializeTable(YAHOO.example.Data.productions);
+      showTime(total);
     }
   }else{
     if (req == "false") {
@@ -227,8 +218,6 @@ function setPanel(type){
     }else{
       if(type == "jdl"){
         width = (2 * width) / 3;
-      }else if(type == "fts"){
-        width =  width - 50;
       }else{
         width = width_element + 20;
       }
@@ -249,7 +238,7 @@ function setPanel(type){
 function setupPanel(id,e){
   xz.cfg.setProperty("width","600px");
   xz.cfg.setProperty("height","400px");
-  xz.setHeader("FTS Request ID: " + id);
+  xz.setHeader("Job ID: " + id);
   xz.setBody("<div id=\"xz_body\"></div>");
   xz.render(document.body);
   xz.show();
@@ -262,6 +251,10 @@ function clear(){
     x.parentNode.removeChild(z);
   }
   xz.hide();
+}
+function showTime(time){
+  document.getElementById("bottom_jobs_counter").innerHTML = "Last update: " + time;
+  document.getElementById("top_jobs_counter").innerHTML = "Last update: " + time;
 }
 function showPage(totaljobs){
   var url = parseFilter();
@@ -311,9 +304,9 @@ function parseFilter(){
   var status = document.getElementById("status").value;
   var site = document.getElementById("site").value;
   var g_sort = document.getElementById("global_sort").value;
-  var url = "/jobs/JobMonitor/submit?counter=" + counter;
+  var url = "submit?counter=" + counter;
   if (job_id != ""){
-    url = "/jobs/JobMonitor/submit?jobid=" + job_id;
+    url = "submit?jobid=" + job_id;
   }else{
     url = url + "&job_up=" + job_up;
     url = url + "&owner=" + owner + "&applic=" + application;
@@ -335,7 +328,6 @@ function changePage(sel){
   submit();
 }
 function createURL(mode,id){
-//  clear();
   if(mode == "submit"){
     if((id == null) || (id == "")){
       var page = 0;
@@ -372,7 +364,7 @@ function createURL(mode,id){
   if (c == false){
     return 0;
   }
-  var url = "/jobs/JobMonitor/action";
+  var url = "action";
   if(mode=="delete"){
     job = "deleteJobs=" + job;
   }else if(mode=="kill"){
@@ -428,48 +420,41 @@ function actionJob(some_useless_rubbish_here,mode,job){
   if(id == 0){
     return
   }
-  var url = '/jobs/JobMonitor/action?' + id;
+  var url = 'action?' + id;
   wait.render(document.body);wait.show();
   var myAjax = YAHOO.util.Connect.asyncRequest('POST',url,{success:parseRequest,failure:connectBad,argument:"act"},"");
 }
-function showInfo(id){
-  if((id == null) || (id == "")) return;
-  var url = "/data/FTSMonitor/action?getFTSInfo=" + id;
-  wait.render(document.body);wait.show();
-  var myAjax = YAHOO.util.Connect.asyncRequest("GET",url,{success:parseRequest,failure:connectBad,argument:"fts"},"");
-  setupPanel(id);
-}
 function getJdl(id){
   if((id == null) || (id == "")) return;
-  var url = "/jobs/JobMonitor/action?getJDL=" + id;
+  var url = "action?getJDL=" + id;
   wait.render(document.body);wait.show();
   var myAjax = YAHOO.util.Connect.asyncRequest("GET",url,{success:parseRequest,failure:connectBad,argument:"jdl"},"");
   setupPanel(id);
 }
 function getStandardOutput(id){
   if((id == null) || (id == "")) return;
-  var url = "/jobs/JobMonitor/action?getStandardOutput=" + id;
+  var url = "action?getStandardOutput=" + id;
   wait.render(document.body);wait.show();
   var myAjax = YAHOO.util.Connect.asyncRequest('GET',url,{success:parseRequest,failure:connectBad,argument:"jdl"},"");
   setupPanel(id);
 }
 function getBasicInfo(id){
   if((id == null) || (id == "")) return;
-  var url = "/jobs/JobMonitor/action?getBasicInfo=" + id;
+  var url = "action?getBasicInfo=" + id;
   wait.render(document.body);wait.show();
   var myAjax = YAHOO.util.Connect.asyncRequest('GET',url,{success:parseRequest,failure:connectBad,argument:"info"},"");
   setupPanel(id);
 }
 function getParams(id){
   if((id == null) || (id == "")) return;
-  var url = "/jobs/JobMonitor/action?getParams=" + id;
+  var url = "action?getParams=" + id;
   wait.render(document.body);wait.show();
   var myAjax = YAHOO.util.Connect.asyncRequest('GET',url,{success:parseRequest,failure:connectBad,argument:"info"},"");
   setupPanel(id);
 }
 function getLoggingInfo(id){
  if((id == null) || (id == "")) return;
-  var url = "/jobs/JobMonitor/action?LoggingInfo=" + id;
+  var url = "action?LoggingInfo=" + id;
   wait.render(document.body);wait.show();
   var myAjax = YAHOO.util.Connect.asyncRequest('GET',url,{success:parseRequest,failure:connectBad,argument:"log"},"");
   setupPanel(id);
@@ -477,13 +462,18 @@ function getLoggingInfo(id){
 function pilot(some_useless_rubbish_here,mode,id){
   if((id == null) || (id == "")) return;
   if(mode == "out"){
-    var url = "/jobs/JobMonitor/action?pilotStdOut=" + id;
+    var url = "action?pilotStdOut=" + id;
   }else if(mode == "err"){
-    var url = "/jobs/JobMonitor/action?pilotStdErr=" + id;
+    var url = "action?pilotStdErr=" + id;
   }
   wait.render(document.body);wait.show();
   var myAjax = YAHOO.util.Connect.asyncRequest('GET',url,{success:parseRequest,failure:connectBad,argument:"jdl"},"");
   setupPanel(id);
+}
+function refresh(){
+  var url = "SiteSummary/action?Refresh=true"
+  wait.render(document.body);wait.show();
+  var myAjax = YAHOO.util.Connect.asyncRequest('GET',url,{success:parseRequest,failure:connectBad,argument:"refresh"},"");
 }
 function fuckinMenu(id,x,y){
   job_menu.clearContent();
@@ -503,14 +493,12 @@ function fuckinMenu(id,x,y){
       {text:"Get StdErr",url:"javascript:pilot('tmp','err'," + id + ")"}
     ]}}
   ]);
-  job_menu.setItemGroupTitle("Job ID: " + id, 0); 
+  job_menu.setItemGroupTitle("Job ID: " + id, 0);
   job_menu.render(document.body);
   job_menu.cfg.setProperty("xy", [x,y]);
   job_menu.show();
 }
 xz = new YAHOO.widget.Panel("xz",{visible:false,draggable:true,close:true,constraintoviewport:true});
-wait = new YAHOO.widget.Panel("w",{visible:false,draggable:false,close:false,fixedcenter:true,modal:true});
-wait.setBody("<img src='/images/loading/loading-3.gif' width='66' height='66'>");
 job_menu = new YAHOO.widget.Menu("xxx_menu", {xy:[0,0],showdelay:"250",position:"dynamic",zindex:4000});
 YAHOO.util.Event.addListener("submit_filter","click",submit);
 YAHOO.util.Event.addListener("jobupdate","click",showkal);
@@ -520,12 +508,13 @@ YAHOO.util.Event.addListener("top_selectN","click",selectAll,"none");
 YAHOO.util.Event.addListener("top_JRes","click",actionJob,"reset");
 YAHOO.util.Event.addListener("top_JKil","click",actionJob,"kill");
 YAHOO.util.Event.addListener("top_JDel","click",actionJob,"delete");
+YAHOO.util.Event.addListener("top_JRef","click",refresh,"refresh");
 YAHOO.util.Event.addListener("bottom_selectA","click",selectAll,"all");
 YAHOO.util.Event.addListener("bottom_selectN","click",selectAll,"none");
 YAHOO.util.Event.addListener("bottom_JRes","click",actionJob,"reset");
 YAHOO.util.Event.addListener("bottom_JKil","click",actionJob,"kill");
 YAHOO.util.Event.addListener("bottom_JDel","click",actionJob,"delete");
-//prod[i] = {Site:t[0], Run:t[1], Wait:t[2], Done:t[2], Fail:t[2]};
+YAHOO.util.Event.addListener("bottom_JRef","click",refresh,"refresh");
 YAHOO.util.Event.addListener(window, "load", function() {
   YAHOO.example.Basic = new function() {
     var myColumnDefs = [
@@ -541,28 +530,10 @@ YAHOO.util.Event.addListener(window, "load", function() {
       fields: ["Site","Run","Wait","Done","Fail"]
     };
     this.myDataTable = new YAHOO.widget.DataTable("job_status_div", myColumnDefs, this.myDataSource);
-//    this.myDataTable.subscribe("rowMouseoverEvent", this.myDataTable.onEventHighlightRow);
-//    this.myDataTable.subscribe("rowMouseoutEvent", this.myDataTable.onEventUnhighlightRow);
-//    this.myDataTable.subscribe("rowClickEvent", function(e){
-//      x = e.event.pageX;
-//      y = e.event.pageY;
-//      var t = e.target;
-//      var rec = this.getRecord(t);
-//      var id = rec.getData("Site");
-//      showInfo(id);
-//      if(e.event.target.yuiColumnId != "0"){
-//        fuckinMenu(id,x,y);
-//      }
-//    });
   };
 });
 function connectBad(){
   wait.hide();
   alert("Unable to connect server or it could be an error on server side");
   return
-}
-function tot(innerhtml){
-  var inner = document.getElementById("job_status_div");
-  var xxx = document.getElementById("job_status_div").childNodes;
-  xxx = 0;
 }
