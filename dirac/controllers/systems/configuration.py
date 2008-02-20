@@ -1,5 +1,5 @@
-# $Header: /tmp/libdirac/tmp.stZoy15380/dirac/DIRAC3/DIRAC/Interfaces/Web/dirac/controllers/systems/configuration.py,v 1.12 2007/12/19 18:42:23 acasajus Exp $
-__RCSID__ = "$Id: configuration.py,v 1.12 2007/12/19 18:42:23 acasajus Exp $"
+# $Header: /tmp/libdirac/tmp.stZoy15380/dirac/DIRAC3/DIRAC/Interfaces/Web/dirac/controllers/systems/configuration.py,v 1.13 2008/02/20 19:35:59 acasajus Exp $
+__RCSID__ = "$Id: configuration.py,v 1.13 2008/02/20 19:35:59 acasajus Exp $"
 
 import logging
 
@@ -70,6 +70,8 @@ class ConfigurationController(BaseController):
       return render( "/error.mako" )
 
   def manageRemoteConfig( self ):
+    if not authorizeAction():
+      return render( "/error.mako" )
     if not 'cfgData' in session or not 'csName' in session:
       if 'csFilename'  in session:
         del( session[ 'csFilename' ] )
