@@ -4,6 +4,11 @@ var counter = 25;
 var total = "";
 var page = 0;
 var jobLegend = "";
+function initWebRoot(url){
+  gURLRoot = url;
+  wait = new YAHOO.widget.Panel("w",{visible:false,draggable:false,close:false,fixedcenter:true,modal:true});
+  wait.setBody("<img src='"+gURLRoot+"/loading/loading-3.gif' width='66' height='66'>");
+}
 function showkal(){
   if(document.getElementById("kalendar") == null){
     var k = new YAHOO.widget.Panel("kalendar",{visible:true,draggable:false,close:true,constraintoviewport:true,context:["jobupdate","tl","bl"],zindex:3000});
