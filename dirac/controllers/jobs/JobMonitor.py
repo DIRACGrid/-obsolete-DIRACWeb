@@ -9,13 +9,9 @@ from DIRAC import gLogger
 
 log = logging.getLogger(__name__)
 
-RPC = getRPCClient("dips://volhcb03.cern.ch:9130/WorkloadManagement/JobMonitoring")
-#RPC = getRPCClient("WorkloadManagement/JobMonitoring")
-MANAGERRPC = getRPCClient("WorkloadManagement/JobManager")
-PILOTRPC = getRPCClient("WorkloadManagement/WMSAdministrator")
 numberOfJobs = 25
 pageNumber = 0
-globalSort = "jobID"
+globalSort = "JobID:DESC"
 
 class JobmonitorController(BaseController):
 ################################################################################
@@ -66,7 +62,7 @@ class JobmonitorController(BaseController):
       if request.params.has_key("sort") and len(request.params["sort"]) > 0:
         globalSort = str(request.params["sort"])
       else:
-        globalSort = "jobID"
+        globalSort = "JobID:DESC"
       if request.params.has_key("page") and len(request.params["page"]) > 0:
         pageNumber = int(request.params["page"]) - 1
         if pageNumber <= 0:
@@ -76,6 +72,7 @@ class JobmonitorController(BaseController):
     return req
 ################################################################################
   def __drawFilters(self):
+    RPC = getRPCClient("WorkloadManagement/JobMonitoring")
     result = RPC.getSites()
     if result["OK"]:
       c.getsite = []
@@ -119,6 +116,7 @@ class JobmonitorController(BaseController):
     return 88
 ################################################################################
   def display(self):
+    RPC = getRPCClient("WorkloadManagement/JobMonitoring")
     pagestart = time()
     result = self.__parseRequest()
     self.__drawFilters()
@@ -140,6 +138,7 @@ class JobmonitorController(BaseController):
 ################################################################################
   @jsonify
   def submit(self):
+    RPC = getRPCClient("WorkloadManagement/JobMonitoring")
     pagestart = time()
     result = self.__parseRequest()
     self.__drawFilters()
@@ -205,6 +204,7 @@ class JobmonitorController(BaseController):
 ################################################################################
   def __getJdl(self,id):
     print "JDL:",id
+    RPC = getRPCClient("WorkloadManagement/JobMonitoring")
     result = RPC.getJobJDL(id)
     if result["OK"]:
       jobJDL = result["Value"]
@@ -219,6 +219,7 @@ class JobmonitorController(BaseController):
 ################################################################################
   def __getBasicInfo(self,id):
     print "BasicInfo:",id
+    RPC = getRPCClient("WorkloadManagement/JobMonitoring")
     result = RPC.getJobSummary(id)
     if result["OK"]:
       itemList = result["Value"]
@@ -232,6 +233,7 @@ class JobmonitorController(BaseController):
 ################################################################################
   def __getLoggingInfo(self,id):
     print "LoggingInfo:",id
+    RPC = getRPCClient("WorkloadManagement/JobMonitoring")
     result = RPC.getJobLoggingInfo(id)
     if result["OK"]:
       info = result["Value"]
@@ -243,6 +245,7 @@ class JobmonitorController(BaseController):
 ################################################################################
   def __getParams(self,id):
     print "Parameters:",id
+    RPC = getRPCClient("WorkloadManagement/JobMonitoring")
     result = RPC.getJobParameters(id)
     if result["OK"]:
       attr = result["Value"]
@@ -258,6 +261,7 @@ class JobmonitorController(BaseController):
 ################################################################################
   def __delJobs(self,id):
     print "DELETE: ",id
+    MANAGERRPC = getRPCClient("WorkloadManagement/JobManager")
     result = MANAGERRPC.deleteJob(id)
     if result["OK"]:
       return 0
@@ -273,6 +277,7 @@ class JobmonitorController(BaseController):
 ################################################################################
   def __getStandardOutput(self,id):
     print "StandardOutput",id
+    RPC = getRPCClient("WorkloadManagement/JobMonitoring")
     result = RPC.getJobParameters(id)
     if result["OK"]:
       attr = result["Value"]
@@ -287,6 +292,7 @@ class JobmonitorController(BaseController):
 ################################################################################
   def __killJobs(self,id):
     print "KILL:",id
+    MANAGERRPC = getRPCClient("WorkloadManagement/JobManager")
     result = MANAGERRPC.killJob(id)
     if result["OK"]:
       return 0
@@ -302,6 +308,7 @@ class JobmonitorController(BaseController):
 ################################################################################
   def __resetJobs(self,id):
     print "RESET:",id
+    MANAGERRPC = getRPCClient("WorkloadManagement/JobManager")
     result = MANAGERRPC.resetJob(id)
     if result["OK"]:
       return 0
@@ -317,6 +324,7 @@ class JobmonitorController(BaseController):
 ################################################################################
   def __pilotGetOutput(self,mode,id):
     print "PilotOutput:",id
+    PILOTRPC = getRPCClient("WorkloadManagement/WMSAdministrator")
     result = PILOTRPC.getJobPilotOutput(id);
     if result["OK"]:
       output = result["Value"]
