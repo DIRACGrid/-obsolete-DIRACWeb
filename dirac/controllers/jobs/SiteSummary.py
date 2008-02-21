@@ -18,8 +18,8 @@ class SitesummaryController(BaseController):
     pagestart = time()
     result = RPC.getSiteSummary()
     now = Time.dateTime()
-    currentDate = now.strftime("%Y-%m-%d %H:%M:%S")
-    currentDate = str(currentDate)
+    currentDate = now.strftime("%Y-%m-%d %H:%M:%S %Z")
+    currentDate = "%s UTC" % currentDate
     currentTime = []
     currentTime.append(currentDate)
     if result["OK"]:
@@ -44,7 +44,7 @@ class SitesummaryController(BaseController):
           c.listResult.append(tmp)
       c.listResult.append(total)
       c.listResult.append(currentTime)
-      gLogger.info("SiteSummary call")
+      gLogger.info("SiteSummary call ",currentTime)
       return render("/jobs/SiteSummary.mako")
     else:
       return result["Message"]
@@ -66,8 +66,8 @@ class SitesummaryController(BaseController):
       pagestart = time()
       result = RPC.getSiteSummary()
       now = Time.dateTime()
-      currentDate = now.strftime("%Y-%m-%d %H:%M:%S")
-      currentDate = str(currentDate)
+      currentDate = now.strftime("%Y-%m-%d %H:%M:%S %Z")
+      currentDate = "%s UTC" % currentDate
       currentTime = []
       currentTime.append(currentDate)
       if result["OK"]:
