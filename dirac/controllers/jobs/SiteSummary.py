@@ -13,11 +13,10 @@ log = logging.getLogger(__name__)
 
 class SitesummaryController(BaseController):
 ################################################################################
-  def index(self):
+  def display(self):
     RPC = getRPCClient("WorkloadManagement/JobMonitoring")
     pagestart = time()
     result = RPC.getSiteSummary()
-    print "SiteSummary:",result
     now = Time.dateTime()
     currentDate = now.strftime("%Y-%m-%d %H:%M:%S %Z")
     currentDate = "%s UTC" % currentDate
@@ -46,9 +45,10 @@ class SitesummaryController(BaseController):
           c.listResult.append(tmp)
       c.listResult.append(total)
       c.listResult.append(currentTime)
-      gLogger.info("SiteSummary call ",currentTime)
+      gLogger.info("SiteSummary call successful")
       return render("/jobs/SiteSummary.mako")
     else:
+      gLogger.info(result["Message"])
       return result["Message"]
 ################################################################################
   @jsonify
@@ -59,7 +59,7 @@ class SitesummaryController(BaseController):
       return self.__getData(id)
     else:
       c.error = "Failed to get data"
-      print "+++ E:",c.error
+      gLogger.info("+++ E:",c.error)
       return c.error
 ################################################################################
   def __getData(self,id):
@@ -76,8 +76,8 @@ class SitesummaryController(BaseController):
         result = result["Value"]
         c.listResult = []
         for i in result:
-          i = i.replace("\""," ? ")
           stat = result[i]
+          i = i.replace("\""," ? ")
           if i == "Total":
             total = []
             total.append(i)
@@ -95,12 +95,13 @@ class SitesummaryController(BaseController):
             c.listResult.append(tmp)
         c.listResult.append(total)
         c.listResult.append(currentTime)
+        gLogger.info("SiteSummary call successful")
         return c.listResult
       else:
         c.error = result["Message"]
-        print "+++ E:",c.error
+        gLogger.info("+++ E:",c.error)
         return c.error
     else:
       c.error = "Not a correct argument"
-      print "+++ E:",c.error
+      gLogger.info("+++ E:",c.error)
       return c.error
