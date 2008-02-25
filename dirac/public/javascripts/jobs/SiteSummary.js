@@ -471,7 +471,7 @@ function pilot(some_useless_rubbish_here,mode,id){
   setupPanel(id);
 }
 function refresh(){
-  var url = "SiteSummary/action?Refresh=true"
+  var url = "action?Refresh=true"
   wait.render(document.body);wait.show();
   var myAjax = YAHOO.util.Connect.asyncRequest('GET',url,{success:parseRequest,failure:connectBad,argument:"refresh"},"");
 }
