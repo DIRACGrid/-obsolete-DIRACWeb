@@ -17,6 +17,7 @@ class SitesummaryController(BaseController):
     RPC = getRPCClient("WorkloadManagement/JobMonitoring")
     pagestart = time()
     result = RPC.getSiteSummary()
+    print "SiteSummary:",result
     now = Time.dateTime()
     currentDate = now.strftime("%Y-%m-%d %H:%M:%S %Z")
     currentDate = "%s UTC" % currentDate
@@ -27,6 +28,7 @@ class SitesummaryController(BaseController):
       c.listResult = []
       for i in result:
         stat = result[i]
+        i = i.replace("\""," ? ")
         if i == "Total":
           total = []
           total.append(i)
@@ -74,6 +76,7 @@ class SitesummaryController(BaseController):
         result = result["Value"]
         c.listResult = []
         for i in result:
+          i = i.replace("\""," ? ")
           stat = result[i]
           if i == "Total":
             total = []
