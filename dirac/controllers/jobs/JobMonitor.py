@@ -19,7 +19,7 @@ class JobmonitorController(BaseController):
     valueList = []
     for i in jobs:
       s = jobs[i]
-      valueList.append([s["JobID"],s["Status"],s["MinorStatus"],s["ApplicationStatus"],s["Site"],s["JobName"],s["LastUpdateTime"],s["Owner"],s["SubmissionTime"]])
+      valueList.append([s["JobID"],s["Status"],s["MinorStatus"],s["ApplicationStatus"],s["Site"],s["JobName"],s["LastUpdateTime"],s["Owner"],s["SubmissionTime"],s["LastSignOfLife"]])
     return valueList
 ################################################################################
   def __parseRequest(self):
@@ -41,9 +41,9 @@ class JobmonitorController(BaseController):
         numberOfJobs = int(request.params["counter"])
       else:
         numberOfJobs = 25
-      if request.params.has_key("prod") and len(request.params["prod"]) > 0:
-        req["JobGroup"] = str(request.params["prod"])
-        save_prod = str(request.params["prod"])
+      if request.params.has_key("prodname") and len(request.params["prodname"]) > 0:
+        req["JobGroup"] = str(request.params["prodname"])
+        c.save_prod = str(request.params["prodname"])
       if request.params.has_key("site") and len(request.params["site"]) > 0:
         req["Site"] = str(request.params["site"])
         save_site = str(request.params["site"])
@@ -72,6 +72,19 @@ class JobmonitorController(BaseController):
     return req
 ################################################################################
   def __drawFilters(self):
+    RPC = getRPCClient("ProductionManagement/ProductionManager")
+    result = RPC.getProductionSummary()
+    if result["OK"]:
+      c.getprod = []
+      prods = result["Value"]
+      if len(prods)>0:
+        for keys,i in prods.items():
+          id = str(int(keys)).zfill(8)
+          c.getprod.append(id)
+      else:
+        c.getprod.append("No elements to display")
+    else:
+      c.getprod = "Error during RPC call"
     RPC = getRPCClient("WorkloadManagement/JobMonitoring")
     result = RPC.getSites()
     if result["OK"]:
