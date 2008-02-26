@@ -5,14 +5,11 @@ var total = "";
 var page = 0;
 var jobLegend = "";
 var gURLRoot = "";
-
-function initWebRoot( url )
-{
-	gURLRoot = url;
-	wait = new YAHOO.widget.Panel("w",{visible:false,draggable:false,close:false,fixedcenter:true,modal:true});
-	wait.setBody("<img src='"+gURLRoot+"/loading/loading-3.gif' width='66' height='66'>");
+function initWebRoot(url){
+  gURLRoot = url;
+  wait = new YAHOO.widget.Panel("w",{visible:false,draggable:false,close:false,fixedcenter:true,modal:true});
+  wait.setBody("<img src='"+gURLRoot+"/loading/loading-3.gif' width='66' height='66'>");
 }
-
 function showkal(){
   if(document.getElementById("kalendar") == null){
     var k = new YAHOO.widget.Panel("kalendar",{visible:true,draggable:false,close:true,constraintoviewport:true,context:["jobupdate","tl","bl"],zindex:3000});
@@ -83,9 +80,9 @@ function parseInput(response,mode){
       var t = responseArray[i];
       t[0] = t[0].replace("'","");
       t[8] = t[8].replace("'","");
-      t[9] = status(t[1]);
+      t[10] = status(t[1]);
       t[0] = t[0] * 1;
-      returnArray[i]={JobId:t[0],StIcon:t[9],Status:t[1],MinorStatus:t[2],ApplicationStatus:t[3],Site:t[4],JobName:t[5],LastUpdate:t[6],SubmissionTime:t[8],Owner:t[7]};
+      returnArray[i]={JobId:t[0],StIcon:t[10],Status:t[1],MinorStatus:t[2],ApplicationStatus:t[3],Site:t[4],JobName:t[5],LastUpdate:t[6],Sign:t[9],SubmissionTime:t[8],Owner:t[7]};
     }
   }else if(mode == "prod"){
     total = responseArray.pop();
@@ -147,6 +144,7 @@ function parseRequest(r){
         return
       }else{
         alert("Operation finished successfully");
+        submit();
         return
       }
     }
@@ -246,6 +244,9 @@ function showPage(totaljobs){
   var pages_content = ""
   page = page * 1;
   if(pages > 10){
+    if(page > 10){
+      pages_content = pages_content + "<a href=\"javascript:submit(" + (page - 10) + ");\">previous 10</a>&nbsp;&nbsp;";
+    }
     if(page > 3){
       pages_content = pages_content + "<a class=\"yui-dt-page\" href=\"javascript:submit(" + 1 + ");\">" + 1 + "</a>";
       pages_content = pages_content + "&nbsp;&nbsp;...&nbsp;&nbsp;<a class=\"yui-dt-page\" href=\"javascript:submit(" + (page - 1) + ");\">" + (page - 1) + "</a>";
@@ -265,6 +266,9 @@ function showPage(totaljobs){
     }else if(page == pages - 1){
       pages_content = pages_content + "<a class=\"yui-dt-page\" href=\"javascript:submit(" + (pages) + ");\">" + (pages) + "</a>";
     }
+    if(page < pages - 9){
+      pages_content = pages_content + "&nbsp;&nbsp;<a href=\"javascript:submit(" + (page + 10) + ");\">next 10</a>&nbsp;&nbsp;";
+    }
   }else{
     for(var i = 0; i < pages; i++){
       var j = i + 1;
@@ -281,6 +285,7 @@ function showPage(totaljobs){
   document.getElementById("top_page").innerHTML = pages_content;
 }
 function parseFilter(){
+  var prod_id = document.getElementById("prodname").value;
   var job_up = document.getElementById("jobupdate").value;
   var job_id = document.getElementById("jobid").value;
   var owner = document.getElementById("owner").value;
@@ -292,7 +297,7 @@ function parseFilter(){
   if (job_id != ""){
     url = "submit?jobid=" + job_id;
   }else{
-    url = url + "&job_up=" + job_up;
+    url = url + "&job_up=" + job_up + "&prodname=" + prod_id;
     url = url + "&owner=" + owner + "&applic=" + application;
     url = url + "&status=" + status + "&site=" + site;
     url = url + "&sort=" + g_sort;
@@ -454,6 +459,14 @@ function pilot(some_useless_rubbish_here,mode,id){
   var myAjax = YAHOO.util.Connect.asyncRequest('GET',url,{success:parseRequest,failure:connectBad,argument:"jdl"},"");
   setupPanel(id);
 }
+function refresh(){
+  var url = "action?Refresh=true"
+  wait.render(document.body);wait.show();
+  var myAjax = YAHOO.util.Connect.asyncRequest('GET',url,{success:parseRequest,failure:connectBad,argument:"refresh"},"");
+}
+function clearprod(){
+  document.getElementById("prodname").value = "";
+}
 function fuckinMenu(id,x,y){
   job_menu.clearContent();
   job_menu.addItems([
@@ -480,6 +493,7 @@ function fuckinMenu(id,x,y){
 xz = new YAHOO.widget.Panel("xz",{visible:false,draggable:true,close:true,constraintoviewport:true});
 job_menu = new YAHOO.widget.Menu("xxx_menu", {xy:[0,0],showdelay:"250",position:"dynamic",zindex:4000});
 YAHOO.util.Event.addListener("submit_filter","click",submit);
+YAHOO.util.Event.addListener("submit_filter","click",clearprod);
 YAHOO.util.Event.addListener("jobupdate","click",showkal);
 YAHOO.util.Event.addListener("global_sort","change",submit);
 YAHOO.util.Event.addListener("top_selectA","click",selectAll,"all");
@@ -487,11 +501,13 @@ YAHOO.util.Event.addListener("top_selectN","click",selectAll,"none");
 YAHOO.util.Event.addListener("top_JRes","click",actionJob,"reset");
 YAHOO.util.Event.addListener("top_JKil","click",actionJob,"kill");
 YAHOO.util.Event.addListener("top_JDel","click",actionJob,"delete");
+YAHOO.util.Event.addListener("top_JRef","click",refresh,"refresh");
 YAHOO.util.Event.addListener("bottom_selectA","click",selectAll,"all");
 YAHOO.util.Event.addListener("bottom_selectN","click",selectAll,"none");
 YAHOO.util.Event.addListener("bottom_JRes","click",actionJob,"reset");
 YAHOO.util.Event.addListener("bottom_JKil","click",actionJob,"kill");
 YAHOO.util.Event.addListener("bottom_JDel","click",actionJob,"delete");
+YAHOO.util.Event.addListener("bottom_JRef","click",refresh,"refresh");
 YAHOO.util.Event.addListener(window, "load", function() {
   YAHOO.example.Basic = new function() {
     this.chk = function(elCell, oData){
@@ -507,16 +523,17 @@ YAHOO.util.Event.addListener(window, "load", function() {
       {key:"ApplicationStatus", sortable:true, resizeable:true},
       {key:"Site", sortable:true, resizeable:true},
       {key:"JobName", sortable:true, resizeable:true},
-      {key:"LastUpdate", sortable:true, resizeable:true},
-      {key:"SubmissionTime", sortable:true, resizeable:true},
+      {label:"LastUpdate [UTC]", key:"LastUpdate", sortable:true, resizeable:true},
+      {label:"LastSignOfLife&nbsp;[UTC]", key:"Sign", sortable:true, resizeable:true},
+      {label:"SubmissionTime&nbsp;[UTC]", key:"SubmissionTime", sortable:true, resizeable:true},
       {key:"Owner", sortable:true, resizeable:true}
     ];
     this.myDataSource = new YAHOO.util.DataSource(YAHOO.example.Data.jobs);
     this.myDataSource.responseType = YAHOO.util.DataSource.TYPE_JSARRAY;
     this.myDataSource.responseSchema = {
-      fields: ["JobId","StIcon","Status","MinorStatus","ApplicationStatus","Site","JobName","LastUpdate","SubmissionTime","Owner"]
+      fields: ["JobId","StIcon","Status","MinorStatus","ApplicationStatus","Site","JobName","LastUpdate","Sign","SubmissionTime","Owner"]
     };
-    this.myDataTable = new YAHOO.widget.DataTable("job_status_div",myColumnDefs,this.myDataSource,{sortedBy:{key:"JobId",dir:"asc"}});
+    this.myDataTable = new YAHOO.widget.DataTable("job_status_div",myColumnDefs,this.myDataSource,{sortedBy:{key:"JobId",dir:"desc"}});
     var sortedBy = this.myDataTable._configs.sortedBy.value.key;
     sortedBy = this.myDataTable.getColumn(sortedBy);
     this.myDataTable.sortColumn(sortedBy);
