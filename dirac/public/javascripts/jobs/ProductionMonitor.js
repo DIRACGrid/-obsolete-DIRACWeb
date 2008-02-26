@@ -3,6 +3,11 @@ var y = 0;
 var counter = 25;
 var total = "";
 var jobLegend = "";
+function initWebRoot(url){
+  gURLRoot = url;
+  wait = new YAHOO.widget.Panel("w",{visible:false,draggable:false,close:false,fixedcenter:true,modal:true});
+  wait.setBody("<img src='"+gURLRoot+"/loading/loading-3.gif' width='66' height='66'>");
+}
 function parseRequest(r){
   var req = r.responseText;
   var type = r.argument;
@@ -131,6 +136,15 @@ function getLoggingInfo(id){
   var myAjax = YAHOO.util.Connect.asyncRequest('GET',url,{success:parseRequest,failure:connectBad,argument:"log"},"");
   setupPanel(id);
 }
+function actionJob(some_useless_rubbish_here,mode,job){
+  var id = createURL(mode,job);
+  if(id == 0){
+    return
+  }
+  var url = 'action?' + id;
+  wait.render(document.body);wait.show();
+  var myAjax = YAHOO.util.Connect.asyncRequest('POST',url,{success:parseRequest,failure:connectBad,argument:"act"},"");
+}
 function showPage(totaljobs){
   var url = parseFilter();
   var pages = Math.ceil(totaljobs/counter);
@@ -145,23 +159,7 @@ function showPage(totaljobs){
   document.getElementById("top_page").innerHTML = pages_content;
 }
 function parseFilter(){
-  var job_up = document.getElementById("jobupdate").value;
-  var job_id = document.getElementById("jobid").value;
-  var owner = document.getElementById("owner").value;
-  var application = document.getElementById("applic").value;
-  var status = document.getElementById("status").value;
-  var site = document.getElementById("site").value;
-  var g_sort = document.getElementById("global_sort").value;
-  var url = "/jobs/JobMonitor/submit?counter=" + counter;
-  if (job_id != ""){
-    url = "/jobs/JobMonitor/submit?jobid=" + job_id;
-  }else{
-    url = url + "&job_up=" + job_up;
-    url = url + "&owner=" + owner + "&applic=" + application;
-    url = url + "&status=" + status + "&site=" + site;
-    url = url + "&sort=" + g_sort;
-  }
-  return url
+  return "action?Refresh=true"
 }
 function changePage(sel){
   if((sel == null) || (sel == "")){
@@ -198,10 +196,10 @@ function updateTable(r) {
   }
   response = response.replace("]]","");
   response = response.replace("[[","");
+  response = response.replace(/"/g,"");
+  response = response.replace(/'/g,"");
   var jobArray = response.split("], [");
-  total = jobArray.pop();
-  jobLegend = jobArray.pop();
-  var newJobs = new Array();
+  var prod = new Array();
   if (jobArray.length == 0){
     alert("Can't parse server response: " + response);
     return
@@ -209,54 +207,57 @@ function updateTable(r) {
   var t = "";
   for (var i = 0; i < jobArray.length; i++) {
     t = jobArray[i].split(", ");
-    t[0] = t[0].replace(/'/g,"");
-    t[1] = t[1].replace(/'/g,"");
-    t[2] = t[2].replace(/'/g,"");
-    t[3] = t[3].replace(/'/g,"");
-    t[7] = t[7].replace(/'/g,"");
-    prod[i] = {ProdId:t[0], ProdName:t[1], Status:t[2], DN:t[3], JobsTotal:t[4], JobsSubmitted:t[5], JobLast:t[6], Parent:t[7], Description:t[8]};
+    prod[i] = {ProdId:t[0],ProdName:t[1],Status:t[2],DN:t[3],Created:t[4],Submited:t[5],Wait:t[6],Running:t[7],Done:t[8],Failed:t[9],Parent:t[10],Description:t[11],CreationDate:t[12]};
   }
-  YAHOO.example.Data = {"startIndex":0,"sort":null,"dir":"asc",jobs:newJobs};
-  YAHOO.example.Basic.myDataTable.initializeTable(YAHOO.example.Data.jobs);
-  total = parseInt(total);
-  showPage(total);
+  YAHOO.example.Data = {"startIndex":0,"sort":null,"dir":"asc",productions:prod}
+  YAHOO.example.Basic.myDataTable.initializeTable(YAHOO.example.Data.productions);
 }
-function deleteProduction(){
-  var inputs = document.getElementsByTagName('input');
+function createURL(mode,id){
   var job = new Array();
-  var j = 0;
-  for (var i = 0; i < inputs.length; i++) {
-    if (inputs[i].checked == true){
-      job[j] = inputs[i].id;
-      j = j + 1;
+  if((id == null) || (id == "")){
+    var inputs = document.getElementsByTagName('input');
+    var j = 0;
+    for (var i = 0; i < inputs.length; i++) {
+      if (inputs[i].checked == true){
+        job[j] = inputs[i].id;
+        j = j + 1;
+      }
     }
-  }
-  if (job.length < 1){
-    alert("No productions were selected");
-    return
+    if (job.length < 1){
+      alert("No productions were selected");
+      return 0
+    }
+  }else{
+    job[0] = id;
   }
   if (job.length == 1){
-    var c = confirm ("Are you sure you want to delete production " + job[0] + "?");
+    var c = confirm ("Are you sure you want to " + mode + " production " + job[0] + "?");
   }else{
-    var c = confirm ("Are you sure you want to delete these productions?");
+    var c = confirm ("Are you sure you want to " + mode + " these production?");
   }
   if (c == false){
+    return 0;
+  }
+  var url = "action";
+  if(mode=="delete"){
+    job = "delProd=" + job;
+  }else if(mode=="start"){
+    job = "startProd=" + job;
+  }else if(mode=="stop"){
+    job = "stopProd=" + job;
+  }
+  return job
+}
+function actionJob(some_useless_rubbish_here,mode,job){
+  var id = createURL(mode,job);
+  if(id == 0){
     return
   }
-  var url = "/jobs/WF/action?delProd=" + job;
+  var url = 'action?' + id;
   wait.render(document.body);wait.show();
-  var myAjax = YAHOO.util.Connect.asyncRequest('POST', url, {success:updateDel,failure:connectBad},"");
+  var myAjax = YAHOO.util.Connect.asyncRequest('POST',url,{success:submit,failure:connectBad},"");
 }
-function updateDel(r){
-  var response = r.responseText;
-  if (response != 0){
-    wait.hide();
-    alert(response);
-    return
-  }
-//  submit();
-}
-function selectAll(selection){
+function selectAll(e,selection){
   var inputs = document.getElementsByTagName('input');
   if(selection=="all"){
     var ch = 0;
@@ -290,37 +291,48 @@ function jobch(s){
     document.getElementById("site").disabled = false;
   }
 }
+function showJobs(id){
+  var url = 'https://lhcbtest.pic.es/DIRAC/jobs/JobMonitor/display?counter=25&job_up=&applic=&status=&site=&sort=JobID:ASC&page=0&prodname=' + id;
+  location.href = url;
+}
 function fMenu(id,x,y,stat){
   job_menu.clearContent();
   job_menu.addItems([
-    {text:"Show Comment",url:"javascript:getInfo('" + id + "','Comment')"},
-    {text:"Show Full DN",url:"javascript:getInfo('" + id + "','DN')"},
-    {text:"Show Template",url:"javascript:getInfo('" + id + "','DN')"},
-    {text:"Edit Production",url:"javascript:editProd('" + id + "')"}
+    {text:"Show Jobs",url:"javascript:showJobs('" + id + "')"}
   ]);
-  if(stat == "Start"){
+  if((stat == "Start")||(stat == "Active")){
     job_menu.addItems([
-      {text:"Stop Production",url:"javascript:stopProd('" + id + "')"}
+      {text:"Stop Production",url:"javascript:actionJob('some_useless_rubbish_here','stop','" + id + "')"}
     ]);
   }else{
     job_menu.addItems([
-      {text:"Start Production",url:"javascript:startProd('" + id + "')"}
+      {text:"Start Production",url:"javascript:actionJob('some_useless_rubbish_here','start','" + id + "')"}
     ]);
   }
-  job_menu.setItemGroupTitle("Production ID: " + id, 0); 
+  job_menu.setItemGroupTitle("Production ID: " + id, 0);
   job_menu.render(document.body);
   job_menu.cfg.setProperty("xy", [x,y]);
   job_menu.show();
 }
 job_menu = new YAHOO.widget.Menu("xxx_menu", { xy: [0,0], showdelay: "250", position: "dynamic" });
-//YAHOO.util.Event.addListener("submit_filter", "click", submit);
-YAHOO.util.Event.addListener("delProd1", "click", deleteProduction);
-YAHOO.util.Event.addListener("delProd2", "click", deleteProduction);
+YAHOO.util.Event.addListener("submit_filter","click",submit);
+YAHOO.util.Event.addListener("top_JRef","click",submit);
+YAHOO.util.Event.addListener("top_selectA","click",selectAll,"all");
+YAHOO.util.Event.addListener("top_selectN","click",selectAll,"none");
+YAHOO.util.Event.addListener("top_JSta","click",actionJob,"start");
+YAHOO.util.Event.addListener("top_JSto","click",actionJob,"stop");
+YAHOO.util.Event.addListener("top_JDel","click",actionJob,"delete");
+YAHOO.util.Event.addListener("bottom_JRef","click",submit);
+YAHOO.util.Event.addListener("bottom_selectA","click",selectAll,"all");
+YAHOO.util.Event.addListener("bottom_selectN","click",selectAll,"none");
+YAHOO.util.Event.addListener("bottom_JSta","click",actionJob,"start");
+YAHOO.util.Event.addListener("bottom_JSto","click",actionJob,"stop");
+YAHOO.util.Event.addListener("bottom_JDel","click",actionJob,"delete");
 YAHOO.util.Event.addListener(window, "load", function() {
   YAHOO.example.Basic = new function() {
     this.chk = function(elCell, oData){
-      var id = oData._oData.ProdName;
-      id = id.replace(/ /g,"");;
+      var id = oData._oData.ProdId;
+      id = id.replace(/ /g,"");
       elCell.innerHTML = "<input id=\"" + id + "\" class=\"yui-dt-checkbox\" type=\"checkbox\"/>"
     }
     var myColumnDefs = [
@@ -328,20 +340,23 @@ YAHOO.util.Event.addListener(window, "load", function() {
       {label:"ID", key:"ProdId", formatter:YAHOO.widget.DataTable.formatNumber, sortable:true, resizeable:true},
       {label:"Name", key:"ProdName", sortable:true, resizeable:true},
       {label:"Status", key:"Status", sortable:true, resizeable:true},
-      {label:"Owner", key:"DN", sortable:true, resizeable:true},
-      {label:"Total Jobs", key:"JobsTotal", sortable:true, resizeable:true},
-      {label:"Submitted", key:"JobsSubmitted", sortable:true, resizeable:true},
-      {label:"Last Submitted Job", key:"JobLast", sortable:true, resizeable:true},
-      {label:"Parent", key:"Parent", sortable:true, resizeable:true},
-      {label:"Short Description", key:"Description", sortable:true, resizeable:true}
+      {label:"Created Jobs", key:"Created", sortable:true, resizeable:true},
+      {label:"Submitted Jobs", key:"Submited", sortable:true, resizeable:true},
+      {label:"Waiting Jobs", key:"Wait", sortable:true, resizeable:true},
+      {label:"Running Jobs", key:"Running", sortable:true, resizeable:true},
+      {label:"Done Jobs", key:"Done", sortable:true, resizeable:true},
+      {label:"Failed Jobs", key:"Failed", sortable:true, resizeable:true},
+      {label:"Description", key:"Description", sortable:true, resizeable:true},
+      {label:"CreationDate [UTC]", key:"CreationDate", formatter:YAHOO.widget.DataTable.formatDate, sortable:true, resizeable:true},
+      {label:"Owner", key:"DN", sortable:true, resizeable:true}
     ];
     this.myDataSource = new YAHOO.util.DataSource(YAHOO.example.Data.productions);
     this.myDataSource.responseType = YAHOO.util.DataSource.TYPE_JSARRAY;
     this.myDataSource.responseSchema = {
-      fields: ["ProdId","ProdName","Status","DN","JobsTotal","JobsSubmitted","JobLast","Parent","Description"]
+      fields: ["ProdId","ProdName","Status","DN","Created","Submited","Wait","Running","Done","Failed","Parent","Description","CreationDate"]
     };
     this.myDataTable = new YAHOO.widget.DataTable("job_status_div", myColumnDefs, this.myDataSource);
-    this.myDataTable.subscribe("rowMouseoverEvent", this.myDataTable.onEventHighlightRow); 
+    this.myDataTable.subscribe("rowMouseoverEvent", this.myDataTable.onEventHighlightRow);
     this.myDataTable.subscribe("rowMouseoutEvent", this.myDataTable.onEventUnhighlightRow);
     this.myDataTable.subscribe("rowClickEvent", function(e){
       x = e.event.pageX;
