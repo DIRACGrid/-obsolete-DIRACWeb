@@ -464,9 +464,6 @@ function refresh(){
   wait.render(document.body);wait.show();
   var myAjax = YAHOO.util.Connect.asyncRequest('GET',url,{success:parseRequest,failure:connectBad,argument:"refresh"},"");
 }
-function clearprod(){
-  document.getElementById("prodname").value = "";
-}
 function fuckinMenu(id,x,y){
   job_menu.clearContent();
   job_menu.addItems([
@@ -493,7 +490,6 @@ function fuckinMenu(id,x,y){
 xz = new YAHOO.widget.Panel("xz",{visible:false,draggable:true,close:true,constraintoviewport:true});
 job_menu = new YAHOO.widget.Menu("xxx_menu", {xy:[0,0],showdelay:"250",position:"dynamic",zindex:4000});
 YAHOO.util.Event.addListener("submit_filter","click",submit);
-YAHOO.util.Event.addListener("submit_filter","click",clearprod);
 YAHOO.util.Event.addListener("jobupdate","click",showkal);
 YAHOO.util.Event.addListener("global_sort","change",submit);
 YAHOO.util.Event.addListener("top_selectA","click",selectAll,"all");
