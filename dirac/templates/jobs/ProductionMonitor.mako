@@ -2,20 +2,20 @@
 <%inherit file="/base.mako" />
 
 <%def name="head_tags()">
-<!-- Dependencies for data table -->
-<script type="text/javascript" src="/yui/element/element-beta-min.js"></script>
-<script type="text/javascript" src="/yui/datasource/datasource-beta-min.js"></script>
-<script type="text/javascript" src="/yui/dragdrop/dragdrop-min.js"></script>
-<script type="text/javascript" src="/yui/datatable/datatable-beta-min.js"></script>
-<script type="text/javascript" src="/yui/container/container-min.js"></script>
-<script type="text/javascript" src="/yui/connection/connection-min.js"></script>
-<script type="text/javascript" src="/yui/calendar/calendar-min.js"></script>
-<script type="text/javascript" src="/yui/button/button-min.js"></script>
-<script type="text/javascript" src="/javascripts/jobs/ProductionMonitor.js"></script>
-<link type="text/css" rel="stylesheet" href="/yui/datatable/assets/skins/sam/datatable.css">
-<link type="text/css" rel="stylesheet" href="/yui/container/assets/container.css">
-<link type="text/css" rel="stylesheet" href="/yui/calendar/assets/skins/sam/calendar.css">
-<!--<link type="text/css" rel="stylesheet" href="/yui/container/assets/skins/sam/container.css">-->
+${ h.javascript_include_tag( "/yui/element/element-beta-min.js" ) }
+${ h.javascript_include_tag( "/yui/datasource/datasource-beta-min.js" ) }
+${ h.javascript_include_tag( "/yui/dragdrop/dragdrop-min.js" ) }
+${ h.javascript_include_tag( "/yui/datatable/datatable-beta-min.js" ) }
+${ h.javascript_include_tag( "/yui/container/container-min.js" ) }
+${ h.javascript_include_tag( "/yui/connection/connection-min.js" ) }
+${ h.javascript_include_tag( "/yui/calendar/calendar-min.js" ) }
+${ h.javascript_include_tag( "/yui/button/button-min.js" ) }
+${ h.javascript_include_tag( "/javascripts/jobs/ProductionMonitor.js" ) }
+${ h.javascript_include_tag( "json2.js" ) }
+${ h.stylesheet_link_tag( "/yui/datatable/assets/skins/sam/datatable.css" ) }
+${ h.stylesheet_link_tag( "/yui/container/assets/container.css" ) }
+${ h.stylesheet_link_tag( "/yui/calendar/assets/skins/sam/calendar.css" ) }
+
 <style type="text/css">
 .env {
   z-index: 2000;
@@ -40,7 +40,7 @@
 .job_widget{
   clear:left;
   background-color: #EDF5FF;
-  border: 1px solid #B2D2FF; 
+  border: 1px solid #B2D2FF;
   padding: 10px;
   margin-bottom: 10px;
 }
@@ -62,36 +62,40 @@
 .clear{
   clear:both;
 }
+.link{
+  color: #003D76;
+  cursor: pointer;
+}
 </style>
 </%def>
 
 <div class="job_widget">
-  <table style="width:100%;"><tr>
-    <td style="text-align:left;">
-      Select:
-      <a href="javascript:selectAll('all');">All</a>
-      <a href="javascript:selectAll('none');">None</a>
-      Action:
-      <a href="">Start</a>
-      <a href="">Stop</a>
-      <a id="delProd1" href="">Delete</a>
-    </td>
-  </tr></table>
+  <div class="left">
+    <span class="link" id="top_JRef">Refresh&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</span>
+    Select:
+    <span class="link" id="top_selectA">All</span>
+    <span class="link" id="top_selectN">None</span>
+    Action:
+    <span class="link" id="top_JSta">Start</span>
+    <span class="link" id="top_JSto">Stop</span>
+    <span class="link" id="top_JDel">Delete</span>
+  </div>
+  <div class="clear"></div>
   <div id="job_status_div"></div>
-  <table style="width:100%;"><tr>
-    <td style="text-align:left;">
-      Select:
-      <a href="javascript:selectAll('all');">All</a>
-      <a href="javascript:selectAll('none');">None</a>
-      Action:
-      <a href="">Start</a>
-      <a href="">Stop</a>
-      <a id="delProd2" href="">Delete</a>
-    </td>
-  </tr></table>
+  <div class="left">
+    <span class="link" id="bottom_JRef">Refresh&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</span>
+    Select:
+    <span class="link" id="bottom_selectA">All</span>
+    <span class="link" id="bottom_selectN">None</span>
+    Action:
+    <span class="link" id="bottom_JSta">Start</span>
+    <span class="link" id="bottom_JSto">Stop</span>
+    <span class="link" id="bottom_JDel">Delete</span>
+  </div>
+  <div class="clear"></div>
 </div>
-
 <script type="text/javascript">
+  initWebRoot( '${h.url_for( '/images' )}' );
   response = "${c.listResult}";
   response = response.replace("]]","");
   response = response.replace("[[","");
@@ -104,8 +108,11 @@
     t[1] = t[1].replace(/'/g,"");
     t[2] = t[2].replace(/'/g,"");
     t[3] = t[3].replace(/'/g,"");
-    t[7] = t[7].replace(/'/g,""); 
-    prod[i] = {ProdId:t[0], ProdName:t[1], Status:t[2], DN:t[3], JobsTotal:t[4], JobsSubmitted:t[5], JobLast:t[6], Parent:t[7], Description:t[8]};
+    t[7] = t[7].replace(/'/g,"");
+    t[10] = t[9].replace(/'/g,"");
+    t[11] = t[11].replace(/'/g,"");
+    t[12] = t[12].replace(/'/g,"");
+    prod[i] = {ProdId:t[0],ProdName:t[1],Status:t[2],DN:t[3],Created:t[4],Submited:t[5],Wait:t[6],Running:t[7],Done:t[8],Failed:t[9],Parent:t[10],Description:t[11],CreationDate:t[12]};
   }
   YAHOO.example.Data = {"startIndex":0,"sort":null,"dir":"asc",productions:prod}
 </script>
