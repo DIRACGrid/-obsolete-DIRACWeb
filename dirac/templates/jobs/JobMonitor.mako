@@ -109,6 +109,7 @@ ${ h.stylesheet_link_tag( "/yui/calendar/assets/skins/sam/calendar.css" ) }
   </td>
   <td style="text-align:right;">Job&nbsp;ID:</td>
   <td><input width="150px" type="text" id="jobid" name="jobid" onkeydown="jobch('s');" onblur="jobch('u');" size="10"/></td>
+  <td></td><td></td>
   <td rowspan="2"><input id="submit_filter" name="submit_filter" type="submit" value="Submit"/></td>
 </tr><tr>
   <td style="text-align:right;">Job&nbsp;Status:</td>
@@ -147,12 +148,29 @@ ${ h.stylesheet_link_tag( "/yui/calendar/assets/skins/sam/calendar.css" ) }
   </td>
   <td style="text-align:right;">Jobs&nbsp;updated&nbsp;after:</td>
   <td style="text-align:left;"><input width="100px" type="text" id="jobupdate" name="jobupdate" size="10"/></td>
+  <td style="text-align:right;">Production&nbsp;ID:</td>
+  <td style="text-align:left;">
+    <select id="prodname" size="1" style="width: 150px">
+    %if c.save_prod == 0:
+      <option selected value="">All</option>
+    %else:
+      <option value="">All</option>
+    %endif
+    %for i in c.getprod:
+      %if i == c.save_prod:
+        <option selected>${i}</option>
+      %else:
+        <option>${i}</option>
+      %endif
+    %endfor
+    </select>
+  </td>
 </tr></table>
 </div><div class="right">
 Sort by:
 <select id="global_sort" size="1" class="yui-dt-dropdown">
-  <option value="JobID:ASC" selected>JobID Ascending</option>
-  <option value="JobID:DESC">JobID Descending</option>
+  <option value="JobID:ASC">JobID Ascending</option>
+  <option value="JobID:DESC" selected>JobID Descending</option>
   <option value="SubmissionTime:ASC">SubmissionTimeTime Ascending</option>
   <option value="SubmissionTime:DESC">SubmissionTimeTime Descending</option>
 </select>
@@ -218,8 +236,9 @@ Sort by:
     t = jobArray[i].split("', '");
     t[0] = t[0].replace("'","");
     t[8] = t[8].replace("'","");
-    t[9] = status(t[1]);
-    newJobs[i] = {JobId:t[0], StIcon:t[9], Status:t[1], MinorStatus:t[2], ApplicationStatus:t[3], Site:t[4], JobName:t[5], LastUpdate:t[6], SubmissionTime:t[8], Owner:t[7]};
+    t[9] = t[9].replace("'","");
+    t[10] = status(t[1]);
+    newJobs[i] = {JobId:t[0],StIcon:t[10],Status:t[1],MinorStatus:t[2],ApplicationStatus:t[3],Site:t[4],JobName:t[5],LastUpdate:t[6],Sign:t[9],SubmissionTime:t[8],Owner:t[7]};
   }
   YAHOO.example.Data = {"startIndex":0,"sort":null,"dir":"asc",jobs:newJobs}
   total = parseInt(total);
