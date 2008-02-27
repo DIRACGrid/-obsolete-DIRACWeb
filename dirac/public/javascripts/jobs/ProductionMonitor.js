@@ -292,7 +292,7 @@ function jobch(s){
   }
 }
 function showJobs(id){
-  var url = 'https://lhcbtest.pic.es/DIRAC/jobs/JobMonitor/display?counter=25&job_up=&applic=&status=&site=&sort=JobID:ASC&page=0&prodname=' + id;
+  var url = 'https://lhcbweb.pic.es/DIRAC/jobs/JobMonitor/display?counter=25&job_up=&applic=&status=&site=&sort=JobID:ASC&page=0&prodname=' + id;
   location.href = url;
 }
 function fMenu(id,x,y,stat){
