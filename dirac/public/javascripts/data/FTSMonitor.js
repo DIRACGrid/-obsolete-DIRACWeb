@@ -4,6 +4,11 @@ var counter = 25;
 var total = "";
 var page = 0;
 var jobLegend = "";
+function initWebRoot(url){
+    gURLRoot = url;
+    wait = new YAHOO.widget.Panel("w",{visible:false,draggable:false,close:false,fixedcenter:true,modal:true});
+    wait.setBody("<img src='"+gURLRoot+"/loading/loading-3.gif' width='66' height='66'>");
+}
 function showkal(){
   if(document.getElementById("kalendar") == null){
     var k = new YAHOO.widget.Panel("kalendar",{visible:true,draggable:false,close:true,constraintoviewport:true,context:["jobupdate","tl","bl"],zindex:3000});
@@ -43,19 +48,23 @@ function handleSelect(type,args,obj) {
 }
 function status(value){
   if((value == "Done")||(value == "Finished")||(value == "Completed")){
-    return "<img src='/images/monitoring/done.gif'>";
+    return "<img src='"+gURLRoot+"/monitoring/done.gif'>";
   }else if(value == "Failed"){
-    return "<img src='/images/monitoring/failed.gif'>";
+    return "<img src='"+gURLRoot+"/monitoring/failed.gif'>";
   }else if(value == "Waiting"){
-    return "<img src='/images/monitoring/waiting.gif'>";
+    return "<img src='"+gURLRoot+"/monitoring/waiting.gif'>";
+  }else if(value == "Deleted"){
+    return "<img src='"+gURLRoot+"/monitoring/deleted.gif'>";
+  }else if(value == "Matched"){
+    return "<img src='"+gURLRoot+"/monitoring/matched.gif'>";
+  }else if(value == "Running"){
+    return "<img src='"+gURLRoot+"/monitoring/running.gif'>";
   }else{
-    return "<img src='/images/monitoring/unknown.gif'>";
+    return "<img src='"+gURLRoot+"/monitoring/unknown.gif'>";
   }
 }
 function parseInput(response,mode){
-  response = response.replace("]]","");
-  response = response.replace("[[","");
-  var responseArray = response.split("], [");
+  var responseArray = response;
   if(responseArray.length == 0){
     xz.hide();
     alert("Can't parse server response: " + response);
@@ -73,6 +82,17 @@ function parseInput(response,mode){
       t[9] = status(t[1]);
       id = t[0] * 1;
       returnArray[i]={JobId:id,StIcon:t[9],Status:t[1],MinorStatus:t[2],ApplicationStatus:t[3],Site:t[4],JobName:t[5],LastUpdate:t[6],SubmissionTime:t[8],Owner:t[7]};
+    }
+  }else if(mode == "fts"){
+    page = responseArray.pop();
+    total = responseArray.pop();
+    for(var i = 0; i < responseArray.length; i++){
+      var t = responseArray[i];
+      t[1] = status(t[1]);
+      t[0] = t[0]*1;
+      t[5] = t[5]*1;
+      t[6] = t[6]*1;
+      returnArray[i] = {FTSReqID:t[0],Status:t[1],SubmitTime:t[2],LastMonitor:t[3],PercentageComplete:t[4],NumberOfFiles:t[5],TotalSize:t[6],SourceSite:t[7],DestinationSite:t[8]};
     }
   }else if(mode == "prod"){
     total = responseArray.pop();
@@ -114,15 +134,10 @@ function parseInput(response,mode){
       }
       returnArray[i]={DateTime:t[3], Status:t[0], MinorStatus:t[1], Source:t[4], ApplicationStatus:t[2]};
     }
-  }else if(mode == "fts"){
+  }else if(mode == "ftsinfo"){
     for(var i = 0; i < responseArray.length; i++){
-      var t = responseArray[i].split(", ");
-      t[0] = t[0].replace(/'/g,"");
+      var t = responseArray[i];
       t[1] = t[1].replace(/'/g,"");
-      t[2] = t[2].replace(/'/g,"");
-      t[3] = t[3].replace(/'/g,"");
-      t[4] = t[4].replace(/'/g,"");
-      t[5] = t[5].replace(/'/g,"");
       t[1] = status(t[1]);
       returnArray[i]={File:t[0],Status:t[1],TransferTime:t[2],Error:t[3],Retries:t[4],Size:t[5]};
     }
@@ -131,14 +146,15 @@ function parseInput(response,mode){
 }
 function parseRequest(r){
   var req = r.responseText;
+  req = JSON.parse(req);
   wait.hide();
-  if ((req == "There are no jobs to fit your criteria")||(req == "There is no summary for the job(s)")) {
+  if ((req == "There are no FTSs to fit your criteria")||(req == "There is no summary for the FTS(s)")) {
     xz.hide();
     alert(req);
     return
   }
   var type = r.argument;
-  if(type != "jdl"){
+  if((type != "jdl")||(type != "fts")){
     if(type == "act"){
       if(req != 0){
         alert(req);
@@ -156,13 +172,17 @@ function parseRequest(r){
       sortedBy = YAHOO.example.Basic.myDataTable.getColumn(sortedBy);
       YAHOO.example.Basic.myDataTable.sortColumn(sortedBy);
       YAHOO.example.Basic.myDataTable.sortColumn(sortedBy); 
-//      var sortKey = YAHOO.example.Basic.myDataTable._configs.sortedBy.value.key;
       total = parseInt(total);
-//      if((total > counter) && (page > 1)){
-        showPage(total);
-//      }else{
-//        showPage(0);
-//      }
+      showPage(total);
+    }else if(type == "fts"){
+      YAHOO.example.Data = {"startIndex":0,"sort":null,"dir":"asc",jobs:data};
+      YAHOO.example.Basic.myDataTable.initializeTable(YAHOO.example.Data.jobs);
+      var sortedBy = YAHOO.example.Basic.myDataTable._configs.sortedBy.value.key;
+      sortedBy = YAHOO.example.Basic.myDataTable.getColumn(sortedBy);
+      YAHOO.example.Basic.myDataTable.sortColumn(sortedBy);
+      YAHOO.example.Basic.myDataTable.sortColumn(sortedBy);
+      total = parseInt(total);
+      showPage(total);
     }else if(type == "prod"){
       YAHOO.example.Data = {"startIndex":0,"sort":null,"dir":"asc",jobs:newJobs};
       YAHOO.example.Basic.myDataTable.initializeTable(YAHOO.example.Data.jobs);
@@ -189,7 +209,7 @@ function parseRequest(r){
       temp_datas.responseSchema = {fields: ["Name","Value"]};
       temp_datas.responseType = YAHOO.util.DataSource.TYPE_JSARRAY;
       var temp_table = new YAHOO.widget.DataTable("xz_body",temp_defs,temp_datas);
-    }else if(type == "fts"){
+    }else if(type == "ftsinfo"){
       var temp_defs = [
         {key:"File", lable:"File", sortable:true, resizeable:true},
         {key:"Status", lable:"Status", sortable:true, resizeable:true},
@@ -222,7 +242,7 @@ function setPanel(type){
     }else{
       if(type == "jdl"){
         width = (2 * width) / 3;
-      }else if(type == "fts"){
+      }else if(type == "ftsinfo"){
         width =  width - 50;
       }else{
         width = width_element + 20;
@@ -265,23 +285,23 @@ function showPage(totaljobs){
   page = page * 1;
   if(pages > 10){
     if(page > 3){
-      pages_content = pages_content + "<a class=\"yui-dt-page\" href=\"javascript:submit(" + 1 + ");\">" + 1 + "</a>";
-      pages_content = pages_content + "&nbsp;&nbsp;...&nbsp;&nbsp;<a class=\"yui-dt-page\" href=\"javascript:submit(" + (page - 1) + ");\">" + (page - 1) + "</a>";
+      pages_content = pages_content + "<a class=\"yui-dt-page\" href=\"javascript:ftssubmit(" + 1 + ");\">" + 1 + "</a>";
+      pages_content = pages_content + "&nbsp;&nbsp;...&nbsp;&nbsp;<a class=\"yui-dt-page\" href=\"javascript:ftssubmit(" + (page - 1) + ");\">" + (page - 1) + "</a>";
     }else if(page == 3){
-      pages_content = pages_content + "<a class=\"yui-dt-page\" href=\"javascript:submit(" + 1 + ");\">" + 1 + "</a>";
-      pages_content = pages_content + "<a class=\"yui-dt-page\" href=\"javascript:submit(" + 2 + ");\">" + 2 + "</a>";
+      pages_content = pages_content + "<a class=\"yui-dt-page\" href=\"javascript:ftssubmit(" + 1 + ");\">" + 1 + "</a>";
+      pages_content = pages_content + "<a class=\"yui-dt-page\" href=\"javascript:ftssubmit(" + 2 + ");\">" + 2 + "</a>";
     }else if(page == 2){
-      pages_content = pages_content + "<a class=\"yui-dt-page\" href=\"javascript:submit(" + 1 + ");\">" + 1 + "</a>";
+      pages_content = pages_content + "<a class=\"yui-dt-page\" href=\"javascript:ftssubmit(" + 1 + ");\">" + 1 + "</a>";
     }
     pages_content = pages_content + "&nbsp;&nbsp;<b>" + page + "</b>&nbsp;&nbsp;";
     if(page < pages - 2){
-      pages_content = pages_content + "<a class=\"yui-dt-page\" href=\"javascript:submit(" + (page + 1) + ");\">" + (page + 1) + "</a>&nbsp;&nbsp;...&nbsp;&nbsp;";
-      pages_content = pages_content + "<a class=\"yui-dt-page\" href=\"javascript:submit(" + (pages) + ");\">" + (pages) + "</a>";
+      pages_content = pages_content + "<a class=\"yui-dt-page\" href=\"javascript:ftssubmit(" + (page + 1) + ");\">" + (page + 1) + "</a>&nbsp;&nbsp;...&nbsp;&nbsp;";
+      pages_content = pages_content + "<a class=\"yui-dt-page\" href=\"javascript:ftssubmit(" + (pages) + ");\">" + (pages) + "</a>";
     }else if(page == pages - 2){
-      pages_content = pages_content + "<a class=\"yui-dt-page\" href=\"javascript:submit(" + (pages - 1) + ");\">" + (pages - 1) + "</a>";
-      pages_content = pages_content + "<a class=\"yui-dt-page\" href=\"javascript:submit(" + (pages) + ");\">" + (pages) + "</a>";
+      pages_content = pages_content + "<a class=\"yui-dt-page\" href=\"javascript:ftssubmit(" + (pages - 1) + ");\">" + (pages - 1) + "</a>";
+      pages_content = pages_content + "<a class=\"yui-dt-page\" href=\"javascript:ftssubmit(" + (pages) + ");\">" + (pages) + "</a>";
     }else if(page == pages - 1){
-      pages_content = pages_content + "<a class=\"yui-dt-page\" href=\"javascript:submit(" + (pages) + ");\">" + (pages) + "</a>";
+      pages_content = pages_content + "<a class=\"yui-dt-page\" href=\"javascript:ftssubmit(" + (pages) + ");\">" + (pages) + "</a>";
     }
   }else{
     for(var i = 0; i < pages; i++){
@@ -289,7 +309,7 @@ function showPage(totaljobs){
       if(j == page){
         pages_content = pages_content + "&nbsp;&nbsp;<b>" + j + "</b>&nbsp;&nbsp;";
       }else{
-        pages_content = pages_content + "<a class=\"yui-dt-page\" href=\"javascript:submit(" + j + ");\">" + j + "</a>";
+        pages_content = pages_content + "<a class=\"yui-dt-page\" href=\"javascript:ftssubmit(" + j + ");\">" + j + "</a>";
       }
     }
   }
@@ -301,18 +321,15 @@ function showPage(totaljobs){
 function parseFilter(){
   var job_up = document.getElementById("jobupdate").value;
   var job_id = document.getElementById("jobid").value;
-  var owner = document.getElementById("owner").value;
-  var application = document.getElementById("applic").value;
-  var status = document.getElementById("status").value;
-  var site = document.getElementById("site").value;
+  var sour_site = document.getElementById("source").value;
+  var dest_site = document.getElementById("destination").value;
   var g_sort = document.getElementById("global_sort").value;
-  var url = "/jobs/JobMonitor/submit?counter=" + counter;
+  var url = "/data/FTSMonitor/submit?counter=" + counter;
   if (job_id != ""){
-    url = "/jobs/JobMonitor/submit?jobid=" + job_id;
+    url = "/data/FTSMonitor/submit?jobid=" + job_id;
   }else{
     url = url + "&job_up=" + job_up;
-    url = url + "&owner=" + owner + "&applic=" + application;
-    url = url + "&status=" + status + "&site=" + site;
+    url = url + "&sour_site=" + sour_site + "&dest_site=" + dest_site;
     url = url + "&sort=" + g_sort;
   }
   return url
@@ -327,7 +344,7 @@ function changePage(sel){
   }else{
     document.getElementById("top_pages_number").value = counter;
   }
-  submit();
+  ftssubmit();
 }
 function createURL(mode,id){
 //  clear();
@@ -367,7 +384,7 @@ function createURL(mode,id){
   if (c == false){
     return 0;
   }
-  var url = "/jobs/JobMonitor/action";
+  var url = "/data/FTSMonitor/action";
   if(mode=="delete"){
     job = "deleteJobs=" + job;
   }else if(mode=="kill"){
@@ -377,7 +394,7 @@ function createURL(mode,id){
   }
   return job
 }
-function selectAll(e,selection){
+function selectAll(selection){
   var inputs = document.getElementsByTagName('input');
   if(selection=="all"){
     var ch = 0;
@@ -399,13 +416,13 @@ function selectAll(e,selection){
 function jobch(s){
   if(s == "s"){
     document.getElementById("jobupdate").disabled = true;
-    document.getElementById("owner").disabled = true;
+    document.getElementById("sour_site").disabled = true;
     document.getElementById("applic").disabled = true;
     document.getElementById("status").disabled = true;
     document.getElementById("site").disabled = true;
   }else if(s == "u"){
     document.getElementById("jobupdate").disabled = false;
-    document.getElementById("owner").disabled = false;
+    document.getElementById("sour_site").disabled = false;
     document.getElementById("applic").disabled = false;
     document.getElementById("status").disabled = false;
     document.getElementById("site").disabled = false;
@@ -418,12 +435,19 @@ function submit(id){
   wait.render(document.body);wait.show();
   var myAjax = YAHOO.util.Connect.asyncRequest('POST',url,{success:parseRequest,failure:connectBad,argument:"jobs"},"");
 }
+function ftssubmit(id){
+  var url = parseFilter();
+  page = createURL("submit",id)
+  url = url + "&page=" + page;
+  wait.render(document.body);wait.show();
+  var myAjax = YAHOO.util.Connect.asyncRequest('POST',url,{success:parseRequest,failure:connectBad,argument:"fts"},"");
+}
 function actionJob(some_useless_rubbish_here,mode,job){
   var id = createURL(mode,job);
   if(id == 0){
     return
   }
-  var url = '/jobs/JobMonitor/action?' + id;
+  var url = '/data/FTSMonitor/action?' + id;
   wait.render(document.body);wait.show();
   var myAjax = YAHOO.util.Connect.asyncRequest('POST',url,{success:parseRequest,failure:connectBad,argument:"act"},"");
 }
@@ -431,40 +455,40 @@ function showInfo(id){
   if((id == null) || (id == "")) return;
   var url = "/data/FTSMonitor/action?getFTSInfo=" + id;
   wait.render(document.body);wait.show();
-  var myAjax = YAHOO.util.Connect.asyncRequest("GET",url,{success:parseRequest,failure:connectBad,argument:"fts"},"");
+  var myAjax = YAHOO.util.Connect.asyncRequest("GET",url,{success:parseRequest,failure:connectBad,argument:"ftsinfo"},"");
   setupPanel(id);
 }
 function getJdl(id){
   if((id == null) || (id == "")) return;
-  var url = "/jobs/JobMonitor/action?getJDL=" + id;
+  var url = "/data/FTSMonitor/action?getJDL=" + id;
   wait.render(document.body);wait.show();
   var myAjax = YAHOO.util.Connect.asyncRequest("GET",url,{success:parseRequest,failure:connectBad,argument:"jdl"},"");
   setupPanel(id);
 }
 function getStandardOutput(id){
   if((id == null) || (id == "")) return;
-  var url = "/jobs/JobMonitor/action?getStandardOutput=" + id;
+  var url = "/data/FTSMonitor/action?getStandardOutput=" + id;
   wait.render(document.body);wait.show();
   var myAjax = YAHOO.util.Connect.asyncRequest('GET',url,{success:parseRequest,failure:connectBad,argument:"jdl"},"");
   setupPanel(id);
 }
 function getBasicInfo(id){
   if((id == null) || (id == "")) return;
-  var url = "/jobs/JobMonitor/action?getBasicInfo=" + id;
+  var url = "/data/FTSMonitor/action?getBasicInfo=" + id;
   wait.render(document.body);wait.show();
   var myAjax = YAHOO.util.Connect.asyncRequest('GET',url,{success:parseRequest,failure:connectBad,argument:"info"},"");
   setupPanel(id);
 }
 function getParams(id){
   if((id == null) || (id == "")) return;
-  var url = "/jobs/JobMonitor/action?getParams=" + id;
+  var url = "/data/FTSMonitor/action?getParams=" + id;
   wait.render(document.body);wait.show();
   var myAjax = YAHOO.util.Connect.asyncRequest('GET',url,{success:parseRequest,failure:connectBad,argument:"info"},"");
   setupPanel(id);
 }
 function getLoggingInfo(id){
  if((id == null) || (id == "")) return;
-  var url = "/jobs/JobMonitor/action?LoggingInfo=" + id;
+  var url = "/data/FTSMonitor/action?LoggingInfo=" + id;
   wait.render(document.body);wait.show();
   var myAjax = YAHOO.util.Connect.asyncRequest('GET',url,{success:parseRequest,failure:connectBad,argument:"log"},"");
   setupPanel(id);
@@ -472,9 +496,9 @@ function getLoggingInfo(id){
 function pilot(some_useless_rubbish_here,mode,id){
   if((id == null) || (id == "")) return;
   if(mode == "out"){
-    var url = "/jobs/JobMonitor/action?pilotStdOut=" + id;
+    var url = "/data/FTSMonitor/action?pilotStdOut=" + id;
   }else if(mode == "err"){
-    var url = "/jobs/JobMonitor/action?pilotStdErr=" + id;
+    var url = "/data/FTSMonitor/action?pilotStdErr=" + id;
   }
   wait.render(document.body);wait.show();
   var myAjax = YAHOO.util.Connect.asyncRequest('GET',url,{success:parseRequest,failure:connectBad,argument:"jdl"},"");
@@ -509,9 +533,9 @@ xz = new YAHOO.widget.Panel("xz",{visible:false,draggable:true,close:true,constr
 wait = new YAHOO.widget.Panel("w",{visible:false,draggable:false,close:false,fixedcenter:true,modal:true});
 wait.setBody("<img src='/images/loading/loading-3.gif' width='66' height='66'>");
 job_menu = new YAHOO.widget.Menu("xxx_menu", {xy:[0,0],showdelay:"250",position:"dynamic",zindex:4000});
-YAHOO.util.Event.addListener("submit_filter","click",submit);
+YAHOO.util.Event.addListener("submit_filter","click",ftssubmit);
 YAHOO.util.Event.addListener("jobupdate","click",showkal);
-YAHOO.util.Event.addListener("global_sort","change",submit);
+YAHOO.util.Event.addListener("global_sort","change",ftssubmit);
 YAHOO.util.Event.addListener("top_selectA","click",selectAll,"all");
 YAHOO.util.Event.addListener("top_selectN","click",selectAll,"none");
 YAHOO.util.Event.addListener("top_JRes","click",actionJob,"reset");
@@ -524,19 +548,26 @@ YAHOO.util.Event.addListener("bottom_JKil","click",actionJob,"kill");
 YAHOO.util.Event.addListener("bottom_JDel","click",actionJob,"delete");
 YAHOO.util.Event.addListener(window, "load", function() {
   YAHOO.example.Basic = new function() {
+    this.chk = function(elCell, oData){
+      var id = oData._oData.FTSReqID;
+      elCell.innerHTML = "<input id=\"" + id + "\" class=\"yui-dt-checkbox\" type=\"checkbox\"/>"
+    }
     var myColumnDefs = [
-      {label:"FTSReqID", key:"FTSReqID", formatter:YAHOO.widget.DataTable.formatNumber, sortable:true, resizeable:true},
+      {label:"", formatter:this.chk, resizeable:true},
       {label:"Status", key:"Status", sortable:true, resizeable:true},
-      {label:"SubmitTime", key:"SubmitTime", formatter:YAHOO.widget.DataTable.formatDate, sortable:true, resizeable:true},
-      {label:"LastMonitor", key:"LastMonitor", formatter:YAHOO.widget.DataTable.formatDate, sortable:true, resizeable:true},
+      {label:"SourceSite", key:"SourceSite", sortable:true, resizeable:true},
+      {label:"DestinationSite", key:"DestinationSite", sortable:true, resizeable:true},
       {label:"PercentageComplete", key:"PercentageComplete", sortable:true, resizeable:true},
       {label:"NumberOfFiles", key:"NumberOfFiles", sortable:true, resizeable:true},
-      {label:"TotalSize", key:"TotalSize", sortable:true, resizeable:true}
+      {label:"TotalSize", key:"TotalSize", sortable:true, resizeable:true},
+      {label:"SubmitTime", key:"SubmitTime", formatter:YAHOO.widget.DataTable.formatDate, sortable:true, resizeable:true},
+      {label:"LastMonitor", key:"LastMonitor", formatter:YAHOO.widget.DataTable.formatDate, sortable:true, resizeable:true},
+      {label:"FTSReqID", key:"FTSReqID", formatter:YAHOO.widget.DataTable.formatNumber, sortable:true, resizeable:true}
     ];
     this.myDataSource = new YAHOO.util.DataSource(YAHOO.example.Data.productions);
     this.myDataSource.responseType = YAHOO.util.DataSource.TYPE_JSARRAY;
     this.myDataSource.responseSchema = {
-      fields: ["FTSReqID","Status","SubmitTime","LastMonitor","PercentageComplete","NumberOfFiles","TotalSize"]
+      fields: ["Status","SourceSite","DestinationSite","PercentageComplete","NumberOfFiles","TotalSize","SubmitTime","LastMonitor","FTSReqID"]
     };
     this.myDataTable = new YAHOO.widget.DataTable("job_status_div", myColumnDefs, this.myDataSource,{sortedBy:{key:"SubmitTime",dir:"desc"}});
     var sortedBy = this.myDataTable._configs.sortedBy.value.key;
