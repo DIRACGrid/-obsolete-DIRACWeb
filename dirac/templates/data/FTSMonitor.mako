@@ -3,19 +3,20 @@
 
 <%def name="head_tags()">
 <!-- Dependencies for data table -->
-<script type="text/javascript" src="/yui/element/element-beta-min.js"></script>
-<script type="text/javascript" src="/yui/datasource/datasource-beta-min.js"></script>
-<script type="text/javascript" src="/yui/dragdrop/dragdrop-min.js"></script>
-<script type="text/javascript" src="/yui/datatable/datatable-beta-min.js"></script>
-<script type="text/javascript" src="/yui/container/container-min.js"></script>
-<script type="text/javascript" src="/yui/connection/connection-min.js"></script>
-<script type="text/javascript" src="/yui/calendar/calendar-min.js"></script>
-<script type="text/javascript" src="/yui/button/button-min.js"></script>
-<script type="text/javascript" src="/javascripts/data/FTSMonitor.js"></script>
-<link type="text/css" rel="stylesheet" href="/yui/datatable/assets/skins/sam/datatable.css">
-<link type="text/css" rel="stylesheet" href="/yui/container/assets/container.css">
-<link type="text/css" rel="stylesheet" href="/yui/calendar/assets/skins/sam/calendar.css">
-<!--<link type="text/css" rel="stylesheet" href="/yui/container/assets/skins/sam/container.css">-->
+${ h.javascript_include_tag( "/yui/element/element-beta-min.js" ) }
+${ h.javascript_include_tag( "/yui/datasource/datasource-beta-min.js" ) }
+${ h.javascript_include_tag( "/yui/dragdrop/dragdrop-min.js" ) }
+${ h.javascript_include_tag( "/yui/datatable/datatable-beta-min.js" ) }
+${ h.javascript_include_tag( "/yui/container/container-min.js" ) }
+${ h.javascript_include_tag( "/yui/connection/connection-min.js" ) }
+${ h.javascript_include_tag( "/yui/calendar/calendar-min.js" ) }
+${ h.javascript_include_tag( "/yui/button/button-min.js" ) }
+${ h.javascript_include_tag( "/javascripts/data/FTSMonitor.js" ) }
+${ h.javascript_include_tag( "json2.js" ) }
+${ h.stylesheet_link_tag( "/yui/datatable/assets/skins/sam/datatable.css" ) }
+${ h.stylesheet_link_tag( "/yui/container/assets/container.css" ) }
+${ h.stylesheet_link_tag( "/yui/calendar/assets/skins/sam/calendar.css" ) }
+
 <style type="text/css">
 .env {
   z-index: 2000;
@@ -40,7 +41,7 @@
 .job_widget{
   clear:left;
   background-color: #EDF5FF;
-  border: 1px solid #B2D2FF; 
+  border: 1px solid #B2D2FF;
   padding: 10px;
   margin-bottom: 10px;
 }
@@ -48,6 +49,10 @@
   width: 100% !important;
   margin-top: 10px !important;
   margin-bottom: 10px !important;
+}
+.link{
+  color: #003D76;
+  cursor: pointer;
 }
 .left{
   float:left;
@@ -64,57 +69,122 @@
 }
 </style>
 </%def>
-
-<div class="job_widget">
 <!--
-  <table style="width:100%;"><tr>
-    <td style="text-align:left;">
-      Select:
-      <a href="javascript:selectAll('all');">All</a>
-      <a href="javascript:selectAll('none');">None</a>
-      Action:
-      <a href="">Start</a>
-      <a href="">Stop</a>
-      <a id="delProd1" href="">Delete</a>
-    </td>
-  </tr></table>
+c.destination
+c.source
 -->
-  <div id="job_status_div"></div>
-<!--
-  <table style="width:100%;"><tr>
-    <td style="text-align:left;">
-      Select:
-      <a href="javascript:selectAll('all');">All</a>
-      <a href="javascript:selectAll('none');">None</a>
-      Action:
-      <a href="">Start</a>
-      <a href="">Stop</a>
-      <a id="delProd2" href="">Delete</a>
-    </td>
-  </tr></table>
--->
+<div id="filter" class="job_widget">
+<div class="left">
+<table border="0" cellspacing="5px" cellpadding="5px"><tr>
+  <td style="text-align:right;">Source&nbsp;Site:</td>
+  <td style="text-align:left;">
+    <select id="source" size="1" style="width: 150px">
+    %if c.save_source == 0:
+      <option selected value="">All</option>
+    %else:
+      <option value="">All</option>
+    %endif
+    %for i in c.source:
+      %if i == c.save_source:
+        <option selected>${i}</option>
+      %else:
+        <option>${i}</option>
+      %endif
+    %endfor
+    </select>
+  </td>
+  <td style="text-align:right;">FTS&nbsp;Request&nbsp;ID:</td>
+  <td><input width="150px" type="text" id="jobid" name="jobid" onkeydown="jobch('s');" onblur="jobch('u');" size="10"/></td>
+  <td rowspan="2"><input id="submit_filter" name="submit_filter" type="submit" value="Submit"/></td>
+</tr><tr>
+  <td style="text-align:right;">Destination&nbsp;Site:</td>
+  <td style="text-align:left;">
+    <select id="destination" size="1" style="width: 150px">
+    %if c.save_destination == 0:
+      <option selected value="">All</option>
+    %else:
+      <option value="">All</option>
+    %endif
+    %for i in c.destination:
+      %if i == c.save_destination:
+        <option selected>${i}</option>
+      %else:
+        <option>${i}</option>
+      %endif
+    %endfor
+    </select>
+  </td>
+  <td style="text-align:right;">Requests&nbsp;updated&nbsp;after:</td>
+  <td style="text-align:left;"><input width="100px" type="text" id="jobupdate" name="jobupdate" size="10"/></td>
+</tr></table>
+</div><div class="right">
+Sort by:
+<select id="global_sort" size="1" class="yui-dt-dropdown">
+  <option value="SubmitTime:ASC">SubmissionTime Ascending</option>
+  <option value="SubmitTime:DESC">SubmissionTime Descending</option>
+</select>
 </div>
-
+<div class="clear"></div>
+</div>
+<div class="job_widget">
+  <div class="left">
+    Select:
+    <span class="link" id="top_selectA">All</span>
+    <span class="link" id="top_selectN">None</span>
+    Action:
+    <span class="link" id="top_JDel">Delete</span>
+  </div>
+  <div class="right">
+    <span id="top_page"></span>
+      <select id="top_pages_number" size="1" class="yui-dt-dropdown" onchange="changePage('top_pages_number');">
+        <option selected>25</option>
+        <option>50</option>
+        <option>100</option>
+        <option>150</option>
+      </select>
+      <span id="top_jobs_counter"></span>
+  </div>
+  <div class="clear"></div>
+  <div id="job_status_div"></div>
+  <div class="left">
+    Select:
+    <span class="link" id="bottom_selectA">All</span>
+    <span class="link" id="bottom_selectN">None</span>
+    Action:
+    <span class="link" id="bottom_JDel">Delete</span>
+  </div>
+  <div class="right">
+    <span id="bottom_page"></span>
+      <select id="bottom_pages_number" size="1" class="yui-dt-dropdown" onchange="changePage('bottom_pages_number');">
+        <option selected>25</option>
+        <option>50</option>
+        <option>100</option>
+        <option>150</option>
+      </select>
+      <span id="bottom_jobs_counter"></span>
+  </div>
+  <div class="clear"></div>
+</div>
 <script type="text/javascript">
+  initWebRoot( '${h.url_for( '/images' )}' );
   response = "${c.listResult}";
   response = response.replace("]]","");
   response = response.replace("[[","");
+  response = response.replace(/'/g,"");
   var jobArray = response.split("], [");
+  page = jobArray.pop();
+  total = jobArray.pop();
   var prod = new Array();
   var t = "";
   for (var i = 0; i < jobArray.length; i++) {
     t = jobArray[i].split(", ");
-    t[1] = t[1].replace(/'/g,"");
-    t[2] = t[2].replace(/'/g,"");
-    t[3] = t[3].replace(/'/g,"");
-    t[4] = t[4].replace(/'/g,"");
-    t[6] = t[6].replace(/'/g,"");
-    t[6] = status(t[6]);
+    t[1] = status(t[1]);
     t[0] = t[0]*1;
-    t[7] = t[7]*1;
-    t[8] = t[8]*1;
-//    prod[i] = {FTSReqID:t[0], FTSGUID:t[1], FTSServer:t[2], SubmitTime:t[3], LastMonitor:t[4], PercentageComplete:t[5], Status:t[6], NumberOfFiles:t[7], TotalSize:t[8]};
-    prod[i] = {FTSReqID:t[0], Status:t[6], SubmitTime:t[3], LastMonitor:t[4], PercentageComplete:t[5], NumberOfFiles:t[7], TotalSize:t[8]};
+    t[5] = t[5]*1;
+    t[6] = t[6]*1;
+    prod[i] = {FTSReqID:t[0],Status:t[1],SubmitTime:t[2],LastMonitor:t[3],PercentageComplete:t[4],NumberOfFiles:t[5],TotalSize:t[6],SourceSite:t[7],DestinationSite:t[8]};
   }
   YAHOO.example.Data = {"startIndex":0,"sort":null,"dir":"asc",productions:prod}
+  total = parseInt(total);
+  showPage(total);
 </script>
