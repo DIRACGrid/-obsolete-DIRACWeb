@@ -245,7 +245,7 @@ function showPage(totaljobs){
   page = page * 1;
   if(pages > 10){
     if(page > 10){
-      pages_content = pages_content + "<a href=\"javascript:submit(" + (page - 10) + ");\">previous 10</a>&nbsp;&nbsp;";
+      pages_content = pages_content + "<a href=\"javascript:submit(" + (page - 10) + ");\">&lt;&lt;</a>&nbsp;&nbsp;";
     }
     if(page > 3){
       pages_content = pages_content + "<a class=\"yui-dt-page\" href=\"javascript:submit(" + 1 + ");\">" + 1 + "</a>";
@@ -267,7 +267,7 @@ function showPage(totaljobs){
       pages_content = pages_content + "<a class=\"yui-dt-page\" href=\"javascript:submit(" + (pages) + ");\">" + (pages) + "</a>";
     }
     if(page < pages - 9){
-      pages_content = pages_content + "&nbsp;&nbsp;<a href=\"javascript:submit(" + (page + 10) + ");\">next 10</a>&nbsp;&nbsp;";
+      pages_content = pages_content + "&nbsp;&nbsp;<a href=\"javascript:submit(" + (page + 10) + ");\">&gt;&gt;</a>&nbsp;&nbsp;";
     }
   }else{
     for(var i = 0; i < pages; i++){
