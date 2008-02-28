@@ -324,9 +324,9 @@ function parseFilter(){
   var sour_site = document.getElementById("source").value;
   var dest_site = document.getElementById("destination").value;
   var g_sort = document.getElementById("global_sort").value;
-  var url = "/data/FTSMonitor/submit?counter=" + counter;
+  var url = "submit?counter=" + counter;
   if (job_id != ""){
-    url = "/data/FTSMonitor/submit?jobid=" + job_id;
+    url = "submit?jobid=" + job_id;
   }else{
     url = url + "&job_up=" + job_up;
     url = url + "&sour_site=" + sour_site + "&dest_site=" + dest_site;
@@ -384,7 +384,7 @@ function createURL(mode,id){
   if (c == false){
     return 0;
   }
-  var url = "/data/FTSMonitor/action";
+  var url = "action";
   if(mode=="delete"){
     job = "deleteJobs=" + job;
   }else if(mode=="kill"){
@@ -394,7 +394,7 @@ function createURL(mode,id){
   }
   return job
 }
-function selectAll(selection){
+function selectAll(e,selection){
   var inputs = document.getElementsByTagName('input');
   if(selection=="all"){
     var ch = 0;
@@ -447,48 +447,48 @@ function actionJob(some_useless_rubbish_here,mode,job){
   if(id == 0){
     return
   }
-  var url = '/data/FTSMonitor/action?' + id;
+  var url = 'action?' + id;
   wait.render(document.body);wait.show();
   var myAjax = YAHOO.util.Connect.asyncRequest('POST',url,{success:parseRequest,failure:connectBad,argument:"act"},"");
 }
 function showInfo(id){
   if((id == null) || (id == "")) return;
-  var url = "/data/FTSMonitor/action?getFTSInfo=" + id;
+  var url = "action?getFTSInfo=" + id;
   wait.render(document.body);wait.show();
   var myAjax = YAHOO.util.Connect.asyncRequest("GET",url,{success:parseRequest,failure:connectBad,argument:"ftsinfo"},"");
   setupPanel(id);
 }
 function getJdl(id){
   if((id == null) || (id == "")) return;
-  var url = "/data/FTSMonitor/action?getJDL=" + id;
+  var url = "action?getJDL=" + id;
   wait.render(document.body);wait.show();
   var myAjax = YAHOO.util.Connect.asyncRequest("GET",url,{success:parseRequest,failure:connectBad,argument:"jdl"},"");
   setupPanel(id);
 }
 function getStandardOutput(id){
   if((id == null) || (id == "")) return;
-  var url = "/data/FTSMonitor/action?getStandardOutput=" + id;
+  var url = "action?getStandardOutput=" + id;
   wait.render(document.body);wait.show();
   var myAjax = YAHOO.util.Connect.asyncRequest('GET',url,{success:parseRequest,failure:connectBad,argument:"jdl"},"");
   setupPanel(id);
 }
 function getBasicInfo(id){
   if((id == null) || (id == "")) return;
-  var url = "/data/FTSMonitor/action?getBasicInfo=" + id;
+  var url = "action?getBasicInfo=" + id;
   wait.render(document.body);wait.show();
   var myAjax = YAHOO.util.Connect.asyncRequest('GET',url,{success:parseRequest,failure:connectBad,argument:"info"},"");
   setupPanel(id);
 }
 function getParams(id){
   if((id == null) || (id == "")) return;
-  var url = "/data/FTSMonitor/action?getParams=" + id;
+  var url = "action?getParams=" + id;
   wait.render(document.body);wait.show();
   var myAjax = YAHOO.util.Connect.asyncRequest('GET',url,{success:parseRequest,failure:connectBad,argument:"info"},"");
   setupPanel(id);
 }
 function getLoggingInfo(id){
  if((id == null) || (id == "")) return;
-  var url = "/data/FTSMonitor/action?LoggingInfo=" + id;
+  var url = "action?LoggingInfo=" + id;
   wait.render(document.body);wait.show();
   var myAjax = YAHOO.util.Connect.asyncRequest('GET',url,{success:parseRequest,failure:connectBad,argument:"log"},"");
   setupPanel(id);
@@ -496,9 +496,9 @@ function getLoggingInfo(id){
 function pilot(some_useless_rubbish_here,mode,id){
   if((id == null) || (id == "")) return;
   if(mode == "out"){
-    var url = "/data/FTSMonitor/action?pilotStdOut=" + id;
+    var url = "action?pilotStdOut=" + id;
   }else if(mode == "err"){
-    var url = "/data/FTSMonitor/action?pilotStdErr=" + id;
+    var url = "action?pilotStdErr=" + id;
   }
   wait.render(document.body);wait.show();
   var myAjax = YAHOO.util.Connect.asyncRequest('GET',url,{success:parseRequest,failure:connectBad,argument:"jdl"},"");
@@ -530,8 +530,6 @@ function fuckinMenu(id,x,y){
   job_menu.show();
 }
 xz = new YAHOO.widget.Panel("xz",{visible:false,draggable:true,close:true,constraintoviewport:true});
-wait = new YAHOO.widget.Panel("w",{visible:false,draggable:false,close:false,fixedcenter:true,modal:true});
-wait.setBody("<img src='/images/loading/loading-3.gif' width='66' height='66'>");
 job_menu = new YAHOO.widget.Menu("xxx_menu", {xy:[0,0],showdelay:"250",position:"dynamic",zindex:4000});
 YAHOO.util.Event.addListener("submit_filter","click",ftssubmit);
 YAHOO.util.Event.addListener("jobupdate","click",showkal);

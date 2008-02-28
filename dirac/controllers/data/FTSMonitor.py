@@ -35,7 +35,6 @@ class FtsmonitorController(BaseController):
       if request.params.has_key("prod") and len(request.params["prod"]) > 0:
         req["JobGroup"] = str(request.params["prod"])
         save_prod = str(request.params["prod"])
-#url = url + "&sour_site=" + sour_site + "&dest_site=" + dest_site;
       if request.params.has_key("sour_site") and len(request.params["sour_site"]) > 0:
         req["SourceSites"] = str(request.params["sour_site"])
         save_source = str(request.params["sour_site"])
@@ -59,8 +58,7 @@ class FtsmonitorController(BaseController):
     return req
 ################################################################################
   def __drawFilters(self):
-#    RPC = getRPCClient("DataManagement/TransferDBMonitoring")
-    RPC = getRPCClient("dips://volhcb03.cern.ch:9191/DataManagement/TransferDBMonitoring")
+    RPC = getRPCClient("DataManagement/TransferDBMonitoring")
     result = RPC.getSites()
     c.destination = []
     c.source = []
@@ -81,14 +79,12 @@ class FtsmonitorController(BaseController):
       c.destination.append("Error during RPC call")
     return
 ################################################################################
-  def index(self):
-    RPC = getRPCClient("dips://volhcb03.cern.ch:9191/DataManagement/TransferDBMonitoring")
+  def display(self):
+#    RPC = getRPCClient("dips://volhcb03.cern.ch:9191/DataManagement/TransferDBMonitoring")
+    RPC = getRPCClient("DataManagement/TransferDBMonitoring")
     pagestart = time()
     result = self.__parseRequest()
     self.__drawFilters()
-#    result = ""
-#    result = RPC.getReqPageSummary(result,globalSort,pageNumber,numberOfJobs)
-#    result = RPC.getFTSJobs()
     result = RPC.getReqPageSummary({},"SubmitTime",0,25)
     if result["OK"]:
       result = result["Value"]
@@ -106,7 +102,8 @@ class FtsmonitorController(BaseController):
 ################################################################################
   @jsonify
   def submit(self):
-    RPC = getRPCClient("dips://volhcb03.cern.ch:9191/DataManagement/TransferDBMonitoring")
+#    RPC = getRPCClient("dips://volhcb03.cern.ch:9191/DataManagement/TransferDBMonitoring")
+    RPC = getRPCClient("DataManagement/TransferDBMonitoring")
     pagestart = time()
     result = self.__parseRequest()
     self.__drawFilters()
@@ -146,7 +143,8 @@ class FtsmonitorController(BaseController):
       return c.error
 ################################################################################
   def __getFTSInfo(self,id):
-    RPC = getRPCClient("dips://volhcb03.cern.ch:9191/DataManagement/TransferDBMonitoring")
+#    RPC = getRPCClient("dips://volhcb03.cern.ch:9191/DataManagement/TransferDBMonitoring")
+    RPC = getRPCClient("DataManagement/TransferDBMonitoring")
     print "FTS:",id
     result = RPC.getFTSInfo(id)
     if result["OK"]:
