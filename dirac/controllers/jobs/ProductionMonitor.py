@@ -46,7 +46,8 @@ class ProductionmonitorController(BaseController):
           running = jobStat["Running"]
           done = jobStat["Done"]
           failed = jobStat["Failed"]
-          valueList.append([id,i["TransformationName"],i["Status"],i["AuthorDN"],created,submited,wait,running,done,failed,i["AgentType"],i["Description"],i["CreationDate"]])
+          stalled = jobStat["Stalled"]
+          valueList.append([id,i["TransformationName"],i["Status"],i["AuthorDN"],created,submited,wait,running,done,failed,i["AgentType"],i["Description"],i["CreationDate"],stalled])
         c.listResult = valueList
         print "OVERALLRESULT",c.listResult
         return render("/jobs/ProductionMonitor.mako")
@@ -121,7 +122,8 @@ class ProductionmonitorController(BaseController):
           running = jobStat["Running"]
           done = jobStat["Done"]
           failed = jobStat["Failed"]
-          valueList.append([id,i["TransformationName"],i["Status"],i["AuthorDN"],created,submited,wait,running,done,failed,i["AgentType"],i["Description"],i["CreationDate"]])
+          stalled = jobStat["Stalled"]
+          valueList.append([id,i["TransformationName"],i["Status"],i["AuthorDN"],created,submited,wait,running,done,failed,i["AgentType"],i["Description"],i["CreationDate"],stalled])
         c.listResult = valueList
         print "OVERALLRESULT",c.listResult
         return c.listResult

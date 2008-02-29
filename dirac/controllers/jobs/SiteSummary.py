@@ -35,6 +35,7 @@ class SitesummaryController(BaseController):
           total.append(int(stat["Running"]))
           total.append(int(stat["Done"]))
           total.append(int(stat["Failed"]))
+          total.append(int(stat["Stalled"]))
         else:
           tmp = []
           tmp.append(i)
@@ -42,6 +43,7 @@ class SitesummaryController(BaseController):
           tmp.append(int(stat["Running"]))
           tmp.append(int(stat["Done"]))
           tmp.append(int(stat["Failed"]))
+          tmp.append(int(stat["Stalled"]))
           c.listResult.append(tmp)
       c.listResult.append(total)
       c.listResult.append(currentTime)
@@ -85,6 +87,7 @@ class SitesummaryController(BaseController):
             total.append(int(stat["Running"]))
             total.append(int(stat["Done"]))
             total.append(int(stat["Failed"]))
+            total.append(int(stat["Stalled"]))
           else:
             tmp = []
             tmp.append(i)
@@ -92,6 +95,7 @@ class SitesummaryController(BaseController):
             tmp.append(int(stat["Running"]))
             tmp.append(int(stat["Done"]))
             tmp.append(int(stat["Failed"]))
+            tmp.append(int(stat["Stalled"]))
             c.listResult.append(tmp)
         c.listResult.append(total)
         c.listResult.append(currentTime)
