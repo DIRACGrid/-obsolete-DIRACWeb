@@ -119,7 +119,8 @@ function parseInput(response,mode){
       t[2] = t[2]*1;
       t[3] = t[3]*1;
       t[4] = t[4]*1;
-      returnArray[i] = {Site:t[0], Wait:t[1], Run:t[2], Done:t[3], Fail:t[4]};
+      t[5] = t[5]*1;
+      returnArray[i]={Site:t[0],Wait:t[1],Run:t[2],Done:t[3],Fail:t[4],Stalled:t[5]};
     }
   }else if(mode="log"){
     for(var i = 0; i < responseArray.length; i++){
@@ -521,13 +522,14 @@ YAHOO.util.Event.addListener(window, "load", function() {
       {label:"Site", key:"Site", sortable:true, resizeable:true},
       {label:"Waiting", key:"Wait", formatter:YAHOO.widget.DataTable.formatNumber, sortable:true, resizeable:true},
       {label:"Running", key:"Run", formatter:YAHOO.widget.DataTable.formatNumber, sortable:true, resizeable:true},
+      {label:"Stalled", key:"Stalled", formatter:YAHOO.widget.DataTable.formatNumber, sortable:true, resizeable:true},
       {label:"Done", key:"Done", formatter:YAHOO.widget.DataTable.formatNumber, sortable:true, resizeable:true},
       {label:"Failed", key:"Fail", formatter:YAHOO.widget.DataTable.formatNumber, sortable:true, resizeable:true}
     ];
     this.myDataSource = new YAHOO.util.DataSource(YAHOO.example.Data.productions);
     this.myDataSource.responseType = YAHOO.util.DataSource.TYPE_JSARRAY;
     this.myDataSource.responseSchema = {
-      fields: ["Site","Run","Wait","Done","Fail"]
+      fields: ["Site","Run","Wait","Done","Stalled","Fail"]
     };
     this.myDataTable = new YAHOO.widget.DataTable("job_status_div", myColumnDefs, this.myDataSource);
   };

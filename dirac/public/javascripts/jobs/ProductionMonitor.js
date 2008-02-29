@@ -207,7 +207,7 @@ function updateTable(r) {
   var t = "";
   for (var i = 0; i < jobArray.length; i++) {
     t = jobArray[i].split(", ");
-    prod[i] = {ProdId:t[0],ProdName:t[1],Status:t[2],DN:t[3],Created:t[4],Submited:t[5],Wait:t[6],Running:t[7],Done:t[8],Failed:t[9],Parent:t[10],Description:t[11],CreationDate:t[12]};
+    prod[i] = {ProdId:t[0],ProdName:t[1],Status:t[2],DN:t[3],Created:t[4],Submited:t[5],Wait:t[6],Running:t[7],Done:t[8],Failed:t[9],Parent:t[10],Description:t[11],CreationDate:t[12],Stalled:t[13]};
   }
   YAHOO.example.Data = {"startIndex":0,"sort":null,"dir":"asc",productions:prod}
   YAHOO.example.Basic.myDataTable.initializeTable(YAHOO.example.Data.productions);
@@ -340,20 +340,21 @@ YAHOO.util.Event.addListener(window, "load", function() {
       {label:"ID", key:"ProdId", formatter:YAHOO.widget.DataTable.formatNumber, sortable:true, resizeable:true},
       {label:"Name", key:"ProdName", sortable:true, resizeable:true},
       {label:"Status", key:"Status", sortable:true, resizeable:true},
-      {label:"Created Jobs", key:"Created", sortable:true, resizeable:true},
-      {label:"Submitted Jobs", key:"Submited", sortable:true, resizeable:true},
-      {label:"Waiting Jobs", key:"Wait", sortable:true, resizeable:true},
-      {label:"Running Jobs", key:"Running", sortable:true, resizeable:true},
-      {label:"Done Jobs", key:"Done", sortable:true, resizeable:true},
-      {label:"Failed Jobs", key:"Failed", sortable:true, resizeable:true},
+      {label:"Created", key:"Created", sortable:true, resizeable:true},
+      {label:"Submitted", key:"Submited", sortable:true, resizeable:true},
+      {label:"Waiting", key:"Wait", sortable:true, resizeable:true},
+      {label:"Running", key:"Running", sortable:true, resizeable:true},
+      {label:"Stalled", key:"Stalled", sortable:true, resizeable:true},
+      {label:"Done", key:"Done", sortable:true, resizeable:true},
+      {label:"Failed", key:"Failed", sortable:true, resizeable:true},
       {label:"Description", key:"Description", sortable:true, resizeable:true},
-      {label:"CreationDate [UTC]", key:"CreationDate", formatter:YAHOO.widget.DataTable.formatDate, sortable:true, resizeable:true},
+      {label:"CreationDate&nbsp;[UTC]", key:"CreationDate", formatter:YAHOO.widget.DataTable.formatDate, sortable:true, resizeable:true},
       {label:"Owner", key:"DN", sortable:true, resizeable:true}
     ];
     this.myDataSource = new YAHOO.util.DataSource(YAHOO.example.Data.productions);
     this.myDataSource.responseType = YAHOO.util.DataSource.TYPE_JSARRAY;
     this.myDataSource.responseSchema = {
-      fields: ["ProdId","ProdName","Status","DN","Created","Submited","Wait","Running","Done","Failed","Parent","Description","CreationDate"]
+      fields: ["ProdId","ProdName","Status","DN","Created","Submited","Wait","Running","Done","Failed","Parent","Description","CreationDate","Stalled"]
     };
     this.myDataTable = new YAHOO.widget.DataTable("job_status_div", myColumnDefs, this.myDataSource);
     this.myDataTable.subscribe("rowMouseoverEvent", this.myDataTable.onEventHighlightRow);
