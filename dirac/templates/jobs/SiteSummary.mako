@@ -105,11 +105,13 @@ ${ h.stylesheet_link_tag( "/yui/calendar/assets/skins/sam/calendar.css" ) }
     t[2] = t[2].replace(/'/g,"");
     t[3] = t[3].replace(/'/g,"");
     t[4] = t[4].replace(/'/g,"");
+    t[5] = t[5].replace(/'/g,"");
     t[1] = t[1]*1;
     t[2] = t[2]*1;
     t[3] = t[3]*1;
     t[4] = t[4]*1;
-    prod[i] = {Site:t[0], Wait:t[1], Run:t[2], Done:t[3], Fail:t[4]};
+    t[5] = t[5]*1;
+    prod[i]={Site:t[0],Wait:t[1],Run:t[2],Done:t[3],Fail:t[4],Stalled:t[5]};
   }
   YAHOO.example.Data = {"startIndex":0,"sort":null,"dir":"asc",productions:prod}
   date = date.replace(/'/g,"");

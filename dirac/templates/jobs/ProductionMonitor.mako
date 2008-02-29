@@ -112,7 +112,7 @@ ${ h.stylesheet_link_tag( "/yui/calendar/assets/skins/sam/calendar.css" ) }
     t[10] = t[9].replace(/'/g,"");
     t[11] = t[11].replace(/'/g,"");
     t[12] = t[12].replace(/'/g,"");
-    prod[i] = {ProdId:t[0],ProdName:t[1],Status:t[2],DN:t[3],Created:t[4],Submited:t[5],Wait:t[6],Running:t[7],Done:t[8],Failed:t[9],Parent:t[10],Description:t[11],CreationDate:t[12]};
+    prod[i] = {ProdId:t[0],ProdName:t[1],Status:t[2],DN:t[3],Created:t[4],Submited:t[5],Wait:t[6],Running:t[7],Done:t[8],Failed:t[9],Parent:t[10],Description:t[11],CreationDate:t[12],Stalled:t[13]};
   }
   YAHOO.example.Data = {"startIndex":0,"sort":null,"dir":"asc",productions:prod}
 </script>
