@@ -157,11 +157,11 @@ class ProductionmonitorController(BaseController):
     id = int(prodid)
     RPC = getRPCClient("ProductionManagement/ProductionManager")
     if cmd == "del":
-      result = RPC.deleteProductionID(id)
+      result = RPC.deleteProduction(id)
     elif cmd == "start":
-      result = RPC.setProductionStatus(id,"Active")
+      result = RPC.setTransformationStatus(id,"Active")
     elif cmd == "stop":
-      result = RPC.setProductionStatus(id,"Stopped")
+      result = RPC.setTransformationStatus(id,"Stopped")
     print result
     if result["OK"]:
       return 0
