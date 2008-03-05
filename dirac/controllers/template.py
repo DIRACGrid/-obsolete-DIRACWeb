@@ -1,4 +1,5 @@
 from dirac.lib.base import *
+import mako.exceptions
 
 class TemplateController(BaseController):
 
@@ -24,4 +25,8 @@ class TemplateController(BaseController):
         By default this controller aborts the request with a 404 (Not
         Found)
         """
-        abort(404)
+        try:
+          c.error = "404 Not found"
+          return render( "/error.mako" )
+        except mako.exceptions.TopLevelLookupException:
+          abort(404)
