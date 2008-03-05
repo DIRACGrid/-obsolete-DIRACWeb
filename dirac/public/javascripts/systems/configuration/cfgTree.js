@@ -127,7 +127,7 @@ function generateLabelForCSObject( csPath, csObject )
   		var opValueList = csObject[1].split( "," );
   		var opContents = "<ul style='text-align:left;margin-left:15px;'>"
   		var opValueList = csObject[1].split( "," );
-    	for( var i = 1; i <  opValueList.length; i++ )
+    	for( var i = 0; i <  opValueList.length; i++ )
     	{
 			opContents += "<li> "+opValueList[i]+" </li>";
     	}
