@@ -210,6 +210,9 @@ class JobmonitorController(BaseController):
     elif request.params.has_key("pilotStdErr") and len(request.params["pilotStdErr"]) > 0:
       id = request.params["pilotStdErr"]
       return self.__pilotGetOutput("err",int(id))
+    elif request.params.has_key("LogURL") and len(request.params["LogURL"]) > 0:
+      id = request.params["LogURL"]
+      return self.__pilotGetURL(int(id))
     else:
       c.error = "Failed to get DIRAC job ID"
       print "+++ E:",c.error
@@ -349,3 +352,22 @@ class JobmonitorController(BaseController):
       error = result["Message"]
       print "+++ E:",error
       return error
+################################################################################
+  def __pilotGetURL(self,id):
+    print "LogFile:",id
+    RPC = getRPCClient("WorkloadManagement/JobMonitoring")
+    result = RPC.getJobParameters(id)
+    if result["OK"]:
+      attr = result["Value"]
+      if attr.has_key("Log URL"):
+        url = attr["Log URL"]
+        url = url.split('"')
+        return url[1]
+      else:
+        error = "exceptions.KeyError: 'Log URL'"
+        print "+++ E:",error
+        return "No URL found"
+    else:
+      error = result["Message"]
+      print "+++ E:",error
+      return "No URL found"
