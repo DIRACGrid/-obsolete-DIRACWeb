@@ -195,6 +195,19 @@ function parseRequest(r){
   }
   setPanel(type);
 }
+function moveTo(r){
+  var req = r.responseText;
+  req = req.replace(/"/g,"");
+  req = req.replace(/\\/g,"");
+  wait.hide();
+  if(req == "No URL found"){
+    xz.hide();
+    alert(req);
+    return
+  }
+  xz.setBody("<iframe id='www_frame' src =" + req + "></iframe>");
+  setPanel("www");
+}
 function setPanel(type){
   var width = 'CSS1Compat' && !window.opera?document.documentElement.clientWidth:document.body.clientWidth;
   if(document.getElementById("xz_body") != null){
@@ -219,6 +232,14 @@ function setPanel(type){
     xz.cfg.setProperty("width",width + "px");
     xz.cfg.setProperty("height",height + "px");
     document.getElementById("xz_body").style.overflow = "auto";
+  }
+  if(type == "www"){
+    width = xz.cfg.getProperty("width");
+    height = xz.cfg.getProperty("height");
+    width = width.replace(/px/,"");
+    height = height.replace(/px/,"");
+    document.getElementById("www_frame").style.width = (width - 35) + "px";
+    document.getElementById("www_frame").style.height = (height - 35) + "px";
   }
 }
 function setupPanel(id,e){
@@ -448,6 +469,13 @@ function getLoggingInfo(id){
   var myAjax = YAHOO.util.Connect.asyncRequest('GET',url,{success:parseRequest,failure:connectBad,argument:"log"},"");
   setupPanel(id);
 }
+function getLogFile(id){
+  if((id == null) || (id == "")) return;
+  var url = "action?LogURL=" + id;
+  wait.render(document.body);wait.show();
+  var myAjax = YAHOO.util.Connect.asyncRequest('GET',url,{success:moveTo,failure:connectBad},"");
+  setupPanel(id);
+}
 function pilot(some_useless_rubbish_here,mode,id){
   if((id == null) || (id == "")) return;
   if(mode == "out"){
@@ -464,7 +492,7 @@ function refresh(){
   wait.render(document.body);wait.show();
   var myAjax = YAHOO.util.Connect.asyncRequest('GET',url,{success:parseRequest,failure:connectBad,argument:"refresh"},"");
 }
-function fuckinMenu(id,x,y){
+function fuckinMenu(id,x,y,stat){
   job_menu.clearContent();
   job_menu.addItems([
     {text:"JDL",url:"javascript:getJdl(" + id + ")"},
@@ -472,6 +500,7 @@ function fuckinMenu(id,x,y){
     {text:"Parameters",url:"javascript:getParams(" + id + ")"},
     {text:"Logging info",url:"javascript:getLoggingInfo(" + id + ")"},
     {text:"StandardOutput",url:"javascript:getStandardOutput(" + id + ")"},
+    {text:"Get LogFile",url:"javascript:getLogFile(" + id + ")",disabled:true},
     {text:"Actions", submenu:{id:"sub1",itemdata: [
       {text:"Reset",url:"javascript:actionJob('tmp','reset'," + id + ")"},
       {text:"Kill",url:"javascript:actionJob('tmp','kill'," + id + ")"},
@@ -482,6 +511,9 @@ function fuckinMenu(id,x,y){
       {text:"Get StdErr",url:"javascript:pilot('tmp','err'," + id + ")"}
     ]}}
   ]);
+  if((stat == "Done")||(stat == "Failed")){
+    job_menu.getItem(5).cfg.setProperty("disabled", false);
+  }
   job_menu.setItemGroupTitle("Job ID: " + id, 0);
   job_menu.render(document.body);
   job_menu.cfg.setProperty("xy", [x,y]);
@@ -542,8 +574,9 @@ YAHOO.util.Event.addListener(window, "load", function() {
       var t = e.target;
       var rec = this.getRecord(t);
       var id = rec.getData("JobId");
+      var stat = rec.getData("Status");
       if(e.event.target.yuiColumnId != "0"){
-        fuckinMenu(id,x,y);
+        fuckinMenu(id,x,y,stat);
       }
     });
   };
