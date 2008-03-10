@@ -6,6 +6,7 @@ from dirac.lib.diset import getRPCClient
 from dirac.lib.credentials import authorizeAction
 from dirac.lib.sessionManager import *
 from DIRAC import gConfig
+import DIRAC.Core.Utilities.Time as Time
 log = logging.getLogger(__name__)
 
 result = gConfig.getSections("/Users")
@@ -79,6 +80,9 @@ class ProductionmonitorController(BaseController):
     elif request.params.has_key("delProd") and len(request.params["delProd"]) > 0:
       id = str(request.params["delProd"])
       return self.__actProduction(id,"del")
+    elif request.params.has_key("logProd") and len(request.params["logProd"]) > 0:
+      id = str(request.params["logProd"])
+      return self.__logProduction(id)
     elif request.params.has_key("LoggingInfo") and len(request.params["LoggingInfo"]) > 0:
       id = int(request.params["LoggingInfo"])
       return self.__getLoggingInfo(id)
@@ -131,33 +135,38 @@ class ProductionmonitorController(BaseController):
       print "+++ E:",result["Message"]
       return "Failed during RPC call. %s" % result["Message"]
 ################################################################################
-  def __getInfo(self,id,mode):
-    RPC = getRPCClient("ProductionManagement/ProductionRepository")
-    if mode == "Comment":
-      print "Name or ID:",id
-      result = RPC.getProductionFullDescription(id)
-      print "getProductionFullDescription:",result
-      if result["OK"]:
-        output = result["Value"]
-        return output
-      else:
-        return "Failed during RPC call. %s" % result["Message"]
-    elif mode == "DN":
-      result = RPC.getProductionInfo(id)
-      if result["OK"]:
-        info = result["Value"]
-        return info["PublisherDN"]
-      else:
-        return "Failed during RPC call. %s" % result["Message"]
+  def __logProduction(self,prodid):
+    id = int(prodid)
+    print "LOG for PROD:",id
+    RPC = getRPCClient("ProductionManagement/ProductionManager")
+    result = RPC.getTransformationLogging(id)
+    if result["OK"]:
+      log = result["Value"]
+      valueList = []
+      for i in log:
+        DN = i["AuthorDN"]
+        if len(DN) > 0:
+          if dndb.has_key(DN):
+            i["AuthorDN"] = dndb[DN]
+          else:
+            i["AuthorDN"] = "Owner Unknown" # Zdes' nado probovat' esche raz
+        else:
+          i["AuthorDN"] = "Owner Unknown"
+        i["MessageDate"] = Time.toString(i["MessageDate"])
+        valueList.append([i["Message"],i["AuthorDN"],i["MessageDate"]])
+      print "LOG:",valueList
+      return valueList
     else:
-      print "+++ E:",result["Message"]
-      return "Failed during RPC call. %s" % result["Message"]
+      error = []
+      error.append(result["Message"])
+      error.append(201)
+      return error
 ################################################################################
   def __actProduction(self,prodid,cmd):
     id = int(prodid)
     RPC = getRPCClient("ProductionManagement/ProductionManager")
     if cmd == "del":
-      result = RPC.deleteProduction(id)
+      result = RPC.deleteTransformation(id)
     elif cmd == "start":
       result = RPC.setTransformationStatus(id,"Active")
     elif cmd == "stop":
