@@ -10,13 +10,10 @@ function initWebRoot(url){
 }
 function parseRequest(r){
   var req = r.responseText;
+  var jobs = JSON.parse(req);
   var type = r.argument;
   wait.hide();
   if(type != "jdl"){
-    req = req.replace("]]","");
-    req = req.replace("[[","");
-    var jobs = req.split("], [");
-    var newJobs = new Array();
     if((req == "[]") || (jobs.length == 0)){
       xz.hide();
       alert("Can't parse server response: " + req);
@@ -38,6 +35,19 @@ function parseRequest(r){
       t[8] = t[8].replace("'","");
       newJobs[i] = {JobId:t[0], Status:t[1], MinorStatus:t[2], ApplicationStatus:t[3], Site:t[4], JobName:t[5], LastUpdate:t[6], SubmitionTime:t[8], Owner:t[7]};
     }
+  }else if(type == "prodlog"){
+    var newJobs = new Array();
+    for(var i = 0; i < jobs.length; i++){
+      var t = jobs[i];
+      newJobs[i] = {Message:t[0],Author:t[1],Date:t[2]};
+    }
+    var temp_defs = [
+      {key:"Message", sortable:true, resizeable:true},
+      {label:"Date&nbsp;[UTC]",key:"Date", sortable:true, resizeable:true},
+      {key:"Author", sortable:true, resizeable:true}
+    ];
+    var temp_datas = new YAHOO.util.DataSource(newJobs);
+    temp_datas.responseSchema = {fields: ["Message","Author","Date"]};
   }else if(type == "log"){
     for(var i = 0; i < jobs.length; i++){
       var t = jobs[i].split("', '");
@@ -71,7 +81,7 @@ function parseRequest(r){
   }else{
     return;
   }
-  if((type == "log") || (type == "info")){
+  if((type == "log") || (type == "info") || (type == "prodlog")){
     temp_datas.responseType = YAHOO.util.DataSource.TYPE_JSARRAY;
     var temp_table = new YAHOO.widget.DataTable("xz_body",temp_defs,temp_datas);
   }else if(type == "main"){
@@ -134,6 +144,15 @@ function getLoggingInfo(id){
   var url = "/jobs/JobMonitor/action?LoggingInfo=" + id;
   wait.render(document.body);wait.show();
   var myAjax = YAHOO.util.Connect.asyncRequest('GET',url,{success:parseRequest,failure:connectBad,argument:"log"},"");
+  setupPanel(id);
+}
+function showLog(id){
+  if((id == 0)|| (id == "")){
+    return
+  }
+  var url = "action?logProd=" + id;
+  wait.render(document.body);wait.show();
+  var myAjax = YAHOO.util.Connect.asyncRequest('POST',url,{success:parseRequest,failure:connectBad,argument:"prodlog"},"");
   setupPanel(id);
 }
 function actionJob(some_useless_rubbish_here,mode,job){
@@ -298,7 +317,8 @@ function showJobs(id){
 function fMenu(id,x,y,stat){
   job_menu.clearContent();
   job_menu.addItems([
-    {text:"Show Jobs",url:"javascript:showJobs('" + id + "')"}
+    {text:"Show Jobs",url:"javascript:showJobs('" + id + "')"},
+    {text:"Show Logs",url:"javascript:showLog('" + id + "')"}
   ]);
   if((stat == "Start")||(stat == "Active")){
     job_menu.addItems([
