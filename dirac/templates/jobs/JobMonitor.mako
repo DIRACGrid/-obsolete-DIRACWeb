@@ -148,7 +148,7 @@ ${ h.stylesheet_link_tag( "/yui/calendar/assets/skins/sam/calendar.css" ) }
   </td>
   <td style="text-align:right;">Updated&nbsp;after:</td>
   <td style="text-align:left;"><input width="100px" type="text" id="jobupdate" name="jobupdate" size="10"/></td>
-  <td style="text-align:right;">Jobs&nbsp;group:</td>
+  <td style="text-align:right;">JobGroup:</td>
   <td style="text-align:left;">
     <select id="prodname" size="1" style="width: 150px">
     %if c.save_prod == 0:
