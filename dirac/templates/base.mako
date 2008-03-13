@@ -1,19 +1,19 @@
 # -*- coding: utf-8 -*-
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01//EN" "http://www.w3.org/TR/html4/strict.dtd">
 <%
 import dirac.lib.credentials as credentials
 import dirac.lib.webBase as webBase
 
 credentials.checkUserCredentials()
 
-pageTitle = webBase.htmlPageTitle() 
+pageTitle = webBase.htmlPageTitle()
 %>
-<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
 <html>
  <head>
   <title>DIRAC: ${ pageTitle }</title>
   <link rel="SHORTCUT ICON" href='${ h.url_for( "/images/favicon.ico" )}'>
   ${ h.stylesheet_link_tag( "/yui/reset-fonts-grids/reset-fonts-grids.css" ) }
-  ${ h.stylesheet_link_tag( "dirac.css" ) } 
+  ${ h.stylesheet_link_tag( "dirac.css" ) }
   <!-- Font size -->
   ${ h.stylesheet_link_tag( "/yui/fonts/fonts-min.css" ) }
   <!-- Yui skins -->
@@ -26,8 +26,7 @@ pageTitle = webBase.htmlPageTitle()
   ${ h.javascript_include_tag( "/yui/menu/menu.js" ) }
   <!-- init YUI -->
   <script>
-   function initMenuBar() { 
-<% 
+<%
 areaContentsDict = {}
 areasList = []
 for area in webBase.schemaAreas():
@@ -35,25 +34,29 @@ for area in webBase.schemaAreas():
   if len( areaContentsDict[ area ] ) > 2:
     areasList.append( area )
 %>
+   function initMenuBar() {
 % for area in areasList:
      var ${area}Items = ${ areaContentsDict[ area ] }
-     var o${area}Menu = new YAHOO.widget.Menu( "${area}HTMLObject" );
-     o${area}Menu.addItems( ${area}Items )
-     o${area}Menu.render( '${area}Position' ); 
+     var o${area}Menu = new YAHOO.widget.Menu( "${area}TopLevelMenuObjectDiv", { itemdata : ${area}Items } );
+     var ret = o${area}Menu.render( '${area}MenuAnchor' );
      o${area}Menu.showEvent.subscribe( function () { this.focus(); } );
-     function show${area}Menu( e ) { 
+     function show${area}Menu( e ) {
 % for otherAreas in areasList:
 % if otherAreas != area:
        o${otherAreas}Menu.hide()
 % endif
 % endfor
-       o${area}Menu.show()
+       //HACK: YUI insists on positioning this element in top 10px left 10px
+		 o${area}Menu.cfg.setProperty( 'x', YAHOO.util.Dom.getX( '${area}MenuAnchor' ) );
+		 o${area}Menu.cfg.setProperty( 'y', YAHOO.util.Dom.getY( '${area}MenuAnchor' ) + YAHOO.util.Dom.get( '${area}MenuAnchor' ).offsetHeight );
+       o${area}Menu.show();
      };
      YAHOO.util.Event.addListener( document.getElementById( '${area}Position' ), 'click', show${area}Menu );
      YAHOO.util.Event.addListener( document.getElementById( '${area}Position' ), 'mouseover', show${area}Menu );
 % endfor
    }
-   YAHOO.util.Event.addListener(window, "load", initMenuBar); 
+   //YAHOO.util.Event.onContentReady( "pageMenuBar", initMenuBar );
+   YAHOO.util.Event.onDOMReady( initMenuBar );
   </script>
   ${self.head_tags()}
  </head>
@@ -64,7 +67,7 @@ for area in webBase.schemaAreas():
   <div class='topUserInfo'>
    ${webBase.htmlUserInfo()}
   </div>
-  <hr class='pageHorizontalDelimiter'/> 
+  <hr class='pageHorizontalDelimiter'/>
   <table class='header'>
    <tr>
     <td>${ h.image_tag( 'DIRAC.png', alt = 'DIRAC' ) }</td>
@@ -72,11 +75,11 @@ for area in webBase.schemaAreas():
     <td>${ h.image_tag( 'LHCbLogo.png', alt = 'LHCb' ) }</td>
    </tr>
   </table>
-  <table class='menuBar'>
+  <table id='pageMenuBar' class='menuBar'>
    <tr>
     ${ webBase.htmlSchemaAreas( areasList ) }
     <td class='menuSetup'>
-       Selected Setup 
+       Selected Setup
     </td>
     <td class='menuSetupChoice'>
      ${ webBase.htmlSetups() }

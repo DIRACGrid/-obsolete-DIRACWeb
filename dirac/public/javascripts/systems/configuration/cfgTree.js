@@ -125,14 +125,16 @@ function generateLabelForCSObject( csPath, csObject )
     if( csObject[1].indexOf( "," ) > -1 )
     {
   		var opValueList = csObject[1].split( "," );
-  		var opContents = "<ul style='text-align:left;margin-left:15px;'>"
+  		var opContents = "<span class='optionNode' style='text-align:left;'>";
+  		opContents += "<span  id='odd-" + csPath + "' style=';text-align:left;'>" + csObject[0] + "</span>";
   		var opValueList = csObject[1].split( "," );
     	for( var i = 0; i <  opValueList.length; i++ )
     	{
-			opContents += "<li> "+opValueList[i]+" </li>";
+			opContents += "<span style='margin-left:15px;display:block;text-align:left;'> "+opValueList[i]+" </span>";
     	}
-    	opContents += "</ul>";
-    	var nodeLabel = "<div id='odd-" + csPath + "' class='optionNode' style='text-align:left;'>" + csObject[0] + " = </div>"+opContents+"";
+    	opContents += "</span>";
+    	//var nodeLabel = "<span id='odd-" + csPath + "' class='optionNode' style='text-align:left;'>" + csObject[0] + " = </span>"+opContents+"";
+    	var nodeLabel = opContents;
     }
     else
     {

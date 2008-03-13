@@ -79,9 +79,9 @@ def htmlSchemaAreas( areasList = False):
   for area in areasList:
     htmlData += "<td id='%sPosition' class='menuSection'>" % area
     if area.lower() == dirList[0]:
-      htmlData += "<div class='selectedLabel'>"
+      htmlData += "<div id='%sMenuAnchor' class='selectedLabel'>" % area
     else:
-      htmlData += "<div class='label'>"
+      htmlData += "<div id='%sMenuAnchor' class='label'>" % area
     htmlData += "%s</div></td>\n" % area.capitalize()
   return htmlData
 
