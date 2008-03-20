@@ -311,8 +311,19 @@ function jobch(s){
   }
 }
 function showJobs(id){
-  var url = 'https://lhcbweb.pic.es/DIRAC/jobs/JobMonitor/display?counter=25&job_up=&applic=&status=&site=&sort=JobID:ASC&page=0&prodname=' + id;
-  location.href = url;
+  var post_req = "<form id=\"redirform\" action=\"https://lhcbweb.pic.es/DIRAC/jobs/JobMonitor/display\" method=\"POST\" >";
+  post_req = post_req + "<input type=\"hidden\" name=\"counter\" value=\"25\">";
+  post_req = post_req + "<input type=\"hidden\" name=\"job_up\" value=\"\">";
+  post_req = post_req + "<input type=\"hidden\" name=\"applic\" value=\"\">";
+  post_req = post_req + "<input type=\"hidden\" name=\"status\" value=\"\">";
+  post_req = post_req + "<input type=\"hidden\" name=\"site\" value=\"\">";
+  post_req = post_req + "<input type=\"hidden\" name=\"sort\" value=\"JobID:ASC\">";
+  post_req = post_req + "<input type=\"hidden\" name=\"page\" value=\"0\">";
+  post_req = post_req + "<input type=\"hidden\" name=\"prodname\" value=\"" + id + "\">";
+  post_req = post_req + "</form>";
+  document.getElementById("job_status_div").innerHTML = document.getElementById("job_status_div").innerHTML + post_req;
+  var url = document.getElementById("redirform");
+  url.submit();
 }
 function fMenu(id,x,y,stat){
   job_menu.clearContent();
