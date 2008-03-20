@@ -25,6 +25,7 @@ class TestjobmonitorController(BaseController):
     return valueList
 ################################################################################
   def __parseRequest(self):
+    global pageNumber
     req = {}
     save_time = 0
     save_prod = 0
@@ -37,7 +38,6 @@ class TestjobmonitorController(BaseController):
       req["JobID"] = str(request.params["jobid"])
     else:
       global numberOfJobs
-      global pageNumber
       global globalSort
       if request.params.has_key("counter") and len(request.params["counter"]) > 0:
         numberOfJobs = int(request.params["counter"])
