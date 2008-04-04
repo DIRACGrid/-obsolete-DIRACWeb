@@ -213,6 +213,9 @@ class JobmonitorController(BaseController):
     elif request.params.has_key("LogURL") and len(request.params["LogURL"]) > 0:
       id = request.params["LogURL"]
       return self.__pilotGetURL(int(id))
+    elif request.params.has_key("StagerReport") and len(request.params["StagerReport"]) > 0:
+      id = request.params["StagerReport"]
+      return self.__getStagerReport(int(id))
     else:
       c.error = "Failed to get DIRAC job ID"
       print "+++ E:",c.error
@@ -268,7 +271,23 @@ class JobmonitorController(BaseController):
       valueList = []
       for i in attr.items():
         if i[0] != "StandardOutput":
-          valueList.append([i[0],i[1]])
+          if i[0] != "StagerReport":
+            valueList.append([i[0],i[1]])
+      return valueList
+    else:
+      error = result["Message"]
+      print "+++ E:",error
+      return error
+################################################################################
+  def __getStagerReport(self,id):
+    RPC = getRPCClient("WorkloadManagement/JobMonitoring")
+    result = RPC.getJobParameters(id)
+    if result["OK"]:
+      attr = result["Value"]
+      valueList = []
+      for i in attr.items():
+        if i[0] == "StagerReport":
+          valueList.append(i[1])
       return valueList
     else:
       error = result["Message"]
