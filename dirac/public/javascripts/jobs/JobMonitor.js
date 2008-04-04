@@ -216,7 +216,7 @@ function setPanel(type){
       width = width - 20;
     }else{
       if(type == "jdl"){
-        width = (2 * width) / 3;
+        width = (5 * width) / 6;
       }else{
         width = width_element + 20;
       }
@@ -476,6 +476,13 @@ function getLogFile(id){
   var myAjax = YAHOO.util.Connect.asyncRequest('GET',url,{success:moveTo,failure:connectBad},"");
   setupPanel(id);
 }
+function getStagerReport(id){
+  if((id == null) || (id == "")) return;
+  var url = "action?StagerReport=" + id;
+  wait.render(document.body);wait.show();
+  var myAjax = YAHOO.util.Connect.asyncRequest('GET',url,{success:parseRequest,failure:connectBad,argument:"jdl"},"");
+  setupPanel(id);
+}
 function pilot(some_useless_rubbish_here,mode,id){
   if((id == null) || (id == "")) return;
   if(mode == "out"){
@@ -501,6 +508,7 @@ function fuckinMenu(id,x,y,stat){
     {text:"Logging info",url:"javascript:getLoggingInfo(" + id + ")"},
     {text:"StandardOutput",url:"javascript:getStandardOutput(" + id + ")"},
     {text:"Get LogFile",url:"javascript:getLogFile(" + id + ")",disabled:true},
+    {text:"Get StagerReport",url:"javascript:getStagerReport(" + id + ")"},
     {text:"Actions", submenu:{id:"sub1",itemdata: [
       {text:"Reset",url:"javascript:actionJob('tmp','reset'," + id + ")"},
       {text:"Kill",url:"javascript:actionJob('tmp','kill'," + id + ")"},
