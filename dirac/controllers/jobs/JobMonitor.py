@@ -15,161 +15,150 @@ globalSort = "JobID:DESC"
 
 class JobmonitorController(BaseController):
 ################################################################################
+  def display(self):
+    pagestart = time()
+    c.select = self.__getSelectionData()
+    gLogger.info("SELECTION RESULTS:",c.select)
+    gLogger.info("\033[0;31mJOB INDEX REQUEST:\033[0m %s" % (time() - pagestart))
+    return render("jobs/JobMonitor.mako")
+################################################################################
   def __getJobSummary(self,jobs):
     valueList = []
     for i in jobs:
       s = jobs[i]
-      valueList.append([s["JobID"],s["Status"],s["MinorStatus"],s["ApplicationStatus"],s["Site"],s["JobName"],s["LastUpdateTime"],s["Owner"],s["SubmissionTime"],s["LastSignOfLife"]])
+      valueList.append({"id":str(s["JobID"]),"status":str(s["Status"]),"minorStatus":str(s["MinorStatus"]),"applicationStatus":str(s["ApplicationStatus"]),"site":str(s["Site"]),"jobname":str(s["JobName"]),"lastUpdate":str(s["LastUpdateTime"]),"owner":str(s["Owner"]),"submissionTime":str(s["SubmissionTime"]),"signTime":str(s["LastSignOfLife"])})
     return valueList
 ################################################################################
-  def __parseRequest(self):
-    global pageNumber
-    req = {}
-    save_time = 0
-    save_prod = 0
-    save_site = 0
-    save_status = 0
-    save_applic = 0
-    save_owners = 0
-    if request.params.has_key("jobid") and len(request.params["jobid"]) > 0:
-      pageNumber = 0
-      req["JobID"] = str(request.params["jobid"])
+  @jsonify
+  def submit(self):
+    pagestart = time()
+    RPC = getRPCClient("WorkloadManagement/JobMonitoring")
+    result = self.__request()
+    gLogger.info("- REQUEST:",result)
+    gLogger.info("PageNumber:",pageNumber)
+    gLogger.info("NOJ:",numberOfJobs)
+    result = RPC.getJobPageSummary(result,globalSort,pageNumber,numberOfJobs)
+#    gLogger.info("SERVER RESPONSE:",result)
+    if result["OK"]:
+      result = result["Value"]
+      if result.has_key("SummaryDict") and len(result["SummaryDict"]) > 0:
+        jobSummary = result["SummaryDict"]
+        c.result = self.__getJobSummary(jobSummary)
+#        c.result = []
+#        for i in jobSummary:
+#          c.result.append(jobSummary[i])
+        
+        c.result = {"success":"true","result":c.result,"total":str(result["TotalJobs"])}
+      else:
+        c.result = {"success":"false","error":"There are no data to display"}
     else:
-      global numberOfJobs
-      global globalSort
-      if request.params.has_key("counter") and len(request.params["counter"]) > 0:
-        numberOfJobs = int(request.params["counter"])
-      else:
-        numberOfJobs = 25
-      if request.params.has_key("prodname") and len(request.params["prodname"]) > 0:
-        req["JobGroup"] = str(request.params["prodname"])
-        c.save_prod = str(request.params["prodname"])
-      if request.params.has_key("site") and len(request.params["site"]) > 0:
-        req["Site"] = str(request.params["site"])
-        save_site = str(request.params["site"])
-      if request.params.has_key("status") and len(request.params["status"]) > 0:
-        req["Status"] = str(request.params["status"])
-        save_status = str(request.params["status"])
-      if request.params.has_key("applic") and len(request.params["applic"]) > 0:
-        req["ApplicationStatus"] = str(request.params["applic"])
-        save_applic = str(request.params["applic"])
-      if request.params.has_key("owner") and len(request.params["owner"]) > 0:
-        req["Owner"] = str(request.params["owner"])
-        save_owner = str(request.params["owner"])
-      if request.params.has_key("job_up") and len(request.params["job_up"]) > 0:
-        req["LastUpdate"] = str(request.params["job_up"])
-        save_time = str(request.params["job_up"])
-      if request.params.has_key("sort") and len(request.params["sort"]) > 0:
-        globalSort = str(request.params["sort"])
-      else:
-        globalSort = "JobID:DESC"
-      if request.params.has_key("page") and len(request.params["page"]) > 0:
-        pageNumber = int(request.params["page"]) - 1
-        if pageNumber <= 0:
-          pageNumber = 0
-      else:
-        pageNumber = 0
-    return req
+      c.result = {"success":"false","error":result["Message"]}
+    gLogger.info("\033[0;31mJOB SUBMIT REQUEST:\033[0m %s" % (time() - pagestart))
+#    gLogger.info("JOB SUBMIT RESULT:",c.result)
+    return c.result
 ################################################################################
-  def __drawFilters(self):
+  def __getSelectionData(self):
+    callback = {}
+    if request.params.has_key("productionID") and len(request.params["productionID"]) > 0:
+      callback["productionID"] = str(request.params["productionID"])
     RPC = getRPCClient("ProductionManagement/ProductionManager")
     result = RPC.getProductionSummary()
     if result["OK"]:
-      c.getprod = []
+      prod = []
       prods = result["Value"]
       if len(prods)>0:
         for keys,i in prods.items():
           id = str(int(keys)).zfill(8)
-          c.getprod.append(id)
+          prod.append([str(id)])
       else:
-        c.getprod.append("No elements to display")
+        prod = "Nothing to display"
     else:
-      c.getprod = "Error during RPC call"
+      prod = "Error during RPC call"
+    callback["prod"] = prod
     RPC = getRPCClient("WorkloadManagement/JobMonitoring")
     result = RPC.getSites()
     if result["OK"]:
-      c.getsite = []
+      site = []
       if len(result["Value"])>0:
         for i in result["Value"]:
-          c.getsite.append(i)
+          site.append([str(i)])
       else:
-        c.getsite.append("No elements to display")
+        site = "Nothing to display"
     else:
-      c.getsite = "Error during RPC call"
+      site = "Error during RPC call"
+    callback["site"] = site
     result = RPC.getStates()
     if result["OK"]:
-      c.getstat = []
+      stat = []
       if len(result["Value"])>0:
         for i in result["Value"]:
-          c.getstat.append(i)
+          stat.append([str(i)])
       else:
-        c.getstat.append("No elements to display")
+        stat = "Nothing to display"
     else:
-      c.getstat = "Error during RPC call"
+      stat = "Error during RPC call"
+    callback["stat"] = stat
     result = RPC.getApplicationStates()
     if result["OK"]:
-      c.getappl = []
+      app = []
       if len(result["Value"])>0:
         for i in result["Value"]:
-          c.getappl.append(i)
+          app.append([str(i)])
       else:
-        c.getappl.append("No elements to display")
+        app = "Nothing to display"
     else:
-      c.getappl = "Error during RPC call"
+      app = "Error during RPC call"
+    callback["app"] = app
     result = RPC.getOwners()
     if result["OK"]:
-      c.getowner = []
+      owner = []
       if len(result["Value"])>0:
         for i in result["Value"]:
-          c.getowner.append(i)
+          owner.append([str(i)])
       else:
-        c.getowner.append("No elements to display")
+        owner = "Nothing to display"
     else:
-      c.getowner = "Error during RPC call"
-    return 88
+      owner = "Error during RPC call"
+    callback["owner"] = owner
+    return callback
 ################################################################################
-  def display(self):
-    RPC = getRPCClient("WorkloadManagement/JobMonitoring")
-    pagestart = time()
-    result = self.__parseRequest()
-    self.__drawFilters()
-    result = RPC.getJobPageSummary(result,globalSort,pageNumber,numberOfJobs)
-    if result["OK"]:
-      result = result["Value"]
-      if result.has_key("SummaryDict") and len(result["SummaryDict"]) > 0:
-        jobSummary = result["SummaryDict"]
-        c.listResult = self.__getJobSummary(jobSummary)
-        c.listResult.append([result["SummaryStatus"]])
-        c.listResult.append([result["TotalJobs"]])
-        c.listResult.append([1])
-        gLogger.info("\033[0;31mINDEX PAGE PROCESSING:\033[0m %s" % ( time() - pagestart ) )
-        return render("/jobs/JobMonitor.mako")
-      else:
-        return "There is no summary for the job(s)"
+  def __request(self):
+    req = {}
+    global pageNumber
+    if request.params.has_key("id") and len(request.params["id"]) > 0:
+      pageNumber = 0
+      req["JobID"] = str(request.params["id"])
     else:
-      return result["Message"]
-################################################################################
-  @jsonify
-  def submit(self):
-    RPC = getRPCClient("WorkloadManagement/JobMonitoring")
-    pagestart = time()
-    result = self.__parseRequest()
-    self.__drawFilters()
-    result = RPC.getJobPageSummary(result,globalSort,pageNumber,numberOfJobs)
-    if result["OK"]:
-      result = result["Value"]
-      if result.has_key("SummaryDict") and len(result["SummaryDict"]) > 0:
-        jobSummary = result["SummaryDict"]
-        listResult = self.__getJobSummary(jobSummary)
-        listResult.append([result["SummaryStatus"]])
-        listResult.append([result["TotalJobs"]])
-        listResult.append([pageNumber + 1])
-        print "\033[0;31mSUBMIT PAGE PROCESSING:\033[0m",time() - pagestart
-        return listResult
+      global numberOfJobs
+      global globalSort
+      if request.params.has_key("limit") and len(request.params["limit"]) > 0:
+        if request.params.has_key("start") and len(request.params["start"]) > 0:
+          numberOfJobs = int(request.params["limit"])
+          startRecord = int(request.params["start"])
+          pageNumber = startRecord/numberOfJobs
+          if pageNumber <= 0:
+            pageNumber = 0
+        else:
+          pageNumber = 0
       else:
-        return "There is no summary for the job(s)"
-    else:
-      return result["Message"]
+        numberOfJobs = 25
+      if request.params.has_key("prod") and len(request.params["prod"]) > 0:
+        req["JobGroup"] = str(request.params["prod"])
+      if request.params.has_key("site") and len(request.params["site"]) > 0:
+        req["Site"] = str(request.params["site"])
+      if request.params.has_key("stat") and len(request.params["stat"]) > 0:
+        req["Status"] = str(request.params["stat"])
+      if request.params.has_key("app") and len(request.params["app"]) > 0:
+        req["ApplicationStatus"] = str(request.params["app"])
+      if request.params.has_key("owner") and len(request.params["owner"]) > 0:
+        req["Owner"] = str(request.params["owner"])
+      if request.params.has_key("date") and len(request.params["date"]) > 0:
+        req["LastUpdate"] = str(request.params["date"])
+      if request.params.has_key("sort") and len(request.params["sort"]) > 0:
+        globalSort = str(request.params["sort"])
+      else:
+        globalSort = "JobID:DESC"
+    return req
 ################################################################################
   @jsonify
   def action(self):
@@ -189,18 +178,18 @@ class JobmonitorController(BaseController):
     elif request.params.has_key("getParams") and len(request.params["getParams"]) > 0:
       id = int(request.params["getParams"])
       return self.__getParams(id)
-    elif request.params.has_key("deleteJobs") and len(request.params["deleteJobs"]) > 0:
-      id = request.params["deleteJobs"]
+    elif request.params.has_key("delete") and len(request.params["delete"]) > 0:
+      id = request.params["delete"]
       id = id.split(",")
       id = [int(i) for i in id ]
       return self.__delJobs(id)
-    elif request.params.has_key("killJobs") and len(request.params["killJobs"]) > 0:
-      id = request.params["killJobs"]
+    elif request.params.has_key("kill") and len(request.params["kill"]) > 0:
+      id = request.params["kill"]
       id = id.split(",")
       id = [int(i) for i in id ]
       return self.__killJobs(id)
-    elif request.params.has_key("resetJobs") and len(request.params["resetJobs"]) > 0:
-      id = request.params["resetJobs"]
+    elif request.params.has_key("reset") and len(request.params["reset"]) > 0:
+      id = request.params["reset"]
       id = id.split(",")
       id = [int(i) for i in id ]
       return self.__resetJobs(id)
@@ -213,164 +202,147 @@ class JobmonitorController(BaseController):
     elif request.params.has_key("LogURL") and len(request.params["LogURL"]) > 0:
       id = request.params["LogURL"]
       return self.__pilotGetURL(int(id))
-    elif request.params.has_key("StagerReport") and len(request.params["StagerReport"]) > 0:
-      id = request.params["StagerReport"]
-      return self.__getStagerReport(int(id))
     else:
-      c.error = "Failed to get DIRAC job ID"
-      print "+++ E:",c.error
-      return c.error
+      c.result = {"success":"false","error":"DIRAC Job ID(s) is not defined"}
+      return c.result
 ################################################################################
   def __getJdl(self,id):
-    print "JDL:",id
     RPC = getRPCClient("WorkloadManagement/JobMonitoring")
     result = RPC.getJobJDL(id)
     if result["OK"]:
-      jobJDL = result["Value"]
-      if not len(jobJDL) > 2 :
-        return "false"
-      else:
-        return jobJDL
+      c.result = result["Value"]
+      c.result = {"success":"true","result":c.result}
     else:
-      c.error = result["Message"]
-      print "+++ E:",c.error
-      return c.error
+      c.result = {"success":"false","error":result["Message"]}
+    gLogger.info("JDL:",id)
+    return c.result
 ################################################################################
   def __getBasicInfo(self,id):
-    print "BasicInfo:",id
     RPC = getRPCClient("WorkloadManagement/JobMonitoring")
     result = RPC.getJobSummary(id)
     if result["OK"]:
       itemList = result["Value"]
-      valueList = []
+      c.result = []
       for key,value in itemList.items():
-        valueList.append([key,value])
-      return valueList
+        c.result.append([key,value])
+      c.result = {"success":"true","result":c.result}
     else:
-      print "+++ E:",result["Message"]
-      return 1
+      c.result = {"success":"false","error":result["Message"]}
+    gLogger.info("BasicInfo:",id)
+    return c.result
 ################################################################################
   def __getLoggingInfo(self,id):
-    print "LoggingInfo:",id
     RPC = getRPCClient("WorkloadManagement/JobMonitoring")
     result = RPC.getJobLoggingInfo(id)
     if result["OK"]:
-      info = result["Value"]
-      return info
+      c.result = result["Value"]
+      c.result = {"success":"true","result":c.result}
     else:
-      error = result["Message"]
-      print "+++ E:",error
-      return error
+      c.result = {"success":"false","error":result["Message"]}
+    gLogger.info("LoggingInfo:",id)
+    return c.result
 ################################################################################
   def __getParams(self,id):
-    print "Parameters:",id
     RPC = getRPCClient("WorkloadManagement/JobMonitoring")
     result = RPC.getJobParameters(id)
     if result["OK"]:
       attr = result["Value"]
-      valueList = []
+      c.result = []
       for i in attr.items():
         if i[0] != "StandardOutput":
-          if i[0] != "StagerReport":
-            valueList.append([i[0],i[1]])
-      return valueList
+          c.result.append([i[0],i[1]])
+      c.result = {"success":"true","result":c.result}
     else:
-      error = result["Message"]
-      print "+++ E:",error
-      return error
-################################################################################
-  def __getStagerReport(self,id):
-    RPC = getRPCClient("WorkloadManagement/JobMonitoring")
-    result = RPC.getJobParameters(id)
-    if result["OK"]:
-      attr = result["Value"]
-      valueList = []
-      for i in attr.items():
-        if i[0] == "StagerReport":
-          valueList.append(i[1])
-      return valueList
-    else:
-      error = result["Message"]
-      print "+++ E:",error
-      return error
-################################################################################
-  def __delJobs(self,id):
-    print "DELETE: ",id
-    MANAGERRPC = getRPCClient("WorkloadManagement/JobManager")
-    result = MANAGERRPC.deleteJob(id)
-    if result["OK"]:
-      return 0
-    else:
-      if result.has_key("InvalidJobIDs"):
-        error = "Invalid JobIDs: %s" % result["InvalidJobIDs"]
-      elif result.has_key("NonauthorizedJobIDs"):
-        error = "You are nonauthorized to delete jobs with JobID: %s" % result["NonauthorizedJobIDs"]
-      else:
-        error = "Unknown error on server side"
-      print "+++ E:",result
-      return error
+      c.result = {"success":"false","error":result["Message"]}
+    gLogger.info("Params:",id)
+    return c.result
 ################################################################################
   def __getStandardOutput(self,id):
-    print "StandardOutput",id
     RPC = getRPCClient("WorkloadManagement/JobMonitoring")
     result = RPC.getJobParameters(id)
     if result["OK"]:
       attr = result["Value"]
       if attr.has_key("StandardOutput"):
-        return attr["StandardOutput"]
+        c.result = attr["StandardOutput"]
+        c.result = {"success":"true","result":c.result}
       else:
-        return "Not accessible yet."
+        c.result = "Not accessible yet"
+        c.result = {"success":"false","error":c.result}
     else:
-      error = result["Message"]
-      print "+++ E:",error
-      return error
+      c.result = {"success":"false","error":result["Message"]}
+    gLogger.info("StandardOutput:",id)
+    return c.result
+################################################################################
+  def __delJobs(self,id):
+    MANAGERRPC = getRPCClient("WorkloadManagement/JobManager")
+    result = MANAGERRPC.deleteJob(id)
+    if result["OK"]:
+      c.result = ""
+      c.result = {"success":"true","result":c.result}
+    else:
+      if result.has_key("InvalidJobIDs"):
+        c.result = "Invalid JobIDs: %s" % result["InvalidJobIDs"]
+        c.result = {"success":"false","error":c.result}
+      elif result.has_key("NonauthorizedJobIDs"):
+        c.result = "You are nonauthorized to delete jobs with JobID: %s" % result["NonauthorizedJobIDs"]
+        c.result = {"success":"false","error":c.result}
+      else:
+        c.result = {"success":"false","error":result["Message"]}
+    gLogger.info("DELETE:",id)
+    return c.result
 ################################################################################
   def __killJobs(self,id):
-    print "KILL:",id
     MANAGERRPC = getRPCClient("WorkloadManagement/JobManager")
     result = MANAGERRPC.killJob(id)
     if result["OK"]:
-      return 0
+      c.result = ""
+      c.result = {"success":"true","result":c.result}
     else:
       if result.has_key("InvalidJobIDs"):
-        error = "Invalid JobIDs: %s" % result["InvalidJobIDs"]
+        c.result = "Invalid JobIDs: %s" % result["InvalidJobIDs"]
+        c.result = {"success":"false","error":c.result}
       elif result.has_key("NonauthorizedJobIDs"):
-        error = "You are nonauthorized to kill jobs with JobID: %s" % result["NonauthorizedJobIDs"]
+        c.result = "You are nonauthorized to delete jobs with JobID: %s" % result["NonauthorizedJobIDs"]
+        c.result = {"success":"false","error":c.result}
       else:
-        error = "Unknown error on server side"
-      print "+++ E:",result
-      return error
+        c.result = {"success":"false","error":result["Message"]}
+    gLogger.info("KILL:",id)
+    return c.result
 ################################################################################
   def __resetJobs(self,id):
-    print "RESET:",id
     MANAGERRPC = getRPCClient("WorkloadManagement/JobManager")
     result = MANAGERRPC.resetJob(id)
     if result["OK"]:
-      return 0
+      c.result = ""
+      c.result = {"success":"true","result":c.result}
     else:
       if result.has_key("InvalidJobIDs"):
-        error = "Invalid JobIDs: %s" % result["InvalidJobIDs"]
+        c.result = "Invalid JobIDs: %s" % result["InvalidJobIDs"]
+        c.result = {"success":"false","error":c.result}
       elif result.has_key("NonauthorizedJobIDs"):
-        error = "You are nonauthorized to reset jobs with JobID: %s" % result["NonauthorizedJobIDs"]
+        c.result = "You are nonauthorized to delete jobs with JobID: %s" % result["NonauthorizedJobIDs"]
+        c.result = {"success":"false","error":c.result}
       else:
-        error = "Unknown error on server side"
-      print "+++ E:",result
-      return error
+        c.result = {"success":"false","error":result["Message"]}
+    gLogger.info("RESET:",id)
+    return c.result
 ################################################################################
   def __pilotGetOutput(self,mode,id):
     print "PilotOutput:",id
     PILOTRPC = getRPCClient("WorkloadManagement/WMSAdministrator")
-    result = PILOTRPC.getJobPilotOutput(id);
+    result = PILOTRPC.getJobPilotOutput(id)
     if result["OK"]:
       output = result["Value"]
       if mode == "out" and output.has_key("StdOut"):
-        return output["StdOut"]
+        c.result =  output["StdOut"]
+        c.result = {"success":"true","result":c.result}
       elif mode == "err" and output.has_key("StdErr"):
-        return output["StdErr"]
+        c.result =  output["StdErr"]
+        c.result = {"success":"true","result":c.result}
     else:
-      error = result["Message"]
-      print "+++ E:",error
-      return error
+      c.result = {"success":"false","error":result["Message"]}
+    gLogger.info("pilotGetOutput:",id)
+    return c.result
 ################################################################################
   def __pilotGetURL(self,id):
     print "LogFile:",id
@@ -381,12 +353,12 @@ class JobmonitorController(BaseController):
       if attr.has_key("Log URL"):
         url = attr["Log URL"]
         url = url.split('"')
-        return url[1]
+        c.result =  url[1]
+        c.result = {"success":"true","result":c.result}
       else:
-        error = "exceptions.KeyError: 'Log URL'"
-        print "+++ E:",error
-        return "No URL found"
+        c.result = "No URL found"
+        c.result = {"success":"false","error":c.result}
     else:
-      error = result["Message"]
-      print "+++ E:",error
-      return "No URL found"
+      c.result = {"success":"false","error":result["Message"]}
+    gLogger.info("pilotGetURL:",id)
+    return c.result
