@@ -20,11 +20,11 @@ for area in webBase.schemaAreas():
 <title>DIRAC: ${ pageTitle }</title>
 <link rel="SHORTCUT ICON" href='${ h.url_for( "/images/favicon.ico" )}'>
 ${ h.stylesheet_link_tag( "/stylesheets/dirac.css" ) }
-${ h.javascript_include_tag( "/ext-2.1/adapter/ext/ext-base.js" ) }
-${ h.javascript_include_tag( "/ext-2.1/ext-all-debug.js" ) }
+${ h.javascript_include_tag( "/ext/adapter/ext/ext-base.js" ) }
+${ h.javascript_include_tag( "/ext/ext-all-debug.js" ) }
 ${ h.javascript_include_tag( "/javascripts/Lib.js" ) }
 ${ h.javascript_include_tag( "/javascripts/jobs/SiteSummary.js" ) }
-${ h.stylesheet_link_tag( "/ext-2.1/resources/css/ext-all.css" ) }
+${ h.stylesheet_link_tag( "/ext/resources/css/ext-all.css" ) }
 </head>
 
 <body>
