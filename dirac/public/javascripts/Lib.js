@@ -113,17 +113,17 @@ function displayWin(panel,title){
   window.show()
 }
 function initStore(record){
-  if(dataSelect.productionID){
-    autoLoad = {start:0,limit:25,prod:dataSelect.productionID}
-  }else{
-    autoLoad = {start:0,limit:25};
-  }
+//  if(dataSelect.productionID){
+//    autoLoad = {start:0,limit:25,prod:dataSelect.productionID}
+//  }else{
+//    autoLoad = {start:0,limit:25};
+//  }
   var reader = new Ext.data.JsonReader({
     root:'result',
     totalProperty:'total'
   },record);
   var store = new Ext.data.Store({
-    autoLoad:{params:autoLoad},
+    autoLoad:{params:{start:0,limit:25}},
     proxy: new Ext.data.HttpProxy({
       url:'submit',
       method:'POST'
@@ -131,7 +131,11 @@ function initStore(record){
     reader:reader
   });
   store.on('beforeload',function(){
-    var selections = parseSelections();
+    if(dataSelect.productionID){
+      var selections = {prod:dataSelect.productionID}
+    }else{
+      var selections = parseSelections();
+    }
     store.baseParams = selections;
   });
   store.on('load',function(){
