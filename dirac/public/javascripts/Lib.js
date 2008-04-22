@@ -95,7 +95,7 @@ function dateSelectMenu(){
   });
   return date
 }
-function displayWin(panel){
+function displayWin(panel,title){
   var window = new Ext.Window({
     closable:true,
     defaults:{autoScroll:true},
@@ -107,18 +107,23 @@ function displayWin(panel){
     constrain:true,
     maximizable:true,
     plain:true,
-    title:"Job ID: " + id,
+    title:"ID: " + title,
     items:[panel]
   })
   window.show()
 }
 function initStore(record){
+  if(dataSelect.productionID){
+    autoLoad = {start:0,limit:25,prod:dataSelect.productionID}
+  }else{
+    autoLoad = {start:0,limit:25};
+  }
   var reader = new Ext.data.JsonReader({
     root:'result',
     totalProperty:'total'
   },record);
   var store = new Ext.data.Store({
-    autoLoad:{params:{start:0,limit:25}},
+    autoLoad:{params:autoLoad},
     proxy: new Ext.data.HttpProxy({
       url:'submit',
       method:'POST'
@@ -126,9 +131,11 @@ function initStore(record){
     reader:reader
   });
   store.on('beforeload',function(){
-    if(dataMngr.form){
-//      store.baseParams = dataMngr.form.getForm().getValues();
-    }
+    var selections = parseSelections();
+    store.baseParams = selections;
+  });
+  store.on('load',function(){
+    afterDataLoad(store);
   });
   return store
 }
@@ -149,22 +156,69 @@ function itemsNumber(){
     width:50
   });
   combo.on({
-    'change':function(){
-      var x = this.prototype;
+    'collapse':function(){
       if(dataMngr.store){
-        this.pageSize = combo.value;
-        dataMngr.store.load()
+        if(dirac.bbar.pageSize != combo.value){
+          dirac.bbar.pageSize = combo.value;
+          dataMngr.store.load({params:{start:0,limit:dirac.bbar.pageSize}});
+        }
       }
     }
   });
   return combo
+}
+function parseSelections(){
+  var tmp = '';
+  if(dataMngr.form){
+    tmp = dataMngr.form.getForm().getValues();
+    var item = dataMngr.form.items.items;
+//    for(i = 0; id < item.length; i++){
+      if(tmp.date){
+//        if(tmp.date == item[i].emptyText){
+        if(tmp.date == 'YYYY-mm-dd'){
+          tmp.date = '';
+        }
+      }
+      if(tmp.id){
+        if(tmp.id == 'Type JobID...'){
+          tmp.id = '';
+        }
+      }
+      if(tmp.site){
+        if(tmp.site == 'Select a site...'){
+          tmp.site = '';
+        }
+      }
+      if(tmp.stat){
+        if(tmp.stat == 'Select job status...'){
+          tmp.stat = '';
+        }
+      }
+      if(tmp.app){
+        if(tmp.app == 'Select application status...'){
+          tmp.app = '';
+        }
+      }
+      if(tmp.owner){
+        if(tmp.owner == 'Select owner...'){
+          tmp.owner = '';
+        }
+      }
+      if(tmp.prod){
+        if(tmp.prod == 'Select JobGroup...'){
+          tmp.prod = '';
+        }
+      }
+
+//    }
+  }
+  return tmp
 }
 function selectPanel(){
   var panel = new Ext.FormPanel({
     labelAlign:'top',
     split:true,
     region:'west',
-//    footer:['Sort by:',' '],
     collapsible:true,
     width: 200,
     minWidth: 200,
@@ -186,26 +240,15 @@ function selectPanel(){
       buttons:[{
         text: 'Submit',
         handler:function(){
-          if(dataMngr.form){
-            var tmp = panel.form.getValues();
-            var item = panel.form.items.items;
-            if(tmp.date){
-              for(i=0;i<panel.form.items.length;i++){
-                if(tmp.date == item[i].emptyText){
-                  tmp.date = '';
-                }
-              }
-            }
-            if(tmp.id){
-              for(i=0;i<panel.form.items.length;i++){
-                if(tmp.id == item[i].emptyText){
-                  tmp.id = '';
-                }
-              }
-            }
+          var selections = parseSelections();
+          if(dirac.bbar){
+            selections.limit = dirac.bbar.pageSize;
+            selections.start = 0;
           }
+//          panel.params = selections;
+//          var tmp = parseSelections();
           panel.form.submit({
-            params:tmp,
+            params:selections,
             waitTitle:'Connecting',
             waitMsg:'Sending data...',
             success:function(form,action){
@@ -267,7 +310,13 @@ function selectAppMenu(){
     anchor:'100%',
     allowBlank:true,
     displayField:'app',
-    emptyText:'Select application status...',
+/*
+    emptyText:function(combo.value == ''){
+        return 'Select application status...'
+      }else{
+        return 
+      }
+*/
     fieldLabel:'Application status',
     hiddenName:'app',
     mode:'local',
@@ -425,13 +474,13 @@ function status(value){
     return '<img src="'+gURLRoot+'/monitoring/done.gif">';
   }else if(value == 'Failed'){
     return '<img src="'+gURLRoot+'/monitoring/failed.gif">';
-  }else if(value == 'Waiting'){
+  }else if((value == 'Waiting')||(value == 'Stopped')){
     return '<img src="'+gURLRoot+'/monitoring/waiting.gif">';
   }else if(value == 'Deleted'){
     return '<img src="'+gURLRoot+'/monitoring/deleted.gif">';
   }else if(value == 'Matched'){
     return '<img src="'+gURLRoot+'/monitoring/matched.gif">';
-  }else if(value == 'Running'){
+  }else if((value == 'Running')||(value == 'Active')){
     return '<img src="'+gURLRoot+'/monitoring/running.gif">';
   }else{
     return '<img src="'+gURLRoot+'/monitoring/unknown.gif">';
@@ -459,12 +508,16 @@ function table(tableMngr){
     title = '';
   }
   if(tableMngr.tbar){
-    topBar = tableMngr.tbar;
+    dirac.tbar = new Ext.Toolbar({
+      items:tableMngr.tbar
+    })
   }else{
-    topBar = [{}];
+    dirac.tbar = new Ext.Toolbar({
+      items:[]
+    })
   }
   var iNumber = itemsNumber();
-  var botBar = new Ext.PagingToolbar({
+  dirac.bbar = new Ext.PagingToolbar({
     displayInfo:true,
     items:['-','Items displaying per page: ',iNumber],
     pageSize:25,
@@ -472,26 +525,23 @@ function table(tableMngr){
   })
   var dataTable = new Ext.grid.GridPanel({
     autoHeight:false,
-    bbar:botBar,
+    bbar:dirac.bbar,
     collapsible:true,
     columns:columns,
     labelAlign:'left',
-    margins:'2 2 2 0',
+    margins:'2 2 2 2',
     region:'center',
     split:true,
     store:store,
     stripeRows:true,
     title:title,
-    tbar:topBar,
+    tbar:dirac.tbar,
     viewConfig:{forceFit:true}
   });
   return dataTable
 }
-
-
-// Experemental::::::::
 function initTop(){
-  var html = '<table class="header"><tr><td><img alt="DIRAC" src="'+gURLRoot+'/logos/DIRAC-logo-transp.png" height="48px" /></td><td class="headerSpacer"></td><td><img alt="LHCb" src="'+gURLRoot+'/LHCbLogo.png" height="48px" /></td></tr></table>'
+  var html = '<table class="header"><tr><td><img alt="DIRAC" src="'+gURLRoot+'/logos/DIRAC-logo-transp.png" /></td><td class="headerSpacer"></td><td><img alt="LHCb" src="'+gURLRoot+'/LHCbLogo.png" /></td></tr></table>'
   var job = new Ext.Toolbar.Button({
     text:'Jobs',
     menu:[
@@ -500,26 +550,20 @@ function initTop(){
       {text:'Site summary',handler:mainClick}
     ]
   })
-  var shortcut = new Ext.Toolbar.Button({text:'Job Monitoring'})
   var setup = new Ext.Toolbar.Button({
     text:'LHCb-Development'
   })
-  var bbb = new Ext.Panel({
-    html:html,
-    region:'north',
-    margins: '0 0 0 0'
-  })
   var bar = new Ext.Toolbar({
-    region:'north',
     items:[job,'->','Selected Setup:',' ',setup],
     margins: '0 0 0 0'
   })
-  var c = new Ext.Panel({
-//    layout:'border',
-//    region:'north',
-    items:[bbb,bar]
+  var logo = new Ext.Panel({
+    html:html,
+    region:'north',
+    margins: '0 0 0 0',
+    bbar:bar
   })
-  return bar
+  return logo
 }
 
 
