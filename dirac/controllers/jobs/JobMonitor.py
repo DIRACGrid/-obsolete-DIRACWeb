@@ -47,7 +47,7 @@ class JobmonitorController(BaseController):
 #        c.result = []
 #        for i in jobSummary:
 #          c.result.append(jobSummary[i])
-        
+
         c.result = {"success":"true","result":c.result,"total":str(result["TotalJobs"])}
       else:
         c.result = {"success":"false","error":"There are no data to display"}

@@ -1,13 +1,9 @@
-var gURLRoot = ''; // Required to set-up the proper path to the pictures. String.
 var dataSelect = ''; // Required to store the data for filters fields. Object.
 var dataMngr = ''; // Required to connect form and table. Object.
 var tableMngr = ''; // Required to handle configuration data for table. Object.
 // Main routine
-function init(reponseSelect,url){
-  gURLRoot = url;
+function initSiteSummary(reponseSelect){
   dataSelect = reponseSelect;
-  Ext.QuickTips.init();
-  Ext.namespace('dirac');
   var record = initRecord();
   var store = initStore(record);
   Ext.onReady(function(){
@@ -68,14 +64,8 @@ function initData(store){
 }
 function renderData(store){
   var leftBar = initSidebar();
-  var topBar = initTop();
-  var bottomBar = initBottom();
   var mainContent = initData(store);
-  var overallLayout = new Ext.Viewport({
-    layout:'border',
-    plain:true,
-    items:[topBar,leftBar,mainContent,bottomBar]
-  })
+  renderInMainViewport([ leftBar, mainContent ]);
   dataMngr = {'form':leftBar,'store':store}
 }
 function afterDataLoad(store){

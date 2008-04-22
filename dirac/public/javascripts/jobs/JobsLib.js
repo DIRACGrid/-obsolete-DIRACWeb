@@ -261,7 +261,7 @@ function selectPanel(){
                 return
               }else{
                 if(dataMngr.store){
-                  store = dataMngr.store; 
+                  store = dataMngr.store;
                   store.loadData(action.result);
                 }else{
                   alert('Error: Unable to load data to the table');
@@ -318,7 +318,7 @@ function selectAppMenu(){
     emptyText:function(combo.value == ''){
         return 'Select application status...'
       }else{
-        return 
+        return
       }
 */
     fieldLabel:'Application status',
@@ -475,19 +475,19 @@ function showMenu(){
 }
 function status(value){
   if(value == 'Done'){
-    return '<img src="'+gURLRoot+'/monitoring/done.gif">';
+    return '<img src="'+gURLRoot+'/images/monitoring/done.gif">';
   }else if(value == 'Failed'){
-    return '<img src="'+gURLRoot+'/monitoring/failed.gif">';
+    return '<img src="'+gURLRoot+'/images/monitoring/failed.gif">';
   }else if((value == 'Waiting')||(value == 'Stopped')){
-    return '<img src="'+gURLRoot+'/monitoring/waiting.gif">';
+    return '<img src="'+gURLRoot+'/images/monitoring/waiting.gif">';
   }else if(value == 'Deleted'){
-    return '<img src="'+gURLRoot+'/monitoring/deleted.gif">';
+    return '<img src="'+gURLRoot+'/images/monitoring/deleted.gif">';
   }else if(value == 'Matched'){
-    return '<img src="'+gURLRoot+'/monitoring/matched.gif">';
+    return '<img src="'+gURLRoot+'/images/monitoring/matched.gif">';
   }else if((value == 'Running')||(value == 'Active')){
-    return '<img src="'+gURLRoot+'/monitoring/running.gif">';
+    return '<img src="'+gURLRoot+'/images/monitoring/running.gif">';
   }else{
-    return '<img src="'+gURLRoot+'/monitoring/unknown.gif">';
+    return '<img src="'+gURLRoot+'/images/monitoring/unknown.gif">';
   }
 }
 function statusBar(){
@@ -544,55 +544,6 @@ function table(tableMngr){
   });
   return dataTable
 }
-function initTop(){
-  var html = '<table class="header"><tr><td><img alt="DIRAC" src="'+gURLRoot+'/logos/DIRAC-logo-transp.png" /></td><td class="headerSpacer"></td><td><img alt="LHCb" src="'+gURLRoot+'/LHCbLogo.png" /></td></tr></table>'
-  var job = new Ext.Toolbar.Button({
-    text:'Jobs',
-    menu:[
-      {text:'Monitor',handler:mainClick},
-      {text:'Production monitor',handler:mainClick},
-      {text:'Site summary',handler:mainClick}
-    ]
-  })
-  var setup = new Ext.Toolbar.Button({
-    text:'LHCb-Development'
-  })
-  var bar = new Ext.Toolbar({
-    items:[job,'->','Selected Setup:',' ',setup],
-    margins: '0 0 0 0'
-  })
-  var logo = new Ext.Panel({
-    html:html,
-    region:'north',
-    margins: '0 0 0 0',
-    bbar:bar
-  })
-  return logo
-}
-
-
-
-function initBottom(){
-  var user = new Ext.Toolbar.Button({
-    text:'lhcb',
-    menu:[
-      {text:'lhcb_admin',handler:mainClick},
-      {text:'lhcb_prod',handler:mainClick},
-      {text:'lhcb_user',handler:mainClick},
-      {text:'lhcb',handler:mainClick},
-      {text:'diracAdmin',handler:mainClick}
-    ]
-  })
-  var bar = new Ext.Toolbar({
-    region:'south',
-    items:['jobs > Monitor','->','msapunov@',user,' ','/O=GRID-FR/C=FR/O=CNRS/OU=CPPM/CN=Matvey Sapunov']
-  })
-  return bar
-}
-
-
-
-
 
 function mainClick(item){
   var m = item;

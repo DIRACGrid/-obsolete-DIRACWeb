@@ -91,3 +91,76 @@ def htmlPath():
   dirList = [ dir for dir in schemaPath.split( "/" ) if not dir.strip() == "" ]
   return " > ".join( dirList )
 
+##For extjs
+
+mainPageHandler = "mainPageRedirectHandler"
+
+def getAreaContents( area, section ):
+  subContents = []
+  for subSection in gWebConfig.getSchemaSections( section ):
+    subSectionPath = "%s/%s" % ( section, subSection )
+    subJSTxt = getAreaContents( area, subSectionPath )
+    if len( subJSTxt ) > 0:
+      subContents.append( "{ text: '%s', menu : %s }" % ( subSection, subJSTxt ) )
+  for page in gWebConfig.getSchemaPages( section ):
+    pageData = gWebConfig.getSchemaPageData( "%s/%s" % ( section, page ) )
+    if len( pageData ) < 3 or 'all' in pageData[2:] or sessionManager.getSelectedGroup() in pageData[2:]:
+      if pageData[0].find( "http" ) == 0:
+        pagePath = pageData[0]
+      else:
+        pagePath = helpers.url_for( "/%s/%s" % ( area, pageData[0] ) )
+      subContents.append( "{ text : '%s', url : '%s', handler : %s }" % ( page, pagePath, mainPageHandler ) )
+  return "[%s]" % ",".join( subContents )
+
+def getSchemaAreas( areasList = False ):
+  actualWebPath = currentPath()
+  dirList = [ dir.strip() for dir in actualWebPath.split( "/" ) if not dir.strip() == "" ]
+  jsTxt = ""
+  if not areasList:
+    areasList = gWebConfig.getSchemaSections( "" )
+  for area in areasList:
+    jsTxt += "{ text :'%s', menu : %s }," % ( area.capitalize(), getAreaContents( area, area ) )
+  return "[%s]" % jsTxt
+
+def getSetups():
+  availableSetups = [ "{ text : '%s', url : '%s', handler : %s }" % ( setupName,
+                                                      helpers.url_for( controller='web/userdata',
+                                                                       action='changeSetup',
+                                                                       id=setupName ),
+                                                      mainPageHandler ) for setupName in gWebConfig.getSetups() ]
+  return "[%s]" % ",".join( availableSetups )
+
+def pagePath():
+  path = currentPath()
+  schemaPath = gWebConfig.getSchemaPathFromURL( path )
+  dirList = [ dir for dir in schemaPath.split( "/" ) if not dir.strip() == "" ]
+  return "'%s'" % " > ".join( dirList )
+
+def getUserData():
+  userData = []
+  username = sessionManager.getUsername()
+  if not username or username == "anonymous":
+    userData.append( "username : 'Anonymous'" )
+  else:
+    userData.append( "username : '%s'" % username )
+    userData.append( "group : '%s'" % sessionManager.getSelectedGroup() )
+    availableGroups = [ "{ text : '%s', url : '%s', handler : %s }" % ( groupName,
+                                                                        helpers.url_for( controller='web/userdata',
+                                                                                         action='changeGroup',
+                                                                                         id=groupName ),
+                                                                        mainPageHandler ) for groupName in sessionManager.getAvailableGroups() ]
+    userData.append( "groupMenu : [%s]" % ",".join( availableGroups ) )
+  dn = sessionManager.getUserDN()
+  if not dn:
+    dn = "<a href='https://%s%s'>certificate login</a>" % ( str( request.environ[ 'HTTP_HOST' ] ), str( request.environ[ 'REQUEST_URI' ] ) )
+  userData.append( "DN : '%s'" % dn )
+  return "{%s}" % ",".join( userData )
+
+def getJSPageData():
+  pageData = []
+  pageData.append( "navMenu : %s" % getSchemaAreas() )
+  pageData.append( "setupMenu : %s" % getSetups() )
+  pageData.append( "selectedSetup : '%s'" % sessionManager.getSelectedSetup() )
+  pageData.append( "pagePath : %s" % pagePath() )
+  pageData.append( "userData : %s" % getUserData() )
+  return "{%s}" % ",".join( pageData )
