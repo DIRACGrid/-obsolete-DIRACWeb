@@ -152,7 +152,7 @@ def getUserData():
     userData.append( "groupMenu : [%s]" % ",".join( availableGroups ) )
   dn = sessionManager.getUserDN()
   if not dn:
-    dn = "<a href='https://%s%s'>certificate login</a>" % ( str( request.environ[ 'HTTP_HOST' ] ), str( request.environ[ 'REQUEST_URI' ] ) )
+    dn = "<a href=\"https://%s%s\">certificate login</a>" % ( str( request.environ[ 'HTTP_HOST' ] ), str( request.environ[ 'REQUEST_URI' ] ) )
   userData.append( "DN : '%s'" % dn )
   return "{%s}" % ",".join( userData )
 
