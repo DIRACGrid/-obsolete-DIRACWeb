@@ -113,11 +113,6 @@ function displayWin(panel,title){
   window.show()
 }
 function initStore(record){
-//  if(dataSelect.productionID){
-//    autoLoad = {start:0,limit:25,prod:dataSelect.productionID}
-//  }else{
-//    autoLoad = {start:0,limit:25};
-//  }
   var reader = new Ext.data.JsonReader({
     root:'result',
     totalProperty:'total'
@@ -249,8 +244,6 @@ function selectPanel(){
             selections.limit = dirac.bbar.pageSize;
             selections.start = 0;
           }
-//          panel.params = selections;
-//          var tmp = parseSelections();
           panel.form.submit({
             params:selections,
             waitTitle:'Connecting',
@@ -314,22 +307,16 @@ function selectAppMenu(){
     anchor:'100%',
     allowBlank:true,
     displayField:'app',
-/*
-    emptyText:function(combo.value == ''){
-        return 'Select application status...'
-      }else{
-        return
-      }
-*/
+    emptyText:'Select application status...',
     fieldLabel:'Application status',
+    forceSelection:true,
     hiddenName:'app',
     mode:'local',
     name:'app',
     selectOnFocus:true,
     store:store,
     triggerAction:'all',
-    typeAhead:true,
-    value:''
+    typeAhead:true
   })
   return combo
 }
@@ -364,14 +351,14 @@ function selectOwnerMenu(){
     displayField:'owner',
     emptyText:'Select owner...',
     fieldLabel:'Owner',
+    forceSelection:true,
     hiddenName:'owner',
     mode:'local',
     name:'owner',
     selectOnFocus:true,
     store:store,
     triggerAction:'all',
-    typeAhead:true,
-    value:''
+    typeAhead:true
   })
   return combo
 }
@@ -391,14 +378,14 @@ function selectProdMenu(){
     displayField:'prod',
     emptyText:'Select JobGroup...',
     fieldLabel:'JobGroup',
+    forceSelection:true,
     hiddenName:'prod',
     mode:'local',
     name:'prod',
     selectOnFocus:true,
     store:store,
     triggerAction:'all',
-    typeAhead:true,
-    value:''
+    typeAhead:true
   })
   return combo
 }
@@ -418,14 +405,14 @@ function selectSiteMenu(){
     displayField:'site',
     emptyText:'Select a site...',
     fieldLabel:'DIRAC Site',
+    forceSelection:true,
     hiddenName:'site',
     mode:'local',
     name:'site',
     selectOnFocus:true,
     store:store,
     triggerAction:'all',
-    typeAhead:true,
-    value:''
+    typeAhead:true
   })
   return combo
 }
@@ -445,14 +432,14 @@ function selectStatusMenu(){
     displayField:'stat',
     emptyText:'Select job status...',
     fieldLabel:'Job status',
+    forceSelection:true,
     hiddenName:'stat',
     mode:'local',
     name:'jobstat',
     selectOnFocus:true,
     store:store,
     triggerAction:'all',
-    typeAhead:true,
-    value:''
+    typeAhead:true
   })
   return combo
 }
@@ -489,9 +476,6 @@ function status(value){
   }else{
     return '<img src="'+gURLRoot+'/images/monitoring/unknown.gif">';
   }
-}
-function statusBar(){
-
 }
 function table(tableMngr){
   if(tableMngr.store){

@@ -67,6 +67,7 @@ class JobmonitorController(BaseController):
       prod = []
       prods = result["Value"]
       if len(prods)>0:
+        prod.append([str("All")])
         for keys,i in prods.items():
           id = str(int(keys)).zfill(8)
           prod.append([str(id)])
@@ -80,6 +81,7 @@ class JobmonitorController(BaseController):
     if result["OK"]:
       site = []
       if len(result["Value"])>0:
+        site.append([str("All")])
         for i in result["Value"]:
           site.append([str(i)])
       else:
@@ -91,6 +93,7 @@ class JobmonitorController(BaseController):
     if result["OK"]:
       stat = []
       if len(result["Value"])>0:
+        stat.append([str("All")])
         for i in result["Value"]:
           stat.append([str(i)])
       else:
@@ -102,6 +105,7 @@ class JobmonitorController(BaseController):
     if result["OK"]:
       app = []
       if len(result["Value"])>0:
+        app.append([str("All")])
         for i in result["Value"]:
           app.append([str(i)])
       else:
@@ -113,6 +117,7 @@ class JobmonitorController(BaseController):
     if result["OK"]:
       owner = []
       if len(result["Value"])>0:
+        owner.append([str("All")])
         for i in result["Value"]:
           owner.append([str(i)])
       else:
@@ -143,17 +148,23 @@ class JobmonitorController(BaseController):
       else:
         numberOfJobs = 25
       if request.params.has_key("prod") and len(request.params["prod"]) > 0:
-        req["JobGroup"] = str(request.params["prod"])
+        if str(request.params["prod"]) != "All":
+          req["JobGroup"] = str(request.params["prod"])
       if request.params.has_key("site") and len(request.params["site"]) > 0:
-        req["Site"] = str(request.params["site"])
+        if str(request.params["site"]) != "All":
+          req["Site"] = str(request.params["site"])
       if request.params.has_key("stat") and len(request.params["stat"]) > 0:
-        req["Status"] = str(request.params["stat"])
+        if str(request.params["stat"]) != "All":
+          req["Status"] = str(request.params["stat"])
       if request.params.has_key("app") and len(request.params["app"]) > 0:
-        req["ApplicationStatus"] = str(request.params["app"])
+        if str(request.params["app"]) != "All":
+          req["ApplicationStatus"] = str(request.params["app"])
       if request.params.has_key("owner") and len(request.params["owner"]) > 0:
-        req["Owner"] = str(request.params["owner"])
+        if str(request.params["owner"]) != "All":
+          req["Owner"] = str(request.params["owner"])
       if request.params.has_key("date") and len(request.params["date"]) > 0:
-        req["LastUpdate"] = str(request.params["date"])
+        if str(request.params["date"]) != "YYYY-mm-dd":
+          req["LastUpdate"] = str(request.params["date"])
       if request.params.has_key("sort") and len(request.params["sort"]) > 0:
         globalSort = str(request.params["sort"])
       else:
