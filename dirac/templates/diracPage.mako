@@ -8,7 +8,6 @@ credentials.checkUserCredentials()
 
 pageTitle = webBase.htmlPageTitle()
 jsDiracPageObject = webBase.getJSPageData()
-print jsDiracPageObject
 %>
 <html>
  <head>
