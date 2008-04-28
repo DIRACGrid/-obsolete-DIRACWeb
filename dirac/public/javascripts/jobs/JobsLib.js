@@ -79,11 +79,11 @@ function AJAXrequest(value,id){
   })
 }
 function chkBox(id){
-  return '<input id="' + id + '" class="yui-dt-checkbox" type="checkbox"/>'
+  return '<input id="' + id + '" type="checkbox"/>'
 }
 function dateSelectMenu(){
   var date = new Ext.form.DateField({
-    anchor:'100%',
+    anchor:'90%',
     allowBlank:true,
     emptyText:'YYYY-mm-dd',
     fieldLabel:'Date',
@@ -126,14 +126,27 @@ function initStore(record){
     reader:reader
   });
   store.on('beforeload',function(){
-    if(dataSelect.productionID){
-      var selections = {prod:dataSelect.productionID}
-    }else{
-      var selections = parseSelections();
+    if(dataMngr.form){
+      if(dataSelect.productionID){
+        for(i = 0; i < dataMngr.form.items.length; i++){
+          if(dataMngr.form.items.items[i].name == 'prod'){
+            dataMngr.form.items.items[i].setValue(dataSelect.productionID); 
+         }
+        }
+        delete dataSelect.productionID;
+      }
+      store.baseParams = dataMngr.form.getForm().getValues();
     }
-    store.baseParams = selections;
   });
   store.on('load',function(){
+    if(store.reader){
+      if(store.reader.jsonData){
+        if(store.reader.jsonData.success == 'false'){
+          alert(store.reader.jsonData.error);
+          return
+        }
+      }
+    }
     afterDataLoad(store);
   });
   return store
@@ -164,57 +177,23 @@ function itemsNumber(){
       }
     }
   });
+/*
+  combo.on({
+    'blur':function(){
+      if(dataMngr.store){
+        if(dirac.bbar.pageSize != combo.value){
+          dirac.bbar.pageSize = combo.value;
+          dataMngr.store.load({params:{start:0,limit:dirac.bbar.pageSize}});
+        }
+      }
+    }
+  });
+*/
   return combo
-}
-function parseSelections(){
-  var tmp = '';
-  if(dataMngr.form){
-    tmp = dataMngr.form.getForm().getValues();
-    var item = dataMngr.form.items.items;
-//    for(i = 0; id < item.length; i++){
-      if(tmp.date){
-//        if(tmp.date == item[i].emptyText){
-        if(tmp.date == 'YYYY-mm-dd'){
-          tmp.date = '';
-        }
-      }
-      if(tmp.id){
-        if(tmp.id == 'Type JobID...'){
-          tmp.id = '';
-        }
-      }
-      if(tmp.site){
-        if(tmp.site == 'Select a site...'){
-          tmp.site = '';
-        }
-      }
-      if(tmp.stat){
-        if(tmp.stat == 'Select job status...'){
-          tmp.stat = '';
-        }
-      }
-      if(tmp.app){
-        if(tmp.app == 'Select application status...'){
-          tmp.app = '';
-        }
-      }
-      if(tmp.owner){
-        if(tmp.owner == 'Select owner...'){
-          tmp.owner = '';
-        }
-      }
-      if(tmp.prod){
-        if(tmp.prod == 'Select JobGroup...'){
-          tmp.prod = '';
-        }
-      }
-
-//    }
-  }
-  return tmp
 }
 function selectPanel(){
   var panel = new Ext.FormPanel({
+    autoScroll:true,
     labelAlign:'top',
     split:true,
     region:'west',
@@ -229,7 +208,7 @@ function selectPanel(){
     },
     bodyStyle:'padding: 5px',
     title:'Selections:',
-    buttonAlign:'center',
+    buttonAlign:'left',
     waitMsgTarget:true,
     url:'submit',
     method:'POST',
@@ -239,7 +218,7 @@ function selectPanel(){
       buttons:[{
         text: 'Submit',
         handler:function(){
-          var selections = parseSelections();
+          var selections = {};
           if(dirac.bbar){
             selections.limit = dirac.bbar.pageSize;
             selections.start = 0;
@@ -304,10 +283,10 @@ function selectAppMenu(){
     data:data
   });
   var combo = new Ext.form.ComboBox({
-    anchor:'100%',
+    anchor:'90%',
     allowBlank:true,
     displayField:'app',
-    emptyText:'Select application status...',
+    emptyText:data[0],
     fieldLabel:'Application status',
     forceSelection:true,
     hiddenName:'app',
@@ -322,12 +301,11 @@ function selectAppMenu(){
 }
 function selectID(){
   var number = new Ext.form.NumberField({
-    anchor:'100%',
+    anchor:'90%',
     allowBlank:true,
     allowDecimals:false,
     allowNegative:false,
-    emptyText:'Type JobID...',
-    fieldLabel:'JobID',
+    fieldLabel:'ID',
     mode:'local',
     name:'id',
     selectOnFocus:true,
@@ -346,10 +324,10 @@ function selectOwnerMenu(){
     data:data
   });
   var combo = new Ext.form.ComboBox({
-    anchor:'100%',
+    anchor:'90%',
     allowBlank:true,
     displayField:'owner',
-    emptyText:'Select owner...',
+    emptyText:data[0],
     fieldLabel:'Owner',
     forceSelection:true,
     hiddenName:'owner',
@@ -373,10 +351,10 @@ function selectProdMenu(){
     data:data
   });
   var combo = new Ext.form.ComboBox({
-    anchor:'100%',
+    anchor:'90%',
     allowBlank:true,
     displayField:'prod',
-    emptyText:'Select JobGroup...',
+    emptyText:data[0],
     fieldLabel:'JobGroup',
     forceSelection:true,
     hiddenName:'prod',
@@ -400,10 +378,10 @@ function selectSiteMenu(){
     data:data
   });
   var combo = new Ext.form.ComboBox({
-    anchor:'100%',
+    anchor:'90%',
     allowBlank:true,
     displayField:'site',
-    emptyText:'Select a site...',
+    emptyText:data[0],
     fieldLabel:'DIRAC Site',
     forceSelection:true,
     hiddenName:'site',
@@ -427,10 +405,10 @@ function selectStatusMenu(){
     data:data
   });
   var combo = new Ext.form.ComboBox({
-    anchor:'100%',
+    anchor:'90%',
     allowBlank:true,
     displayField:'stat',
-    emptyText:'Select job status...',
+    emptyText:data[0],
     fieldLabel:'Job status',
     forceSelection:true,
     hiddenName:'stat',
@@ -443,21 +421,24 @@ function selectStatusMenu(){
   })
   return combo
 }
-function showMenu(){
-  var menu = new Ext.menu.Menu({
-    allowOtherMenus:true
-  });
+function showMenu(table,rowIndex,columnIndex){
+//  if(dirac.menu){
+//    dirac.menu.destroy();
+//    delete dirac.menu;
+//    return
+//  }
+  var record = table.getStore().getAt(rowIndex); // Get the Record for the row
+  var columnName = table.getColumnModel().getColumnId(columnIndex); // Get field name for the column
+//  var data = record.get(fieldName); data in the particular cell
+  dirac.menu = new Ext.menu.Menu(); // Nado li?
   var coords = Ext.EventObject.xy;
-  var id = this.getSelections()[0].data.id;
-  var status = this.getSelections()[0].data.status;
-  var cellName = Ext.EventObject.target;
-  var cellName = this.getColumnModel();
-  if(cellName == ""){
-    var cellName = this.getColumnModel().getDataIndex(0);
-  }else{
-    menu.removeAll();
-    setMenuItems(menu,id);
-    menu.showAt(coords);
+  if(record.data){
+    selections = record.data;
+  }
+  if(columnName != 'checkBox'){ // column with checkboxes
+    dirac.menu.removeAll();
+    setMenuItems(selections);
+    dirac.menu.showAt(coords);
   }
 }
 function status(value){
@@ -493,7 +474,7 @@ function table(tableMngr){
   if(tableMngr.title){
     title = tableMngr.title;
   }else{
-    title = '';
+    title = 'Unknown';
   }
   if(tableMngr.tbar){
     dirac.tbar = new Ext.Toolbar({
