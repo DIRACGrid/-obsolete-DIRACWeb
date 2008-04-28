@@ -50,7 +50,7 @@ class JobmonitorController(BaseController):
 
         c.result = {"success":"true","result":c.result,"total":str(result["TotalJobs"])}
       else:
-        c.result = {"success":"false","error":"There are no data to display"}
+        c.result = {"success":"false","result":"","error":"There are no data to display"}
     else:
       c.result = {"success":"false","error":result["Message"]}
     gLogger.info("\033[0;31mJOB SUBMIT REQUEST:\033[0m %s" % (time() - pagestart))
@@ -213,6 +213,9 @@ class JobmonitorController(BaseController):
     elif request.params.has_key("LogURL") and len(request.params["LogURL"]) > 0:
       id = request.params["LogURL"]
       return self.__pilotGetURL(int(id))
+    elif request.params.has_key("getStagerReport") and len(request.params["getStagerReport"]) > 0:
+      id = request.params["getStagerReport"]
+      return self.__getStagerReport(int(id))
     else:
       c.result = {"success":"false","error":"DIRAC Job ID(s) is not defined"}
       return c.result
@@ -372,4 +375,20 @@ class JobmonitorController(BaseController):
     else:
       c.result = {"success":"false","error":result["Message"]}
     gLogger.info("pilotGetURL:",id)
+    return c.result
+################################################################################
+  def __getStagerReport(self,id):
+    RPC = getRPCClient("WorkloadManagement/JobMonitoring")
+    result = RPC.getJobParameters(id)
+    if result["OK"]:
+      attr = result["Value"]
+      c.result = []
+      if attr.has_key("StagerReport"):
+        c.result =  attr["StagerReport"]
+        c.result = {"success":"true","result":c.result}
+      else:
+        c.result = {"success":"false","error":"StagerReport not available"}
+    else:
+      c.result = {"success":"false","error":result["Message"]}
+    gLogger.info("getStagerReport:",id)
     return c.result
