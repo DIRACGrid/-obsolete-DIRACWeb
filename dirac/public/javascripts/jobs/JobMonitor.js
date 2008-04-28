@@ -49,7 +49,7 @@ function initSidebar(){
 }
 function initData(store){
   var columns = [
-    {header:'',id:'checkBox',width:10,sortable:false,dataIndex:'id',renderer:chkBox},
+    {header:'',name:'checkBox',id:'checkBox',width:10,sortable:false,dataIndex:'id',renderer:chkBox},
     {header:'JobId',sortable:true,dataIndex:'id',align:'left'},
     {header:'',width:10,sortable:false,dataIndex:'status',renderer:status},
     {header:'Status',sortable:true,dataIndex:'status',align:'left'},
@@ -71,9 +71,9 @@ function initData(store){
     {handler:function(){action('job','kill')},text:'Kill',tooltip:'Click to kill selected job(s)'},
     {handler:function(){action('job','delete')},text:'Delete',tooltip:'Click to delete selected job(s)'}
   ];
-  tableMngr = {'store':store,'columns':columns,'title':title,'tbar':tbar};
+ tableMngr = {'store':store,'columns':columns,'title':title,'tbar':tbar};
   var t = table(tableMngr);
-  t.addListener('rowclick',showMenu);
+  t.addListener('cellclick',showMenu);
   return t
 }
 function renderData(store){
@@ -89,27 +89,41 @@ function renderData(store){
   dataMngr = {'form':leftBar,'store':store}
 }
 
-function setMenuItems(menu,id){
-  menu.add(
-    {handler:function(){AJAXrequest('getJDL',id)},text:'JDL'},
-    '-',
-    {handler:function(){AJAXrequest('getBasicInfo',id)},text:'Attributes'},
-    {handler:function(){AJAXrequest('getParams',id)},text:'Parameters'},
-    {handler:function(){AJAXrequest('LoggingInfo',id)},text:'Logging info'},
-    '-',
-    {handler:function(){AJAXrequest('getStandardOutput',id)},text:'StandardOutput'},
-    {handler:function(){AJAXrequest('LogURL',id)},text:'Get LogFile'},
-    '-',
-    {text:'Actions',menu:({items:[
-      {handler:function(){action('job','reset',id)},text:'Reset'},
-      {handler:function(){action('job','kill',id)},text:'Kill'},
-      {handler:function(){action('job','delete',id)},text:'Delete'}
-    ]})},
-    {text:'Pilot', menu:({items:[
-      {handler:function(){AJAXrequest('pilotStdOut',id)},text:'Get StdOut'},
-      {handler:function(){AJAXrequest('pilotStdErr',id)},text:'Get StdErr'}
-    ]})}
-  );
+function setMenuItems(selections){
+  if(selections){
+    var id = selections.id;
+    var status = selections.status;
+  }else{
+    return
+  }
+  if(dirac.menu){
+    dirac.menu.add(
+      {handler:function(){AJAXrequest('getJDL',id)},text:'JDL'},
+      '-',
+      {handler:function(){AJAXrequest('getBasicInfo',id)},text:'Attributes'},
+      {handler:function(){AJAXrequest('getParams',id)},text:'Parameters'},
+      {handler:function(){AJAXrequest('LoggingInfo',id)},text:'Logging info'},
+      '-',
+      {handler:function(){AJAXrequest('getStandardOutput',id)},text:'StandardOutput'},
+      {handler:function(){AJAXrequest('LogURL',id)},text:'Get LogFile'},
+      {handler:function(){AJAXrequest('getStagerReport',id)},text:'Get StagerReport'},
+      '-',
+      {text:'Actions',menu:({items:[
+        {handler:function(){action('job','reset',id)},text:'Reset'},
+        {handler:function(){action('job','kill',id)},text:'Kill'},
+        {handler:function(){action('job','delete',id)},text:'Delete'}
+      ]})},
+      {text:'Pilot', menu:({items:[
+        {handler:function(){AJAXrequest('pilotStdOut',id)},text:'Get StdOut'},
+        {handler:function(){AJAXrequest('pilotStdErr',id)},text:'Get StdErr'}
+      ]})}
+    );
+    if((status == 'Done')||(status == 'Failed')){
+      dirac.menu.items.items[8].enable();
+    }else{
+      dirac.menu.items.items[8].disable();
+    }
+  }
 };
 function AJAXsuccess(value,id,response){
   var jsonData = Ext.util.JSON.decode(response);
@@ -118,7 +132,7 @@ function AJAXsuccess(value,id,response){
     return
   }
   var result = jsonData.result;
-  if((value == 'getJDL')||(value == 'getStandardOutput')||(value == 'pilotStdOut')||(value == 'pilotStdErr')){
+  if((value == 'getJDL')||(value == 'getStandardOutput')||(value == 'pilotStdOut')||(value == 'pilotStdErr')||(value == 'getStagerReport')){
     var html = '<pre>' + result + '</pre>';
     var panel = new Ext.Panel({border:0,autoHeight:true,html:html,layout:'fit'})
   }else if(value == 'LogURL'){
