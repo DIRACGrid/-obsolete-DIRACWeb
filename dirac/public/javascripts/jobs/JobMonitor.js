@@ -3,7 +3,6 @@ var dataMngr = ''; // Required to connect form and table. Object.
 var tableMngr = ''; // Required to handle configuration data for table. Object.
 // Main routine
 function initJobMonitor(reponseSelect){
-
   dataSelect = reponseSelect;
   var record = initRecord();
   var store = initStore(record);
@@ -71,7 +70,8 @@ function initData(store){
     {handler:function(){action('job','kill')},text:'Kill',tooltip:'Click to kill selected job(s)'},
     {handler:function(){action('job','delete')},text:'Delete',tooltip:'Click to delete selected job(s)'}
   ];
- tableMngr = {'store':store,'columns':columns,'title':title,'tbar':tbar};
+  store.setDefaultSort('id','DESC'); // Default sorting
+  tableMngr = {'store':store,'columns':columns,'title':title,'tbar':tbar};
   var t = table(tableMngr);
   t.addListener('cellclick',showMenu);
   return t
@@ -79,12 +79,6 @@ function initData(store){
 function renderData(store){
   var leftBar = initSidebar();
   var mainContent = initData(store);
-/*  var overallLayout = new Ext.Viewport({
-    layout:'border',
-    plain:true,
-    items:[topBar,leftBar,mainContent,bottomBar]
-  })
-*/
   renderInMainViewport([ leftBar, mainContent ]);
   dataMngr = {'form':leftBar,'store':store}
 }
@@ -132,58 +126,53 @@ function AJAXsuccess(value,id,response){
     return
   }
   var result = jsonData.result;
+  var panel = {};
   if((value == 'getJDL')||(value == 'getStandardOutput')||(value == 'pilotStdOut')||(value == 'pilotStdErr')||(value == 'getStagerReport')){
     var html = '<pre>' + result + '</pre>';
-    var panel = new Ext.Panel({border:0,autoHeight:true,html:html,layout:'fit'})
+    panel = new Ext.Panel({border:0,autoScroll:true,html:html,layout:'fit'})
   }else if(value == 'LogURL'){
     result = result.replace(/"/g,"");
     result = result.replace(/\\/g,"");
     var html = '<iframe id="www_frame" src =' + result + '></iframe>';
-    var panel = new Ext.Panel({border:0,autoWidth:true,autoHeight:true,html:html,layout:'fit'})
+    panel = new Ext.Panel({border:0,autoScroll:true,html:html,layout:'fit'})
   }else{
+    var reader = {};
+    var columns = [];
     if((value == 'getBasicInfo')||(value == 'getParams')){
-      var reader = new Ext.data.ArrayReader({}, [
+      reader = new Ext.data.ArrayReader({},[
         {name:'name'},
         {name:'value'}
       ]);
-      var panel = new Ext.grid.GridPanel({
-        store:new Ext.data.Store({
-          data:result,
-          reader:reader
-        }),
-        columns:[
-          {header:'Name',sortable:true,dataIndex:'name',align:'left'},
-          {header:'Value',sortable:true,dataIndex:'value',align:'left'}
-        ],
-        autoHeight: true,
-        viewConfig: {forceFit: true},
-        stripeRows: true
-      });
+      columns = [
+        {header:'Name',sortable:true,dataIndex:'name',align:'left'},
+        {header:'Value',sortable:true,dataIndex:'value',align:'left'}
+      ];
     }else if(value == 'LoggingInfo'){
-      var reader = new Ext.data.ArrayReader({}, [
+      reader = new Ext.data.ArrayReader({},[
         {name:'status'},
         {name:'minorstatus'},
         {name:'applicationstatus'},
         {name:'datetime',type:'date',dateFormat:'Y-n-j h:i:s'},
         {name:'source'}
       ]);
-      var panel = new Ext.grid.GridPanel({
-        store:new Ext.data.Store({
-          data:result,
-          reader:reader
-        }),
-        columns:[
-          {header:'Source',sortable:true,dataIndex:'source',align:'left'},
-          {header:'Status',sortable:true,dataIndex:'status',align:'left'},
-          {header:'MinorStatus',sortable:true,dataIndex:'minorstatus',align:'left'},
-          {header:'ApplicationStatus',sortable:true,dataIndex:'applicationstatus',align:'left'},
-          {header:'DateTime',sortable:true,dataIndex:'datetime',align:'left'}
-        ],
-        autoHeight: true,
-        viewConfig: {forceFit: true},
-        stripeRows: true
-      });
+      columns = [
+        {header:'Source',sortable:true,dataIndex:'source',align:'left'},
+        {header:'Status',sortable:true,dataIndex:'status',align:'left'},
+        {header:'MinorStatus',sortable:true,dataIndex:'minorstatus',align:'left'},
+        {header:'ApplicationStatus',sortable:true,dataIndex:'applicationstatus',align:'left'},
+        {header:'DateTime',sortable:true,dataIndex:'datetime',align:'left'}
+      ];
     }
+    var store = new Ext.data.Store({
+      data:result,
+      reader:reader
+    }),
+    panel = new Ext.grid.GridPanel({
+      columns:columns,
+      store:store,
+      stripeRows:true,
+      viewConfig:{forceFit:true}
+    });
   }
   displayWin(panel,id)
 }

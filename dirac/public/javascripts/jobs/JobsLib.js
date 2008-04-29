@@ -97,16 +97,20 @@ function dateSelectMenu(){
 }
 function displayWin(panel,title){
   var window = new Ext.Window({
+    iconCls:'icon-grid',
     closable:true,
-    defaults:{autoScroll:true},
-    autoHeight:true,
+    autoScroll:true,
+//    autoHeight:true,
     width:600,
     height:350,
     border:true,
     collapsible:true,
     constrain:true,
+    constrainHeader:true,
     maximizable:true,
+    layout:'fit',
     plain:true,
+    shim:false,
     title:"ID: " + title,
     items:[panel]
   })
@@ -460,28 +464,30 @@ function status(value){
 }
 function table(tableMngr){
   if(tableMngr.store){
-    store = tableMngr.store;
+    var store = tableMngr.store;
   }else{
     alert('Unable to display data. Data store is not defined');
     return
   }
   if(tableMngr.columns){
-    columns = tableMngr.columns;
+    var columns = tableMngr.columns;
   }else{
     alert('Unable to display data. Data defenition is not defined');
     return
   }
   if(tableMngr.title){
-    title = tableMngr.title;
+    var title = tableMngr.title;
   }else{
     title = 'Unknown';
   }
   if(tableMngr.tbar){
     dirac.tbar = new Ext.Toolbar({
+//    var tbar = new Ext.Toolbar({
       items:tableMngr.tbar
     })
   }else{
     dirac.tbar = new Ext.Toolbar({
+//    var tbar = new Ext.Toolbar({
       items:[]
     })
   }
@@ -504,6 +510,7 @@ function table(tableMngr){
     store:store,
     stripeRows:true,
     title:title,
+//    tbar:tbar,
     tbar:dirac.tbar,
     viewConfig:{forceFit:true}
   });
