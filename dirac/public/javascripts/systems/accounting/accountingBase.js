@@ -10,16 +10,6 @@ function initAccounting(){
 function renderPage(){
   var leftBar = createLeftSelectPanel( "TEST", "ajaxCall", parseLeftPanelSelections, useMeRest );
   var mainContent = new Ext.Panel( { html : '', region : 'center' } );
-  appendToLeftPanel( createComboBox( "comboName", "LAAAABEL", "Select me!", [ [1,'ad' ], [2,'bd'] ] ) );
-  appendToLeftPanel( createDateField( "dateName", "TIIIME" ) );
-  appendToLeftPanel( createNumberField( "numberField", "NUUUMBER", "" ) );
-  appendToLeftPanel( createCheckBox( "check1", "LAAAABEL", 2 ) );
-  appendToLeftPanel( createRadioBox( "radio1", "LAAAABEL", "radi1value" ) );
-  appendToLeftPanel( createRadioBox( "radio2", "LAAAABEL", "radio2vaue" ) );
-  appendToLeftPanel( createRadioBoxPanel( 'radiopanel', "Group by", [ [ 'country', 'By country' ], [ 'grid', 'By grid' ] ] ) );
-  appendToLeftPanel( createCheckBoxPanel( 'checkpanel', "Sort by", [ [ 'country', 'By country' ], [ 'grid', 'By grid' ] ] ) );
-  appendToLeftPanel( createTextField( 'textField', 'Get some text!', 'Type here!' ) );
-
   renderInMainViewport([ leftBar, mainContent ]);
 }
 
@@ -232,8 +222,9 @@ function createRadioBox( elName, elLabel, elValue )
   return radioBox;
 }
 
-function createDateField( elName, elLabel )
+function createDateField( elName, elLabel, elValue )
 {
+  console.log( elValue );
 	var dateField = new Ext.form.DateField( {
 		anchor : '90%',
 		allowBlank : true,
@@ -242,6 +233,7 @@ function createDateField( elName, elLabel )
 		format : 'Y-m-d',
 		name : elName,
 		selectOnFocus : true,
+		value : elValue,
 		startDay : 1
   } );
   return dateField;
@@ -275,6 +267,83 @@ function createTextField( elName, elLabel, elDefaultValue )
 		selectOnFocus : true
   } );
   return textField;
+}
+
+function createCollepsibleMultiselect( elName, elLabel, elValues )
+{
+	var mSelectValues =  [];
+	var numItems = elValues.length;
+	for( var i=0; i < elValues.length ; i++ )
+	{
+		var val = elValues[ i ];
+		mSelectValues.push( [ val, val ] );
+	}
+
+	var selectHeigth = numItems * 23;
+	if( selectHeigth > 200 )
+		selectHeigth = 200;
+	if( selectHeigth < 50 )
+		selectHeigth = 50;
+
+	var multiSelect = new Ext.ux.Multiselect( {
+		anchor : '90%',
+		allowBlank : true,
+ 		emptyText : "",
+		hideLabel : true,
+		mode : 'local',
+		name : elName,
+		selectOnFocus : true,
+		legend : "",
+		autoWidth : true,
+		data : mSelectValues,
+		dataFields : [ 'id', 'desc' ],
+		valueField : 'id',
+		displayField : 'desc',
+		width : 145,
+		height : selectHeigth,
+  } );
+
+	var collepsiblePanel = new Ext.form.FieldSet( {
+		anchor : '90%',
+		title : elLabel,
+		name : elName + "-autopanel",
+		collapsible : true,
+		autoHeight : true,
+		collapsed : true,
+		triggerAction : 'all',
+		items : [ multiSelect ],
+	} );
+
+	return collepsiblePanel;
+}
+
+function createMultiselect( elName, elLabel, elValues )
+{
+	var mSelectValues =  [];
+	for( var i=0; i < elValues.length ; i++ )
+	{
+		var val = elValues[ i ];
+		mSelectValues.push( [ val, val ] );
+	}
+	var multiSelect = new Ext.ux.Multiselect( {
+		anchor : '90%',
+		allowBlank : true,
+ 		emptyText : "",
+//		hideLabel : true,
+		fieldLabel : elLabel,
+		mode : 'local',
+		name : elName,
+		selectOnFocus : true,
+		legend : "",
+		autoWidth : true,
+		data : mSelectValues,
+		dataFields : [ 'id', 'desc' ],
+		valueField : 'id',
+		displayField : 'desc',
+		width : 160,
+		height : 150,
+  } );
+  return multiSelect;
 }
 
 /* == END OF WIDGETS == */

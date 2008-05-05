@@ -5,10 +5,11 @@
 <%def name="head_tags()">
 ${ h.javascript_include_tag( "/javascripts/json2.js" ) }
 ${ h.javascript_include_tag( "/javascripts/systems/accounting/accountingBase.js" ) }
+${ h.javascript_include_tag( "/javascripts/systems/accounting/dataOp.js" ) }
 </%def>
 
 <%def name="body()">
 <script type="text/javascript">
-  initAccounting();
+  initDataOp( ${c.selectionValues} );
 </script>
 </%def>

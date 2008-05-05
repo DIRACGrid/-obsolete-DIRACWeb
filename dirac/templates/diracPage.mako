@@ -15,9 +15,12 @@ jsDiracPageObject = webBase.getJSPageData()
   <link rel="SHORTCUT ICON" href='${ h.url_for( "/images/favicon.ico" )}'>
   ${ h.javascript_include_tag( "/ext/adapter/ext/ext-base.js" ) }
   ${ h.javascript_include_tag( "/ext/ext-all-debug.js" ) }
+  ${ h.javascript_include_tag( "/ext/Multiselect.js" ) }
+  ${ h.javascript_include_tag( "/ext/DDView.js" ) }
   ${ h.javascript_include_tag( "/javascripts/diracPage.js" ) }
   ${ h.stylesheet_link_tag( "dirac.css" ) }
   ${ h.stylesheet_link_tag( "/ext/resources/css/ext-all.css" ) }
+  ${ h.stylesheet_link_tag( "/ext/resources/css/Multiselect.css" ) }
   ${self.head_tags()}
  </head>
  <body>
@@ -26,11 +29,13 @@ jsDiracPageObject = webBase.getJSPageData()
    initDiracPage( '${ h.url_for( '/' ) }', pageDescription);
   </script>
   ${self.body()}
+  <!--
   <script src="http://www.google-analytics.com/urchin.js" type="text/javascript"></script>
   <script type="text/javascript">
    _uacct = "UA-2149799-1";
    urchinTracker();
   </script>
+  --/>
   </div>
  </body>
 </html>
