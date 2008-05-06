@@ -1,5 +1,5 @@
-# $Header: /tmp/libdirac/tmp.stZoy15380/dirac/DIRAC3/DIRAC/Interfaces/Web/dirac/controllers/systems/configuration.py,v 1.13 2008/02/20 19:35:59 acasajus Exp $
-__RCSID__ = "$Id: configuration.py,v 1.13 2008/02/20 19:35:59 acasajus Exp $"
+# $Header: /tmp/libdirac/tmp.stZoy15380/dirac/DIRAC3/DIRAC/Interfaces/Web/dirac/controllers/systems/configuration.py,v 1.14 2008/05/06 10:31:15 acasajus Exp $
+__RCSID__ = "$Id: configuration.py,v 1.14 2008/05/06 10:31:15 acasajus Exp $"
 
 import logging
 
@@ -197,6 +197,8 @@ class ConfigurationController(BaseController):
     modifier = self.__getModificator()
     modifier.loadFromBuffer( session[ 'cfgData' ] )
     retDict = modifier.commit()
+    if retDict[ 'OK' ]:
+      return S_OK()
     return retDict
 
 
