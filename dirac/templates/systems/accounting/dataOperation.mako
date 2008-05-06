@@ -10,6 +10,8 @@ ${ h.javascript_include_tag( "/javascripts/systems/accounting/dataOp.js" ) }
 
 <%def name="body()">
 <script type="text/javascript">
-  initDataOp( ${c.selectionValues} );
+  var plotsList = ${c.plotsList};
+  var queryOptions = ${c.selectionValues};
+  initDataOp( plotsList, queryOptions );
 </script>
 </%def>

@@ -1,6 +1,10 @@
-function initDataOp( selectionData ){
+var gPlotsList = []; //Valid list of plots
+var gMainPanel = false;
+
+function initDataOp( plotsList, selectionData ){
+  gPlotsList = plotsList;
   Ext.onReady(function(){
-    renderPage( selectionData );
+    renderPage( plotsList, selectionData );
   });
 }
 /*
@@ -9,15 +13,21 @@ function initDataOp( selectionData ){
 		displayField : elValues.displayFieldName
 */
 
-function renderPage( selectionData ){
-  console.log( selectionData );
-  var leftBar = createLeftSelectPanel( "Query fields", "ajaxCall", parseLeftPanelSelections, serverGeneratedReports );
-  var mainContent = new Ext.Panel( { html : '', region : 'center' } );
+function renderPage( plotsList, selectionData ){
+  var leftBar = createLeftSelectPanel( "Query fields",
+  									   "generatePlot",
+  									   parseLeftPanelSelections,
+  									   serverGeneratedPlots,
+  									   validateSelection );
+  gMainPanel = new Ext.TabPanel( {
+  							region : 'center',
+  							enableTabScroll : true,
+  							defaults: { autoScroll:true },
+  							 } );
 
-  appendToLeftPanel( createDateField( "startTime", "Initial time" ) );
-  var now = new Date();
-  var todayString = now.getFullYear()+"-"+now.getMonth()+"-"+now.getDate();
-  appendToLeftPanel( createDateField( "endTime", "End time", todayString ) );
+  appendToLeftPanel( createComboBox( "plotName", "Plot to generate", "Select a plot", plotsList ) );
+
+  appendTimeSelectorToLeftPanel();
 
   appendToLeftPanel( createCollepsibleMultiselect( "OperationType", "Operation type", selectionData.OperationType ) );
   appendToLeftPanel( createCollepsibleMultiselect( "User", "User", selectionData.User ) );
@@ -28,10 +38,41 @@ function renderPage( selectionData ){
   appendToLeftPanel( createCollepsibleMultiselect( "FinalStatus", "Final transfer status", selectionData.FinalStatus ) );
 
 
-  renderInMainViewport([ leftBar, mainContent ]);
+  renderInMainViewport([ leftBar, gMainPanel ]);
 }
 
-function serverGeneratedReports( panel, ajaxEvent )
+function serverGeneratedPlots( panel, ajaxEvent )
 {
 	console.log( ajaxEvent );
+	var imgFile = ajaxEvent.result.data;
+	gMainPanel.add( {
+		title : ajaxEvent.options.params._plotName,
+		closable : true,
+		iconCls: 'tabs',
+		html : "<img src='getPlotImg?file="+imgFile+"'/>"
+		} ).show();
+}
+
+function validateSelection( parsedSelection )
+{
+	console.log( parsedSelection );
+	if( ! parsedSelection._plotName  )
+	{
+		alert( "Select a plot to be generated!" );
+		return false;
+	}
+	if( parsedSelection._timeSelector == -1 )
+	{
+		if ( ! parsedSelection._endTime || ! parsedSelection._startTime )
+		{
+			alert( "Start and end dates?" );
+			return false;
+		}
+		else if( parsedSelection._endTime <= parsedSelection._startTime )
+		{
+			alert( "End time has to be greater than start time" );
+			return false;
+		}
+	}
+	return true;
 }

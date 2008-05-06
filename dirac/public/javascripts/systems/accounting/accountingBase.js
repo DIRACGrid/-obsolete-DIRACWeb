@@ -15,7 +15,7 @@ function renderPage(){
 
 /* == LEFT PANEL MAGIC == */
 
-function createLeftSelectPanel( panelTitle, submitURL, cbParseSelection , cbSuccessCallback )
+function createLeftSelectPanel( panelTitle, submitURL, cbParseSelection , cbSuccessCallback, cbValidatingCallback )
 {
   gLeftSidebarPanel = new Ext.FormPanel( {
     labelAlign : 'top',
@@ -37,6 +37,7 @@ function createLeftSelectPanel( panelTitle, submitURL, cbParseSelection , cbSucc
     url : submitURL,
     userCBParseSelection : cbParseSelection,
     userCBSuccessAJAXCallback : cbSuccessCallback,
+    userCBValidatingCallback : cbValidatingCallback,
     method : 'POST',
     items : [ { layout : 'form',
                 border : false,
@@ -60,20 +61,28 @@ function cbLeftPanelResetHandler( submitButton, clickEvent )
 
 function cbLeftPanelAJAXSubmitHandler( submitButton, clickEvent )
 {
+	var validated = true;
+	var parsedParams = gLeftSidebarPanel.userCBParseSelection();
+
+	if( gLeftSidebarPanel.userCBValidatingCallback )
+		validated = gLeftSidebarPanel.userCBValidatingCallback( parsedParams );
+
+	if( ! validated )
+		return;
+
 	gLeftSidebarPanel.form.submit( {
-		params : gLeftSidebarPanel.userCBParseSelection(),
+	    params : parsedParams,
 		waitTitle : 'Updating...',
 		waitMsg : 'Loading...',
+		timeout : 60000,
 		success : function( panel, ajaxEvent )
 			{
-				if( ajaxEvent.result.success )
-					alert( "Error in request: " + ajaxEvent.result.error );
-				else
-					gLeftSidebarPanel.userCBSuccessAJAXCallback( panel, ajaxEvent );
+				console.log( ajaxEvent );
+				gLeftSidebarPanel.userCBSuccessAJAXCallback( panel, ajaxEvent );
 			},
 		failure : function( panel, ajaxEvent )
 			{
-				alert( 'Error: ' + ajaxEvent.response.statusText );
+				alert( 'Error: ' + ajaxEvent.result.errors );
 			}
 		} );
 }
@@ -81,6 +90,37 @@ function cbLeftPanelAJAXSubmitHandler( submitButton, clickEvent )
 function appendToLeftPanel( extElement )
 {
 	return gLeftSidebarPanel.insert( gLeftSidebarPanel.items.length - 1, extElement );
+}
+
+function appendTimeSelectorToLeftPanel()
+{
+	var timePanel = createRadioBoxPanel( "timeSelector", "Time span", [ [ '86400', 'Last Day', true ],
+	                                                                    [ '604800', 'Last Week' ],
+	                                                                    [ '2592000', 'Last Month' ],
+	                                                                    [ '-1', 'Manual Select' ] ] );
+    timePanel.expand();
+    var startSel = createDateField( "startTime", "Initial time" );
+    startSel.disable();
+    timePanel.add( startSel );
+    var endSel = createDateField( "endTime", "End time" );
+    endSel.disable();
+    timePanel.add( endSel );
+//	timePanel.getComponent(0).setValue( true );
+	timePanel.getComponent(3).on( 'check', cbManualTimeSelected );
+	timePanel.getComponent(3).manualTimeSelectors = [ startSel, endSel ];
+	appendToLeftPanel( timePanel );
+}
+
+function cbManualTimeSelected( el, checked )
+{
+	for( var i = 0; i < el.manualTimeSelectors.length; i++ )
+	{
+		tiSel = el.manualTimeSelectors[ i ];
+		if( checked )
+			tiSel.enable();
+		else
+			tiSel.disable();
+	}
 }
 
 /* == END OF LEFT PANEL MAGIC == */
@@ -99,7 +139,6 @@ function parseLeftPanelSelections( rootElement )
 		numChildren = rootElement.items.length;
 
 	var contents = {};
-	console.group( "parseSelections " + rootElement.name + " " + numChildren );
 	for( var iEl = 0; iEl < numChildren; iEl ++ )
 	{
 		var currentEl = rootElement.getComponent( iEl );
@@ -107,16 +146,18 @@ function parseLeftPanelSelections( rootElement )
 		{
 			var subContents = parseLeftPanelSelections( currentEl );
 			for( name in subContents )
+			{
 				contents[ name ] = subContents[ name ];
+			}
 		}
+		else if( currentEl.checked )
+			contents[ "_" + currentEl.name ] = currentEl.value;
 		else if( currentEl.isDirty() )
 		{
-			contents[ currentEl.name ] = currentEl.getValue();
-			console.log( currentEl.name +"="+ currentEl.getValue() );
+			contents[ "_" + currentEl.name ] = currentEl.getValue();
 		}
+
 	}
-	console.info( contents );
-	console.groupEnd();
 	return contents;
 }
 
@@ -151,7 +192,6 @@ function createCheckBoxPanel( elName, elLabel, elValues )
 	{
 		panelItems.push( createCheckBox( elName + "." + elValues[i][1], elValues[i][1], elValues[i][0] ) );
 	}
-	console.log( panelItems );
 
 	var radioPanel = new Ext.form.FieldSet( {
 		anchor : '90%',
@@ -188,9 +228,8 @@ function createRadioBoxPanel( elName, elLabel, elValues )
 	var panelItems = [];
 	for( var i = 0; i < elValues.length; i++ )
 	{
-		panelItems.push( createRadioBox( elName, elValues[i][1], elValues[i][0] ) );
+		panelItems.push( createRadioBox( elName, elValues[i][1], elValues[i][0], elValues[i][2] ) );
 	}
-	console.log( panelItems );
 
 	var radioPanel = new Ext.form.FieldSet( {
 		anchor : '90%',
@@ -206,7 +245,7 @@ function createRadioBoxPanel( elName, elLabel, elValues )
 	return radioPanel;
 }
 
-function createRadioBox( elName, elLabel, elValue )
+function createRadioBox( elName, elLabel, elValue, elChecked )
 {
 	var radioBox = new Ext.form.Radio( {
     	anchor : '90%',
@@ -216,7 +255,8 @@ function createRadioBox( elName, elLabel, elValue )
     	name : elName,
     	selectOnFocus : true,
     	triggerAction : 'all',
-    	value : elValue
+    	value : elValue,
+    	checked : elChecked
   } );
 
   return radioBox;
@@ -224,7 +264,6 @@ function createRadioBox( elName, elLabel, elValue )
 
 function createDateField( elName, elLabel, elValue )
 {
-  console.log( elValue );
 	var dateField = new Ext.form.DateField( {
 		anchor : '90%',
 		allowBlank : true,
