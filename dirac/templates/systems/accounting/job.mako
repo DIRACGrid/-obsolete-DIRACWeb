@@ -6,13 +6,13 @@
 ${ h.javascript_include_tag( "/javascripts/json2.js" ) }
 ${ h.javascript_include_tag( "/javascripts/systems/accounting/accountingBase.js" ) }
 ${ h.javascript_include_tag( "/javascripts/systems/accounting/plotPageBase.js" ) }
-${ h.javascript_include_tag( "/javascripts/systems/accounting/dataOperationPlotPage.js" ) }
+${ h.javascript_include_tag( "/javascripts/systems/accounting/jobPlotPage.js" ) }
 </%def>
 
 <%def name="body()">
 <script type="text/javascript">
   var plotsList = ${c.plotsList};
   var queryOptions = ${c.selectionValues};
-  initDataOpPlots( plotsList, queryOptions );
+  initJobPlots( plotsList, queryOptions );
 </script>
 </%def>

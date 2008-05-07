@@ -11,7 +11,7 @@ from DIRAC.Core.Utilities import Time, List
 
 log = logging.getLogger(__name__)
 
-class AccountingController(BaseController):
+class AccountingplotsController(BaseController):
 
   def __getUniqueKeyValues( self, typeName ):
     rpcClient = getRPCClient( "Accounting/ReportGenerator" )
@@ -31,20 +31,26 @@ class AccountingController(BaseController):
     return redirect_to( url_for( "/systems/accounting/dataOperation" ) )
 
   def dataOperation(self):
+    return self.__showPlotPage( "DataOperation", "/systems/accounting/dataOperation.mako" )
+
+  def job(self):
+    return self.__showPlotPage( "Job", "/systems/accounting/job.mako" )
+
+  def __showPlotPage( self, typeName, templateFile ):
     #TODO: This can be cached
-    retVal = self.__getUniqueKeyValues( "DataOperation" )
+    retVal = self.__getUniqueKeyValues( typeName )
     if not retVal[ 'OK' ]:
       c.error = retVal[ 'Message' ]
       return render ( "/error.mako" )
     c.selectionValues = simplejson.dumps( retVal[ 'Value' ] )
     #TODO: This can be cached
     rpcClient = getRPCClient( "Accounting/ReportGenerator" )
-    retVal = rpcClient.listPlots( "DataOperation" )
+    retVal = rpcClient.listPlots( typeName )
     if not retVal[ 'OK' ]:
       c.error = retVal[ 'Message' ]
       return render ( "/error.mako" )
     c.plotsList = simplejson.dumps( retVal[ 'Value' ] )
-    return render ("/systems/accounting/dataOperation.mako")
+    return render ( templateFile )
 
   def __parseFormParams( self ):
     pD = {}
@@ -54,10 +60,17 @@ class AccountingController(BaseController):
       value = request.params[ name ]
       name = name[1:]
       pD[ name ] = str( value )
+    #Get plotname
+    if not 'typeName' in pD:
+      return S_ERROR( "Missing type name!" )
+    typeName = pD[ 'typeName' ]
+    del( pD[ 'typeName' ] )
+    #Get plotname
     if not 'plotName' in pD:
       return S_ERROR( "Missing plot name!" )
     plotName = pD[ 'plotName' ]
     del( pD[ 'plotName' ] )
+    #Get times
     if not 'timeSelector' in pD:
       return S_ERROR( "Missing time span!" )
     pD[ 'timeSelector' ] = int( pD[ 'timeSelector' ] )
@@ -66,16 +79,15 @@ class AccountingController(BaseController):
       start = end - datetime.timedelta( seconds = pD[ 'timeSelector' ] )
     else:
       for field in ( 'startTime', 'endTime' ):
-        if not field in pD:
+        if not field in request.params:
           return S_ERROR( "Missing %s!" % field )
-      del( pD[ 'endTime' ] )
-      del( pD[ 'startTime' ] )
-      end = Time.fromString( pD[ 'endTime' ] )
-      start = Time.fromString( pD[ 'startTime' ] )
+      end = Time.fromString( request.params[ 'endTime' ] )
+      start = Time.fromString( request.params[ 'startTime' ] )
     del( pD[ 'timeSelector' ] )
+    #Listify the rest
     for selName in pD:
       pD[ selName ] = List.fromChar( pD[ selName ], "," )
-    return S_OK( ( plotName, start, end, pD ) )
+    return S_OK( ( typeName, plotName, start, end, pD ) )
 
   def __translateToExpectedExtResult( self, retVal ):
     if retVal[ 'OK' ]:
@@ -91,7 +103,7 @@ class AccountingController(BaseController):
       return self.__translateToExpectedExtResult( retVal )
     params = retVal[ 'Value' ]
     rpcClient = getRPCClient( "Accounting/ReportGenerator" )
-    retVal = rpcClient.generatePlot( "DataOperation", *params )
+    retVal = rpcClient.generatePlot( *params )
     return self.__translateToExpectedExtResult( retVal )
 
   def getPlotImg( self ):

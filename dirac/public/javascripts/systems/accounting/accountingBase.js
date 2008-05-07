@@ -150,13 +150,14 @@ function parseLeftPanelSelections( rootElement )
 				contents[ name ] = subContents[ name ];
 			}
 		}
+		else if( currentEl.inputType == "hidden" )
+			contents[ "_" + currentEl.name ] = currentEl.value;
 		else if( currentEl.checked )
 			contents[ "_" + currentEl.name ] = currentEl.value;
 		else if( currentEl.isDirty() )
 		{
 			contents[ "_" + currentEl.name ] = currentEl.getValue();
 		}
-
 	}
 	return contents;
 }
@@ -183,6 +184,15 @@ function createComboBox( elName, elLabel, elEmpyTextValue, dataStore )
   } );
 
   return comboBox;
+}
+
+function createHidden( elName, elValue )
+{
+	var hidden = new Ext.form.Hidden( {
+		name : elName
+		} );
+	hidden.setValue( elValue );
+	return hidden;
 }
 
 function createCheckBoxPanel( elName, elLabel, elValues )
