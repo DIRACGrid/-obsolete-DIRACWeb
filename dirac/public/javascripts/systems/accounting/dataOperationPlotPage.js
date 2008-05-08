@@ -16,14 +16,25 @@ function renderPage( plotsList, selectionData ){
 
   appendTimeSelectorToLeftPanel();
 
-  appendToLeftPanel( createCollepsibleMultiselect( "OperationType", "Operation type", selectionData.OperationType ) );
-  appendToLeftPanel( createCollepsibleMultiselect( "User", "User", selectionData.User ) );
-  appendToLeftPanel( createCollepsibleMultiselect( "ExecutionSite", "Execution site", selectionData.ExecutionSite ) );
-  appendToLeftPanel( createCollepsibleMultiselect( "Source", "Source site", selectionData.Source ) );
-  appendToLeftPanel( createCollepsibleMultiselect( "Destination", "Destination site", selectionData.Destination ) );
-  appendToLeftPanel( createCollepsibleMultiselect( "Protocol", "Protocol", selectionData.Protocol ) );
-  appendToLeftPanel( createCollepsibleMultiselect( "FinalStatus", "Final transfer status", selectionData.FinalStatus ) );
-  appendToLeftPanel( createHidden( "typeName", "DataOperation" ) );
+  var selWidgets = []
+
+  selWidgets.push( createMultiselect( "OperationType", "Operation type", selectionData.OperationType ) );
+  selWidgets.push( createMultiselect( "User", "User", selectionData.User ) );
+  selWidgets.push( createMultiselect( "ExecutionSite", "Execution site", selectionData.ExecutionSite ) );
+  selWidgets.push( createMultiselect( "Source", "Source site", selectionData.Source ) );
+  selWidgets.push( createMultiselect( "Destination", "Destination site", selectionData.Destination ) );
+  selWidgets.push( createMultiselect( "Protocol", "Protocol", selectionData.Protocol ) );
+  selWidgets.push( createMultiselect( "FinalStatus", "Final transfer status", selectionData.FinalStatus ) );
+  selWidgets.push( createHidden( "typeName", "DataOperation" ) );
+  appendToLeftPanel( createPanel( "Selection conditions", selWidgets ) );
+
+  var orderKeys = [ [ 'Channel', 'Channel' ] ]
+  for( key in selectionData )
+  {
+  	orderKeys.push( [ key, key ] );
+  }
+
+  appendToLeftPanel( createRadioBoxPanel( "grouping", "Group by", orderKeys ) );
 
   renderPlotPage();
 }

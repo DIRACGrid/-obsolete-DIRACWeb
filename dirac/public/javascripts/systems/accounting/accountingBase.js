@@ -22,7 +22,7 @@ function createLeftSelectPanel( panelTitle, submitURL, cbParseSelection , cbSucc
     split : true,
     region : 'west',
     collapsible : true,
-    width : 200,
+    width : 300,
     minWidth : 200,
     margins : '2 0 2 2',
     cmargins : '2 2 2 2',
@@ -233,6 +233,22 @@ function createCheckBox( elName, elLabel, elValue )
   return checkBox;
 }
 
+function createPanel( elName, elItems )
+{
+	var radioPanel = new Ext.form.FieldSet( {
+		anchor : '90%',
+		title : elName,
+		name : elName,
+		collapsible : true,
+		autoHeight : true,
+		collapsed : true,
+		triggerAction : 'all',
+		items : elItems,
+	} );
+
+	return radioPanel;
+}
+
 function createRadioBoxPanel( elName, elLabel, elValues )
 {
 	var panelItems = [];
@@ -348,18 +364,19 @@ function createCollepsibleMultiselect( elName, elLabel, elValues )
 		dataFields : [ 'id', 'desc' ],
 		valueField : 'id',
 		displayField : 'desc',
-		width : 145,
+		width : '95%',
 		height : selectHeigth,
   } );
 
 	var collepsiblePanel = new Ext.form.FieldSet( {
-		anchor : '90%',
+		anchor : '95%',
 		title : elLabel,
 		name : elName + "-autopanel",
 		collapsible : true,
 		autoHeight : true,
 		collapsed : true,
 		triggerAction : 'all',
+		width : '95%',
 		items : [ multiSelect ],
 	} );
 
@@ -369,11 +386,19 @@ function createCollepsibleMultiselect( elName, elLabel, elValues )
 function createMultiselect( elName, elLabel, elValues )
 {
 	var mSelectValues =  [];
+	var numItems = elValues.length;
 	for( var i=0; i < elValues.length ; i++ )
 	{
 		var val = elValues[ i ];
 		mSelectValues.push( [ val, val ] );
 	}
+
+	var selectHeigth = numItems * 23;
+	if( selectHeigth > 200 )
+		selectHeigth = 200;
+	if( selectHeigth < 50 )
+		selectHeigth = 50;
+
 	var multiSelect = new Ext.ux.Multiselect( {
 		anchor : '90%',
 		allowBlank : true,
@@ -389,8 +414,8 @@ function createMultiselect( elName, elLabel, elValues )
 		dataFields : [ 'id', 'desc' ],
 		valueField : 'id',
 		displayField : 'desc',
-		width : 160,
-		height : 150,
+		width : '95%',
+		height : selectHeigth,
   } );
   return multiSelect;
 }

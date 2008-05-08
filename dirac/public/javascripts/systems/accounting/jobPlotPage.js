@@ -16,24 +16,35 @@ function renderPage( plotsList, selectionData ){
 
   appendTimeSelectorToLeftPanel();
 
+  var selWidgets = []
+
   if( selectionData.User.length > 1 )
-  	appendToLeftPanel( createCollepsibleMultiselect( "User", "User", selectionData.User ) );
+  	selWidgets.push( createMultiselect( "User", "User", selectionData.User ) );
   else
-  	appendToLeftPanel( createHidden( "User", selectionData.User[0] ) );
+  	selWidgets.push( createHidden( "User", selectionData.User[0] ) );
 
   if( selectionData.UserGroup.length > 1 )
-  	appendToLeftPanel( createCollepsibleMultiselect( "UserGroup", "User Group", selectionData.UserGroup ) );
+  	selWidgets.push( createMultiselect( "UserGroup", "User Group", selectionData.UserGroup ) );
   else
-  	appendToLeftPanel( createHidden( "UserGroup", selectionData.UserGroup[0] ) );
+  	selWidgets.push( createHidden( "UserGroup", selectionData.UserGroup[0] ) );
 
-  appendToLeftPanel( createCollepsibleMultiselect( "JobGroup", "Job Group", selectionData.JobGroup ) );
-  appendToLeftPanel( createCollepsibleMultiselect( "JobType", "Job Type", selectionData.JobType ) );
-  appendToLeftPanel( createCollepsibleMultiselect( "JobClass", "Job Class", selectionData.JobClass ) );
-  appendToLeftPanel( createCollepsibleMultiselect( "Site", "Site", selectionData.Site ) );
-  appendToLeftPanel( createCollepsibleMultiselect( "ProcessingType", "Processing Type", selectionData.ProcessingType ) );
-  appendToLeftPanel( createCollepsibleMultiselect( "FinalMajorStatus", "Final major status", selectionData.FinalMajorStatus ) );
-  appendToLeftPanel( createCollepsibleMultiselect( "FinalMinorStatus", "Final minor status", selectionData.FinalMinorStatus ) );
-  appendToLeftPanel( createHidden( "typeName", "Job" ) );
+  selWidgets.push( createMultiselect( "JobGroup", "Job Group", selectionData.JobGroup ) );
+  selWidgets.push( createMultiselect( "JobType", "Job Type", selectionData.JobType ) );
+  selWidgets.push( createMultiselect( "JobClass", "Job Class", selectionData.JobClass ) );
+  selWidgets.push( createMultiselect( "Site", "Site", selectionData.Site ) );
+  selWidgets.push( createMultiselect( "ProcessingType", "Processing Type", selectionData.ProcessingType ) );
+  selWidgets.push( createMultiselect( "FinalMajorStatus", "Final major status", selectionData.FinalMajorStatus ) );
+  selWidgets.push( createMultiselect( "FinalMinorStatus", "Final minor status", selectionData.FinalMinorStatus ) );
+  selWidgets.push( createHidden( "typeName", "Job" ) );
+  appendToLeftPanel( createPanel( "Selection conditions", selWidgets ) );
+
+  var orderKeys = []
+  for( key in selectionData )
+  {
+  	orderKeys.push( [ key, key ] );
+  }
+
+  appendToLeftPanel( createRadioBoxPanel( "grouping", "Group by", orderKeys ) );
 
   renderPlotPage();
 }
