@@ -61,6 +61,10 @@ class AccountingplotsController(BaseController):
       name = name[1:]
       pD[ name ] = str( value )
     #Get plotname
+    if not 'grouping' in pD:
+      return S_ERROR( "Missing grouping!" )
+    grouping = pD[ 'grouping' ]
+    #Get plotname
     if not 'typeName' in pD:
       return S_ERROR( "Missing type name!" )
     typeName = pD[ 'typeName' ]
@@ -87,7 +91,7 @@ class AccountingplotsController(BaseController):
     #Listify the rest
     for selName in pD:
       pD[ selName ] = List.fromChar( pD[ selName ], "," )
-    return S_OK( ( typeName, plotName, start, end, pD ) )
+    return S_OK( ( typeName, plotName, start, end, pD, grouping ) )
 
   def __translateToExpectedExtResult( self, retVal ):
     if retVal[ 'OK' ]:
@@ -95,8 +99,7 @@ class AccountingplotsController(BaseController):
     else:
       return { 'success' : False, 'errors' : retVal[ 'Message' ] }
 
-  @jsonify
-  def generatePlot(self):
+  def __queryForPlot( self ):
     retVal = self.__parseFormParams()
     print retVal
     if not retVal[ 'OK' ]:
@@ -104,7 +107,17 @@ class AccountingplotsController(BaseController):
     params = retVal[ 'Value' ]
     rpcClient = getRPCClient( "Accounting/ReportGenerator" )
     retVal = rpcClient.generatePlot( *params )
-    return self.__translateToExpectedExtResult( retVal )
+    return retVal
+
+  @jsonify
+  def generatePlot( self ):
+    return self.__translateToExpectedExtResult( self.__queryForPlot() )
+
+  def generatePlotAndGetHTML(self):
+    retVal = self.__queryForPlot()
+    if not retVal[ 'OK' ]:
+      return "<h2>Can't regenerate plot: %s</h2>" % retVal[ 'Message' ]
+    return "<img src='getPlotImg?file=%s'/>" % retVal[ 'Value' ]
 
   def getPlotImg( self ):
     """
