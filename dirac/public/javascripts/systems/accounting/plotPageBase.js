@@ -48,7 +48,6 @@ function serverGeneratedPlots( panel, ajaxEvent )
   		});
   	var autoRefreshMenu = new Ext.menu.Menu( {
   			items : [ { text : 'Disabled', value : 0 },
-  					  { text : 'Each 10s', value : 10 },
   					  { text : 'Each 15m', value : 900 },
   					  { text : 'Each hour', value : 3600 },
   					  { text : 'Each day', value : 86400 }
