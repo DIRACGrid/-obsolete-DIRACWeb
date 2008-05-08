@@ -48,6 +48,7 @@ function serverGeneratedPlots( panel, ajaxEvent )
   		});
   	var autoRefreshMenu = new Ext.menu.Menu( {
   			items : [ { text : 'Disabled', value : 0 },
+  					  { text : 'Each 10s', value : 10 },
   					  { text : 'Each 15m', value : 900 },
   					  { text : 'Each hour', value : 3600 },
   					  { text : 'Each day', value : 86400 }
@@ -70,6 +71,8 @@ function serverGeneratedPlots( panel, ajaxEvent )
 		iconCls: 'tabs',
 		html : "<img src='getPlotImg?file="+imgFile+"' style='margin:5px'/>",
 		tbar : refreshBar,
+		listeners : { close : cbTabDeactivate, deactivate : cbTabDeactivate },
+		uAutoRefreshButton : autoRefreshButton,
 		} );
 	tab.show();
 	refreshButton.plotTab = tab;
@@ -78,7 +81,6 @@ function serverGeneratedPlots( panel, ajaxEvent )
 
 function cbPlotAutoRefreshHandler( menuItem, clickEvent )
 {
-  console.log( "HERE" );
   var plotTab = menuItem.parentMenu.plotTab;
   var updateMgr = plotTab.getUpdater();
 
@@ -103,9 +105,14 @@ function cbPlotRefreshHandler( submitButton, clickEvent )
     } );
 }
 
+function cbTabDeactivate( tabPanel )
+{
+	tabPanel.getUpdater().stopAutoRefresh();
+	tabPanel.uAutoRefreshButton.setText("Auto refresh :  Disabled");
+}
+
 function validateSelection( parsedSelection )
 {
-	console.log( parsedSelection );
 	if( ! parsedSelection._plotName  )
 	{
 		alert( "Select a plot to be generated!" );

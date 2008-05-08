@@ -77,7 +77,6 @@ function cbLeftPanelAJAXSubmitHandler( submitButton, clickEvent )
 		timeout : 60000,
 		success : function( panel, ajaxEvent )
 			{
-				console.log( ajaxEvent );
 				gLeftSidebarPanel.userCBSuccessAJAXCallback( panel, ajaxEvent );
 			},
 		failure : function( panel, ajaxEvent )
