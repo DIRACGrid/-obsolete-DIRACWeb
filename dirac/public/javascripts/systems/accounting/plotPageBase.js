@@ -23,7 +23,7 @@ function renderPlotPage()
 
 function humanReadableDate( dateObj )
 {
-	return dateObj.getFullYear() + "-" + dateObj.getMonth() + "-" + dateObj.getDay();
+	return dateObj.getFullYear() + "-" + ( dateObj.getMonth() + 1 ) + "-" + dateObj.getDate();
 }
 
 function serverGeneratedPlots( panel, ajaxEvent )
