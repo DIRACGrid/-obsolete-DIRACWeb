@@ -11,7 +11,8 @@ log = logging.getLogger(__name__)
 
 numberOfJobs = 25
 pageNumber = 0
-globalSort = "JobID:DESC"
+globalSort = []
+globalSort = [["JobID","DESC"]]
 
 class JobmonitorController(BaseController):
 ################################################################################
@@ -22,11 +23,11 @@ class JobmonitorController(BaseController):
     gLogger.info("\033[0;31mJOB INDEX REQUEST:\033[0m %s" % (time() - pagestart))
     return render("jobs/JobMonitor.mako")
 ################################################################################
-  def __getJobSummary(self,jobs):
+  def __getJobSummary(self,jobs,head):
     valueList = []
+    gLogger.info("SERVER RESPONSE:",jobs)
     for i in jobs:
-      s = jobs[i]
-      valueList.append({"id":str(s["JobID"]),"status":str(s["Status"]),"minorStatus":str(s["MinorStatus"]),"applicationStatus":str(s["ApplicationStatus"]),"site":str(s["Site"]),"jobname":str(s["JobName"]),"lastUpdate":str(s["LastUpdateTime"]),"owner":str(s["Owner"]),"submissionTime":str(s["SubmissionTime"]),"signTime":str(s["LastSignOfLife"])})
+      valueList.append({"id":str(i[2]),"status":str(i[6]),"minorStatus":str(i[10]),"applicationStatus":str(i[11]),"site":str(i[26]),"jobname":str(i[22]),"lastUpdate":str(i[25]),"owner":str(i[31]),"submissionTime":str(i[12]),"signTime":str(i[3])})
     return valueList
 ################################################################################
   @jsonify
@@ -37,24 +38,38 @@ class JobmonitorController(BaseController):
     gLogger.info("- REQUEST:",result)
     gLogger.info("PageNumber:",pageNumber)
     gLogger.info("NOJ:",numberOfJobs)
-    result = RPC.getJobPageSummary(result,globalSort,pageNumber,numberOfJobs)
-#    gLogger.info("SERVER RESPONSE:",result)
+    result = RPC.getJobPageSummaryWeb(result,globalSort,pageNumber,numberOfJobs)
     if result["OK"]:
       result = result["Value"]
-      if result.has_key("SummaryDict") and len(result["SummaryDict"]) > 0:
-        jobSummary = result["SummaryDict"]
-        c.result = self.__getJobSummary(jobSummary)
-#        c.result = []
-#        for i in jobSummary:
-#          c.result.append(jobSummary[i])
-
-        c.result = {"success":"true","result":c.result,"total":str(result["TotalJobs"])}
+      if result.has_key("TotalRecords"):
+        if  result["TotalRecords"] > 0:
+          if result.has_key("ParameterNames") and result.has_key("Records"):
+            if len(result["ParameterNames"]) > 0:
+              if len(result["Records"]) > 0:
+                c.result = []
+                jobs = result["Records"]
+                head = result["ParameterNames"]
+                headLength = len(head)
+                for i in jobs:
+                  tmp = {}
+                  for j in range(0,headLength):
+                    tmp[head[j]] = i[j]
+                  c.result.append(tmp)
+                total = result["TotalRecords"]
+                c.result = {"success":"true","result":c.result,"total":total}
+              else:
+                c.result = {"success":"false","result":"","error":"There are no data to display"}
+            else:
+              c.result = {"success":"false","result":"","error":"ParameterNames field is missing"}
+          else:
+            c.result = {"success":"false","result":"","error":"Data structure is corrupted"}
+        else:
+          c.result = {"success":"false","result":"","error":"There were no data matching your selection"}
       else:
-        c.result = {"success":"false","result":"","error":"There are no data to display"}
+        c.result = {"success":"false","result":"","error":"Data structure is corrupted"}
     else:
       c.result = {"success":"false","error":result["Message"]}
     gLogger.info("\033[0;31mJOB SUBMIT REQUEST:\033[0m %s" % (time() - pagestart))
-#    gLogger.info("JOB SUBMIT RESULT:",c.result)
     return c.result
 ################################################################################
   def __getSelectionData(self):
@@ -139,36 +154,33 @@ class JobmonitorController(BaseController):
       if request.params.has_key("limit") and len(request.params["limit"]) > 0:
         if request.params.has_key("start") and len(request.params["start"]) > 0:
           numberOfJobs = int(request.params["limit"])
-          startRecord = int(request.params["start"])
-          pageNumber = startRecord/numberOfJobs
-          if pageNumber <= 0:
-            pageNumber = 0
+          pageNumber = int(request.params["start"])
         else:
           pageNumber = 0
       else:
         numberOfJobs = 25
       if request.params.has_key("prod") and len(request.params["prod"]) > 0:
         if str(request.params["prod"]) != "All":
-          req["JobGroup"] = str(request.params["prod"])
+          req["JobGroup"] = str(request.params["prod"]).split('::: ')
       if request.params.has_key("site") and len(request.params["site"]) > 0:
         if str(request.params["site"]) != "All":
-          req["Site"] = str(request.params["site"])
+          req["Site"] = str(request.params["site"]).split('::: ')
       if request.params.has_key("stat") and len(request.params["stat"]) > 0:
         if str(request.params["stat"]) != "All":
-          req["Status"] = str(request.params["stat"])
+          req["Status"] = str(request.params["stat"]).split('::: ')
       if request.params.has_key("app") and len(request.params["app"]) > 0:
         if str(request.params["app"]) != "All":
-          req["ApplicationStatus"] = str(request.params["app"])
+          req["ApplicationStatus"] = str(request.params["app"]).split('::: ')
       if request.params.has_key("owner") and len(request.params["owner"]) > 0:
         if str(request.params["owner"]) != "All":
-          req["Owner"] = str(request.params["owner"])
+          req["Owner"] = str(request.params["owner"]).split('::: ')
       if request.params.has_key("date") and len(request.params["date"]) > 0:
         if str(request.params["date"]) != "YYYY-mm-dd":
           req["LastUpdate"] = str(request.params["date"])
       if request.params.has_key("sort") and len(request.params["sort"]) > 0:
         globalSort = str(request.params["sort"])
       else:
-        globalSort = "JobID:DESC"
+        globalSort = [["JobID","DESC"]]
     return req
 ################################################################################
   @jsonify
