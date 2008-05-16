@@ -5,7 +5,7 @@
  * @author    Ing.Jozef Sak.lo.
  * @copyright (c) 2008, by Ing. Jozef Sak.lo.
  * @date      5. April 2008
- * @version   $Id: lovCombo.css,v 1.1 2008/05/16 16:16:13 msapunov Exp $
+ * @version   $Id: lovCombo.css,v 1.2 2008/05/16 16:20:32 msapunov Exp $
  *
  * @license Ext.ux.form.LovCombo.css is licensed under the terms of the Open Source
  * LGPL 3.0 license. Commercial use is permitted to the extent that the 
@@ -23,8 +23,8 @@
 	background-repeat:no-repeat ! important;
 }
 .ux-lovcombo-icon-checked {
-	background: transparent url(../../ext/resources/images/default/menu/checked.gif);
+	background: transparent url(../ext/resources/images/default/menu/checked.gif);
 }
 .ux-lovcombo-icon-unchecked {
-	background: transparent url(../../ext/resources/images/default/menu/unchecked.gif);
+	background: transparent url(../ext/resources/images/default/menu/unchecked.gif);
 }
