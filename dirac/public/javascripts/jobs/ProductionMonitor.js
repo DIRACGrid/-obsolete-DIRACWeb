@@ -80,7 +80,7 @@ function initData(store){
   ];
   tableMngr = {'store':store,'columns':columns,'title':title,'tbar':tbar};
   var t = table(tableMngr);
-  t.addListener('rowclick',showMenu);
+  t.addListener('cellclick',showMenu);
   return t
 }
 function renderData(store){
@@ -89,18 +89,34 @@ function renderData(store){
   renderInMainViewport([ leftBar, mainContent ]);
   dataMngr = {'form':leftBar,'store':store}
 }
-
-function setMenuItems(menu,id){
-  menu.add(
-    {handler:function(){jump('job',id)},text:'Show Jobs'},
-    {handler:function(){AJAXrequest('log',id)},text:'Show Logs'},
-    '-',
-    {text:'Actions',menu:({items:[
-      {handler:function(){action('production','start',id)},text:'Start'},
-      {handler:function(){action('production','stop',id)},text:'Stop'},
-      {handler:function(){action('production','delete',id)},text:'Delete'}
-    ]})}
-  );
+function setMenuItems(selections){
+  if(selections){
+    var id = selections.id;
+    var status = selections.status;
+    var submited = selections.submited;
+  }else{
+    return
+  }
+  if(dirac.menu){
+    dirac.menu.add(
+      {handler:function(){jump('job',id,submited)},text:'Show Jobs'},
+      {handler:function(){AJAXrequest('log',id)},text:'Show Logs'},
+      '-',
+      {text:'Actions',menu:({items:[
+        {handler:function(){action('production','start',id)},text:'Start'},
+        {handler:function(){action('production','stop',id)},text:'Stop'},
+        {handler:function(){action('production','delete',id)},text:'Delete'}
+      ]})}
+    );
+  }
+  if((status == 'Active')||(status == 'New')){
+      dirac.menu.items.items[3].menu.items.items[1].enable();
+      dirac.menu.items.items[3].menu.items.items[0].disable();
+  }else{
+      dirac.menu.items.items[3].menu.items.items[1].disable();
+      dirac.menu.items.items[3].menu.items.items[0].enable();
+  }
+  x = 0;
 };
 function AJAXsuccess(value,id,response){
   var jsonData = Ext.util.JSON.decode(response);
@@ -110,36 +126,47 @@ function AJAXsuccess(value,id,response){
   }
   var result = jsonData.result;
   if(value == 'log'){
-    var reader = new Ext.data.ArrayReader({}, [
+
+
+    var reader = {};
+    var columns = [];
+    reader = new Ext.data.ArrayReader({},[
       {name:'message'},
       {name:'author'},
       {name:'date'}
     ]);
-    var panel = new Ext.grid.GridPanel({
-      store:new Ext.data.Store({
-        data:result,
-        reader:reader
-      }),
-      columns:[
+    columns = [
         {header:'Message',sortable:true,dataIndex:'message',align:'left'},
         {header:'Date [UTC]',sortable:true,dataIndex:'date',align:'left'},
 //        {header:'Date [UTC]',sortable:true,renderer:Ext.util.Format.dateRenderer('Y-n-j h:i'),dataIndex:'date'},
         {header:'Author',sortable:true,dataIndex:'author',align:'left'}
-      ],
-      autoHeight: true,
-      viewConfig: {forceFit: true},
-      stripeRows: true
+    ];
+    var store = new Ext.data.Store({
+      data:result,
+      reader:reader
+    }),
+    panel = new Ext.grid.GridPanel({
+      columns:columns,
+      store:store,
+      stripeRows:true,
+      viewConfig:{forceFit:true}
     });
   }
   displayWin(panel,id)
 }
-function jump(type,id){
-  var post_req = "<form id=\"redirform\" action=\"https://lhcbtest.pic.es/DIRAC/jobs/JobMonitor/display\" method=\"POST\" >";
-  post_req = post_req + "<input type=\"hidden\" name=\"productionID\" value=\"" + id + "\">";
-  post_req = post_req + "</form>";
-  document.body.innerHTML = document.body.innerHTML + post_req;
-  var url = document.getElementById("redirform");
-  url.submit();
+function jump(type,id,submited){
+  if(submited==0){
+    alert('Nothing to display');
+    return
+  }else{
+    var url = document.location.protocol + '//' + document.location.hostname + gURLRoot + '/jobs/JobMonitor/display';
+    var post_req = '<form id="redirform" action="' + url + '" method="POST" >';
+    post_req = post_req + '<input type="hidden" name="productionID" value="' + id + '">';
+    post_req = post_req + '</form>';
+    document.body.innerHTML = document.body.innerHTML + post_req;
+    var form = document.getElementById('redirform');
+    form.submit();
+  }
 }
 function afterDataLoad(){
 }
