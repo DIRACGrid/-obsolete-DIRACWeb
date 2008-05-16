@@ -10,19 +10,44 @@ function initJobMonitor(reponseSelect){
     renderData(store);
   });
 }
+'SystemPriority', 'ApplicationNumStatus', 'JobID', 'LastSignOfLife', 'VerifiedFlag', 'RetrievedFlag', 'Status', 'StartExecTime', 'RescheduleCounter', 'JobSplitType', 'MinorStatus', 'ApplicationStatus', 'SubmissionTime', 'JobType', 'MasterJobID', 'KilledFlag', 'RescheduleTime', 'DIRACSetup', 'FailedFlag', 'CPUTime', 'OwnerDN', 'JobGroup', 'JobName', 'AccountedFlag', 'OSandboxReadyFlag', 'LastUpdateTime', 'Site', 'HeartBeatTime', 'OwnerGroup', 'ISandboxReadyFlag', 'UserPriority', 'Owner', 'DeletedFlag'
+
 // function describing data structure, should be individual per page
 function initRecord(){
   var record = new Ext.data.Record.create([
-    {name:'id', type: 'float'},
-    {name:'status'},
-    {name:'minorStatus'},
-    {name:'applicationStatus'},
-    {name:'site'},
-    {name:'jobname'},
-    {name:'lastUpdate',type:'date',dateFormat:'Y-n-j h:i:s'},
-    {name:'owner'},
-    {name:'signTime',type:'date',dateFormat:'Y-n-j h:i:s'},
-    {name:'submissionTime',type:'date',dateFormat:'Y-n-j h:i:s'}
+    {name:'SystemPriority', type: 'float'},
+    {name:'ApplicationNumStatus'},
+    {name:'JobID', type: 'float'},
+    {name:'LastSignOfLife',type:'date',dateFormat:'Y-n-j h:i:s'},
+    {name:'VerifiedFlag'},
+    {name:'RetrievedFlag'},
+    {name:'Status'},
+    {name:'StartExecTime',type:'date',dateFormat:'Y-n-j h:i:s'},
+    {name:'RescheduleCounter'},
+    {name:'JobSplitType'},
+    {name:'MinorStatus'},
+    {name:'ApplicationStatus'},
+    {name:'SubmissionTime',type:'date',dateFormat:'Y-n-j h:i:s'},
+    {name:'JobType'},
+    {name:'MasterJobID'},
+    {name:'KilledFlag'},
+    {name:'RescheduleTime'},
+    {name:'DIRACSetup'},
+    {name:'FailedFlag'},
+    {name:'CPUTime'},
+    {name:'OwnerDN'},
+    {name:'JobGroup'},
+    {name:'JobName'},
+    {name:'AccountedFlag'},
+    {name:'OSandboxReadyFlag'},
+    {name:'LastUpdateTime',type:'date',dateFormat:'Y-n-j h:i:s'},
+    {name:'Site'},
+    {name:'HeartBeatTime',type:'date',dateFormat:'Y-n-j h:i:s'},
+    {name:'OwnerGroup'},
+    {name:'ISandboxReadyFlag'},
+    {name:'UserPriority'},
+    {name:'Owner'},
+    {name:'DeletedFlag'}
   ]);
   return record
 }
@@ -48,18 +73,26 @@ function initSidebar(){
 }
 function initData(store){
   var columns = [
-    {header:'',name:'checkBox',id:'checkBox',width:10,sortable:false,dataIndex:'id',renderer:chkBox},
-    {header:'JobId',sortable:true,dataIndex:'id',align:'left'},
-    {header:'',width:10,sortable:false,dataIndex:'status',renderer:status},
-    {header:'Status',sortable:true,dataIndex:'status',align:'left'},
-    {header:'MinorStatus',sortable:true,dataIndex:'minorStatus',align:'left'},
-    {header:'ApplicationStatus',sortable:true,dataIndex:'applicationStatus',align:'left'},
-    {header:'Site',sortable:true,dataIndex:'site',align:'left'},
-    {header:'JobName',sortable:true,dataIndex:'jobname',align:'left'},
-    {header:'LastUpdate [UTC]',sortable: true,renderer:Ext.util.Format.dateRenderer('Y-n-j h:i'),dataIndex:'lastUpdate'},
-    {header:'LastSignOfLife [UTC]',sortable:true,renderer:Ext.util.Format.dateRenderer('Y-n-j h:i'),dataIndex:'signTime'},
-    {header:'SubmissionTime [UTC]',sortable:true,renderer:Ext.util.Format.dateRenderer('Y-n-j h:i'),dataIndex:'submissionTime'},
-    {header:'Owner',sortable:true,dataIndex:'owner',align:'left'}
+    {header:'',name:'checkBox',id:'checkBox',width:10,sortable:false,dataIndex:'JobID',renderer:chkBox,hideable:false},
+    {header:'JobId',sortable:true,dataIndex:'JobID',align:'left'},
+    {header:'',width:10,sortable:false,dataIndex:'Status',renderer:status,hideable:false},
+    {header:'Status',sortable:true,dataIndex:'Status',align:'left'},
+    {header:'MinorStatus',sortable:true,dataIndex:'MinorStatus',align:'left'},
+    {header:'ApplicationStatus',sortable:true,dataIndex:'ApplicationStatus',align:'left'},
+    {header:'Site',sortable:true,dataIndex:'Site',align:'left'},
+    {header:'JobName',sortable:true,dataIndex:'JobName',align:'left'},
+    {header:'LastUpdate [UTC]',sortable: true,renderer:Ext.util.Format.dateRenderer('Y-m-d H:i'),dataIndex:'LastUpdateTime'},
+    {header:'LastSignOfLife [UTC]',sortable:true,renderer:Ext.util.Format.dateRenderer('Y-m-d H:i'),dataIndex:'LastSignOfLife'},
+    {header:'SubmissionTime [UTC]',sortable:true,renderer:Ext.util.Format.dateRenderer('Y-m-d H:i'),dataIndex:'SubmissionTime'},
+    {header:'DIRACSetup',sortable:true,dataIndex:'DIRACSetup',align:'left',hidden:true},
+    {header:'FailedFlag',sortable:true,dataIndex:'FailedFlag',align:'left',hidden:true},
+    {header:'CPUTime',sortable:true,dataIndex:'CPUTime',align:'left,hidden:true'},
+    {header:'OwnerDN',sortable:true,dataIndex:'OwnerDN',align:'left',hidden:true},
+    {header:'JobGroup',sortable:true,dataIndex:'JobGroup',align:'left',hidden:true},
+    {header:'JobName',sortable:true,dataIndex:'JobName',align:'left',hidden:true},
+    {header:'AccountedFlag',sortable:true,dataIndex:'AccountedFlag',align:'left',hidden:true},
+    {header:'OSandboxReadyFlag',sortable:true,dataIndex:'OSandboxReadyFlag',align:'left',hidden:true},
+    {header:'Owner',sortable:true,dataIndex:'Owner',align:'left'}
   ];
   var title = 'Job Monitoring';
   var tbar = [
@@ -70,7 +103,7 @@ function initData(store){
     {handler:function(){action('job','kill')},text:'Kill',tooltip:'Click to kill selected job(s)'},
     {handler:function(){action('job','delete')},text:'Delete',tooltip:'Click to delete selected job(s)'}
   ];
-  store.setDefaultSort('id','DESC'); // Default sorting
+  store.setDefaultSort('JobID','DESC'); // Default sorting
   tableMngr = {'store':store,'columns':columns,'title':title,'tbar':tbar};
   var t = table(tableMngr);
   t.addListener('cellclick',showMenu);
@@ -85,8 +118,8 @@ function renderData(store){
 
 function setMenuItems(selections){
   if(selections){
-    var id = selections.id;
-    var status = selections.status;
+    var id = selections.JobID;
+    var status = selections.Status;
   }else{
     return
   }
@@ -135,6 +168,11 @@ function AJAXsuccess(value,id,response){
     result = result.replace(/\\/g,"");
     var html = '<iframe id="www_frame" src =' + result + '></iframe>';
     panel = new Ext.Panel({border:0,autoScroll:true,html:html,layout:'fit'})
+    panel.on('resize',function(){
+      var wwwFrame = document.getElementById('www_frame');
+      wwwFrame.height = panel.getInnerHeight();
+      wwwFrame.width = panel.getInnerWidth();
+    })
   }else{
     var reader = {};
     var columns = [];
@@ -148,7 +186,7 @@ function AJAXsuccess(value,id,response){
         {header:'Value',sortable:true,dataIndex:'value',align:'left'}
       ];
     }else if(value == 'LoggingInfo'){
-      reader = new Ext.data.ArrayReader({},[
+     reader = new Ext.data.ArrayReader({},[
         {name:'status'},
         {name:'minorstatus'},
         {name:'applicationstatus'},
@@ -174,6 +212,7 @@ function AJAXsuccess(value,id,response){
       viewConfig:{forceFit:true}
     });
   }
+  id = setTitle(value,id);
   displayWin(panel,id)
 }
 function afterDataLoad(){
