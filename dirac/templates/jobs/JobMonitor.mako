@@ -6,7 +6,7 @@
 ${ h.javascript_include_tag( "/javascripts/lovCombo.js" ) }
 ${ h.javascript_include_tag( "/javascripts/jobs/Lib.js" ) }
 ${ h.javascript_include_tag( "/javascripts/jobs/JobMonitor.js" ) }
-${ h.stylesheet_link_tag( "/javascripts/jobs/lovCombo.css" ) }
+${ h.stylesheet_link_tag( "/stylesheets/lovCombo.css" ) }
 </%def>
 
 <%def name="body()">
