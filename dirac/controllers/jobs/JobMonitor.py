@@ -76,6 +76,9 @@ class JobmonitorController(BaseController):
     callback = {}
     if request.params.has_key("productionID") and len(request.params["productionID"]) > 0:
       callback["productionID"] = str(request.params["productionID"])
+    RPC = getRPCClient("WorkloadManagement/JobMonitoring")
+    result = RPC.getProductionIds()
+    gLogger.info("ProdIDs: ",result)
     RPC = getRPCClient("ProductionManagement/ProductionManager")
     result = RPC.getProductionSummary()
     if result["OK"]:
@@ -83,13 +86,20 @@ class JobmonitorController(BaseController):
       prods = result["Value"]
       if len(prods)>0:
         prod.append([str("All")])
+        tmp = []
         for keys,i in prods.items():
           id = str(int(keys)).zfill(8)
-          prod.append([str(id)])
+          tmp.append(str(id))
+        tmp.sort(reverse=True);
+        for i in tmp:
+          prod.append([str(i)])
       else:
         prod = "Nothing to display"
     else:
       prod = "Error during RPC call"
+    gLogger.info("Before: ",prod)
+#    prod = prod.sort()
+    gLogger.info("After: ",prod)
     callback["prod"] = prod
     RPC = getRPCClient("WorkloadManagement/JobMonitoring")
     result = RPC.getSites()
@@ -116,6 +126,18 @@ class JobmonitorController(BaseController):
     else:
       stat = "Error during RPC call"
     callback["stat"] = stat
+    result = RPC.getMinorStates()
+    if result["OK"]:
+      stat = []
+      if len(result["Value"])>0:
+        stat.append([str("All")])
+        for i in result["Value"]:
+          stat.append([str(i)])
+      else:
+        stat = "Nothing to display"
+    else:
+      stat = "Error during RPC call"
+    callback["minorstat"] = stat
     result = RPC.getApplicationStates()
     if result["OK"]:
       app = []
@@ -168,6 +190,9 @@ class JobmonitorController(BaseController):
       if request.params.has_key("stat") and len(request.params["stat"]) > 0:
         if str(request.params["stat"]) != "All":
           req["Status"] = str(request.params["stat"]).split('::: ')
+      if request.params.has_key("minorstat") and len(request.params["minorstat"]) > 0:
+        if str(request.params["minorstat"]) != "All":
+          req["MinorStatus"] = str(request.params["minorstat"]).split('::: ')
       if request.params.has_key("app") and len(request.params["app"]) > 0:
         if str(request.params["app"]) != "All":
           req["ApplicationStatus"] = str(request.params["app"]).split('::: ')
