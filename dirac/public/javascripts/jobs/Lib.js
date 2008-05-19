@@ -400,6 +400,37 @@ function selectRequest(){
   })
   return number
 }
+function selectMinorStatus(){
+  if(dataSelect.minorstat){
+    var data = dataSelect.minorstat;
+  }else{
+    var data = [['']];
+  }
+  for (var i = 0; i < data.length; i++) {
+    data[i] = [i ,data[i][0]];
+  }
+  var store = new Ext.data.SimpleStore({
+    id:0,
+    fields:[{name:'id',type:'int'},'minorstat'],
+    data:data
+  });
+  var combo = new Ext.ux.form.LovCombo({
+    anchor:'90%',
+    displayField:'minorstat',
+    emptyText:data[0][1],
+    fieldLabel:'Minor status',
+    hiddenName:'minorstat',
+    hideOnSelect:false,
+    id:'minorstatMenu',
+    mode:'local',
+    resizable:true,
+    store:store,
+    triggerAction:'all',
+    typeAhead:true,
+    valueField:'id'
+  })
+  return combo
+}
 function selectOwnerMenu(){
   if(dataSelect.owner){
     var data = dataSelect.owner;
