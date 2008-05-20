@@ -169,11 +169,11 @@ function AJAXsuccess(value,id,response){
     result = result.replace(/"/g,"");
     result = result.replace(/\\/g,"");
     var html = '<iframe id="www_frame" src =' + result + '></iframe>';
-    panel = new Ext.Panel({border:0,autoScroll:true,html:html,layout:'fit'})
+    panel = new Ext.Panel({border:0,autoScroll:false,html:html})
     panel.on('resize',function(){
       var wwwFrame = document.getElementById('www_frame');
-      wwwFrame.height = panel.getInnerHeight();
-      wwwFrame.width = panel.getInnerWidth();
+      wwwFrame.height = panel.getInnerHeight() - 4;
+      wwwFrame.width = panel.getInnerWidth() - 4;
     })
   }else{
     var reader = {};
