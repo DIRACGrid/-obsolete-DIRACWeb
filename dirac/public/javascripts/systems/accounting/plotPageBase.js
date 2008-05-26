@@ -3,8 +3,8 @@ var gMainPanel = false;
 var gPlottingURL = "generatePlot";
 var gHTMLPlottingURL = "generatePlotAndGetHTML";
 
-function initPlotPage(){
-  createLeftSelectPanel( "Query fields",
+function initPlotPage( panelName ){
+  createLeftSelectPanel( panelName,
   						 gPlottingURL,
   						 parseLeftPanelSelections,
   						 serverGeneratedPlots,

@@ -10,7 +10,7 @@ function initDataOpPlots( plotsList, selectionData ){
 }
 
 function renderPage( plotsList, selectionData ){
-  initPlotPage();
+  initPlotPage( "Data Operation plot generation" );
 
   appendToLeftPanel( createComboBox( "plotName", "Plot to generate", "Select a plot", plotsList ) );
 

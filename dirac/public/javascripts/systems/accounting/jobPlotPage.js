@@ -10,7 +10,7 @@ function initJobPlots( plotsList, selectionData ){
 }
 
 function renderPage( plotsList, selectionData ){
-  initPlotPage();
+  initPlotPage( "Jobs history plot generation" );
 
   appendToLeftPanel( createComboBox( "plotName", "Plot to generate", "Select a plot", plotsList ) );
 
@@ -18,15 +18,15 @@ function renderPage( plotsList, selectionData ){
 
   var selWidgets = []
 
-  if( selectionData.User.length > 1 )
+  //if( selectionData.User.length > 1 )
   	selWidgets.push( createMultiselect( "User", "User", selectionData.User ) );
-  else
-  	selWidgets.push( createHidden( "User", selectionData.User[0] ) );
+  //else
+  //	selWidgets.push( createHidden( "User", selectionData.User[0] ) );
 
-  if( selectionData.UserGroup.length > 1 )
+  //if( selectionData.UserGroup.length > 1 )
   	selWidgets.push( createMultiselect( "UserGroup", "User Group", selectionData.UserGroup ) );
-  else
-  	selWidgets.push( createHidden( "UserGroup", selectionData.UserGroup[0] ) );
+  //else
+  //	selWidgets.push( createHidden( "UserGroup", selectionData.UserGroup[0] ) );
 
   selWidgets.push( createMultiselect( "JobGroup", "Job Group", selectionData.JobGroup ) );
   selWidgets.push( createMultiselect( "JobType", "Job Type", selectionData.JobType ) );
