@@ -9,6 +9,7 @@ from pylons.decorators.cache import beaker_cache
 
 from DIRAC import gLogger
 from DIRAC.Core.DISET.AuthManager import AuthManager
+from DIRAC.Core.Security import CS
 
 gAuthManager = AuthManager( "%s/Authorization" % gWebConfig.getWebSection() )
 
@@ -33,16 +34,22 @@ def checkUserCredentials():
     if 'DN' in session:
       del( session[ 'DN' ] )
   #Set the username
-  username = gAuthManager.findUsername( userDN )
-  if not username:
+  retVal = CS.getUsernameForDN( userDN )
+  if not retVal[ 'OK' ]:
     username = "anonymous"
+  else:
+    username = retVal[ 'Value' ]
   gLogger.info( "Got username for user" " => %s for %s" % ( username, userDN ) )
   session[ 'username' ] = username
   #Set the available groups
-  session[ 'availableGroups' ] = gAuthManager.getGroupsForUsername( session[ 'username' ] )
+  retVal = CS.getGroupsForUser( session[ 'username' ] )
+  if not retVal[ 'OK' ]:
+    session[ 'availableGroups' ] = []
+  else:
+    session[ 'availableGroups' ] = retVal[ 'Value' ]
   #Check selected group
   if 'group' in session:
-    if not session[ 'group' ] in session[ 'availableGroups' ]:
+    if session[ 'group' ] not in session[ 'availableGroups' ]:
       del( session[ 'group' ] )
   if 'group' not in session:
     for group in gWebConfig.getDefaultGroups():
@@ -50,7 +57,7 @@ def checkUserCredentials():
         session[ 'group' ] = group
         break
   if 'group' not in session:
-    session[ 'group' ] = "noGroup"
+    session[ 'group' ] = "visitor"
   session.save()
 
 def authorizeAction():
