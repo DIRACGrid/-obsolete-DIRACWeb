@@ -8,7 +8,7 @@ class WebConfig:
     self.webSection = "/Website"
 
   def getDebugDN( self ):
-    return gConfig.getValue( "%s/DebugDN" % self.webSection, "/DC=fake/OU=fake/O=fake/DN=fake" )
+    return gConfig.getValue( "%s/DebugDN" % self.webSection, "" )
 
   def getWebSection( self ):
     return self.webSection
