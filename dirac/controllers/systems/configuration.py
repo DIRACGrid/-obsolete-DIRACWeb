@@ -1,6 +1,7 @@
-# $Header: /tmp/libdirac/tmp.stZoy15380/dirac/DIRAC3/DIRAC/Interfaces/Web/dirac/controllers/systems/configuration.py,v 1.14 2008/05/06 10:31:15 acasajus Exp $
-__RCSID__ = "$Id: configuration.py,v 1.14 2008/05/06 10:31:15 acasajus Exp $"
+# $Header: /tmp/libdirac/tmp.stZoy15380/dirac/DIRAC3/DIRAC/Interfaces/Web/dirac/controllers/systems/configuration.py,v 1.15 2008/06/17 10:10:32 acasajus Exp $
+__RCSID__ = "$Id: configuration.py,v 1.15 2008/06/17 10:10:32 acasajus Exp $"
 
+import types
 import logging
 
 from dirac.lib.base import *
@@ -24,25 +25,7 @@ class ConfigurationController(BaseController):
   maxFileSize = 1024*1024*10 #10MB
 
   def index(self):
-    # Return a rendered template
-    #   return render('/some/template.mako')
-    # or, Return a response
-    return 'Hello World'
-
-  def showHistory( self ):
-    if not authorizeAction():
-      return render( "/error.mako" )
-    rpcClient = getRPCClient( "Configuration/Server" )
-    retVal = rpcClient.getCommitHistory()
-    if retVal[ 'OK' ]:
-      changesList = [ ( entry[1], entry[0] ) for entry in retVal[ 'Value' ] ]
-      changesList.sort()
-      changesList.reverse()
-      c.changes = changesList
-      return render( "/systems/configuration/history.mako" )
-    else:
-      c.error = retVal[ 'Message' ]
-      return render( "/error.mako" )
+    return redirect_to( 'configuration/manageRemoteConfig' )
 
   def __getModificator( self ):
     rpcClient = getRPCClient( gConfig.getValue( "/DIRAC/Configuration/MasterServer", "Configuration/Server" ) )
@@ -91,28 +74,7 @@ class ConfigurationController(BaseController):
         c.link = ( 'resetConfigurationToRemote', "Click here to reset your configuration" )
         gLogger.error( "There was an error with modified configuration %s" % str( e ) )
         return render( "/error.mako" )
-    return render( "/systems/configuration/manageRemote.mako" )
-
-  def uploadUserConfig( self ):
-    return render( "/systems/configuration/uploadUserConfig.mako" )
-
-  def doUploadConfig( self ):
-    file = request.POST[ 'cfgFile' ]
-    if len( file.value ) > self.maxFileSize:
-      c.error = "File size %s is too big" % len( file.value )
-      return render( "/error.mako" )
-    if 'csName' in session:
-      del( session[ 'csName' ] )
-    session[ 'csFilename' ] = file.filename
-    session[ 'cfgData' ] = file.value
-    session.save()
-    return redirect_to( 'manageUserConfig' )
-
-  def manageUserConfig( self ):
-    if not 'csFilename' in session:
-      return redirect_to( 'uploadUserConfig' )
-    c.csName = session[ 'csFilename' ]
-    return render( "/systems/configuration/manageUser.mako" )
+    return render( "/systems/configuration/editGlobalConfig.mako" )
 
   def showTextConfiguration( self ):
     response.headers['Content-type'] = 'text/plain'
@@ -130,27 +92,6 @@ class ConfigurationController(BaseController):
       response.headers['Content-Length'] = len( session[ 'cfgData' ] )
       response.headers['Content-Transfer-Encoding'] = 'Binary'
     return session[ 'cfgData' ]
-
-  def showDiff( self ):
-    if not authorizeAction():
-      return S_ERROR( "You are not authorized to get diff's!! Bad boy!" )
-    fromDate = str( request.POST[ 'fromVersion' ] )
-    toDate = str( request.POST[ 'toVersion' ] )
-    modifier = self.__getModificator()
-    diffGen = modifier.getVersionDiff( fromDate, toDate )
-    c.titles = ( "From version %s" % fromDate, "To version %s" % toDate )
-    c.diffList = self.__generateHTMLDiff( diffGen )
-    return render( "/systems/configuration/diff.mako" )
-
-  def showCurrentDiff( self ):
-    if not authorizeAction():
-      return S_ERROR( "You are not authorized to get diff's!! Bad boy!" )
-    modifier = self.__getModificator()
-    modifier.loadFromBuffer( session[ 'cfgData' ] )
-    diffGen = modifier.showCurrentDiff()
-    c.titles = ( "Server's version", "User's current version" )
-    c.diffList = self.__generateHTMLDiff( diffGen )
-    return render( "/systems/configuration/diff.mako" )
 
   def __generateHTMLDiff( self, diffGen ):
     diffList = []
@@ -176,19 +117,80 @@ class ConfigurationController(BaseController):
         diffList.append( ( "", diffLine[1:], diffLine[1:] ) )
     return diffList
 
-  def rollbackToVersion( self ):
+  def showDiff( self ):
     if not authorizeAction():
       return S_ERROR( "You are not authorized to get diff's!! Bad boy!" )
-    rollbackVersion = str( request.POST[ 'rollbackVersion' ] )
+    fromDate = str( request.POST[ 'fromVersion' ] )
+    toDate = str( request.POST[ 'toVersion' ] )
     modifier = self.__getModificator()
-    retVal = modifier.rollbackToVersion( rollbackVersion )
+    diffGen = modifier.getVersionDiff( fromDate, toDate )
+    c.titles = ( "From version %s" % fromDate, "To version %s" % toDate )
+    c.diffList = self.__generateHTMLDiff( diffGen )
+    return render( "/systems/configuration/diff.mako" )
+
+  def showCurrentDiff( self ):
+    if not authorizeAction():
+      return S_ERROR( "You are not authorized to get diff's!! Bad boy!" )
+    modifier = self.__getModificator()
+    modifier.loadFromBuffer( session[ 'cfgData' ] )
+    diffGen = modifier.showCurrentDiff()
+    c.titles = ( "Server's version", "User's current version" )
+    c.diffList = self.__generateHTMLDiff( diffGen )
+    return render( "/systems/configuration/diff.mako" )
+
+  def __htmlComment( self, rawComment ):
+    commentLines = []
+    commiter = ""
+    rawLines = rawComment.strip().split( "\n" )
+    if rawLines[-1].find( "@@-" ) == 0:
+      commiter = rawLines[-1][3:]
+      rawLines.pop(-1)
+    for line in rawLines:
+      line = line.strip()
+      if not line:
+        continue
+      commentLines.append( line )
+    if commentLines or commiter:
+      return "%s<hr/><small><strong>%s</strong></small>" % ( "<br/>".join( commentLines ), commiter )
+    else:
+      return False
+
+  def showHistory( self ):
+    if not authorizeAction():
+      return render( "/error.mako" )
+    rpcClient = getRPCClient( "Configuration/Server" )
+    retVal = rpcClient.getCommitHistory()
     if retVal[ 'OK' ]:
-      redirect_to( 'showHistory' )
+      changesList = [ ( entry[1], entry[0] ) for entry in retVal[ 'Value' ] ]
+      changesList.sort()
+      changesList.reverse()
+      c.changes = changesList
+      return render( "/systems/configuration/history.mako" )
     else:
       c.error = retVal[ 'Message' ]
       return render( "/error.mako" )
 
-  #AJAX CALLS
+  def uploadUserConfig( self ):
+    return render( "/systems/configuration/uploadUserConfig.mako" )
+
+  def doUploadConfig( self ):
+    file = request.POST[ 'cfgFile' ]
+    if len( file.value ) > self.maxFileSize:
+      c.error = "File size %s is too big" % len( file.value )
+      return render( "/error.mako" )
+    if 'csName' in session:
+      del( session[ 'csName' ] )
+    session[ 'csFilename' ] = file.filename
+    session[ 'cfgData' ] = file.value
+    session.save()
+    return redirect_to( 'manageUserConfig' )
+
+  def manageUserConfig( self ):
+    if not 'csFilename' in session:
+      return redirect_to( 'uploadUserConfig' )
+    c.csName = session[ 'csFilename' ]
+    return render( "/systems/configuration/editUserConfig.mako" )
+
   @jsonify
   def commitConfiguration( self ):
     if not authorizeAction():
@@ -197,17 +199,17 @@ class ConfigurationController(BaseController):
     modifier = self.__getModificator()
     modifier.loadFromBuffer( session[ 'cfgData' ] )
     retDict = modifier.commit()
-    if retDict[ 'OK' ]:
-      return S_OK()
-    return retDict
-
+    if not retDict[ 'OK' ]:
+      return S_ERROR( retDict[ 'Message' ] )
+    return S_OK()
 
   @jsonify
   def expandSection( self ):
     cfgData = CFG()
     cfgData.loadFromBuffer( session[ 'cfgData' ] )
-    sectionPath = str( request.params[ 'section' ] )
-    gLogger.info( "Expanding section" "%s" % sectionPath )
+    parentNodeId = str( request.params[ 'node' ] )
+    sectionPath = str( request.params[ 'nodePath' ] )
+    gLogger.info( "Expanding section", "%s" % sectionPath )
     try:
       sectionCfg = cfgData
       for section in [ section for section in sectionPath.split( "/" ) if not section.strip() == "" ]:
@@ -218,17 +220,27 @@ class ConfigurationController(BaseController):
     gLogger.verbose( "Section to expand %s" % sectionPath )
     retData = []
     for entryName in sectionCfg.listAll():
-      if sectionCfg.isSection( entryName ):
-        retData.append( ( entryName, sectionCfg.getComment( entryName ) ) )
-      else:
-        retData.append( ( entryName, sectionCfg[ entryName ], sectionCfg.getComment( entryName ) ) )
-    return S_OK( retData )
+      id = "%s/%s" % ( parentNodeId, entryName )
+      comment = sectionCfg.getComment( entryName )
+      nodeDef = { 'text' : entryName, 'csName' : entryName, 'csComment' : comment }
+      if not sectionCfg.isSection( entryName ):
+         nodeDef[ 'leaf' ] = True
+         nodeDef[ 'csValue' ] = sectionCfg[ entryName ]
+      #Comment magic
+      htmlC = self.__htmlComment( comment )
+      if htmlC:
+        qtipDict = { 'text' : htmlC }
+        nodeDef[ 'qtipCfg' ] = qtipDict
+      retData.append( nodeDef )
+    return retData
 
   @jsonify
   def setOptionValue( self ):
-    optionPath = request.params[ 'path' ]
-    optionValue = request.params[ 'value' ]
-
+    try:
+      optionPath = str( request.params[ 'path' ] )
+      optionValue = str( request.params[ 'value' ] )
+    except Exception, e:
+      return S_ERROR( "Can't decode path or value: %s" % str(e) )
     modCfg = self.__getModificator()
     modCfg.loadFromBuffer( session[ 'cfgData' ] )
     modCfg.setOptionValue( optionPath, optionValue )
@@ -242,84 +254,145 @@ class ConfigurationController(BaseController):
 
   @jsonify
   def setComment( self ):
-    keyPath = request.params[ 'path' ]
-    commentValue = request.params[ 'value' ]
+    try:
+      path = str( request.params[ 'path' ] )
+      value = str( request.params[ 'value' ] )
+    except Exception, e:
+      return S_ERROR( "Can't decode path or value: %s" % str(e) )
 
     modCfg = self.__getModificator()
     modCfg.loadFromBuffer( session[ 'cfgData' ] )
-    modCfg.setComment( keyPath, commentValue )
-    gLogger.info( "Set comment", "%s = %s" % ( keyPath, commentValue ) )
+    modCfg.setComment( path, value )
+    gLogger.info( "Set comment", "%s = %s" % ( path, value ) )
     session[ 'cfgData' ] = str( modCfg )
     session.save()
-    return S_OK( modCfg.getComment( keyPath ) )
+    return S_OK( modCfg.getComment( path ) )
 
   @jsonify
-  def moveKeyInside( self ):
-    originPath = request.params[ 'entry' ]
-    destPath = request.params[ 'destination' ]
+  def moveNode( self ):
+    try:
+      nodePath = request.params[ 'nodePath' ]
+      destinationParentPath = request.params[ 'parentPath' ]
+      beforeOfIndex = int( request.params[ 'beforeOfIndex' ] )
+    except Exception, e:
+      return S_ERROR( "Can't decode parameter: %s" % str(e) )
 
+    gLogger.info( "Moving %s under %s before pos %s" % ( nodePath, destinationParentPath, beforeOfIndex ) )
     cfgData = CFG()
     cfgData.loadFromBuffer( session[ 'cfgData' ] )
-
-    originDict = cfgData.getRecursive( originPath )
-    if not originDict:
+    nodeDict = cfgData.getRecursive( nodePath )
+    if not nodeDict:
       return S_ERROR( "Moving entity does not exist" )
-    originParentDict = cfgData.getRecursive( originPath, -1 )
-    destDict = cfgData.getRecursive( destPath )
-    if type( destDict ) == type ( "" ):
+    oldParentDict = cfgData.getRecursive( nodePath, -1 )
+    newParentDict = cfgData.getRecursive( destinationParentPath )
+    if type( newParentDict ) == types.StringType:
       return S_ERROR( "Destination is not a section" )
-    if not destDict:
+    if not newParentDict:
       return S_ERROR( "Destination does not exist" )
-    if destDict['value'].existsKey( originDict['key'] ):
+    if not newParentDict == oldParentDict and newParentDict['value'].existsKey( nodeDict['key'] ):
       return S_ERROR( "Another entry with the same name already exists" )
+
     try:
-      originParentDict[ 'value' ].deleteKey( originDict[ 'key' ] )
-      destDict[ 'value' ].addKey( **originDict )
+      brothers = newParentDict[ 'value' ].listAll()
+      if beforeOfIndex < len( brothers ):
+        nodeDict[ 'beforeKey' ] = brothers[ beforeOfIndex ]
+        print "beforekey", nodeDict[ 'beforeKey' ]
+      else:
+        print "last pos"
+      oldParentDict[ 'value' ].deleteKey( nodeDict[ 'key' ] )
+      newParentDict[ 'value' ].addKey( **nodeDict )
     except Exception, e:
-      return S_ERROR( "Can't move inside %s: %s" % ( destPath, str( e ) ) )
+      return S_ERROR( "Can't move node: %s" % str( e ))
+
     session[ 'cfgData' ] = str( cfgData )
     session.save()
     return S_OK()
 
   @jsonify
-  def moveKeyAfter( self ):
-    originPath = str( request.params[ 'entry' ] )
-    destPath = str( request.params[ 'destination' ] )
-
-    cfgData = CFG()
-    cfgData.loadFromBuffer( session[ 'cfgData' ] )
-
-    originDict = cfgData.getRecursive( originPath )
-    if not originDict:
-      return S_ERROR( "Moving entity does not exist" )
-    originParentDict = cfgData.getRecursive( originPath, -1 )
-    destDict = cfgData.getRecursive( destPath )
-    if not destDict:
-      return S_ERROR( "Destination does not exist" )
-    destParentDict = cfgData.getRecursive( destPath, -1 )
-    originParentPath = "/".join( originPath.split( "/" )[:-1] )
-    destParentPath = "/".join( destPath.split( "/" )[:-1] )
-    if originParentPath != destParentPath and \
-        destParentDict['value'].existsKey( originDict['key'] ):
-      return S_ERROR( "Another entry with the same name already exists" )
+  def copyKey( self ):
     try:
-      originParentDict[ 'value' ].deleteKey( originDict[ 'key' ] )
-      destParentDict[ 'value' ].addKey( beforeKey = destDict[ 'key' ], **originDict )
+      originalPath = str( request.params[ 'path' ] ).strip()
+      newName = str( request.params[ 'newName' ] ).strip()
     except Exception, e:
-      return S_ERROR( "Can't move after %s: %s" % ( destPath, str( e ) ) )
-    session[ 'cfgData' ] = str( cfgData )
-    session.save()
-    return S_OK()
+      return S_ERROR( "Can't decode parameter: %s" % str(e) )
+    try:
+      if len( originalPath ) == 0:
+        return S_ERROR( "Parent path is not valid" )
+      if len( newName ) == 0:
+        return S_ERROR( "Put any name for the new key!" )
+      modificator = self.__getModificator()
+      modificator.loadFromBuffer( session[ 'cfgData' ] )
+      if modificator.copyKey( originalPath, newName ):
+        session[ 'cfgData' ] = str( modificator )
+        session.save()
+        pathList = List.fromChar( originalPath, "/" )
+        newPath = "/%s/%s" % ( "/".join( pathList[:-1] ), newName )
+        if modificator.existsSection( newPath ):
+          return S_OK( ( newName, modificator.getComment( newPath ) ) )
+        else:
+          return S_OK( ( newName, modificator.getValue( newPath ), modificator.getComment( newPath ) ) )
+      else:
+        return S_ERROR( "Path can't be created. Exists already?" )
+    except Exception, e:
+      raise
+      return S_ERROR( "Can't create path: %s" % str( e ) )
+
+  @jsonify
+  def renameKey( self ):
+    try:
+      keyPath = str( request.params[ 'path' ] ).strip()
+      newName = str( request.params[ 'newName' ] ).strip()
+    except Exception, e:
+      return S_ERROR( "Can't decode parameter: %s" % str(e) )
+    try:
+      if len( keyPath ) == 0:
+        return S_ERROR( "Entity path is not valid" )
+      if len( newName ) == 0:
+        return S_ERROR( "Put any name for the entity!" )
+      modificator = self.__getModificator()
+      modificator.loadFromBuffer( session[ 'cfgData' ] )
+      if modificator.existsOption( keyPath ) or modificator.existsSection( keyPath ) :
+        if modificator.renameKey( keyPath, newName ):
+          session[ 'cfgData' ] = str( modificator )
+          session.save()
+          return S_OK()
+        else:
+          return S_ERROR( "There was a problem while renaming" )
+      else:
+        return S_ERROR( "Path doesn't exist" )
+    except Exception, e:
+      return S_ERROR( "Can't rename entity: %s" % str( e ) )
+
+  @jsonify
+  def deleteKey( self ):
+    try:
+      keyPath = str( request.params[ 'path' ] ).strip()
+    except Exception, e:
+      return S_ERROR( "Can't decode parameter: %s" % str(e) )
+    try:
+      if len( keyPath ) == 0:
+        return S_ERROR( "Entity path is not valid" )
+      modificator = self.__getModificator()
+      modificator.loadFromBuffer( session[ 'cfgData' ] )
+      if modificator.removeOption( keyPath ) or modificator.removeSection( keyPath ):
+        session[ 'cfgData' ] = str( modificator )
+        session.save()
+        return S_OK()
+      else:
+        return S_ERROR( "Entity doesn't exist" )
+    except Exception, e:
+      return S_ERROR( "Can't rename entity: %s" % str( e ) )
 
   @jsonify
   def createSection( self ):
     try:
-      parentPath = str( request.params[ 'path' ] )
-      parentPath = parentPath.strip()
+      parentPath = str( request.params[ 'path' ] ).strip()
+      sectionName = str( request.params[ 'name' ] ).strip()
+    except Exception, e:
+      return S_ERROR( "Can't decode parameter: %s" % str(e) )
+    try:
       if len( parentPath ) == 0:
         return S_ERROR( "Parent path is not valid" )
-      sectionName = str( request.params[ 'sectionName' ] )
-      sectionName = sectionName.strip()
       if len( sectionName ) == 0:
         return S_ERROR( "Put any name for the section!" )
       modificator = self.__getModificator()
@@ -329,7 +402,12 @@ class ConfigurationController(BaseController):
       if modificator.createSection( sectionPath ):
         session[ 'cfgData' ] = str( modificator )
         session.save()
-        return S_OK( ( sectionName, modificator.getComment( sectionPath ) ) )
+        nD = { 'text' : sectionName, 'csName' : sectionName, 'csComment' : modificator.getComment( sectionPath ) }
+        htmlC = self.__htmlComment( nD[ 'csComment' ] )
+        if htmlC:
+          qtipDict = { 'text' : htmlC }
+          nD[ 'qtipCfg' ] = qtipDict
+        return S_OK( nD )
       else:
         return S_ERROR( "Section can't be created. It already exists?" )
     except Exception, e:
@@ -338,18 +416,18 @@ class ConfigurationController(BaseController):
   @jsonify
   def createOption( self ):
     try:
-      parentPath = str( request.params[ 'path' ] )
-      parentPath = parentPath.strip()
+      parentPath = str( request.params[ 'path' ] ).strip()
+      optionName = str( request.params[ 'name' ] ).strip()
+      optionValue = str( request.params[ 'value' ] ).strip()
+    except Exception, e:
+      return S_ERROR( "Can't decode parameter: %s" % str(e) )
+    try:
       if len( parentPath ) == 0:
         return S_ERROR( "Parent path is not valid" )
-      optionName = str( request.params[ 'optionName' ] )
-      optionName = optionName.strip()
       if len( optionName ) == 0:
         return S_ERROR( "Put any name for the option!" )
       if "/" in optionName:
         return S_ERROR( "Options can't have a / in the name" )
-      optionValue = str( request.params[ 'optionValue' ] )
-      optionValue = optionValue.strip()
       if len( optionValue ) == 0:
         return S_ERROR( "Options should have values!" )
       modificator = self.__getModificator()
@@ -365,74 +443,3 @@ class ConfigurationController(BaseController):
         return S_ERROR( "Option can't be created. It already exists?" )
     except Exception, e:
       return S_ERROR( "Can't create option: %s" % str( e ) )
-
-  @jsonify
-  def renameKey( self ):
-    try:
-      keyPath = str( request.params[ 'path' ] )
-      keyPath = keyPath.strip()
-      if len( keyPath ) == 0:
-        return S_ERROR( "Entity path is not valid" )
-      newName = str( request.params[ 'newName' ] )
-      newName = newName.strip()
-      if len( newName ) == 0:
-        return S_ERROR( "Put any name for the entity!" )
-      modificator = self.__getModificator()
-      modificator.loadFromBuffer( session[ 'cfgData' ] )
-      if modificator.existsOption( keyPath ) or modificator.existsSection( keyPath ) :
-        if modificator.renameKey( keyPath, newName ):
-          session[ 'cfgData' ] = str( modificator )
-          session.save()
-          return S_OK()
-        else:
-          return S_ERROR( "There was a problem while renaming" )
-      else:
-        return S_ERROR( "Entity doesn't exist" )
-    except Exception, e:
-      return S_ERROR( "Can't rename entity: %s" % str( e ) )
-
-  @jsonify
-  def deleteKey( self ):
-    try:
-      keyPath = str( request.params[ 'path' ] )
-      keyPath = keyPath.strip()
-      if len( keyPath ) == 0:
-        return S_ERROR( "Entity path is not valid" )
-      modificator = self.__getModificator()
-      modificator.loadFromBuffer( session[ 'cfgData' ] )
-      if modificator.removeOption( keyPath ) or modificator.removeSection( keyPath ):
-        session[ 'cfgData' ] = str( modificator )
-        session.save()
-        return S_OK()
-      else:
-        return S_ERROR( "Entity doesn't exist" )
-    except Exception, e:
-      return S_ERROR( "Can't rename entity: %s" % str( e ) )
-
-  @jsonify
-  def copyKey( self ):
-    try:
-      originalPath = str( request.params[ 'path' ] )
-      originalPath = originalPath.strip()
-      if len( originalPath ) == 0:
-        return S_ERROR( "Parent path is not valid" )
-      newName = str( request.params[ 'newName' ] )
-      newName = newName.strip()
-      if len( newName ) == 0:
-        return S_ERROR( "Put any name for the new key!" )
-      modificator = self.__getModificator()
-      modificator.loadFromBuffer( session[ 'cfgData' ] )
-      if modificator.copyKey( originalPath, newName ):
-        session[ 'cfgData' ] = str( modificator )
-        session.save()
-        pathList = List.fromChar( originalPath, "/" )
-        newPath = "/%s/%s" % ( "/".join( pathList[:-1] ), newName )
-        if modificator.existsSection( newPath ):
-          return S_OK( ( newName, modificator.getComment( newPath ) ) )
-        else:
-          return S_OK( ( newName, modificator.getValue( newPath ), modificator.getComment( newPath ) ) )
-      else:
-        return S_ERROR( "Section can't be created. It already exists?" )
-    except Exception, e:
-      raise
-      return S_ERROR( "Can't create section: %s" % str( e ) )

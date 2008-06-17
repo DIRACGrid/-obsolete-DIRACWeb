@@ -43,6 +43,6 @@ ${ h.javascript_include_tag( "/javascripts/systems/configuration/editConfigurati
 
 <%def name="body()">
 <script type="text/javascript">
-  initEditConfig( '${c.csName}', true );
+  initEditConfig( '${c.csName}', false );
 </script>
 </%def>
