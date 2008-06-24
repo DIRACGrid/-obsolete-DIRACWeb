@@ -39,7 +39,7 @@ class ProductionmonitorController(BaseController):
     if result["OK"]:
       result = result["Value"]
       c.result = []
-      if len(result) > 1:
+      if len(result) > 0:
         for keys,i in result.items():
           id = str(int(keys)).zfill(8)
           DN = i["AuthorDN"]
