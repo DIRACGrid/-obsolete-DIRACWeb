@@ -13,15 +13,16 @@ function renderPage()
 		root : 'proxies',
 		totalProperty : 'numProxies',
 		id : 'proxyid',
-		fields : [ 'username', 'DN', 'group', 'expiration', 'persistent' ]
+		fields : [ 'username', 'UserDN', 'UserGroup', 'ExpirationTime', 'PersistentFlag' ]
     });
 
 	var store = new Ext.data.GroupingStore({
 				reader: reader,
 				url : "getProxiesList",
 				autoLoad : true,
-				sortInfo: { field: 'DN', direction: 'ASC' },
-            groupField : 'username'
+				sortInfo: { field: 'UserDN', direction: 'ASC' },
+            groupField : 'username',
+            listeners : { beforeload : cbStoreBeforeLoad },
         		});
 
 	gMainGrid = new Ext.grid.GridPanel( {
@@ -32,17 +33,19 @@ function renderPage()
             startCollapsed : false,
         }),
 		columns: [
-            { id : 'check', header : '', width : 30, dataIndex: 'proxyid', renderer : function(id){return '<input id="' + id + '" type="checkbox"/>';} },
-            { header: "User", width: 100, sortable: true, dataIndex: 'username'},
-            { header: "DN", width: 350, sortable: true, dataIndex: 'DN'},
-            { header: "Group", width: 100, sortable: true, dataIndex: 'group'},
-            { header: "Expiration date", width: 150, sortable: true, dataIndex: 'expiration'},
-            { header: "Persistent", width: 100, sortable: true, dataIndex: 'persistent' },
+            { id : 'check', header : '', width : 30, dataIndex: 'proxyid', renderer : renderSelect },
+            { header: "User", width: 100, sortable: false, dataIndex: 'username'},
+            { header: "DN", width: 350, sortable: true, dataIndex: 'UserDN'},
+            { header: "Group", width: 100, sortable: true, dataIndex: 'UserGroup'},
+            { header: "Expiration date", width: 150, sortable: true, dataIndex: 'ExpirationTime'},
+            { header: "Persistent", width: 100, sortable: true, dataIndex: 'PersistentFlag' },
         ],
       region : 'center',
    	tbar : [
    				{ handler:function(){ toggleAll(true) }, text:'Select all', width:150, tooltip:'Click to select all rows' },
     				{ handler:function(){ toggleAll(false) }, text:'Select none', width:150, tooltip:'Click to select all rows' },
+    				'->',
+      			{ handler:function(){ cbDeleteSelected() }, text:'Delete', width:150, tooltip:'Click to delete all selected proxies' },
    			],
 		bbar: new Ext.PagingToolbar({
 					pageSize: 25,
@@ -50,13 +53,18 @@ function renderPage()
 					displayInfo: true,
 					displayMsg: 'Displaying entries {0} - {1} of {2}',
 					emptyMsg: "No entries to display",
-					items:['-','Items displaying per page: ', numberItemsSelector()],
-        })
+					items:['-','Items displaying per page: ', createNumItemsSelector() ],
+	        }),
+	   listeners : { sortchange : cbMainGridSortChange },
 
 		} );
 	renderInMainViewport( [gMainGrid] );
 }
 
+function renderSelect( value, metadata, record, rowIndex, colIndex, store )
+{
+	return '<input id="' + record.id + '" type="checkbox"/>';
+}
 
 function toggleAll( select )
 {
@@ -84,7 +92,24 @@ function getSelectedCheckboxes()
    return items;
 }
 
-function numberItemsSelector(){
+function cbStoreBeforeLoad( store, params )
+{
+	var sortState = store.getSortState()
+	var bb = gMainGrid.getBottomToolbar();
+	store.baseParams = { 'sortField' : sortState.field,
+							   'sortDirection' : sortState.direction,
+							   'limit' : bb.pageSize,
+							 };
+}
+
+function cbMainGridSortChange( mainGrid, params )
+{
+	var store = mainGrid.getStore();
+	store.setDefaultSort( params.field, params.direction );
+	store.reload();
+}
+
+function createNumItemsSelector(){
 	var store = new Ext.data.SimpleStore({
 		fields:['number'],
 		data:[[25],[50],[100],[150]]
@@ -112,9 +137,40 @@ function numberItemsSelector(){
 			if( bb.pageSize != combo.value )
 			{
 				bb.pageSize = combo.value;
-				gMainGrid.store.load( { params : { start : 0, limit : bb.pageSize } } );
+				var store = gMainGrid.getStore()
+				store.load( { params : { start : 0, limit : bb.pageSize } } );
 			}
 		}
  	});
 	return combo;
+}
+
+
+function cbDeleteSelected()
+{
+	var selIds = getSelectedCheckboxes()
+	if( window.confirm( "Are you sure you want to delete selected proxies?" ) )
+		Ext.Ajax.request({
+			url : "deleteProxies",
+			success : ajaxCBServerDeleteSelected,
+			failure : ajaxFailure,
+			params : { idList : Ext.util.JSON.encode( selIds ) },
+		});
+}
+
+function ajaxCBServerDeleteSelected( ajaxResponse, reqArguments )
+{
+	var retVal = Ext.util.JSON.decode( ajaxResponse.responseText );
+	if( ! retVal.OK )
+	{
+		alert( "Failed to delete proxies: " + retVal.Message );
+	}
+	else
+		alert( "Deleted " + retVal.Value + " proxies" );
+	gMainGrid.getStore().reload();
+}
+
+function ajaxFailure( ajaxResponse, reqArguments )
+{
+	alert( "Error in AJAX request : " + ajaxResponse.responseText );
 }
