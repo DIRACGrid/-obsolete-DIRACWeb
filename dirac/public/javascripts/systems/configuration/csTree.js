@@ -11,8 +11,6 @@ function createCSTree( rootNodeName )
 		listeners : {
 			beforeload : function cbPrepareNodePath( tL, node )
 				{
-					console.log( tL );
-					console.log( node );
 					tL.baseParams.nodePath = getNodePath( node );
 				}
 		},
@@ -206,7 +204,6 @@ function cbNodeEditKeyPressed( keyEvent, editHTML, node )
 {
 	if( keyEvent.getKey() == keyEvent.ENTER )
 	{
-		console.log( editHTML.value );
 		ajaxSetOptionValue( node, editHTML.value );
 	}
 }

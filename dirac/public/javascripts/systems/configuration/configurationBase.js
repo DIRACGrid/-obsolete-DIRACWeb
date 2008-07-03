@@ -37,8 +37,3 @@ function createActionPanel( panelTitle, actionsList )
     });
     return actionPanel;
 }
-
-function logconsole( msg )
-{
-	if( console ) console.log( msg );
-}
