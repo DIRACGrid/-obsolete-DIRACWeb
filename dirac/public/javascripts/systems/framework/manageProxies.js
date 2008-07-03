@@ -37,7 +37,7 @@ function renderPage()
             { header: "User", width: 100, sortable: false, dataIndex: 'username'},
             { header: "DN", width: 350, sortable: true, dataIndex: 'UserDN'},
             { header: "Group", width: 100, sortable: true, dataIndex: 'UserGroup'},
-            { header: "Expiration date", width: 150, sortable: true, dataIndex: 'ExpirationTime'},
+            { header: "Expiration date (UTC)", width: 150, sortable: true, dataIndex: 'ExpirationTime'},
             { header: "Persistent", width: 100, sortable: true, dataIndex: 'PersistentFlag' },
         ],
       region : 'center',

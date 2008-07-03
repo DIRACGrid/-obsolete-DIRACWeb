@@ -2,6 +2,7 @@ import logging
 
 from dirac.lib.base import *
 from dirac.lib.diset import getRPCClient
+from dirac.lib.credentials import authorizeAction
 import simplejson
 
 from DIRAC import S_OK, S_ERROR
@@ -19,6 +20,11 @@ class FrameworkController(BaseController):
 
   def manageProxies(self):
     return render(  "/systems/framework/manageProxies.mako" )
+
+  def showProxyActionLogs(self):
+    if not authorizeAction():
+      return render( "/error.mako" )
+    return render(  "/systems/framework/showProxyActionLog.mako" )
 
   @jsonify
   def getProxiesList(self):
@@ -80,3 +86,52 @@ class FrameworkController(BaseController):
     if 'rpcStub' in retVal:
       del( retVal[ 'rpcStub' ] )
     return retVal
+
+  @jsonify
+  def getProxyActionList(self):
+    try:
+      start = int( request.params[ 'start' ] )
+    except:
+      start = 0
+    try:
+      limit = int( request.params[ 'limit' ] )
+    except:
+      limit = 0
+    try:
+      sortField = str( request.params[ 'sortField' ] )
+      sortDir = str( request.params[ 'sortDirection' ] )
+      sort = [ ( sortField, sortDir ) ]
+    except:
+      sort = []
+    selDict = {}
+    try:
+      for i in ( 'afterDate', 'beforeDate' ):
+        if i in request.params:
+          selDict[ i ] = str( request.params[ i] )
+    except:
+      pass
+    try:
+      filters = str( request.params[ 'filters' ] )
+      for filter in filters.split( "|" ):
+        fL = filter.split( "=" )
+        key = fL[0].strip()
+        if key not in selDict:
+          selDict[ key ] = []
+        values = "=".join( fL[1:] )
+        for value in values.split( "," ):
+          selDict[ key ].append( value.strip() )
+    except Exception, e:
+      pass
+    rpcClient = getRPCClient( "Framework/ProxyManager" )
+    retVal = rpcClient.getLogContents( selDict, sort, start, limit )
+    if not retVal[ 'OK' ]:
+      return retVal
+    svcData = retVal[ 'Value' ]
+    data = { 'numActions' : svcData[ 'TotalRecords' ], 'actions' : [] }
+    dnMap = {}
+    for record in svcData[ 'Records' ]:
+      dd = { 'actionid': str(record) }
+      for i in range(len( svcData[ 'ParameterNames' ])):
+        dd[ svcData[ 'ParameterNames' ][i] ] = str( record[i] )
+      data[ 'actions' ].append( dd )
+    return data
