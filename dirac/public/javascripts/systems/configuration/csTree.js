@@ -88,14 +88,12 @@ function createCSTree( rootNodeName )
     	id:'value-panel',
     	region : 'east',
     	collapsible: true,
-    	title : "Value for option",
+    	title : "Helper panel",
     	width:300,
     	minWidth: 150,
     	border: false,
-    	baseCls:'x-plain',
     	autoScroll : true,
     	collapsed : true,
-    	//hidden : true,
 		onSubmit : Ext.emptyFn,
 		submit : function(){},
 		items : [
@@ -103,7 +101,7 @@ function createCSTree( rootNodeName )
 					 	id : 'valueArea',
 					 	hideLabel : true,
 					 	grow : true,
-					 	width : 290,
+					 	width : '97%',
 					 }
 					],
 		buttons : [ { text: 'Submit',
@@ -116,7 +114,6 @@ function createCSTree( rootNodeName )
                   },
                   { text : 'Cancel',
                     handler : function( e ) {
-                    		gValuePanel.disable();
                     		gValuePanel.collapse( false );
                   	},
                   }
@@ -131,10 +128,6 @@ function createCSTree( rootNodeName )
 		gTreePanel.body.on( "contextmenu", function(e){e.preventDefault(); return false;} );
 		} );
 	gTreePanel.on( "contextmenu", cbShowContextMenu );
-	gValuePanel.on( "render", function( e ){
-			gValuePanel.disable();
-		} );
-
 
 	return [ gTreePanel, gValuePanel ];
 }
@@ -332,7 +325,6 @@ function cbFormExecuteAction( menuItem, clickEvent )
 			ajaxSetComment( node, value );
 			break;
 	}
-	gValuePanel.disable();
 	gValuePanel.collapse( false );
 }
 
@@ -345,10 +337,9 @@ function cbMenuSetOptionValue( menuItem, clickEvent )
 	gValuePanel.csNode = node;
 	gValuePanel.csValue = stringToList( node.attributes.csValue ).join( "\n" );
 	gValuePanel.csPath = getNodePath( node );
-	gValuePanel.setTitle( "Value for " + gValuePanel.csPath );
+	gValuePanel.setTitle( "Value for <br/>" + gValuePanel.csPath );
 	gValuePanel.getComponent( 'valueArea' ).setValue( gValuePanel.csValue );
 	gValuePanel.csAction = "setValue";
-	gValuePanel.enable();
 	gValuePanel.expand( false );
 }
 
@@ -358,7 +349,7 @@ function cbMenuSetCommentValue( menuItem, clickEvent )
 	gValuePanel.csNode = node;
 	gValuePanel.csValue = commentToList( node.attributes.csComment ).join( "\n" );
 	gValuePanel.csPath = getNodePath( node );
-	gValuePanel.setTitle( "Comment for" + gValuePanel.csPath );
+	gValuePanel.setTitle( "Comment for <br/>" + gValuePanel.csPath );
 	gValuePanel.getComponent( 'valueArea' ).setValue( gValuePanel.csValue );
 	gValuePanel.csAction = "setComment";
 	gValuePanel.enable();
