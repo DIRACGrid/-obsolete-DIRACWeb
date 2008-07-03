@@ -1,8 +1,9 @@
-# $Header: /tmp/libdirac/tmp.stZoy15380/dirac/DIRAC3/DIRAC/Interfaces/Web/dirac/controllers/systems/configuration.py,v 1.15 2008/06/17 10:10:32 acasajus Exp $
-__RCSID__ = "$Id: configuration.py,v 1.15 2008/06/17 10:10:32 acasajus Exp $"
+# $Header: /tmp/libdirac/tmp.stZoy15380/dirac/DIRAC3/DIRAC/Interfaces/Web/dirac/controllers/systems/configuration.py,v 1.16 2008/07/03 15:41:00 acasajus Exp $
+__RCSID__ = "$Id: configuration.py,v 1.16 2008/07/03 15:41:00 acasajus Exp $"
 
 import types
 import logging
+import simplejson
 
 from dirac.lib.base import *
 from pylons.controllers.util import redirect_to
@@ -120,8 +121,12 @@ class ConfigurationController(BaseController):
   def showDiff( self ):
     if not authorizeAction():
       return S_ERROR( "You are not authorized to get diff's!! Bad boy!" )
-    fromDate = str( request.POST[ 'fromVersion' ] )
-    toDate = str( request.POST[ 'toVersion' ] )
+    try:
+      fromDate = str( request.params[ 'fromVersion' ] )
+      toDate = str( request.params[ 'toVersion' ] )
+    except Exception, e:
+      c.error = "Can't decode params: %s" % e
+      return render( "/error.mako" )
     modifier = self.__getModificator()
     diffGen = modifier.getVersionDiff( fromDate, toDate )
     c.titles = ( "From version %s" % fromDate, "To version %s" % toDate )
@@ -158,14 +163,15 @@ class ConfigurationController(BaseController):
   def showHistory( self ):
     if not authorizeAction():
       return render( "/error.mako" )
-    rpcClient = getRPCClient( "Configuration/Server" )
+    rpcClient = getRPCClient( gConfig.getValue( "/DIRAC/Configuration/MasterServer", "Configuration/Server" ) )
     retVal = rpcClient.getCommitHistory()
     if retVal[ 'OK' ]:
-      changesList = [ ( entry[1], entry[0] ) for entry in retVal[ 'Value' ] ]
-      changesList.sort()
-      changesList.reverse()
-      c.changes = changesList
-      return render( "/systems/configuration/history.mako" )
+      cDict = { 'numVersions' : 0, 'versions' : [] }
+      for entry in retVal[ 'Value' ]:
+        cDict[ 'numVersions' ] += 1
+        cDict[ 'versions' ].append( { 'version' : entry[1], 'commiter' : entry[0] } )
+      c.versions = simplejson.dumps( cDict )
+      return render( "/systems/configuration/showHistory.mako" )
     else:
       c.error = retVal[ 'Message' ]
       return render( "/error.mako" )
@@ -190,6 +196,22 @@ class ConfigurationController(BaseController):
       return redirect_to( 'uploadUserConfig' )
     c.csName = session[ 'csFilename' ]
     return render( "/systems/configuration/editUserConfig.mako" )
+
+  def rollbackToVersion( self ):
+    if not authorizeAction():
+      return S_ERROR( "You are not authorized to get diff's!! Bad boy!" )
+    try:
+      rollbackVersion = str( request.params[ 'rollbackVersion' ] )
+    except Exception, e:
+      c.error = "Can't decode params: %s" % e
+      return render( "/error.mako" )
+    modifier = self.__getModificator()
+    retVal = modifier.rollbackToVersion( rollbackVersion )
+    if retVal[ 'OK' ]:
+      redirect_to( 'showHistory' )
+    else:
+      c.error = retVal[ 'Message' ]
+      return render( "/error.mako" )
 
   @jsonify
   def commitConfiguration( self ):
