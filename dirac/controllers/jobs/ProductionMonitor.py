@@ -23,7 +23,7 @@ class ProductionmonitorController(BaseController):
   def display(self):
     pagestart = time()
     c.select = self.__getSelectionData()
-    gLogger.info("\033[0;31mJOB INDEX REQUEST:\033[0m %s" % (time() - pagestart))
+    gLogger.info("\033[0;31mPRODUCTION INDEX REQUEST:\033[0m %s" % (time() - pagestart))
     return render("jobs/ProductionMonitor.mako")
 ################################################################################
   @jsonify
@@ -31,10 +31,8 @@ class ProductionmonitorController(BaseController):
     pagestart = time()
     RPC = getRPCClient("ProductionManagement/ProductionManager")
 #    result = self.__request()
-#    gLogger.info("- REQUEST:",result)
-#    gLogger.info("PageNumber:",pageNumber)
-#    gLogger.info("NOJ:",numberOfJobs)
     result = RPC.getProductionSummary()
+    gLogger.info("- REQUEST:",result)
     gLogger.info("CALL RESULT:",result["Value"])
     if result["OK"]:
       result = result["Value"]
@@ -174,7 +172,7 @@ class ProductionmonitorController(BaseController):
       return self.__actProduction(id,"stop")
     elif request.params.has_key("deleted") and len(request.params["delete"]) > 0:
       id = str(request.params["delete"])
-      return self.__actProduction(id,"del")
+      return self.__actProduction(id,"delet")
     elif request.params.has_key("log") and len(request.params["log"]) > 0:
       id = str(request.params["log"])
       return self.__logProduction(id)
@@ -210,19 +208,26 @@ class ProductionmonitorController(BaseController):
     return c.result
 ################################################################################
   def __actProduction(self,prodid,cmd):
-    id = int(prodid)
+    
+    prodid = prodid.split(",")
     RPC = getRPCClient("ProductionManagement/ProductionManager")
-    if cmd == "del":
-      result = RPC.deleteTransformation(id)
-    elif cmd == "start":
-      result = RPC.setTransformationStatus(id,"Active")
-    elif cmd == "stop":
-      result = RPC.setTransformationStatus(id,"Stopped")
-    print result
-    if result["OK"]:
-      c.result = ""
-      c.result = {"success":"true","result":c.result}
-    else:
-      c.result = {"success":"false","error":result["Message"]}
-    gLogger.info(cmd,id)
+    c.result = []
+    for i in prodid:
+      try:
+        id = int(i)
+        if cmd == "delet":
+          result = RPC.deleteTransformation(id)
+        elif cmd == "start":
+          result = RPC.setTransformationStatus(id,"Active")
+        elif cmd == "stop":
+          result = RPC.setTransformationStatus(id,"Stopped")
+      except:
+        result["Message"] = "Unable to convert given ID %s to production ID" % i
+      if result["OK"]:
+        result = "ProdID: %s %sed successful" % (i,cmd)
+      else:
+        result = "ProdID: %s failed due the reason: %s" % (i,result["Message"])
+      c.result.append(result)
+    c.result = {"success":"true","showResult":c.result}
+    gLogger.info(cmd,prodid)
     return c.result
