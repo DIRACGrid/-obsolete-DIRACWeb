@@ -18,8 +18,6 @@ function renderPage()
 		fields : [ "Action", "IssuerDN", "IssuerGroup", "TargetDN", "TargetGroup", "Timestamp" ]
     });
 
-
-
 	var store = new Ext.data.Store({
 				reader: reader,
 				url : "getProxyActionList",
