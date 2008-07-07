@@ -16,13 +16,9 @@ class AccountingplotsController(BaseController):
   def __getUniqueKeyValues( self, typeName ):
     rpcClient = getRPCClient( "Accounting/ReportGenerator" )
     retVal = rpcClient.listUniqueKeyValues( typeName )
-    if not retVal[ 'OK' ]:
-      return retVal
-    rawValuesDict = retVal[ 'Value' ]
-    valuesDict = {}
-    for keyName in rawValuesDict:
-      valuesDict[ keyName ] = [ tup[0] for tup in rawValuesDict[ keyName ] ]
-    return S_OK( valuesDict )
+    if 'rpcStub' in retVal:
+      del( retVal[ 'rpcStub' ] )
+    return retVal
 
   def index(self):
     # Return a rendered template
