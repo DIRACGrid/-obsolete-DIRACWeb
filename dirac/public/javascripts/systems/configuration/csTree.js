@@ -590,5 +590,5 @@ function serverCommit( ajaxResponse, reqArguments )
 		return;
 	}
 	alert( "Configuration successfully commited" );
-	document.location = document.location;
+	document.location = "resetConfigurationToRemote";
 }
