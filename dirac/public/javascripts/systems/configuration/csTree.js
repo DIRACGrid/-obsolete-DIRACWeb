@@ -574,6 +574,7 @@ function cbCommitConfiguration( linkItem, clickEvent )
 {
 	if( ! window.confirm( "Are you sure you want to commit the modifications?" ) )
 		return;
+	gTreePanel.disable();
 	Ext.Ajax.request({
    	url: 'commitConfiguration',
    	success: serverCommit,
