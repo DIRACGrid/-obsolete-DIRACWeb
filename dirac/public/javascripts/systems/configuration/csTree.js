@@ -485,12 +485,11 @@ function serverCreateSection( ajaxResponse, reqArguments )
 	newCfg.text = newCfg.csName;
 	newCfg.leaf = false;
 	var node = reqArguments.node;
-	if( ! node.isExpanded() )
+	if( node.isLoaded() )
 	{
-		node.expand();
-	}
-	else
 		node.appendChild( new Ext.tree.AsyncTreeNode( newCfg ) );
+	}
+	node.expand();
 }
 
 function cbMenuCreateOption( menuItem, clickEvent )
@@ -522,12 +521,11 @@ function serverCreateOption( ajaxResponse, reqArguments )
 	newCfg.text = newCfg.csName;
 	newCfg.leaf = true;
 	var node = reqArguments.node;
-	if( ! node.isExpanded() )
+	if( node.isLoaded() )
 	{
-		node.expand();
-	}
-	else
 		node.appendChild( new Ext.tree.AsyncTreeNode( newCfg ) );
+	}
+	node.expand();
 }
 
 //AJAX Failure
