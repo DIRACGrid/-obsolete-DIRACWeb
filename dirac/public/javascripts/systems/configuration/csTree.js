@@ -483,6 +483,7 @@ function serverCreateSection( ajaxResponse, reqArguments )
 	}
 	var newCfg = retVal.Value;
 	newCfg.text = newCfg.csName;
+	newCfg.leaf = false;
 	var node = reqArguments.node;
 	if( ! node.isExpanded() )
 	{
@@ -519,6 +520,7 @@ function serverCreateOption( ajaxResponse, reqArguments )
 	}
 	var newCfg = retVal.Value;
 	newCfg.text = newCfg.csName;
+	newCfg.leaf = true;
 	var node = reqArguments.node;
 	if( ! node.isExpanded() )
 	{
