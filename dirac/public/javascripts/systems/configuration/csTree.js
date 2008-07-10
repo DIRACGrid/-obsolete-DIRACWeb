@@ -210,12 +210,13 @@ function inPlaceOptionValueChange( node, clickEvent )
 {
 	node.un( "beforeclick", inPlaceOptionValueChange );
 	var editId = "opedit:" + node.id;
-	node.setText( node.attributes.csName + " = <input id='"+editId+"' type='text' value='" + node.attributes.csValue +"'/>" );
+	node.setText( node.attributes.csName + " = <input id='"+editId+"' type='text' size='100' value='" + node.attributes.csValue +"'/>" );
 	var editObj = Ext.get( editId );
 	editId.treeNode = node;
 	Ext.EventManager.on( editObj, "keypress", cbNodeEditKeyPressed, editObj, node );
 	Ext.EventManager.on( editObj, "blur", cbNodeEditBlur, editObj, node );
 	editObj.focus();
+	editObj.select();
 	return true;
 }
 /*
@@ -385,7 +386,7 @@ function serverCopyNode( ajaxResponse, reqArguments )
 						csName : newName,
 						csComment : node.attributes.csComment,
 					};
-	if( node.isLeaf )
+	if( node.isLeaf() )
 	{
 		newCfg.leaf = true;
 		newCfg.csValue = node.attributes.csValue;
@@ -421,7 +422,7 @@ function serverRenameNode( ajaxResponse, reqArguments )
 	var newName = reqArguments.params.newName;
 	var node = reqArguments.node;
 	node.attributes.csName = newName;
-	if( node.isLeaf )
+	if( node.isLeaf() )
 	{
 		configureLeafNode( node );
 	}
