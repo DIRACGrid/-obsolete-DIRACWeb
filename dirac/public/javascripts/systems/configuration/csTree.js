@@ -213,10 +213,10 @@ function inPlaceOptionValueChange( node, clickEvent )
 	node.setText( node.attributes.csName + " = <input id='"+editId+"' type='text' size='100' value='" + node.attributes.csValue +"'/>" );
 	var editObj = Ext.get( editId );
 	editId.treeNode = node;
+	editObj.select();
+	editObj.focus();
 	Ext.EventManager.on( editObj, "keypress", cbNodeEditKeyPressed, editObj, node );
 	Ext.EventManager.on( editObj, "blur", cbNodeEditBlur, editObj, node );
-	editObj.focus();
-	editObj.select();
 	return true;
 }
 /*
