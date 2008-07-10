@@ -20,9 +20,9 @@ function renderPage( csName, remote )
 	panels.push( textPanel );
 	if( remote )
 	{
-		var editPanel = createActionPanel( "Modification actions", [ '<a onclick="javascript:resetChanges()">Redownload configuration data from server</a>',
+		var editPanel = createActionPanel( "Modification actions", [ '<a href="#" onclick="javascript:resetChanges()">Redownload configuration data from server</a>',
   		     																			 '<a href="showCurrentDiff" onclick="window.open(this.href,\'new_window\',\'height=300,width=600,scrollbars=yes,resizable=yes\');return false;">Show differences with server</a>',
-  																					    '<a onclick="javascript:cbCommitConfiguration()">Commit configuration</a>' ] );
+  																					    '<a href="#" onclick="javascript:cbCommitConfiguration()">Commit configuration</a>' ] );
 		panels.push( editPanel );
 	}
 	var leftBar = createLeftPanel( panels );
