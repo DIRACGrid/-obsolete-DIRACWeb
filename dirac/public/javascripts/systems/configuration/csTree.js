@@ -213,7 +213,7 @@ function inPlaceOptionValueChange( node, clickEvent )
 	node.setText( node.attributes.csName + " = <input id='"+editId+"' type='text' size='100' value='" + node.attributes.csValue +"'/>" );
 	var editObj = Ext.get( editId );
 	editId.treeNode = node;
-	editObj.select();
+//	editObj.select();
 	editObj.focus();
 	Ext.EventManager.on( editObj, "keypress", cbNodeEditKeyPressed, editObj, node );
 	Ext.EventManager.on( editObj, "blur", cbNodeEditBlur, editObj, node );
@@ -392,7 +392,10 @@ function serverCopyNode( ajaxResponse, reqArguments )
 		newCfg.csValue = node.attributes.csValue;
 	}
 	else
+	{
+		newCfg.text = newName;
 		newCfg.loader = node.loader;
+	}
 	node.parentNode.appendChild( new Ext.tree.AsyncTreeNode( newCfg ) );
 }
 
@@ -482,9 +485,11 @@ function serverCreateSection( ajaxResponse, reqArguments )
 		alert( "Failed to create section: " + retVal.Message );
 		return;
 	}
-	var newCfg = retVal.Value;
-	newCfg.text = newCfg.csName;
-	newCfg.leaf = false;
+	var csData = retVal.Value;
+	var newCfg = { text : csData.csName,
+						csName : csData.csName,
+						csComment : csData.csComment,
+						leaf : false };
 	var node = reqArguments.node;
 	if( node.isLoaded() )
 	{
@@ -518,9 +523,13 @@ function serverCreateOption( ajaxResponse, reqArguments )
 		alert( "Failed to create option: " + retVal.Message );
 		return;
 	}
-	var newCfg = retVal.Value;
-	newCfg.text = newCfg.csName;
-	newCfg.leaf = true;
+	var csData = retVal.Value;
+	console.log( csData );
+	var newCfg = { text : csData[0],
+						csName : csData[0],
+						csValue : csData[1],
+						csComment : csData[2],
+						leaf : true };
 	var node = reqArguments.node;
 	if( node.isLoaded() )
 	{
