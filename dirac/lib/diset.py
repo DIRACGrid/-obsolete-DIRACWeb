@@ -13,8 +13,8 @@ def __prepareArgs( kwargs ):
 
 def getRPCClient( *args, **kwargs ):
   kwargs = __prepareArgs( kwargs )
-	return RPCClient( *args, **kwargs )
+  return RPCClient( *args, **kwargs )
 
 def getTransferClient( *args, **kwargs ):
-	kwargs = __prepareArgs( kwargs )
-	return TransferClient( *args, **kwargs )
+  kwargs = __prepareArgs( kwargs )
+  return TransferClient( *args, **kwargs )
