@@ -19,7 +19,8 @@ function createCSTree( rootNodeName )
 	gTreePanel = new Ext.tree.TreePanel({
 //        el:'tree-div',
 		region : 'center',
-		useArrows:true,
+		useArrows:false,
+		keys : [],
 		autoScroll:true,
 		animate:true,
 		enableDD:true,
