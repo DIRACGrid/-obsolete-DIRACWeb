@@ -175,7 +175,7 @@ class MonitoringController(BaseController):
   def __dateToSecs( self, timeVar ):
     timeList = timeVar.split( "/" )
     dt = Time.fromString( "%s-%s-%s" % ( timeList[2], timeList[1], timeList[0] ) )
-    return int( time.mktime( dt.timetuple() ) )
+    return Time.toEpoch( dt )
 
   def systemPlots( self ):
     """
@@ -198,7 +198,7 @@ class MonitoringController(BaseController):
       plotRequest = simplejson.loads( request.params[ 'plotRequest' ] )
       if 'timeLength' in request.params:
         timeLength = str( request.params[ 'timeLength' ] )
-        toSecs = int( time.mktime( time.gmtime() ) )
+        toSecs = Time.toEpoch()
         if timeLength == "hour":
           fromSecs = toSecs - 3600
         elif timeLength == "day":
@@ -248,7 +248,7 @@ class MonitoringController(BaseController):
       plotRequest = simplejson.loads( request.params[ 'plotRequest' ] )
       if 'timeLength' in plotRequest:
         timeLength = str( plotRequest[ 'timeLength' ] )
-        toSecs = int( time.mktime( time.gmtime() ) )
+        toSecs = Time.toEpoch()
         if timeLength == "hour":
           fromSecs = toSecs - 3600
         elif timeLength == "day":
