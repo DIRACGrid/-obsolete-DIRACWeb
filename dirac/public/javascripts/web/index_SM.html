@@ -1,0 +1,68 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml">
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+<title>DIRAC Grid Monitoring System</title>
+
+<!--
+main.css		Contains CSS for styling the general layout (map, menu, and details); this is all the dynamic content
+myTable.css		Contains CSS for styling the tables used in Pilot Summary view
+infostyles.css	Contains H2, H3, H4 definitions for styling the information displayed by each site
+-->
+<link href="main.css" rel="stylesheet" type="text/css" />
+<link href="myTable.css" rel="stylesheet" type="text/css" />
+<link href="infostyles.css" rel="stylesheet" type="text/css" />
+
+<!--
+OpenLayers.js	OpenLayers implementation
+mymap.js		Contains all of the calls which handle loading and displaying site data
+-->
+<script type="text/javascript" src="OpenLayers.js"></script>
+<script type="text/javascript" src="mymap.js"></script>
+
+<!-- This CSS is just for running the test page; don't include on final site -->
+<style type="text/css">
+<!--
+#header {
+	color: #FFFFFF;
+	background-color: #666666;
+	text-align: center;
+	padding: 0px;
+	margin: 0px;
+}
+h1 {
+	border-top-width: 15px;
+	border-right-width: 15px;
+	border-bottom-width: 15px;
+	border-left-width: 15px;
+	border-top-style: solid;
+	border-bottom-style: solid;
+	border-top-color: #FFFFFF;
+	border-right-color: #FFFFFF;
+	border-bottom-color: #FFFFFF;
+	border-left-color: #FFFFFF;
+	margin: 0px;
+	padding: 0px;
+}
+body {
+	background-color: #CCCCCC;
+	margin: 0px;
+	padding: 0px;
+}
+-->
+</style>
+</head>
+
+<!-- Make sure that initMap_SM() is called to load the page -->
+<body onload="initMap_SM('wrapper', 0, 47, 14, 5, 60, null, null)">
+<!--
+<div id="header">
+	<h1>DIRAC Grid Monitoring System</h1>
+</div>-->
+
+<!-- Include the following DIV to display the map, details, and controls properly -->
+<div id="wrapper"></div>
+<!-- END -->
+
+</body>
+</html>
