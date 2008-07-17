@@ -18,15 +18,10 @@ function renderPage( plotsList, selectionData ){
 
   var selWidgets = []
 
-  //if( selectionData.User.length > 1 )
-  	selWidgets.push( createMultiselect( "User", "User", selectionData.User ) );
-  //else
-  //	selWidgets.push( createHidden( "User", selectionData.User[0] ) );
-
-  //if( selectionData.UserGroup.length > 1 )
-  	selWidgets.push( createMultiselect( "UserGroup", "User Group", selectionData.UserGroup ) );
-  //else
-  //	selWidgets.push( createHidden( "UserGroup", selectionData.UserGroup[0] ) );
+  if( selectionData.User.length > 0 )
+  	 selWidgets.push( createMultiselect( "User", "User", selectionData.User ) );
+  if( selectionData.UserGroup.length > 0 )
+  	 selWidgets.push( createMultiselect( "UserGroup", "User Group", selectionData.UserGroup ) );
 
   selWidgets.push( createMultiselect( "JobGroup", "Job Group", selectionData.JobGroup ) );
   selWidgets.push( createMultiselect( "JobType", "Job Type", selectionData.JobType ) );

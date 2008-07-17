@@ -18,8 +18,10 @@ function renderPage( plotsList, selectionData ){
 
   var selWidgets = []
 
-  	selWidgets.push( createMultiselect( "User", "User", selectionData.User ) );
-  	selWidgets.push( createMultiselect( "UserGroup", "User Group", selectionData.UserGroup ) );
+  if( selectionData.User.length > 0 )
+  	 selWidgets.push( createMultiselect( "User", "User", selectionData.User ) );
+  if( selectionData.UserGroup.length > 0 )
+  	 selWidgets.push( createMultiselect( "UserGroup", "User Group", selectionData.UserGroup ) );
 
   selWidgets.push( createMultiselect( "Status", "Major status", selectionData.Status ) );
   selWidgets.push( createMultiselect( "MinorStatus", "Minor status", selectionData.MinorStatus ) );
