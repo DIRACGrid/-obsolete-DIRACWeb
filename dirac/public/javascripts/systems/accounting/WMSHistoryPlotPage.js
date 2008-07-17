@@ -2,7 +2,7 @@ var gPlotsList = []; //Valid list of plots
 var gTypeName = ""; //Type name
 var gMainPanel = false;
 
-function initJobPlots( plotsList, selectionData ){
+function initWMSHistoryPlots( plotsList, selectionData ){
   gPlotsList = plotsList;
   Ext.onReady(function(){
     renderPage( plotsList, selectionData );
