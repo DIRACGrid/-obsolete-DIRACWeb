@@ -35,6 +35,9 @@ class AccountingplotsController(BaseController):
   def WMSHistory(self):
     return self.__showPlotPage( "WMSHistory", "/systems/accounting/WMSHistory.mako" )
 
+  def pilot(self):
+    return self.__showPlotPage( "Pilot", "/systems/accounting/Pilot.mako" )
+
   def __showPlotPage( self, typeName, templateFile ):
     #TODO: This can be cached
     retVal = self.__getUniqueKeyValues( typeName )
