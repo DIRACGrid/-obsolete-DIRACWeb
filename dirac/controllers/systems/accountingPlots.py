@@ -126,11 +126,11 @@ class AccountingplotsController(BaseController):
     Get plot image
     """
     if 'file' not in request.params:
-      c.error( "Maybe you forgot the file?" )
+      c.error = "Maybe you forgot the file?"
       return render( "/error.mako" )
     plotImageFile = request.params[ 'file' ]
     if plotImageFile.find( ".png" ) < -1:
-      c.error( "Not a valid image!" )
+      c.error = "Not a valid image!"
       return render( "/error.mako" )
     transferClient = getTransferClient( "Accounting/ReportGenerator" )
     tempFile = tempfile.TemporaryFile()
