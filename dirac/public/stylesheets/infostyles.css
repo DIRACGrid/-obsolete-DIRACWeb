@@ -1,12 +1,12 @@
 @charset "utf-8";
-h3 {
+.nodeDescriptionSM {
 	font-family: Arial, Helvetica, sans-serif;
 	font-size: 10pt;
 	color: #000000;
 	margin: 0px;
 	padding: 10px;
 }
-h2 {
+.nodeNameSM {
 	font-family: Arial, Helvetica, sans-serif;
 	font-size: 13pt;
 	color: #8282A0;
@@ -15,13 +15,4 @@ h2 {
 	border-bottom-color: #999999;
 	margin: 10px;
 	padding: 0px;
-}
-h4 {
-	font-family: Arial, Helvetica, sans-serif;
-	font-size: 13pt;
-	padding: 0px;
-	margin-top: 5px;
-	margin-right: 5px;
-	margin-bottom: 0px;
-	margin-left: 5px;
 }
