@@ -34,7 +34,10 @@
 	font-family: Verdana, Arial, Helvetica, sans-serif;
 }
 #SMcontrols a:hover {
-	background-color: #00CCFF;
+	background-color: #00BBFF;
+}
+.SMcurrentLink {
+	background-color: #00DDFF;
 }
 #SMcontrols ul, #SMcontrols a, #SMcontrols {
 	line-height: 23px;
