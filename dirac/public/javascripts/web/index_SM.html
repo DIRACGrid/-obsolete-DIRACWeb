@@ -5,17 +5,15 @@
 <title>DIRAC Grid Monitoring System</title>
 
 <!--
-main.css		Contains CSS for styling the general layout (map, menu, and details); this is all the dynamic content
-myTable.css		Contains CSS for styling the tables used in Pilot Summary view
-infostyles.css	Contains H2, H3, H4 definitions for styling the information displayed by each site
+main.css	Contains CSS for styling the general layout (map, menu, and details); this is all the dynamic content
+infostyles.css	Contains definitions for styling the information displayed by each site
 -->
 <link href="main.css" rel="stylesheet" type="text/css" />
-<link href="myTable.css" rel="stylesheet" type="text/css" />
 <link href="infostyles.css" rel="stylesheet" type="text/css" />
 
 <!--
 OpenLayers.js	OpenLayers implementation
-mymap.js		Contains all of the calls which handle loading and displaying site data
+mymap.js	Contains all of the calls which handle loading and displaying site data
 -->
 <script type="text/javascript" src="OpenLayers.js"></script>
 <script type="text/javascript" src="mymap.js"></script>
@@ -54,11 +52,7 @@ body {
 </head>
 
 <!-- Make sure that initMap_SM() is called to load the page -->
-<body onload="initMap_SM('wrapper', 0, 47, 14, 5, 60, null, null)">
-<!--
-<div id="header">
-	<h1>DIRAC Grid Monitoring System</h1>
-</div>-->
+<body onload="initMap_SM('wrapper', 1, 47, 14, 5, 5, null, null)">
 
 <!-- Include the following DIV to display the map, details, and controls properly -->
 <div id="wrapper"></div>
