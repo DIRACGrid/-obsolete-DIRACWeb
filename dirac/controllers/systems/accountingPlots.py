@@ -8,6 +8,7 @@ from dirac.lib.diset import getRPCClient, getTransferClient
 
 from DIRAC import S_OK, S_ERROR
 from DIRAC.Core.Utilities import Time, List
+from DIRAC.AccountingSystem.Client.ReportsClient import ReportsClient
 
 log = logging.getLogger(__name__)
 
@@ -46,8 +47,8 @@ class AccountingplotsController(BaseController):
       return render ( "/error.mako" )
     c.selectionValues = simplejson.dumps( retVal[ 'Value' ] )
     #TODO: This can be cached
-    rpcClient = getRPCClient( "Accounting/ReportGenerator" )
-    retVal = rpcClient.listPlots( typeName )
+    repClient = ReportsClient( rpcClient = getRPCClient( "Accounting/ReportGenerator" ) )
+    retVal = repClient.listPlots( typeName )
     if not retVal[ 'OK' ]:
       c.error = retVal[ 'Message' ]
       return render ( "/error.mako" )
@@ -93,7 +94,7 @@ class AccountingplotsController(BaseController):
     #Listify the rest
     for selName in pD:
       pD[ selName ] = List.fromChar( pD[ selName ], "," )
-    return S_OK( ( typeName, plotName, start, end, pD, grouping ) )
+    return S_OK( ( typeName, plotName, start, end, pD, grouping, {} ) )
 
   def __translateToExpectedExtResult( self, retVal ):
     if retVal[ 'OK' ]:
@@ -107,8 +108,8 @@ class AccountingplotsController(BaseController):
     if not retVal[ 'OK' ]:
       return self.__translateToExpectedExtResult( retVal )
     params = retVal[ 'Value' ]
-    rpcClient = getRPCClient( "Accounting/ReportGenerator" )
-    retVal = rpcClient.generatePlot( *params )
+    repClient = ReportsClient( rpcClient = getRPCClient( "Accounting/ReportGenerator" ) )
+    retVal = repClient.generatePlot( *params )
     return retVal
 
   @jsonify
