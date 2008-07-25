@@ -5,21 +5,15 @@ function initSiteMap(){
   Ext.onReady(function(){
     renderData();
     var map = new Object();
-    map.sitemask = 'getKML?name=sitemask.kml';
-    map.jobsummary = 'getKML?name=jobsummary.kml';
-    map.pilotsummary = 'getKML?name=pilotsummary.kml';
-    map.datastorage = 'getKML?name=datastorage.kml';
-    for(i = 0; i < 1000; i++){
-      if(document.getElementById('map')){
-//        initMap_SM('map', 2, 47, 14, 5, 3000, map, mapLegend);
-        initMap_SM('map', 2, 47, 14, 5, 3000, map);
-//        var map = new OpenLayers.Map('map');
-//        var wms = new OpenLayers.Layer.WMS( "OpenLayers WMS", "http://labs.metacarta.com/wms/vmap0", {layers: 'basic'} );
-//        map.addLayer(wms);
-//        map.zoomToMaxExtent();
+    map.sitemask = ['getKML?name=sitemask.kml'];
+    map.jobsummary = ['getKML?name=jobsummary.kml'];
+    map.pilotsummary = ['getKML?name=pilotsummary.kml'];
+    map.datastorage = ['getKML?name=datastorage.kml'];
+    map.animated = ['getKML?name=animated-green.kml', 'getKML?name=animated-yellow.kml', 'getKML?name=animated-gray.kml']
+    if(document.getElementById('map')){
+        initMap_SM('map', 0, 47, 14, 5, 600, map, mapLegend);
         siteMapGreenLight = true;
         return
-      }
     }
   });
 }
@@ -31,7 +25,8 @@ function initSidebar(){
       [ '0', 'Site Mask', true ],
       [ '1', 'Job Summary' ],
       [ '2', 'Pilot Summary' ],
-      [ '3', 'Data Storage' ]
+      [ '3', 'Data Storage' ],
+      [ '4', 'Animated' ]
     ]
   );
   mapLegend = legend();

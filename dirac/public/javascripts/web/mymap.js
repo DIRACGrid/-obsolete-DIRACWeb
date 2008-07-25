@@ -120,10 +120,10 @@ function initLayers_SM()
 	}
 
 	// Set the static layer information
-	mapDataObject.layerData[0] = new LayerData_SM("Site Mask", sitemask, "SM-Legend.png", 0, 0, 0);
-	mapDataObject.layerData[1] = new LayerData_SM("Job Summary", jobsummary, "JS-Legend.png", 200, 170, 0);
-	mapDataObject.layerData[2] = new LayerData_SM("Pilot Summary", pilotsummary, "PS-Legend.png", 0, 0, 0);
-	mapDataObject.layerData[3] = new LayerData_SM("Data Storage", datastorage, "DS-Legend.png", 0, 0, 0);
+	mapDataObject.layerData[0] = new LayerData_SM("Site Mask", sitemask, "getImg?name=SM-Legend.png", 0, 0, 0);
+	mapDataObject.layerData[1] = new LayerData_SM("Job Summary", jobsummary, "getImg?name=JS-Legend.png", 200, 170, 0);
+	mapDataObject.layerData[2] = new LayerData_SM("Pilot Summary", pilotsummary, "getImg?name=PS-Legend.png", 0, 0, 0);
+	mapDataObject.layerData[3] = new LayerData_SM("Data Storage", datastorage, "getImg?name=DS-Legend.png", 0, 0, 0);
 	mapDataObject.layerData[4] = new LayerData_SM("Animated", animated, null, 0, 0, -1);
 
 	mapDataObject.numLayers = 5;
@@ -171,8 +171,8 @@ function createPage_SM()
 	if (mapDataObject.panelObject)
 	{
 		mapDataObject.panelObject.show();
-		document.getElementById("SMmap").style.height = "95%";
-		document.getElementById("SMlegend").style.height = "5%";
+		document.getElementById("SMmap").style.height = "90%";
+//		document.getElementById("SMlegend").style.height = "5%";
 	}
 	else
 	{
