@@ -9,10 +9,34 @@
 .nodeNameSM {
 	font-family: Arial, Helvetica, sans-serif;
 	font-size: 13pt;
-	color: #8282A0;
+	color: #202090;
 	border-bottom-width: 1px;
 	border-bottom-style: solid;
 	border-bottom-color: #999999;
-	margin: 10px;
 	padding: 0px;
+        margin-top: 0px;
+        margin-bottom: 10px;
+        margin-left: 5px;
+        margin-right: 10px;
+}
+.nodeHeadingSM {
+	font-family: Arial, Helvetica, sans-serif;
+	font-size: 11pt;
+	color: #8282A0;
+	margin: 0px;
+	padding-left: 10px;
+	padding-right: 0px;
+	padding-top: 0px;
+	padding-bottom: 0px;
+}
+.nodeLinkSM {
+	font-family: Arial, Helvetica, sans-serif;
+	font-size: 9pt;
+	color: #0000CF;
+	margin: 0px;
+	padding: 10px;
+	cursor: hand;
+	cursor: pointer;
+	background-color: #cfcfff;
+	text-align: center;
 }

@@ -32,6 +32,8 @@
 	font-variant: normal;
 	text-align: center;
 	font-family: Verdana, Arial, Helvetica, sans-serif;
+	cursor: hand;
+	cursor: pointer;
 }
 #SMcontrols a:hover {
 	background-color: #00BBFF;
