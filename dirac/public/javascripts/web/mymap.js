@@ -1,5 +1,7 @@
+// This object holds all of the data used by the map
 var mapDataObject = new Object();
 
+// Used to actually create the map
 function initMap_SM(wrapperDiv, showLayer, init_lat, init_lon, init_zoom, refresh_rate, mapFileObject, panelObject)
 {
 	/*
@@ -22,30 +24,36 @@ function initMap_SM(wrapperDiv, showLayer, init_lat, init_lon, init_zoom, refres
 
 	mapDataObject.wrapperDiv = wrapperDiv;
 	mapDataObject.mapFileObject = mapFileObject;
-	mapDataObject.panelObject = panelObject;
+
+	// Suppress the panel object
+	mapDataObject.panelObject = null;//panelObject;
 
 	// Load the layer information
 	initLayers_SM();
 
 	// Dynamically create menu, map, and detail container
 	createPage_SM();
+
+	var options = {
+		controls: [
+			new OpenLayers.Control.PanZoomBar(),
+			new OpenLayers.Control.NavToolbar(),
+			new OpenLayers.Control.LayerSwitcher(),
+			new OpenLayers.Control.MousePosition(),
+			new OpenLayers.Control.OverviewMap(),
+			new OpenLayers.Control.KeyboardDefaults()
+			],
+		numZoomLevels: 10
+            };
 	
 	// Create the map
-	mapDataObject.map = new OpenLayers.Map("SMmap", {
-							 controls: [
-										new OpenLayers.Control.PanZoomBar(),
-										new OpenLayers.Control.NavToolbar(),
-										new OpenLayers.Control.LayerSwitcher(),
-										new OpenLayers.Control.MousePosition(),
-										//new OpenLayers.Control.OverviewMap(),
-										new OpenLayers.Control.KeyboardDefaults()
-							 ],
-							 numZoomLevels: 10
-			   });
+	mapDataObject.map = new OpenLayers.Map("SMmap", options);
 	
 	// Load the basemaps
-	var wms = new OpenLayers.Layer.WMS("Base Map", "http://labs.metacarta.com/wms/vmap0", {layers: 'basic'}, {'isBaseLayer': true});
-	var wms2 = new OpenLayers.Layer.WMS("Satellite", "http://labs.metacarta.com/wms-c/Basic.py", {'layers':'satellite'}, {'isBaseLayer' : true});
+	var wms = new OpenLayers.Layer.WMS("Base Map", "http://labs.metacarta.com/wms/vmap0", {layers: 'basic'}, {'isBaseLayer': true, wrapDateLine: true});
+	//var wms2 = new OpenLayers.Layer.WMS("Satellite", "http://labs.metacarta.com/wms-c/Basic.py", {'layers':'satellite'}, {'isBaseLayer' : true, wrapDateLine: true});
+	var wms2 = new OpenLayers.Layer.WMS("Satellite", ["http://t1.labs.metacarta.com/wms-c/Basic.py", "http://t2.labs.metacarta.com/wms-c/Basic.py", "http://t3.labs.metacarta.com/wms-c/Basic.py"], {'layers':'satellite'}, {'isBaseLayer' : true, wrapDateLine: true});
+	//var wms2 = new OpenLayers.Layer.Yahoo( "Yahoo");
 	
 	// Add the base maps to the map
 	mapDataObject.map.addLayers([wms2, wms]);
@@ -69,6 +77,7 @@ function initMap_SM(wrapperDiv, showLayer, init_lat, init_lon, init_zoom, refres
 		timerId = setInterval("reloadData_SM()", 1000 * refresh_rate);
 }
 
+// Just a convenient wrapper for creating layer objects
 function LayerData_SM(name, files, legend, popupWidth, popupHeight, clickLayer)
 {
 	// Just take care of the layerData structure
@@ -81,6 +90,7 @@ function LayerData_SM(name, files, legend, popupWidth, popupHeight, clickLayer)
 	this.layers = new Array();	// Array of child layers
 }
 
+// Parse and load the layers
 function initLayers_SM()
 {
 	// Set defaults
@@ -88,15 +98,15 @@ function initLayers_SM()
 	var jobsummary = new Array();
 	var pilotsummary = new Array();
 	var datastorage = new Array();
-	var animated = new Array();
+//	var animated = new Array();
 
 	sitemask[0] = "sitemask.kml";
 	jobsummary[0] = "jobsummary.kml";
 	pilotsummary[0] = "pilotsummary.kml";
 	datastorage[0] = "datastorage.kml";
-	animated[0] = "animated-green.kml";
-	animated[1] = "animated-yellow.kml";
-	animated[2] = "animated-gray.kml";
+//	animated[0] = "animated-green.kml";
+//	animated[1] = "animated-yellow.kml";
+//	animated[2] = "animated-gray.kml";
 
 	if (mapDataObject.mapFileObject)
 	{
@@ -108,7 +118,7 @@ function initLayers_SM()
 			pilotsummary[0] = mapDataObject.mapFileObject.pilotsummary;
 		if (mapDataObject.mapFileObject.datastorage)
 			datastorage[0] = mapDataObject.mapFileObject.datastorage;
-		if (mapDataObject.mapFileObject.animated)
+/*		if (mapDataObject.mapFileObject.animated)
 		{
 			if (mapDataObject.mapFileObject.animated.length == 3)
 			{
@@ -116,17 +126,17 @@ function initLayers_SM()
 				animated[1] = mapDataObject.mapFileObject.animated[1]
 				animated[2] = mapDataObject.mapFileObject.animated[2]
 			}
-		}
+		}*/
 	}
 
 	// Set the static layer information
 	mapDataObject.layerData[0] = new LayerData_SM("Site Mask", sitemask, "getImg?name=SM-Legend.png", 0, 0, 0);
-	mapDataObject.layerData[1] = new LayerData_SM("Job Summary", jobsummary, "getImg?name=JS-Legend.png", 200, 170, 0);
-	mapDataObject.layerData[2] = new LayerData_SM("Pilot Summary", pilotsummary, "getImg?name=PS-Legend.png", 0, 0, 0);
-	mapDataObject.layerData[3] = new LayerData_SM("Data Storage", datastorage, "getImg?name=DS-Legend.png", 0, 0, 0);
-	mapDataObject.layerData[4] = new LayerData_SM("Animated", animated, null, 0, 0, -1);
+	mapDataObject.layerData[1] = new LayerData_SM("Job Summary", jobsummary, "getImg?name=JS-Legend.png", 0, 190, 0);
+	mapDataObject.layerData[2] = new LayerData_SM("Pilot Summary", pilotsummary, "getImg?name=PS-Legend.png", 0, -170, 0);
+	mapDataObject.layerData[3] = new LayerData_SM("Data Storage", datastorage, "getImg?name=DS-Legend.png", 0, -190, 0);
+//	mapDataObject.layerData[4] = new LayerData_SM("Animated", animated, null, 0, 0, -1);
 
-	mapDataObject.numLayers = 5;
+	mapDataObject.numLayers = 4;
 	
 	// Load all layers into memory
 	for (var i = 0; i < mapDataObject.numLayers; i++)
@@ -138,6 +148,7 @@ function initLayers_SM()
 	}
 }
 
+// Dynamically create all necessary content
 function createPage_SM()
 {
 	if (!document.getElementById(mapDataObject.wrapperDiv))
@@ -147,39 +158,29 @@ function createPage_SM()
 	}
 
 	var stringToAdd = "";
-
-	//if (!mapDataObject.panelObject)
-	{
-		/*stringToAdd += "<div id=\"SMcontrols\"><ul>\
-		                <li><a class=\"SMcurrentLink\" onclick=\"activateLayer_SM(0)\">Site Mask</a></li>\
-	                        <li><a onclick=\"activateLayer_SM(1)\">Job Summary</a></li>\
-	                        <li><a onclick=\"activateLayer_SM(2)\">Pilot Summary</a></li>\
-	                        <li><a onclick=\"activateLayer_SM(3)\">Data Storage</a></li>\
-	                        <li><a onclick=\"activateLayer_SM(4)\">Animated</a></li>\
-	                        </ul></div>";*/
-		stringToAdd += "<div id=\"SMcontrols\"></div>"
-	}
-
+	stringToAdd += "<div id=\"SMcontrols\"></div>"
 	stringToAdd += "<div id=\"SMmap\"></div>";
 	stringToAdd += "<div id=\"SMlegend\"></div>";
 
-	if (!mapDataObject.panelObject)
-		stringToAdd += "<div id=\"SMdetail_container\"><div id=\"SMdetails\"></div></div>";
+	/*if (!mapDataObject.panelObject)
+		stringToAdd += "<div id=\"SMdetail_container\"><div id=\"SMdetails\"></div></div>";*/
 	
 	document.getElementById(mapDataObject.wrapperDiv).innerHTML = stringToAdd;
 
-	if (mapDataObject.panelObject)
+/*	if (mapDataObject.panelObject)
 	{
 		mapDataObject.panelObject.show();
 		document.getElementById("SMmap").style.height = "90%";
-//		document.getElementById("SMlegend").style.height = "5%";
+		//document.getElementById("SMlegend").style.height = "5%";
 	}
 	else
 	{
 		document.getElementById("SMmap").style.height = "60%";
-	}
+	}*/
+	document.getElementById("SMmap").style.height = "90%"; // Leave room for the legend
 }
 
+// This just changes the menu to reflect the current view
 function updateMenu_SM(layer)
 {
 	menuString = "<ul>";
@@ -194,6 +195,7 @@ function updateMenu_SM(layer)
 	document.getElementById("SMcontrols").innerHTML = menuString;
 }
 
+// Loads a new layer onto the map
 function activateLayer_SM(layer)
 {
 	// Don't activate the layer if it is already active
@@ -203,8 +205,7 @@ function activateLayer_SM(layer)
 		layer = 0;
 
 	// Update the menu
-//	if (!mapDataObject.panelObject)
-		updateMenu_SM(layer);
+	updateMenu_SM(layer);
 		
 	// Remove the previous layer(s)
 	if (mapDataObject.currentLayerIndex != -1)
@@ -244,6 +245,7 @@ function activateLayer_SM(layer)
 		document.getElementById("SMlegend").innerHTML = "";
 }
 
+// Reload information about the current layer (called to refresh the view)
 function reloadData_SM()
 {
 	// Set the function counter (for sequentially reloading multiple child layers)
@@ -290,6 +292,7 @@ function reloadData_SM()
 		setTimeout("reselectFeature_SM()", 1);
 }
 
+// If a reload occurs, then any open popups will disappear--this reloads the popup onto the updated layer
 function reselectFeature_SM()
 {
 	// Look around for lastFeature and re-select it
@@ -315,36 +318,50 @@ function reselectFeature_SM()
 	mapDataObject.lastFeature = null;
 }
 
+// Callback for handling a user clicking on a site
 function onFeatureSelect_SM(feature)
 {	
 	// Set the details container
 //	featureInfo = "<h2>" + feature.attributes.name + "</h2>" + "<h3>" + feature.attributes.description + "</h3>"
-	featureInfo = feature.attributes.description
+	/*featureInfo = feature.attributes.description
 	if (mapDataObject.panelObject)
 		mapDataObject.panelObject.body.update(featureInfo);
 	else
-		document.getElementById("SMdetails").innerHTML = featureInfo;
+		document.getElementById("SMdetails").innerHTML = featureInfo;*/
 
 	popupWidth = mapDataObject.layerData[mapDataObject.currentLayerIndex].popupWidth;
 	popupHeight = mapDataObject.layerData[mapDataObject.currentLayerIndex].popupHeight;
 
-	var divIn = "", divOut = "";
+	/*var divIn = "", divOut = "";
 	if (popupWidth && popupHeight)
 	{
-		divIn = "<div style=\"width: " + popupWidth + "px; height: " + popupHeight + "px;\">"
+		divIn = "<div style=\"width: " + popupWidth + "px; height: " + popupHeight + "px; overflow: hidden;\">"
 		divOut = "</div>"
-	}
+	}*/
 	if (!popupWidth)
-		popupWidth = 200;
+		popupWidth = 230;//200;
 	if (!popupHeight)
-		popupHeight = 200;
+		popupHeight = 170;//25;
+
+	var overflow;
+	if (popupHeight < 0)
+	{
+		popupHeight *= -1;
+		overflow = 'auto';
+	}
+	else
+		overflow = 'hidden';
+
+	featureInfo = "<div style=\"width: " + popupWidth + "px; height: " + popupHeight + "px; overflow: " + overflow + ";\">";
+	featureInfo += feature.attributes.description;
+	featureInfo += "</div>";
 	
 	// Create the popup
 	mapDataObject.selectedFeature = feature;
-	popup = new OpenLayers.Popup.FramedCloud("foobar",
+	popup = new OpenLayers.Popup.AnchoredBubble("foobar",
 						feature.geometry.getBounds().getCenterLonLat(),
 						new OpenLayers.Size(popupWidth,popupHeight),
-						divIn+feature.attributes.name+divOut,
+						featureInfo,//divIn+feature.attributes.name+divOut,
 						null,
 						true,
 						onPopupClose_SM);
@@ -352,17 +369,18 @@ function onFeatureSelect_SM(feature)
 	mapDataObject.map.addPopup(popup);
 }
 
+// Called when a site is deselected
 function onFeatureUnselect_SM(feature)
 {
 	// If lastFeature is active, don't blank out innerHTML;
 	// otherwise, you'll get a flashing 'details' container
-	if (mapDataObject.lastFeature == null)
+	/*if (mapDataObject.lastFeature == null)
 	{
 		if (mapDataObject.panelObject)
 			mapDataObject.panelObject.body.update("");
 		else
 			document.getElementById("SMdetails").innerHTML = "";
-	}
+	}*/
 	
 	mapDataObject.map.removePopup(feature.popup);
 	feature.popup.destroy();
@@ -370,6 +388,7 @@ function onFeatureUnselect_SM(feature)
 	mapDataObject.selectedFeature = null;
 }
 
+// Called when the popup is killed.
 function onPopupClose_SM()
 {
 	mapDataObject.featureHandle.unselect(mapDataObject.selectedFeature);

@@ -9,7 +9,7 @@ function initSiteMap(){
     map.jobsummary = ['getKML?name=jobsummary.kml'];
     map.pilotsummary = ['getKML?name=pilotsummary.kml'];
     map.datastorage = ['getKML?name=datastorage.kml'];
-    map.animated = ['getKML?name=animated-green.kml', 'getKML?name=animated-yellow.kml', 'getKML?name=animated-gray.kml']
+    //map.animated = ['getKML?name=animated-green.kml', 'getKML?name=animated-yellow.kml', 'getKML?name=animated-gray.kml']
     if(document.getElementById('map')){
         initMap_SM('map', 0, 47, 14, 5, 600, map, mapLegend);
         siteMapGreenLight = true;
@@ -34,6 +34,8 @@ function initSidebar(){
   var select = selectPanel();
   select.insert(0,layout);
   select.insert(1,mapLegend);
+  var button = new Ext.Button({text:'Test widget',handler:function(){siteControl('LCG.PIC.es')}})
+  select.addButton(button);
 //  mapLegend = selectPanel();
 //  mapLegend.insert(0,layout);
   var bar = sideBar();
@@ -48,6 +50,9 @@ function initMain(){
 }
 function renderData(store){
   var mainContent = initMain();
-  var leftBar = initSidebar();
-  renderInMainViewport([ leftBar, mainContent ]);
+
+  // Kill off the sidebar
+//  var leftBar = initSidebar();
+//  renderInMainViewport([ leftBar, mainContent ]);
+  renderInMainViewport([mainContent]);
 }
