@@ -1,11 +1,19 @@
 # -*- coding: utf-8 -*-
-<%inherit file="/base.mako" />
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01//EN" "http://www.w3.org/TR/html4/strict.dtd">
+<%inherit file="/diracPage.mako" />
 
 <%def name="head_tags()">
-  <!-- add some head tags here -->
+${ h.javascript_include_tag( "/javascripts/htmlPage.js" ) }
 </%def>
 
+<%def name="body()">
+<script type="text/javascript">
+  initHTML( 'mainBody' );
+</script>
+
+<div id='mainBody'>
 <h1>Hello!</h1>
-
-
 <h6>Bow before the mighty DIRAC for it handles your jobs (and data)! ;)</h6>
+</div>
+
+</%def>
