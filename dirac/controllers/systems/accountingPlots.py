@@ -48,7 +48,7 @@ class AccountingplotsController(BaseController):
     c.selectionValues = simplejson.dumps( retVal[ 'Value' ] )
     #TODO: This can be cached
     repClient = ReportsClient( rpcClient = getRPCClient( "Accounting/ReportGenerator" ) )
-    retVal = repClient.listPlots( typeName )
+    retVal = repClient.listReports( typeName )
     if not retVal[ 'OK' ]:
       c.error = retVal[ 'Message' ]
       return render ( "/error.mako" )
@@ -75,7 +75,7 @@ class AccountingplotsController(BaseController):
     #Get plotname
     if not 'plotName' in pD:
       return S_ERROR( "Missing plot name!" )
-    plotName = pD[ 'plotName' ]
+    reportName = pD[ 'plotName' ]
     del( pD[ 'plotName' ] )
     #Get times
     if not 'timeSelector' in pD:
@@ -94,11 +94,11 @@ class AccountingplotsController(BaseController):
     #Listify the rest
     for selName in pD:
       pD[ selName ] = List.fromChar( pD[ selName ], "," )
-    return S_OK( ( typeName, plotName, start, end, pD, grouping, {} ) )
+    return S_OK( ( typeName, reportName, start, end, pD, grouping, {} ) )
 
   def __translateToExpectedExtResult( self, retVal ):
     if retVal[ 'OK' ]:
-      return { 'success' : True, 'data' : retVal[ 'Value' ] }
+      return { 'success' : True, 'data' : retVal[ 'Value' ][ 'plot' ] }
     else:
       return { 'success' : False, 'errors' : retVal[ 'Message' ] }
 
@@ -120,7 +120,7 @@ class AccountingplotsController(BaseController):
     retVal = self.__queryForPlot()
     if not retVal[ 'OK' ]:
       return "<h2>Can't regenerate plot: %s</h2>" % retVal[ 'Message' ]
-    return "<img src='getPlotImg?file=%s'/>" % retVal[ 'Value' ]
+    return "<img src='getPlotImg?file=%s'/>" % retVal[ 'Value' ][ 'plot' ]
 
   def getPlotImg( self ):
     """
