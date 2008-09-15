@@ -7,6 +7,7 @@ refer to the routes manual at http://routes.groovie.org/docs/
 from pylons import config
 from routes import Mapper
 
+
 def make_map():
     """Create, configure and return the routes Mapper"""
     map = Mapper(directory=config['pylons.paths']['controllers'],
@@ -17,10 +18,12 @@ def make_map():
     map.connect('error/:action/:id', controller='error')
 
     # CUSTOM ROUTES HERE
+    import dirac.lib.credentials as credentials
+    condDict = dict(function=credentials.checkURL)
 
-    map.connect(':dsetup/:dgroup/:controller/:action/:id')
-    map.connect(':dsetup/:controller/:action/:id', dgroup='unknown' )
-    map.connect(':controller/:action/:id', dgroup='unknown', dsetup='unknown' )
+    map.connect(':dsetup/:dgroup/:controller/:action/:id', conditions=condDict )
+    map.connect(':dsetup/:controller/:action/:id', dgroup='unknown', conditions=condDict )
+    map.connect(':controller/:action/:id', dgroup='unknown', dsetup='unknown', conditions=condDict )
     map.connect('*url', controller='template', action='view')
 
     return map

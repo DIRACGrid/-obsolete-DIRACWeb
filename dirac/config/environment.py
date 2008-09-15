@@ -23,6 +23,8 @@ def load_environment(global_conf, app_conf):
     config.init_app(global_conf, app_conf, package='dirac',
                     template_engine='mako', paths=paths)
 
+    initDIRAC( config, root )
+
     config['routes.map'] = make_map()
     config['pylons.g'] = app_globals.Globals()
     config['pylons.h'] = dirac.lib.helpers
@@ -30,6 +32,8 @@ def load_environment(global_conf, app_conf):
     # Customize templating options via this variable
     tmpl_options = config['buffet.template_options']
 
+
+def initDIRAC( config, root ):
     # CONFIGURATION OPTIONS HERE (note: all config options will override
     # any Pylons config options)
     config['dirac.webroot'] = root
@@ -52,3 +56,4 @@ def load_environment(global_conf, app_conf):
     gMonitor.initialize()
     gMonitor.registerActivity( "pagesServed", "Pages served", "Framework", "pages", gMonitor.OP_SUM )
 
+    gLogger.info( "DIRAC Initialized" )

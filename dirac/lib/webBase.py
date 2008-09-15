@@ -7,7 +7,7 @@ import dirac.lib.yuiWidgets as yuiWidgets
 from dirac.lib.webconfig import gWebConfig
 import dirac.lib.helpers as helpers
 from pylons import request
-from DIRAC import gMonitor
+from DIRAC import gMonitor, gLogger
 
 def currentPath():
   path = request.environ[ 'PATH_INFO' ]
@@ -112,7 +112,13 @@ def getAreaContents( area, section ):
       if pageData[0].find( "http" ) == 0:
         pagePath = pageData[0]
       else:
-        pagePath = diracURL( "/%s/%s" % ( area, pageData[0] ) )
+        preUrl = pageData[0]
+        actionEnd = preUrl.find( "?" )
+        if actionEnd == -1:
+          pagePath = diracURL( "/%s/%s" % ( area, preUrl ) )
+        else:
+          action = preUrl[ : actionEnd ]
+          pagePath = "%s%s" % ( diracURL( "/%s/%s" % ( area, action ) ), preUrl[ actionEnd: ] )
       subContents.append( "{ text : '%s', url : '%s', handler : %s }" % ( page, pagePath, mainPageHandler ) )
   return "[%s]" % ",".join( subContents )
 

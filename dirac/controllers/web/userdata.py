@@ -19,6 +19,11 @@ class UserdataController(BaseController):
   def __mapReferer(self):
     ref = request.environ[ 'HTTP_REFERER' ]
     ref = ref[ ref.find( "/", 8 ) : ]
+    scriptName = request.environ[ 'SCRIPT_NAME' ]
+    if scriptName[0] != "/":
+      scriptName = "/%s" % scriptName
+    if ref.find( scriptName ) == 0:
+      ref = ref[ len( scriptName ): ]
     return config[ 'routes.map' ].match( ref )
 
   def changeGroup( self ):
@@ -31,6 +36,9 @@ class UserdataController(BaseController):
     requestedValue = request.environ[ 'pylons.routes_dict' ][ 'id' ]
     if requestedValue in validValues:
       request.environ[ 'pylons.routes_dict' ][ propKey ] = requestedValue
+    else:
+      gLogger.info( "Requested change to %s invalid %s" % ( requestedValue, validValues ) )
+    gLogger.info( "CHANGED %s to %s" % ( propKey, request.environ[ 'pylons.routes_dict' ][ propKey ] ) )
     if 'HTTP_REFERER' in request.environ:
       refererDict = self.__mapReferer()
       if refererDict:

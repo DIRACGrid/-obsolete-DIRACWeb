@@ -9,6 +9,7 @@ from DIRAC import gLogger, S_OK, S_ERROR
 from DIRAC.Core.Utilities import List, Time, DEncode
 from dirac.lib.credentials import authorizeAction
 from dirac.lib.diset import getRPCClient, getTransferClient
+from dirac.lib.webBase import defaultRedirect
 
 log = logging.getLogger(__name__)
 
@@ -18,7 +19,7 @@ class MonitoringController(BaseController):
     # Return a rendered template
     #   return render('/some/template.mako')
     # or, Return a response
-    return redirect_to( url_for( controller="info/general", action ="diracOverview" ) )
+    return defaultRedirect()
 
 
   def viewMaker(self):
