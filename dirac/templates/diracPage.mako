@@ -27,7 +27,7 @@ selectedSetup = credentials.getSelectedSetup()
  <body>
   <script type="text/javascript">
    var pageDescription = ${ jsDiracPageObject };
-   initDiracPage( '${ h.url_for( '/' ) }', pageDescription);
+   initDiracPage( "${ h.url_for( '/' ) }", pageDescription);
   </script>
   ${self.body()}
   <!--
