@@ -1,14 +1,14 @@
 
-import dirac.lib.sessionManager as sessionManager
+import dirac.lib.credentials as credentials
 from DIRAC.Core.DISET.RPCClient import RPCClient
 from DIRAC.Core.DISET.TransferClient import TransferClient
 
 def __prepareArgs( kwargs ):
-  if sessionManager.getUserDN():
-    kwargs[ 'delegatedGroup' ] =  str( sessionManager.getSelectedGroup() )
-    kwargs[ 'delegatedDN' ] = str( sessionManager.getUserDN() )
+  if credentials.getUserDN():
+    kwargs[ 'delegatedGroup' ] =  str( credentials.getSelectedGroup() )
+    kwargs[ 'delegatedDN' ] = str( credentials.getUserDN() )
   kwargs[ 'useCertificates' ] = True
-  kwargs[ 'setup' ] = sessionManager.getSelectedSetup()
+  kwargs[ 'setup' ] = credentials.getSelectedSetup()
   return kwargs
 
 def getRPCClient( *args, **kwargs ):

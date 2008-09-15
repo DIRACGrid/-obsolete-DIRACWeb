@@ -1,5 +1,5 @@
-# $Header: /tmp/libdirac/tmp.stZoy15380/dirac/DIRAC3/DIRAC/Interfaces/Web/dirac/controllers/systems/configuration.py,v 1.16 2008/07/03 15:41:00 acasajus Exp $
-__RCSID__ = "$Id: configuration.py,v 1.16 2008/07/03 15:41:00 acasajus Exp $"
+# $Header: /tmp/libdirac/tmp.stZoy15380/dirac/DIRAC3/DIRAC/Interfaces/Web/dirac/controllers/systems/configuration.py,v 1.17 2008/09/15 13:31:22 acasajus Exp $
+__RCSID__ = "$Id: configuration.py,v 1.17 2008/09/15 13:31:22 acasajus Exp $"
 
 import types
 import logging
@@ -11,7 +11,7 @@ from pylons.decorators  import jsonify
 import dirac.lib.helpers as helpers
 from dirac.lib.credentials import authorizeAction
 from dirac.lib.diset import getRPCClient
-import dirac.lib.sessionManager as sessionManager
+import dirac.lib.credentials as credentials
 from DIRAC.ConfigurationSystem.private.Modificator import Modificator
 from DIRAC.ConfigurationSystem.Client.CFG import CFG
 from DIRAC.ConfigurationSystem.Client.Config import gConfig
@@ -30,7 +30,7 @@ class ConfigurationController(BaseController):
 
   def __getModificator( self ):
     rpcClient = getRPCClient( gConfig.getValue( "/DIRAC/Configuration/MasterServer", "Configuration/Server" ) )
-    commiter = "%s@%s - %s" % ( sessionManager.getUsername(), sessionManager.getSelectedGroup(), sessionManager.getUserDN() )
+    commiter = "%s@%s - %s" % ( credentials.getUsername(), credentials.getSelectedGroup(), credentials.getUserDN() )
     return Modificator( rpcClient, commiter )
 
   def __getRemoteConfiguration( self ):
@@ -217,7 +217,7 @@ class ConfigurationController(BaseController):
   def commitConfiguration( self ):
     if not authorizeAction():
       return S_ERROR( "You are not authorized to commit configurations!! Bad boy!" )
-    gLogger.always( "User %s is commiting a new configuration version" % sessionManager.getUserDN() )
+    gLogger.always( "User %s is commiting a new configuration version" % credentials.getUserDN() )
     modifier = self.__getModificator()
     modifier.loadFromBuffer( session[ 'cfgData' ] )
     retDict = modifier.commit()

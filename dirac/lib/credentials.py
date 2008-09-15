@@ -16,6 +16,12 @@ gAuthManager = AuthManager( "%s/Authorization" % gWebConfig.getWebSection() )
 log = logging.getLogger(__name__)
 
 def checkUserCredentials():
+  #Setup
+  setup = request.environ[ 'pylons.routes_dict' ][ 'dsetup' ]
+  if setup not in gWebConfig.getSetups():
+    request.environ[ 'pylons.routes_dict' ][ 'dsetup' ] = gWebConfig.getDefaultSetup()
+  gLogger.info( "URL setup is %s" % request.environ[ 'pylons.routes_dict' ][ 'dsetup' ] )
+
   userDN = ""
   if 'SERVER_SOFTWARE' not in request.environ:
     #Not running direct pylons paste server
@@ -41,23 +47,38 @@ def checkUserCredentials():
     username = retVal[ 'Value' ]
   gLogger.info( "Got username for user" " => %s for %s" % ( username, userDN ) )
   session[ 'username' ] = username
-  #Set the available groups
+  #Check the selected group
   retVal = CS.getGroupsForUser( session[ 'username' ] )
   if not retVal[ 'OK' ]:
-    session[ 'availableGroups' ] = []
+    availableGroups = []
   else:
-    session[ 'availableGroups' ] = retVal[ 'Value' ]
-  #Check selected group
-  if 'group' in session:
-    if session[ 'group' ] not in session[ 'availableGroups' ]:
-      del( session[ 'group' ] )
-  if 'group' not in session:
-    for group in gWebConfig.getDefaultGroups():
-      if group in session[ 'availableGroups' ]:
-        session[ 'group' ] = group
+    availableGroups = retVal[ 'Value' ]
+  session[ 'availableGroups' ] = availableGroups
+  selectedGroup = request.environ[ 'pylons.routes_dict' ][ 'dgroup' ]
+  if selectedGroup not in availableGroups:
+    defaultGroup = False
+    for tgroup in gWebConfig.getDefaultGroups():
+      if tgroup in availableGroups:
+        defaultGroup = tgroup
         break
-  if 'group' not in session:
-    session[ 'group' ] = "visitor"
+    if not defaultGroup:
+      defaultGroup = "visitor"
+    request.environ[ 'pylons.routes_dict' ][ 'dgroup' ] = defaultGroup
+  gLogger.info( "URL group is %s" % request.environ[ 'pylons.routes_dict' ][ 'dgroup' ] )
+
+  if False:
+    #Check selected group
+    if 'group' in session:
+      if session[ 'group' ] not in session[ 'availableGroups' ]:
+        del( session[ 'group' ] )
+    if 'group' not in session:
+      for group in gWebConfig.getDefaultGroups():
+        if group in session[ 'availableGroups' ]:
+          session[ 'group' ] = group
+          break
+    if 'group' not in session:
+      session[ 'group' ] = "visitor"
+
   session.save()
 
 def authorizeAction():
@@ -71,3 +92,29 @@ def authorizeAction():
   log.info( "AUTHORIZING %s for %s" % ( actionPath, userDN ) )
   c.error = "You shouldn't be here :) (not enough karma maybe?)"
   return gAuthManager.authQuery( actionPath, session )
+
+#Retrieve info from the connection user, DN, group, setup...
+
+def getUsername():
+  if 'username' in session:
+    return session[ 'username' ]
+  else:
+    return "anonymous"
+
+def getUserDN():
+  if 'DN' in session:
+    return session[ 'DN' ]
+  else:
+    return False
+
+def getSelectedSetup():
+  return request.environ[ 'pylons.routes_dict' ][ 'dsetup' ]
+
+def getSelectedGroup():
+  return request.environ[ 'pylons.routes_dict' ][ 'dgroup' ]
+
+def getAvailableGroups():
+  if 'availableGroups' in session:
+    return session[ 'availableGroups' ]
+  else:
+    return []

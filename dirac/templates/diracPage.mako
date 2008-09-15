@@ -8,10 +8,11 @@ credentials.checkUserCredentials()
 
 pageTitle = webBase.htmlPageTitle()
 jsDiracPageObject = webBase.getJSPageData()
+selectedSetup = credentials.getSelectedSetup()
 %>
 <html>
  <head>
-  <title>DIRAC: ${ pageTitle }</title>
+  <title>DIRAC:${ pageTitle } on ${ selectedSetup }</title>
   <link rel="SHORTCUT ICON" href='${ h.url_for( "/images/favicon.ico" )}'>
   ${ h.javascript_include_tag( "/ext/adapter/ext/ext-base.js" ) }
   ${ h.javascript_include_tag( "/ext/ext-all-debug.js" ) }
