@@ -23,7 +23,8 @@ class MapController(BaseController):
     transferClient = getTransferClient('Monitoring/SiteMapping')
     name = request.params["name"]
     tmpFile = tempfile.NamedTemporaryFile()
-    result = transferClient.receiveFile(tmpFile.name, {'Type':'File_CheckDependencies', 'Data':name})
+    gLogger.info('-- Arguments to SiteMapping service: %s %s ' %(tmpFile.name,name))
+    result = transferClient.receiveFile(tmpFile.name,name)
     teststring = "operation result for request file " + name + ": "
     gLogger.info(teststring, result)
     if not result["OK"]:
@@ -47,7 +48,7 @@ class MapController(BaseController):
     gLogger.info("data from cache:", data)
     if not data:
       tmpFile = tempfile.NamedTemporaryFile()
-      result = transferClient.receiveFile(tmpFile.name, {'Type':'File', 'Data':name})
+      result = transferClient.receiveFile(tmpFile.name,name)
       teststring = "operation result for request file " + name + ": "
       gLogger.info(teststring, result)
       if not result["OK"]:
@@ -77,7 +78,7 @@ class MapController(BaseController):
     #data = self.__imgCache.get(name)
     #if not data:
     tmpFile = tempfile.NamedTemporaryFile()
-    result = transferClient.receiveFile(tmpFile.name, {'Type':'File', 'Data':name})
+    result = transferClient.receiveFile(tmpFile.name,name)
     teststring = "operation result for request file " + name + ": "
     gLogger.info(teststring, result)
     if not result["OK"]:
