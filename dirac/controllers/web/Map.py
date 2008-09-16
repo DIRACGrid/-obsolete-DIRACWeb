@@ -22,8 +22,8 @@ class MapController(BaseController):
     pagestart = time()
     transferClient = getTransferClient('Monitoring/SiteMapping')
     name = request.params["name"]
-    tmpFile = tempfile.TemporaryFile()
-    result = transferClient.receiveFile(tmpFile, {'Type':'File_CheckDependencies', 'Data':name})
+    tmpFile = tempfile.NamedTemporaryFile()
+    result = transferClient.receiveFile(tmpFile.name, {'Type':'File_CheckDependencies', 'Data':name})
     teststring = "operation result for request file " + name + ": "
     gLogger.info(teststring, result)
     if not result["OK"]:
@@ -46,8 +46,8 @@ class MapController(BaseController):
     data = self.__imgCache.get(name)
     gLogger.info("data from cache:", data)
     if not data:
-      tmpFile = tempfile.TemporaryFile()
-      result = transferClient.receiveFile(tmpFile, {'Type':'File', 'Data':name})
+      tmpFile = tempfile.NamedTemporaryFile()
+      result = transferClient.receiveFile(tmpFile.name, {'Type':'File', 'Data':name})
       teststring = "operation result for request file " + name + ": "
       gLogger.info(teststring, result)
       if not result["OK"]:
@@ -76,8 +76,8 @@ class MapController(BaseController):
     gLogger.info("request for the file:", name)
     #data = self.__imgCache.get(name)
     #if not data:
-    tmpFile = tempfile.TemporaryFile()
-    result = transferClient.receiveFile(tmpFile, {'Type':'File', 'Data':name})
+    tmpFile = tempfile.NamedTemporaryFile()
+    result = transferClient.receiveFile(tmpFile.name, {'Type':'File', 'Data':name})
     teststring = "operation result for request file " + name + ": "
     gLogger.info(teststring, result)
     if not result["OK"]:
