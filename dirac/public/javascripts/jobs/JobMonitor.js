@@ -95,7 +95,6 @@ function initData(store){
     {header:'CPUTime',sortable:true,dataIndex:'CPUTime',align:'left',hidden:true},
     {header:'OwnerDN',sortable:true,dataIndex:'OwnerDN',align:'left',hidden:true},
     {header:'JobGroup',sortable:true,dataIndex:'JobGroup',align:'left',hidden:true},
-    {header:'JobName',sortable:true,dataIndex:'JobName',align:'left',hidden:true},
     {header:'AccountedFlag',sortable:true,dataIndex:'AccountedFlag',align:'left',hidden:true},
     {header:'OSandboxReadyFlag',sortable:true,dataIndex:'OSandboxReadyFlag',align:'left',hidden:true},
     {header:'Owner',sortable:true,dataIndex:'Owner',align:'left'}
