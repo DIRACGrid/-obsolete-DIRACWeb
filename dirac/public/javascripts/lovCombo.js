@@ -66,6 +66,9 @@ Ext.ux.form.LovCombo = Ext.extend(Ext.form.ComboBox, {
 		this.list.hide();
 		var v = this.getRawValue();
 		var va = [];
+                if(v == ''){
+                  this.clearValue();
+                }
 		this.store.clearFilter();
 		this.store.each(function(r) {
 			var re = new RegExp(r.get(this.displayField));
@@ -79,16 +82,18 @@ Ext.ux.form.LovCombo = Ext.extend(Ext.form.ComboBox, {
         	if(this.fireEvent('beforeselect', this, record, index) !== false){
 			record.set(this.checkField, !record.get(this.checkField));
 			if(index == 0){
-				var total = this.store.totalLength;
-				for(var k = 1; k < total; k++) {
-					var newRecord = this.store.getAt(k);
-					newRecord.set(this.checkField, record.get(this.checkField));
-					this.doQuery(this.allQuery);
-					var test = this.getCheckedValue();
+				var fItem = this.store.data.items[0].json[1];
+				if(fItem == 'All'){
+					var total = this.store.totalLength;
+					for(var k = 0; k < total; k++) {
+						this.store.data.items[k].set(this.checkField, record.get(this.checkField));
+					}
 					this.setValue(this.getCheckedValue());
+				}else{
+					this.setValue(this.getCheckedValue());
+					this.fireEvent('select', this, record, index);
 				}
 			}else{
-				this.doQuery(this.allQuery);
                 	        this.setValue(this.getCheckedValue());
             			this.fireEvent('select', this, record, index);
 			}
@@ -110,7 +115,6 @@ Ext.ux.form.LovCombo = Ext.extend(Ext.form.ComboBox, {
                                	this.displayValue = this.getCheckedDisplay();
 				this.displayValue = this.displayValue.replace(/:::/g,',');
 				this.displayValue = this.displayValue.replace(/All, /g,'');
-//				this.displayValue = this.displayValue.replace(/ ,/g,'');
 				this.setRawValue(this.displayValue);
 				if(this.hiddenField) {
 					this.hiddenField.value = this.getCheckedDisplay();

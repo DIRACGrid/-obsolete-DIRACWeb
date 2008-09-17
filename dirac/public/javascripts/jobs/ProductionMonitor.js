@@ -25,7 +25,8 @@ function initRecord(){
     {name:'agenttype'},
     {name:'description'},
     {name:'creationdate',type:'date',dateFormat:'Y-n-j h:i:s'},
-    {name:'stalled'}
+    {name:'stalled'},
+    {name:'numberOfFiles'}
   ]);
   return record
 }
@@ -58,13 +59,15 @@ function initData(store){
     {header:'',width:10,sortable:false,dataIndex:'status',renderer:status},
     {header:'Status',sortable:true,dataIndex:'status',align:'left'},
     {header:'Name',sortable:true,dataIndex:'name',align:'left'},
+    {header:'Files',sortable:true,dataIndex:'numberOfFiles',align:'left'},
     {header:'Created',sortable:true,dataIndex:'created',align:'left'},
     {header:'Submited',sortable:true,dataIndex:'submited',align:'left'},
     {header:'Waiting',sortable:true,dataIndex:'wait',align:'left'},
     {header:'Running',sortable:true,dataIndex:'running',align:'left'},
+    {header:'Stalled',sortable:true,dataIndex:'stalled',align:'left'},
     {header:'Done',sortable:true,dataIndex:'done',align:'left'},
     {header:'Failed',sortable:true,dataIndex:'failed',align:'left'},
-    {header:'Description',sortable:true,dataIndex:'description',align:'left'},
+    {header:'Description',sortable:true,dataIndex:'description',align:'left',hidden:true},
     {header:'AgentType',sortable:true,dataIndex:'agenttype',align:'left'},
     {header:'CreationDate [UTC]',sortable:true,renderer:Ext.util.Format.dateRenderer('Y-n-j h:i'),dataIndex:'creationdate'},
     {header:'Owner',sortable:true,dataIndex:'owner',align:'left'}
@@ -109,14 +112,16 @@ function setMenuItems(selections){
       ]})}
     );
   }
-  if((status == 'Active')||(status == 'New')){
-      dirac.menu.items.items[3].menu.items.items[1].enable();
-      dirac.menu.items.items[3].menu.items.items[0].disable();
+  if(status == 'Active'){
+    dirac.menu.items.items[3].menu.items.items[1].enable();
+    dirac.menu.items.items[3].menu.items.items[0].disable();
+  }else if(status == 'New'){
+    dirac.menu.items.items[3].menu.items.items[1].disable();
+    dirac.menu.items.items[3].menu.items.items[0].enable();
   }else{
-      dirac.menu.items.items[3].menu.items.items[1].disable();
-      dirac.menu.items.items[3].menu.items.items[0].enable();
+    dirac.menu.items.items[3].menu.items.items[1].disable();
+    dirac.menu.items.items[3].menu.items.items[0].enable();
   }
-  x = 0;
 };
 function AJAXsuccess(value,id,response){
   var jsonData = Ext.util.JSON.decode(response);
@@ -155,13 +160,13 @@ function AJAXsuccess(value,id,response){
   displayWin(panel,id)
 }
 function jump(type,id,submited){
-  if(submited==0){
+  if(submited == 0){
     alert('Nothing to display');
     return
   }else{
     var url = document.location.protocol + '//' + document.location.hostname + gURLRoot + '/jobs/JobMonitor/display';
     var post_req = '<form id="redirform" action="' + url + '" method="POST" >';
-    post_req = post_req + '<input type="hidden" name="productionID" value="' + id + '">';
+    post_req = post_req + '<input type="hidden" name="prod" value="' + id + '">';
     post_req = post_req + '</form>';
     document.body.innerHTML = document.body.innerHTML + post_req;
     var form = document.getElementById('redirform');

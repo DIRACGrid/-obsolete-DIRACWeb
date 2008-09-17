@@ -59,9 +59,22 @@ function initData(store){
   ];
   tableMngr = {'store':store,'columns':columns,'title':title,'tbar':dirac.tbar};
   var t = table(tableMngr);
-//  t.footer = true;
+  t.addListener('cellclick',showMenu);
+  t.footer = false;
   return t
 }
+function setMenuItems(selections){
+  if(selections){
+    var id = selections.name;
+  }else{
+    return
+  }
+  if(dirac.menu){
+    dirac.menu.add(
+      {handler:function(){jump('site',id)},text:'Show Job(s)'}
+    );
+  }
+};
 function renderData(store){
   var leftBar = initSidebar();
   var mainContent = initData(store);
@@ -70,11 +83,30 @@ function renderData(store){
 }
 function afterDataLoad(store){
   var last = 'Refresh it';
-  if(store.reader.jsonData){
-    last = dataMngr.store.reader.jsonData.time;
+  if(store){
+    if(store.reader){
+      if(store.reader.jsonData){
+        last = dataMngr.store.reader.jsonData.time;
+      }
+    }
   }
   last = 'Last update: ' + last
-  if(dirac.tbar.items.items[1]){
-    dirac.tbar.items.items[1].setText(last);
+  if(dirac){
+    if(dirac.tbar){
+      if(dirac.tbar.items){
+        if(dirac.tbar.items.items[1]){
+          dirac.tbar.items.items[1].setText(last);
+        }
+      }
+    }
   }
+}
+function jump(type,id){
+  var url = document.location.protocol + '//' + document.location.hostname + gURLRoot + '/jobs/JobMonitor/display';
+  var post_req = '<form id="redirform" action="' + url + '" method="POST" >';
+  post_req = post_req + '<input type="hidden" name="' + type + '" value="' + id + '">';
+  post_req = post_req + '</form>';
+  document.body.innerHTML = document.body.innerHTML + post_req;
+  var form = document.getElementById('redirform');
+  form.submit();
 }

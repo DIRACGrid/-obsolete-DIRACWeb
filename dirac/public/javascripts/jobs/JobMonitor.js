@@ -10,8 +10,6 @@ function initJobMonitor(reponseSelect){
     renderData(store);
   });
 }
-'SystemPriority', 'ApplicationNumStatus', 'JobID', 'LastSignOfLife', 'VerifiedFlag', 'RetrievedFlag', 'Status', 'StartExecTime', 'RescheduleCounter', 'JobSplitType', 'MinorStatus', 'ApplicationStatus', 'SubmissionTime', 'JobType', 'MasterJobID', 'KilledFlag', 'RescheduleTime', 'DIRACSetup', 'FailedFlag', 'CPUTime', 'OwnerDN', 'JobGroup', 'JobName', 'AccountedFlag', 'OSandboxReadyFlag', 'LastUpdateTime', 'Site', 'HeartBeatTime', 'OwnerGroup', 'ISandboxReadyFlag', 'UserPriority', 'Owner', 'DeletedFlag'
-
 // function describing data structure, should be individual per page
 function initRecord(){
   var record = new Ext.data.Record.create([
@@ -71,7 +69,13 @@ function initSidebar(){
   select.insert(5,prodSelect);
   select.insert(6,dateSelect);
   select.insert(7,id);
-  return select
+  var sortGlobal = sortGlobalPanel(); // Initializing the global sort panel
+  var graph = imagePanel();
+  var bar = sideBar();
+  bar.insert(0,select);
+  bar.insert(1,sortGlobal);
+  bar.insert(2,graph);
+  return bar
 }
 function initData(store){
   var columns = [
@@ -88,7 +92,7 @@ function initData(store){
     {header:'SubmissionTime [UTC]',sortable:true,renderer:Ext.util.Format.dateRenderer('Y-m-d H:i'),dataIndex:'SubmissionTime'},
     {header:'DIRACSetup',sortable:true,dataIndex:'DIRACSetup',align:'left',hidden:true},
     {header:'FailedFlag',sortable:true,dataIndex:'FailedFlag',align:'left',hidden:true},
-    {header:'CPUTime',sortable:true,dataIndex:'CPUTime',align:'left,hidden:true'},
+    {header:'CPUTime',sortable:true,dataIndex:'CPUTime',align:'left',hidden:true},
     {header:'OwnerDN',sortable:true,dataIndex:'OwnerDN',align:'left',hidden:true},
     {header:'JobGroup',sortable:true,dataIndex:'JobGroup',align:'left',hidden:true},
     {header:'JobName',sortable:true,dataIndex:'JobName',align:'left',hidden:true},
@@ -98,26 +102,52 @@ function initData(store){
   ];
   var title = 'Job Monitoring';
   var tbar = [
-    {handler:function(){selectAll('all')},text:'Select All',width:150,tooltip:'Click to select all rows'},
-    {handler:function(){selectAll('none')},text:'Select None',width:150,tooltip:'Click to uncheck selected row(s)'},
-    '->',
-    {handler:function(){action('job','reset')},text:'Reset',tooltip:'Click to reset selected job(s)'},
-    {handler:function(){action('job','kill')},text:'Kill',tooltip:'Click to kill selected job(s)'},
-    {handler:function(){action('job','delete')},text:'Delete',tooltip:'Click to delete selected job(s)'}
+    {
+      cls:"x-btn-text-icon",
+      handler:function(){selectAll('all')},
+      icon:gURLRoot+'/images/iface/checked.gif',
+      text:'Select All',
+      tooltip:'Click to select all rows'
+    },{
+      cls:"x-btn-text-icon",
+      handler:function(){selectAll('none')},
+      icon:gURLRoot+'/images/iface/unchecked.gif',
+      text:'Select None',
+      tooltip:'Click to uncheck selected row(s)'
+    },'->',{
+      handler:function(){action('job','reset')},
+      text:'Reset',
+      tooltip:'Click to reset selected job(s)'
+    },{
+      handler:function(){action('job','kill')},
+      text:'Kill',
+      tooltip:'Click to kill selected job(s)'
+    },{
+      handler:function(){action('job','delete')},
+      text:'Delete',
+      tooltip:'Click to delete selected job(s)'
+    }
   ];
   store.setDefaultSort('JobID','DESC'); // Default sorting
   tableMngr = {'store':store,'columns':columns,'title':title,'tbar':tbar};
   var t = table(tableMngr);
   t.addListener('cellclick',showMenu);
-  return t
+  var tabPanel = new Ext.TabPanel({
+    activeTab:0,
+    enableTabScroll:true,
+    id:'tabPanel',
+    items:[t],
+    margins:'2 0 2 0',
+    region:'center'
+  });
+  return tabPanel
 }
 function renderData(store){
   var leftBar = initSidebar();
   var mainContent = initData(store);
   renderInMainViewport([ leftBar, mainContent ]);
-  dataMngr = {'form':leftBar,'store':store}
+  dataMngr = {'form':leftBar.items.items[0],'store':store}
 }
-
 function setMenuItems(selections){
   if(selections){
     var id = selections.JobID;
@@ -135,9 +165,11 @@ function setMenuItems(selections){
       '-',
       {handler:function(){AJAXrequest('getStandardOutput',id)},text:'StandardOutput'},
       {handler:function(){AJAXrequest('LogURL',id)},text:'Get LogFile'},
+      {handler:function(){AJAXrequest('getPending',id)},text:'Get PendingRequest'},
       {handler:function(){AJAXrequest('getStagerReport',id)},text:'Get StagerReport'},
+      {handler:function(){AJAXrequest('getSandBox',id)},text:'Get SandBox file'},
       '-',
-      {text:'Actions',menu:({items:[
+      {text:'Actions',icon:gURLRoot + '/images/iface/action.gif',menu:({items:[
         {handler:function(){action('job','reset',id)},text:'Reset'},
         {handler:function(){action('job','kill',id)},text:'Kill'},
         {handler:function(){action('job','delete',id)},text:'Delete'}
@@ -148,9 +180,9 @@ function setMenuItems(selections){
       ]})}
     );
     if((status == 'Done')||(status == 'Failed')){
-      dirac.menu.items.items[8].enable();
+      dirac.menu.items.items[9].enable();
     }else{
-      dirac.menu.items.items[8].disable();
+      dirac.menu.items.items[9].disable();
     }
   }
 };
@@ -187,8 +219,41 @@ function AJAXsuccess(value,id,response){
         {header:'Name',sortable:true,dataIndex:'name',align:'left'},
         {header:'Value',sortable:true,dataIndex:'value',align:'left'}
       ];
+    }else if(value == 'getPending'){
+      reader = new Ext.data.ArrayReader({},[
+        {name:'type'},
+        {name:'operation'},
+        {name:'status'},
+        {name:'order'},
+        {name:'targetSE'},
+        {name:'file'}
+      ]);
+      columns = [
+        {header:'Type',sortable:true,dataIndex:'type',align:'left'},
+        {header:'Operation',sortable:true,dataIndex:'operation',align:'left'},
+        {header:'Status',sortable:true,dataIndex:'status',align:'left'},
+        {header:'Order',sortable:true,dataIndex:'order',align:'left'},
+        {header:'Targert SE',sortable:true,dataIndex:'targetSE',align:'left'},
+        {header:'File',sortable:true,dataIndex:'file',align:'left'}
+      ];
+      var mark = 0;
+      for(var i = 0; i < result.length; i++){
+        if(result[i][0] == 'PendingRequest'){
+          var intermed = result[i][1].split('\n');
+          mark = 1;
+        }
+      }
+      if(mark == 0){
+        alert('Error: No pending request(s) found');
+        return
+      }else{
+        for(var j = 0; j < intermed.length; j++){
+          intermed[j] = intermed[j].split(':');
+        }
+        result = intermed;
+      }
     }else if(value == 'LoggingInfo'){
-     reader = new Ext.data.ArrayReader({},[
+      reader = new Ext.data.ArrayReader({},[
         {name:'status'},
         {name:'minorstatus'},
         {name:'applicationstatus'},
@@ -218,4 +283,19 @@ function AJAXsuccess(value,id,response){
   displayWin(panel,id)
 }
 function afterDataLoad(){
+  var panel = Ext.getCmp('imagePanel');
+  if(panel){
+    var items = panel.items.items;
+    var timeout = 150;
+    for(var i = 0; i < items.length; i++){
+      var name = items[i].name
+      items[i].load({
+        callback:function(panel,success,response){callBack(panel,success,response,name)},
+        params:paramsSite(name),
+        timeout:timeout,
+        text:"Loading...",
+        url:'action'
+      });
+    }
+  }
 }
