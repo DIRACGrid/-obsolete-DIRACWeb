@@ -56,7 +56,10 @@ class ProductionmonitorController(BaseController):
           done = jobStat["Done"]
           failed = jobStat["Failed"]
           stalled = jobStat["Stalled"]
-          c.result.append({"id":id,"name":i["TransformationName"],"status":i["Status"],"dn":i["AuthorDN"],"created":created,"submited":submited,"wait":wait,"running":running,"done":done,"failed":failed,"agenttype":i["AgentType"],"description":i["Description"],"creationdate":i["CreationDate"],"stalled":stalled})
+          nof = i["NumberOfFiles"]
+          if nof == -1:
+            nof = 0
+          c.result.append({"id":id,"name":i["TransformationName"],"status":i["Status"],"dn":i["AuthorDN"],"created":created,"submited":submited,"wait":wait,"running":running,"done":done,"failed":failed,"agenttype":i["AgentType"],"description":i["Description"],"creationdate":i["CreationDate"],"stalled":stalled,"numberOfFiles":nof})
         total = len(c.result)
         c.result = {"success":"true","result":c.result,"total":total}
       else:

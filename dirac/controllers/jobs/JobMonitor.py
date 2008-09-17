@@ -1,11 +1,13 @@
-import logging
+import logging, datetime, tempfile
 from time import time, gmtime, strftime
 
 from dirac.lib.base import *
-from dirac.lib.diset import getRPCClient
+from dirac.lib.diset import getRPCClient, getTransferClient
 from dirac.lib.credentials import authorizeAction
 from dirac.lib.sessionManager import *
 from DIRAC import gLogger
+from DIRAC.AccountingSystem.Client.ReportsClient import ReportsClient
+from DIRAC.Core.Utilities.DictCache import DictCache
 
 log = logging.getLogger(__name__)
 
@@ -15,6 +17,7 @@ globalSort = []
 globalSort = [["JobID","DESC"]]
 
 class JobmonitorController(BaseController):
+  __imgCache = DictCache()
 ################################################################################
   def display(self):
     pagestart = time()
@@ -29,6 +32,28 @@ class JobmonitorController(BaseController):
     for i in jobs:
       valueList.append({"id":str(i[2]),"status":str(i[6]),"minorStatus":str(i[10]),"applicationStatus":str(i[11]),"site":str(i[26]),"jobname":str(i[22]),"lastUpdate":str(i[25]),"owner":str(i[31]),"submissionTime":str(i[12]),"signTime":str(i[3])})
     return valueList
+################################################################################
+  def __getPlot(self,id):
+    rc = ReportsClient()
+    transferClient = getTransferClient('Accounting/ReportGenerator')
+    c.result = self.__imgCache.get(id)
+    if not c.result:
+      tmpFile = tempfile.TemporaryFile()
+      result = transferClient.receiveFile(tmpFile,id)
+      if result["OK"]:
+#        data = result["Value"]
+#        tmpFile = tempfile.TemporaryFile()
+#        tmpFile.write(data)
+        tmpFile.seek(0)
+        c.result = tmpFile.read()
+        response.headers['Content-type'] = 'image/png'
+        response.headers['Content-Disposition'] = 'attachment; filename="%s"' % id
+        response.headers['Content-Length'] = len(c.result)
+        response.headers['Content-Transfer-Encoding'] = 'Binary'
+      else:
+        c.result = {"success":"false","error":result["Message"]}
+    gLogger.info("10")
+    return c.result
 ################################################################################
   @jsonify
   def submit(self):
@@ -74,32 +99,36 @@ class JobmonitorController(BaseController):
 ################################################################################
   def __getSelectionData(self):
     callback = {}
-    if request.params.has_key("productionID") and len(request.params["productionID"]) > 0:
-      callback["productionID"] = str(request.params["productionID"])
+    if len(request.params) > 0:
+      tmp = {}
+      for i in request.params:
+        tmp[i] = str(request.params[i])
+        gLogger.info(" value ",request.params[i])
+      callback["extra"] = tmp
     RPC = getRPCClient("WorkloadManagement/JobMonitoring")
     result = RPC.getProductionIds()
-    gLogger.info("ProdIDs: ",result)
-    RPC = getRPCClient("ProductionManagement/ProductionManager")
-    result = RPC.getProductionSummary()
+#    gLogger.info("- ProdIDs: ",result)
+#    RPC = getRPCClient("ProductionManagement/ProductionManager")
+#    result = RPC.getProductionSummary()
     if result["OK"]:
       prod = []
       prods = result["Value"]
       if len(prods)>0:
         prod.append([str("All")])
         tmp = []
-        for keys,i in prods.items():
-          id = str(int(keys)).zfill(8)
+        for keys in prods:
+          try:
+            id = str(int(keys)).zfill(8)
+          except:
+            id = str(keys)
           tmp.append(str(id))
-        tmp.sort(reverse=True);
+        tmp.sort(reverse=True)
         for i in tmp:
           prod.append([str(i)])
       else:
         prod = "Nothing to display"
     else:
-      prod = "Error during RPC call"
-    gLogger.info("Before: ",prod)
-#    prod = prod.sort()
-    gLogger.info("After: ",prod)
+      prod = result["Message"]
     callback["prod"] = prod
     RPC = getRPCClient("WorkloadManagement/JobMonitoring")
     result = RPC.getSites()
@@ -126,7 +155,9 @@ class JobmonitorController(BaseController):
     else:
       stat = "Error during RPC call"
     callback["stat"] = stat
+    gLogger.info("Before: ",prod)
     result = RPC.getMinorStates()
+    gLogger.info("After: ",result)
     if result["OK"]:
       stat = []
       if len(result["Value"])>0:
@@ -204,8 +235,11 @@ class JobmonitorController(BaseController):
           req["LastUpdate"] = str(request.params["date"])
       if request.params.has_key("sort") and len(request.params["sort"]) > 0:
         globalSort = str(request.params["sort"])
+        key,value = globalSort.split(" ")
+        globalSort = [[str(key),str(value)]]
       else:
         globalSort = [["JobID","DESC"]]
+    gLogger.info("REQUEST:",req)
     return req
 ################################################################################
   @jsonify
@@ -253,6 +287,28 @@ class JobmonitorController(BaseController):
     elif request.params.has_key("getStagerReport") and len(request.params["getStagerReport"]) > 0:
       id = request.params["getStagerReport"]
       return self.__getStagerReport(int(id))
+    elif request.params.has_key("getSandBox") and len(request.params["getSandBox"]) > 0:
+      id = request.params["getSandBox"]
+      return self.__getSandBox(int(id))
+    elif request.params.has_key("refreshSelection") and len(request.params["refreshSelection"]) > 0:
+      return self.__getSelectionData()
+    elif request.params.has_key("getPlotSrc") and len(request.params["getPlotSrc"]) > 0:
+      id = request.params["getPlotSrc"]
+      if request.params.has_key("type") and len(request.params["type"]) > 0:
+        type = request.params["type"]
+      else:
+        type = "jobsBySite"
+      if request.params.has_key("time") and len(request.params["time"]) > 0:
+        timeToSet = request.params["time"]
+      else:
+        timeToSet = "week"
+      if request.params.has_key("img") and len(request.params["img"]) > 0:
+        img = request.params["img"]
+      else:
+        img = "False"
+      return self.__getPlotSrc(type,id,timeToSet,img)
+    elif request.params.has_key("getPending") and len(request.params["getPending"]) > 0:
+      return self.__getParams(request.params["getPending"])
     else:
       c.result = {"success":"false","error":"DIRAC Job ID(s) is not defined"}
       return c.result
@@ -294,6 +350,11 @@ class JobmonitorController(BaseController):
     return c.result
 ################################################################################
   def __getParams(self,id):
+    try:
+      id = int(id)
+    except:
+      c.result = {"success":"false","error":"Wrong data type, numerical expected"}
+      return c.result
     RPC = getRPCClient("WorkloadManagement/JobMonitoring")
     result = RPC.getJobParameters(id)
     if result["OK"]:
@@ -428,4 +489,74 @@ class JobmonitorController(BaseController):
     else:
       c.result = {"success":"false","error":result["Message"]}
     gLogger.info("getStagerReport:",id)
+    return c.result
+################################################################################
+  def __getSandBox(self,id):
+    return "Not ready yet"
+################################################################################
+  def __getPlotSrc(self,type,args,timeToSet,img):
+    rc = ReportsClient()
+    type = str(type)
+    args = str(args)
+    name = type + args
+    if args == "All":
+      args = {}
+    else:
+      args = args.split(",")
+      args = {"Site":args}
+    gLogger.info("Arguments:",args)
+    time = str(timeToSet)
+    now = datetime.datetime.utcnow()
+    if  timeToSet == 'day':
+      timeSpan = now - datetime.timedelta( seconds = 86400 ) 
+    elif timeToSet == 'week':
+      timeSpan = now - datetime.timedelta( seconds = 86400 * 7 )
+    elif timeToSet == 'month':
+      timeSpan = now - datetime.timedelta( seconds = 86400 * 30 )
+    elif timeToSet == 'year':
+      timeSpan = now - datetime.timedelta( seconds = 86400 * 360 )
+    else:
+      timeSpan = now - datetime.timedelta( seconds = 86400 * 7 )
+    if len(name) < 1:
+      c.result = {"success":"false","error":"Recived empty value"}
+    else:
+      result = self.__imgCache.get(name)
+      if not result:
+        result = rc.listPlots("Job")
+        if result["OK"]:
+          plots = result["Value"]
+          if type == 'jobsBySite':
+            if img == 'True':
+              result = rc.generatePlot("Job",plots[8],timeSpan,now,args,"Site")
+            else:
+              result = rc.generatePlot("Job",plots[8],timeSpan,now,args,"Site",{'thumbnail':True,'widh':800,'height':600,'thb_width':190,'thb_height':125})
+          elif type == 'jobCPUbySite':
+            if img == 'True':
+              result = rc.generatePlot("Job",plots[0],timeSpan,now,args,"Site")
+            else:
+              result = rc.generatePlot("Job",plots[0],timeSpan,now,args,"Site",{'thumbnail':True,'widh':800,'height':600,'thb_width':196,'thb_height':125})
+          elif type == 'CPUUsedBySite':
+            if img == 'True':
+              result = rc.generatePlot("Job",plots[2],timeSpan,now,args,"Site")
+            else:
+              result = rc.generatePlot("Job",plots[2],timeSpan,now,args,"Site",{'thumbnail':True,'widh':800,'height':600,'thb_width':196,'thb_height':125})
+          else:
+            if img == 'True':
+              result = rc.generatePlot("Job",plots[8],timeSpan,now,args,"Site")
+            else:
+              result = rc.generatePlot("Job",plots[8],timeSpan,now,{},"Site",{'thumbnail':True,'widh':800,'height':600,'thb_width':196,'thb_height':125})
+          if result["OK"]:
+            if img == 'True':
+              result = result["Value"]
+            else:
+              result = result["thumbnail"]
+            c.result = {"success":"true","result":result}
+            self.__imgCache.add(name, 600, result)
+          else:
+            c.result = {"success":"false","error":result["Message"]}
+        else:
+          c.result = {"success":"false","error":result["Message"]}
+      else:
+        c.result = {"success":"true","result":result}
+    gLogger.info("getPlotSrc:",c.result)
     return c.result
