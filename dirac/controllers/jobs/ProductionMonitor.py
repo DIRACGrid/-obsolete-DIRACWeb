@@ -9,12 +9,12 @@ from DIRAC import gConfig
 import DIRAC.Core.Utilities.Time as Time
 log = logging.getLogger(__name__)
 
-result = gConfig.getSections("/Users")
+result = gConfig.getSections("/Security/Users")
 if result["OK"]:
   users = result["Value"]
   dndb = {}
   for j in users:
-    dndb[gConfig.getValue("/Users/%s/DN" % j)] = j
+    dndb[gConfig.getValue("/Security/Users/%s/DN" % j)] = j
 else:
   dndb = {}
 
@@ -211,7 +211,7 @@ class ProductionmonitorController(BaseController):
     return c.result
 ################################################################################
   def __actProduction(self,prodid,cmd):
-    
+
     prodid = prodid.split(",")
     RPC = getRPCClient("ProductionManagement/ProductionManager")
     c.result = []
