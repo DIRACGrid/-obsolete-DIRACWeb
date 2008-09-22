@@ -40,7 +40,11 @@ def htmlUserInfo():
   if dn:
     htmlData += " (%s)" % dn
   else:
-    htmlData += " (<a href='https://%s%s'>certificate login</a>)" % ( str( request.environ[ 'HTTP_HOST' ] ), str( request.environ[ 'REQUEST_URI' ] ) )
+    if 'REQUEST_URI' in request.environ:
+      uri = str( request.environ[ 'REQUEST_URI' ] )
+    else:
+      uri = ""
+    htmlData += " (<a href='https://%s%s'>certificate login</a>)" % ( str( request.environ[ 'HTTP_HOST' ] ), uri )
   return htmlData
 
 def htmlSetups():
@@ -180,7 +184,7 @@ def getJSPageData():
   return "{%s}" % ",".join( pageData )
 
 ## DEFAULT REDIRECT
-def defaultRedirect( self ):
+def defaultRedirect():
   return redirect_to( controller='info/general', action='diracOverview', id=None )
 
 def diracURL( controller, action = None, id = None ):

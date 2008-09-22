@@ -20,10 +20,11 @@ class UserdataController(BaseController):
     ref = request.environ[ 'HTTP_REFERER' ]
     ref = ref[ ref.find( "/", 8 ) : ]
     scriptName = request.environ[ 'SCRIPT_NAME' ]
-    if scriptName[0] != "/":
-      scriptName = "/%s" % scriptName
-    if ref.find( scriptName ) == 0:
-      ref = ref[ len( scriptName ): ]
+    if scriptName:
+      if scriptName[0] != "/":
+        scriptName = "/%s" % scriptName
+      if ref.find( scriptName ) == 0:
+        ref = ref[ len( scriptName ): ]
     return config[ 'routes.map' ].match( ref )
 
   def changeGroup( self ):
@@ -34,25 +35,32 @@ class UserdataController(BaseController):
 
   def __changeURLPropertyAndRedirect( self, propKey, validValues ):
     requestedValue = request.environ[ 'pylons.routes_dict' ][ 'id' ]
+    redDict = False
+    if 'HTTP_REFERER' in request.environ:
+      refDict = self.__mapReferer()
+      if refDict:
+        redDict = {}
+        for key in ( 'controller', 'action' ):
+          if key in refDict:
+            redDict[ key ] = refDict[ key ]
+        if 'id' in refDict:
+          redDict[ 'id' ] = refDict[ 'id' ]
+        else:
+          redDict[ 'id' ] = None
+        if 'controller' in redDict and 'action' in redDict and \
+           redDict[ 'controller' ] == 'template' and \
+           redDict[ 'action' ] == 'view':
+          redDict = False
     if requestedValue in validValues:
       request.environ[ 'pylons.routes_dict' ][ propKey ] = requestedValue
     else:
       gLogger.info( "Requested change to %s invalid %s" % ( requestedValue, validValues ) )
-    gLogger.info( "CHANGED %s to %s" % ( propKey, request.environ[ 'pylons.routes_dict' ][ propKey ] ) )
-    if 'HTTP_REFERER' in request.environ:
-      refererDict = self.__mapReferer()
-      if refererDict:
-        redirectDict = {}
-        for key in ( 'controller', 'action' ):
-          if key in refererDict:
-            redirectDict[ key ] = refererDict[ key ]
-        if 'id' in refererDict:
-          redirectDict[ 'id' ] = refererDict[ 'id' ]
-        else:
-          redirectDict[ 'id' ] = None
-        return redirect_to( **redirectDict )
-
+    if redDict:
+        return redirect_to( **redDict )
     return defaultRedirect()
 
+  def unauthorizedAction( self ):
+    c.error = "You're not authorized!"
+    return render( "/error.mako" )
 
 

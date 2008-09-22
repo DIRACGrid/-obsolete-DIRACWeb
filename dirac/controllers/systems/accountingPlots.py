@@ -9,6 +9,7 @@ from dirac.lib.diset import getRPCClient, getTransferClient
 from DIRAC import S_OK, S_ERROR
 from DIRAC.Core.Utilities import Time, List
 from DIRAC.AccountingSystem.Client.ReportsClient import ReportsClient
+from dirac.lib.webBase import defaultRedirect
 
 log = logging.getLogger(__name__)
 
@@ -25,7 +26,7 @@ class AccountingplotsController(BaseController):
     # Return a rendered template
     #   return render('/some/template.mako')
     # or, Return a response
-    return redirect_to( url_for( "/systems/accounting/dataOperation" ) )
+    return defaultRedirect()
 
   def dataOperation(self):
     return self.__showPlotPage( "DataOperation", "/systems/accounting/dataOperation.mako" )

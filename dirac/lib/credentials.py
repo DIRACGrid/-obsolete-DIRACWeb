@@ -15,12 +15,20 @@ gAuthManager = AuthManager( "%s/Authorization" % gWebConfig.getWebSection() )
 
 log = logging.getLogger(__name__)
 
-def checkURL(environ, result):
-  result[ 'dsetup' ] = __checkSetup( result[ 'dsetup' ] )
+def checkURL( environ, routesDict ):
+  routesDict[ 'dsetup' ] = __checkSetup( routesDict[ 'dsetup' ] )
   userDN, userName = __checkDN( environ )
-  environ[ 'DIRAC.userDN' ] = userDN
-  environ[ 'DIRAC.userName' ] = userName
-  result[ 'dgroup' ], environ[ 'DIRAC.availableGroups' ] = __checkGroup( userName, result[ 'dgroup' ] )
+  userGroup, availableGroups = __checkGroup( userName, routesDict[ 'dgroup' ] )
+  routesDict[ 'dgroup' ] = userGroup
+  environ[ 'DIRAC.userCredentials' ] = { 'DN' : userDN,
+                                         'username' : userName,
+                                         'group' : userGroup,
+                                         'availableGroups' : availableGroups
+                                        }
+  if not authorizeAction( routesDict, environ[ 'DIRAC.userCredentials' ] ):
+    routesDict[ 'controller' ] = "web/userdata"
+    routesDict[ 'action' ] = "unauthorizedAction"
+    routesDict[ 'id' ] = None
   return True
 
 def __checkSetup( setup ):
@@ -68,95 +76,47 @@ def __checkGroup( userName, group ):
   return ( defaultGroup, availableGroups )
 
 def checkUserCredentials():
-  return
-  #Setup
-  request.environ[ 'pylons.routes_dict' ][ 'dsetup' ] = __checkSetup( request.environ[ 'pylons.routes_dict' ][ 'dsetup' ] )
-  gLogger.info( "URL setup is %s" % request.environ[ 'pylons.routes_dict' ][ 'dsetup' ] )
-
-  userDN = ""
-  if 'SERVER_SOFTWARE' not in request.environ:
-    #Not running direct pylons paste server
-    gLogger.info( "Getting the DN from /Website/DebugDN" )
-    userDN = gWebConfig.getDebugDN()
+  routesDict = request.environ[ 'pylons.routes_dict' ]
+  environ = request.environ
+  if 'dsetup' in routesDict:
+    routesDict[ 'dsetup' ] = __checkSetup( routesDict[ 'dsetup' ] )
   else:
-    if 'HTTPS' in request.environ and request.environ[ 'HTTPS' ] == 'on':
-        if 'SSL_CLIENT_S_DN' in request.environ:
-            userDN = request.environ[ 'SSL_CLIENT_S_DN' ]
-        else:
-            gLogger.error( "Apache is not properly configured" )
-  #Set the DN
-  if userDN:
-    session[ 'DN' ] = userDN
-  else:
-    if 'DN' in session:
-      del( session[ 'DN' ] )
-  #Set the username
-  retVal = CS.getUsernameForDN( userDN )
-  if not retVal[ 'OK' ]:
-    username = "anonymous"
-  else:
-    username = retVal[ 'Value' ]
-  gLogger.info( "Got username for user" " => %s for %s" % ( username, userDN ) )
-  session[ 'username' ] = username
-  #Check the selected group
-  retVal = CS.getGroupsForUser( session[ 'username' ] )
-  if not retVal[ 'OK' ]:
-    availableGroups = []
-  else:
-    availableGroups = retVal[ 'Value' ]
-  session[ 'availableGroups' ] = availableGroups
-  selectedGroup = request.environ[ 'pylons.routes_dict' ][ 'dgroup' ]
-  if selectedGroup not in availableGroups:
-    defaultGroup = False
-    for tgroup in gWebConfig.getDefaultGroups():
-      if tgroup in availableGroups:
-        defaultGroup = tgroup
-        break
-    if not defaultGroup:
-      defaultGroup = "visitor"
-    request.environ[ 'pylons.routes_dict' ][ 'dgroup' ] = defaultGroup
-  gLogger.info( "URL group is %s" % request.environ[ 'pylons.routes_dict' ][ 'dgroup' ] )
+    routesDict[ 'dsetup' ] = gWebConfig.getDefaultSetup()
+  userDN, userName = __checkDN( environ )
+  if 'dgroup' not in routesDict:
+    routesDict[ 'dgroup' ] = 'visitor'
+  userGroup, availableGroups = __checkGroup( userName, routesDict[ 'dgroup' ] )
+  routesDict[ 'dgroup' ] = userGroup
+  environ[ 'DIRAC.userCredentials' ] = { 'DN' : userDN,
+                                         'username' : userName,
+                                         'group' : userGroup,
+                                         'availableGroups' : availableGroups
+                                       }
 
-  if False:
-    #Check selected group
-    if 'group' in session:
-      if session[ 'group' ] not in session[ 'availableGroups' ]:
-        del( session[ 'group' ] )
-    if 'group' not in session:
-      for group in gWebConfig.getDefaultGroups():
-        if group in session[ 'availableGroups' ]:
-          session[ 'group' ] = group
-          break
-    if 'group' not in session:
-      session[ 'group' ] = "visitor"
-
-  session.save()
-
-def authorizeAction():
-  checkUserCredentials()
-  routeDict = request.environ[ 'pylons.routes_dict' ]
+def authorizeAction( routeDict = False, userCred = False ):
+  if not routeDict:
+    routeDict = request.environ[ 'pylons.routes_dict' ]
   actionPath = "%s/%s" % ( routeDict[ 'controller' ], routeDict[ 'action' ] )
-  if 'DN' in session:
-    userDN = session[ 'DN' ]
-  else:
-    userDN = 'anonymous'
-  log.info( "AUTHORIZING %s for %s" % ( actionPath, userDN ) )
-  c.error = "You shouldn't be here :) (not enough karma maybe?)"
-  return gAuthManager.authQuery( actionPath, session )
-
-#Retrieve info from the connection user, DN, group, setup...
+  if not userCred:
+    userCred = request.environ[ 'DIRAC.userCredentials' ]
+  userRep = "%s@%s" % ( userCred[ 'username' ], userCred[ 'group' ] )
+  if gAuthManager.authQuery( actionPath, userCred, defaultProperties = 'all' ):
+    gLogger.info( "Authorized %s for %s" % ( actionPath, userRep ) )
+    return True
+  gLogger.info( "NOT authorized %s for %s" % ( actionPath, userRep ) )
+  return False
 
 def getUsername():
-  if 'DIRAC.userName' in request.environ:
-    return request.environ[ 'DIRAC.userName' ]
+  if 'DIRAC.userCredentials' in request.environ:
+    return request.environ[ 'DIRAC.userCredentials' ][ 'username' ]
   else:
     return "anonymous"
 
 def getUserDN():
-  if 'DIRAC.userDN' in request.environ:
-    return request.environ[ 'DIRAC.userDN' ]
+  if 'DIRAC.userCredentials' in request.environ:
+    return request.environ[ 'DIRAC.userCredentials' ][ 'DN' ]
   else:
-    return False
+    return ""
 
 def getSelectedSetup():
   setup = request.environ[ 'pylons.routes_dict' ][ 'dsetup' ]
@@ -165,10 +125,13 @@ def getSelectedSetup():
   return setup
 
 def getSelectedGroup():
-  return request.environ[ 'pylons.routes_dict' ][ 'dgroup' ]
+  if 'DIRAC.userCredentials' in request.environ:
+    return request.environ[ 'DIRAC.userCredentials' ][ 'group' ]
+  else:
+    return "visitor"
 
 def getAvailableGroups():
-  if 'DIRAC.availableGroups' in request.environ:
-    return request.environ[ 'DIRAC.availableGroups' ]
+  if 'DIRAC.userCredentials' in request.environ:
+    return request.environ[ 'DIRAC.userCredentials' ][ 'availableGroups' ]
   else:
     return []

@@ -12,8 +12,8 @@ ${ h.javascript_include_tag( "/javascripts/htmlPage.js" ) }
 </script>
 
 <div id='mainBody'>
-<h1>Hello!</h1>
-<h6>Bow before the mighty DIRAC for it handles your jobs (and data)! ;)</h6>
+<p style='text-align:center;font-size:x-big;font-variant:small-caps;margin:1em;'>Hello!</p>
+<p style='text-align:center;font-size:big;font-variant:small-caps;margin:1em;'>Bow before the mighty DIRAC for it handles your jobs (and data)! ;)</p>
 </div>
 
 </%def>
