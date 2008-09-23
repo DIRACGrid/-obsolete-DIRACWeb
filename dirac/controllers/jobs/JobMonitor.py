@@ -504,7 +504,6 @@ class JobmonitorController(BaseController):
     else:
       args = args.split(",")
       args = {"Site":args}
-    gLogger.info("Arguments:",args)
     time = str(timeToSet)
     now = datetime.datetime.utcnow()
     if  timeToSet == 'day':
@@ -522,7 +521,7 @@ class JobmonitorController(BaseController):
     else:
       result = self.__imgCache.get(name)
       if not result:
-        result = rc.listPlots("Job")
+        result = rc.listReports("Job")
         if result["OK"]:
           plots = result["Value"]
           if type == 'jobsBySite':
@@ -546,10 +545,9 @@ class JobmonitorController(BaseController):
             else:
               result = rc.generatePlot("Job",plots[8],timeSpan,now,{},"Site",{'thumbnail':True,'widh':800,'height':600,'thb_width':196,'thb_height':125})
           if result["OK"]:
-            if img == 'True':
-              result = result["Value"]
-            else:
-              result = result["thumbnail"]
+            result = result["Value"]
+            gLogger.info("result:",result)
+            result = result["plot"]
             c.result = {"success":"true","result":result}
             self.__imgCache.add(name, 600, result)
           else:
