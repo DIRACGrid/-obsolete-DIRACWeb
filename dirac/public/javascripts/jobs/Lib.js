@@ -435,14 +435,6 @@ function refreshSelect(){
 function sideBar(){
   var panel = new Ext.Panel({
     autoScroll:true,
-//    bbar:[
-//      '->',
-//      {
-//        handler:function(){showURL()},
-//        tooltip:'Click to get an full URL for current page',
-//        text:'URL'
-//      }
-//    ],
     id:'sideBar',
     split:true,
     region:'west',
@@ -598,6 +590,7 @@ function selectPanel(){
     handler:function(){
       refreshSelect();
     },
+    disabled:true,
     icon:gURLRoot+'/images/iface/refresh.gif',
     minWidth:'20',
     tooltip:'Click to refresh data in the selection boxes',
@@ -607,6 +600,8 @@ function selectPanel(){
     cls:"x-btn-text-icon",
     handler:function(){
       panel.form.reset();
+      var number = Ext.getCmp('selectID');
+      hideControls(number);
     },
     icon:gURLRoot+'/images/iface/reset.gif',
     minWidth:'70',
@@ -742,6 +737,7 @@ function selectID(){
     baseChars:'0123456789',
     enableKeyEvents:true,
     fieldLabel:'JobID',
+    id:'selectID',
     mode:'local',
     name:'id',
     selectOnFocus:true,
