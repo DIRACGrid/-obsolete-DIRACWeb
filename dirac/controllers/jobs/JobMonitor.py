@@ -28,7 +28,6 @@ class JobmonitorController(BaseController):
 ################################################################################
   def __getJobSummary(self,jobs,head):
     valueList = []
-    gLogger.info("SERVER RESPONSE:",jobs)
     for i in jobs:
       valueList.append({"id":str(i[2]),"status":str(i[6]),"minorStatus":str(i[10]),"applicationStatus":str(i[11]),"site":str(i[26]),"jobname":str(i[22]),"lastUpdate":str(i[25]),"owner":str(i[31]),"submissionTime":str(i[12]),"signTime":str(i[3])})
     return valueList
@@ -52,7 +51,6 @@ class JobmonitorController(BaseController):
         response.headers['Content-Transfer-Encoding'] = 'Binary'
       else:
         c.result = {"success":"false","error":result["Message"]}
-    gLogger.info("10")
     return c.result
 ################################################################################
   @jsonify
@@ -103,7 +101,6 @@ class JobmonitorController(BaseController):
       tmp = {}
       for i in request.params:
         tmp[i] = str(request.params[i])
-        gLogger.info(" value ",request.params[i])
       callback["extra"] = tmp
     RPC = getRPCClient("WorkloadManagement/JobMonitoring")
     result = RPC.getProductionIds()
@@ -134,10 +131,23 @@ class JobmonitorController(BaseController):
     result = RPC.getSites()
     if result["OK"]:
       site = []
+      tier1 = list(["LCG.CERN.ch","LCG.CNAF.it","LCG.GRIDKA.de","LCG.IN2P3.fr","LCG.NIKHEF.nl","LCG.PIC.es","LCG.RAL.uk"])
       if len(result["Value"])>0:
+        s = list(result["Value"])
         site.append([str("All")])
-        for i in result["Value"]:
+        for i in tier1:
           site.append([str(i)])
+          s.remove(i)
+        gLogger.info(s)
+#        s = s - tier1
+#        gLogger.info("+++++++++++++")
+#        gLogger.info("INITIAL SITENAMES: ",s)
+#        gLogger.info("+++++++++++++")
+#        site.append([str("All")])
+        
+        for i in s:
+          site.append([str(i)])
+        
       else:
         site = "Nothing to display"
     else:
@@ -155,9 +165,7 @@ class JobmonitorController(BaseController):
     else:
       stat = "Error during RPC call"
     callback["stat"] = stat
-    gLogger.info("Before: ",prod)
     result = RPC.getMinorStates()
-    gLogger.info("After: ",result)
     if result["OK"]:
       stat = []
       if len(result["Value"])>0:
@@ -546,7 +554,6 @@ class JobmonitorController(BaseController):
               result = rc.generatePlot("Job",plots[8],timeSpan,now,{},"Site",{'thumbnail':True,'widh':800,'height':600,'thb_width':196,'thb_height':125})
           if result["OK"]:
             result = result["Value"]
-            gLogger.info("result:",result)
             result = result["plot"]
             c.result = {"success":"true","result":result}
             self.__imgCache.add(name, 600, result)
