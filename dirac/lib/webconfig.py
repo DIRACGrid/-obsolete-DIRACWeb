@@ -27,7 +27,7 @@ class WebConfig:
     return entries
 
   def getDefaultSetup( self ):
-    return gConfig.getValue( "%s/DefaltSetup" % self.webSection, "Production" )
+    return gConfig.getValue( "%s/DefaultSetup" % self.webSection, "Production" )
 
   def getDefaultGroups( self ):
     return gConfig.getValue( "%s/DefaultGroups" % self.webSection, [] )
