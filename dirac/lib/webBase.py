@@ -116,13 +116,7 @@ def getAreaContents( area, section ):
       if pageData[0].find( "http" ) == 0:
         pagePath = pageData[0]
       else:
-        preUrl = pageData[0]
-        actionEnd = preUrl.find( "?" )
-        if actionEnd == -1:
-          pagePath = diracURL( "/%s/%s" % ( area, preUrl ) )
-        else:
-          action = preUrl[ : actionEnd ]
-          pagePath = "%s%s" % ( diracURL( "/%s/%s" % ( area, action ) ), preUrl[ actionEnd: ] )
+        pagePath = diracURL( "/%s/%s" % ( area, pageData[0] ) )
       subContents.append( "{ text : '%s', url : '%s', handler : %s }" % ( page, pagePath, mainPageHandler ) )
   return "[%s]" % ",".join( subContents )
 
@@ -188,8 +182,15 @@ def defaultRedirect():
   return redirect_to( controller='info/general', action='diracOverview', id=None )
 
 def diracURL( controller, action = None, id = None ):
-  return helpers.url_for( controller = controller,
-                          action = action,
-                          id = id,
-                          dsetup = request.environ[ 'pylons.routes_dict' ][ 'dsetup' ],
-                          dgroup = request.environ[ 'pylons.routes_dict' ][ 'dgroup' ] )
+  urlEnd = controller.find( "?" )
+  if urlEnd >-1 :
+    urlArgs = controller[ urlEnd : ]
+    controller = controller[ : urlEnd ]
+  else:
+    urlArgs = ""
+  return "%s%s" % ( helpers.url_for( controller = controller,
+                                    action = action,
+                                    id = id,
+                                    dsetup = request.environ[ 'pylons.routes_dict' ][ 'dsetup' ],
+                                    dgroup = request.environ[ 'pylons.routes_dict' ][ 'dgroup' ] ),
+                    urlArgs )
