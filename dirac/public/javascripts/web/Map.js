@@ -46,11 +46,18 @@ function initSidebar(){
 function initMain(){
   var html = '<div id="map" style="height:100%"></div>';
   var panel = new Ext.Panel({border:0,autoScroll:false,html:html,region:'center'});
+  panel.on('load',function(){
+    var leftBar = new Ext.Window({
+      x:200,
+      y:200,
+      text:'MegaTEST'
+    })
+    return leftBar
+  });
   return panel
 }
 function renderData(store){
   var mainContent = initMain();
-
   // Kill off the sidebar
 //  var leftBar = initSidebar();
 //  renderInMainViewport([ leftBar, mainContent ]);
