@@ -16,6 +16,7 @@ function renderPage( htmlID )
 
   gMainPanel = new Ext.Panel( {
   							region : 'center',
+							autoScroll : true,
   							enableTabScroll : true,
   							defaults: { autoScroll:true },
   							contentEl : htmlID,
