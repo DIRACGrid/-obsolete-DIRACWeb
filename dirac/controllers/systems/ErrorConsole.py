@@ -13,13 +13,52 @@ log = logging.getLogger(__name__)
 
 class ErrorconsoleController(BaseController):
   def display(self):
+    c.select = self.__getSelectionData()
+    gLogger.info("SELECTION RESULTS:",c.select)
     return render("systems/ErrorConsole.mako")
+################################################################################
+  def __getSelectionData(self):
+    callback = {}
+    if len(request.params) > 0:
+      tmp = {}
+      for i in request.params:
+        tmp[i] = str(request.params[i])
+        gLogger.info(" value ",request.params[i])
+      callback["extra"] = tmp
+    RPC = getRPCClient("Logging/SystemLoggingReport")
+    result = RPC.getSystems()
+    gLogger.info("- raw systems result:",result)
+    if result["OK"]:
+      systems = []
+      if len(result["Value"])>0:
+        systems.append([str("All")])
+        for i in result["Value"]:
+          systems.append([str(i)])
+      else:
+        systems = "Nothing to display"
+    else:
+      systems = "Error during RPC call"
+    callback["systems"] = systems
+    gLogger.info("- systems:",systems)
+    result = RPC.getSubSystems()
+    if result["OK"]:
+      subSystems = []
+      if len(result["Value"])>0:
+        subSystems.append([str("All")])
+        for i in result["Value"]:
+          subSystems.append([str(i)])
+      else:
+        subSystems = "Nothing to display"
+    else:
+      subSystems = "Error during RPC call"
+    callback["subSystems"] = subSystems
+    return callback
 ################################################################################
   @jsonify
   def submit(self):
     RPC = getRPCClient("Logging/SystemLoggingReport")
     result = self.__request()
-    result = RPC.getTopErrorsForWebPage(result,globalSort,pageNumber,numberOfJobs)
+    result = RPC.getGroupedMessages(result,globalSort,pageNumber,numberOfJobs)
     gLogger.info("- REQUEST:",result)
     if result["OK"]:
       result = result["Value"]
@@ -32,11 +71,13 @@ class ErrorconsoleController(BaseController):
             jobs = result["Records"]
             head = result["ParameterNames"]
             headLength = len(head)
+            gLogger.info("8")
             for i in jobs:
               tmp = {}
               for j in range(0,headLength):
                 tmp[head[j]] = i[j]
               c.result.append(tmp)
+            gLogger.info("9")
             total = result["TotalRecords"]
             c.result = {"success":"true","result":c.result,"total":total}
           else:
@@ -73,7 +114,7 @@ class ErrorconsoleController(BaseController):
       req["beginDate"] = str(request.params["startDate"])
     if request.params.has_key("finalDate") and len(request.params["finalDate"]) > 0:
       req["endDate"] = str(request.params["finalDate"])
-    if request.params.has_key("sys") and len(request.params["sys"]) > 0:
-      req["SystemName"] = str(request.params["sys"])
+    if request.params.has_key("system") and len(request.params["system"]) > 0:
+      req["SystemName"] = str(request.params["system"])
     gLogger.info("REQUEST:",req)
     return req
