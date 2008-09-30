@@ -31,18 +31,25 @@ function renderInMainViewport( componentsList )
 }
 
 function initTopFrame( pageDescription ){
-  var diracImgPath = gURLRoot+'/images/logos/DIRAC-logo-transp.png';
-  var voImgPath = gURLRoot+'/images/LHCbLogo.png';
-  var html = '<table class="header"><tr><td><img alt="DIRAC" src="'+diracImgPath+'" /></td><td class="headerSpacer"></td><td><img alt="LHCb" src="'+voImgPath+'" /></td></tr></table>'
   var navItems = [];
   for( i in pageDescription[ 'navMenu' ] )
   {
   	areaObject = pageDescription[ 'navMenu' ][i];
-  	var jobMenu = new Ext.Toolbar.Button({
-  		text : areaObject.text,
-  		menu : areaObject.menu
-  		}
-  	);
+        if(areaObject.text){
+		if(areaObject.text == 'Info'){
+                        var jobMenu = new Ext.Toolbar.Button({
+				cls : 'x-btn-icon',
+				icon : gURLRoot+'/images/iface/dlogo.gif',
+				minWidth : '16',
+                                menu : areaObject.menu
+                        });
+		}else{
+		  	var jobMenu = new Ext.Toolbar.Button({
+	  			text : areaObject.text,
+	  			menu : areaObject.menu
+  			});
+		}
+	}
 	navItems.push( jobMenu );
   }
   navItems.push( "->" );
@@ -52,17 +59,15 @@ function initTopFrame( pageDescription ){
     menu : pageDescription[ 'setupMenu' ]
   });
   navItems.push( setupButton );
+  var lhcbImg = gURLRoot+'/images/iface/lhcb.jpg';
+  var lhcbLogo = '<a href="http://lhcb.cern.ch" target="_blank">'
+  lhcbLogo = lhcbLogo + '<img alt="Official LHCb webpage" src="'+lhcbImg+'"/></a>'
+  navItems.push( lhcbLogo )
   var topBar = new Ext.Toolbar({
-    items : navItems,
-    margins: '0 0 0 0'
-  });
-  var topPanel = new Ext.Panel({
-    html : html,
     region:'north',
-    margins: '0 0 0 0',
-    bbar : topBar
+    items : navItems
   });
-  return topPanel;
+  return topBar
 }
 
 function initBottomFrame( pageDescription ){
