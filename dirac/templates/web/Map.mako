@@ -10,7 +10,6 @@ ${ h.javascript_include_tag( "/javascripts/web/mymap.js" ) }
 ${ h.stylesheet_link_tag( "/stylesheets/lovCombo.css" ) }
 ${ h.stylesheet_link_tag( "/stylesheets/infostyles.css" ) }
 ${ h.stylesheet_link_tag( "/stylesheets/main.css" ) }
-${ h.stylesheet_link_tag( "/stylesheets/myTable.css" ) }
 </%def>
 
 <%def name="body()">
