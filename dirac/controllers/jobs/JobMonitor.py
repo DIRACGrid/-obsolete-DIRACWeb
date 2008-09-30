@@ -138,13 +138,6 @@ class JobmonitorController(BaseController):
         for i in tier1:
           site.append([str(i)])
           s.remove(i)
-        gLogger.info(s)
-#        s = s - tier1
-#        gLogger.info("+++++++++++++")
-#        gLogger.info("INITIAL SITENAMES: ",s)
-#        gLogger.info("+++++++++++++")
-#        site.append([str("All")])
-        
         for i in s:
           site.append([str(i)])
         
@@ -552,9 +545,13 @@ class JobmonitorController(BaseController):
               result = rc.generatePlot("Job",plots[8],timeSpan,now,args,"Site")
             else:
               result = rc.generatePlot("Job",plots[8],timeSpan,now,{},"Site",{'thumbnail':True,'widh':800,'height':600,'thb_width':196,'thb_height':125})
+          gLogger.info("-RES:",result)
           if result["OK"]:
             result = result["Value"]
-            result = result["plot"]
+            if img == 'True':
+              result = result["plot"]
+            else:
+              result = result["thumbnail"]
             c.result = {"success":"true","result":result}
             self.__imgCache.add(name, 600, result)
           else:
