@@ -71,9 +71,15 @@ Ext.ux.form.LovCombo = Ext.extend(Ext.form.ComboBox, {
                 }
 		this.store.clearFilter();
 		this.store.each(function(r) {
-			var re = new RegExp(r.get(this.displayField));
+			var re = new RegExp(r.get(this.displayField).replace(/\(s\)/,''));
 			if(v.match(re)) {
-				va.push(r.get(this.valueField));
+				re = r.get(this.displayField);
+				newV = v.splie(',');
+				for(var s = 0; s < newV.length; s++){
+					if(re == newV[s]){
+						va.push(r.get(this.valueField));
+					}
+				}
 			}
 		}, this);
 		this.setValue(va.join(this.separator));
