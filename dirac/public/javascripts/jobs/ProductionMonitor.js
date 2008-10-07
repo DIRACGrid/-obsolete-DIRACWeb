@@ -164,7 +164,7 @@ function jump(type,id,submited){
     alert('Nothing to display');
     return
   }else{
-    var url = document.location.protocol + '//' + document.location.hostname + gURLRoot + '/jobs/JobMonitor/display';
+    var url = document.location.protocol + '//' + document.location.hostname + gURLRoot + '/' + gPageDescription.selectedSetup + '/jobs/JobMonitor/display';
     var post_req = '<form id="redirform" action="' + url + '" method="POST" >';
     post_req = post_req + '<input type="hidden" name="prod" value="' + id + '">';
     post_req = post_req + '</form>';
