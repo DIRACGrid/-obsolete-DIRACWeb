@@ -4,10 +4,11 @@ from time import time, gmtime, strftime
 from dirac.lib.base import *
 from dirac.lib.diset import getRPCClient, getTransferClient
 from dirac.lib.credentials import authorizeAction
-from dirac.lib.sessionManager import *
+#from dirac.lib.sessionManager import *
 from DIRAC import gLogger
 from DIRAC.AccountingSystem.Client.ReportsClient import ReportsClient
 from DIRAC.Core.Utilities.DictCache import DictCache
+import dirac.lib.credentials as credentials
 
 log = logging.getLogger(__name__)
 
@@ -22,6 +23,9 @@ class JobmonitorController(BaseController):
   def display(self):
     pagestart = time()
     c.select = self.__getSelectionData()
+    if credentials.getSelectedGroup() == "lhcb":
+      if not c.select.has_key("extra"):
+        c.select["extra"] = {"owner":credentials.getUsername()}
     gLogger.info("SELECTION RESULTS:",c.select)
     gLogger.info("\033[0;31mJOB INDEX REQUEST:\033[0m %s" % (time() - pagestart))
     return render("jobs/JobMonitor.mako")
