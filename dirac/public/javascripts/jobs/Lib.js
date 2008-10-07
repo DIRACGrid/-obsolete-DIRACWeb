@@ -870,6 +870,21 @@ function selectOwnerMenu(){
     typeAhead:true,
     valueField:'id'
   })
+  combo.on({
+    'render':function(){
+      if(dataSelect.extra){
+        if(dataSelect.extra.owner){
+          if(store){
+            for(var i = 0; i < store.totalLength; i++){
+              if(store.data.items[i].data.owner == dataSelect.extra.owner){
+                combo.setValue(i);
+              }
+            }
+          }
+        }
+      }
+    }
+  })
   return combo
 }
 function selectProdMenu(){
