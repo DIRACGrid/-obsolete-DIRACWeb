@@ -252,7 +252,8 @@ function initStore(record){
     autoLoad:{params:{start:0,limit:25}},
     proxy: new Ext.data.HttpProxy({
       url:'submit',
-      method:'POST'
+      method:'POST',
+      timeout:10000
     }),
     reader:reader
   });
