@@ -22,9 +22,7 @@ ${ h.javascript_include_tag( "/javascripts/systems/activitiesMonitoring/plotView
 
 <div id='mainBody'>
  <h1 style='text-align:center;margin:10px'>Component plots for ${c.componentName}</h1>
- <div style='text-align:center;align:center'>
-	 <div id='viewPanelAnchor' style='margin-left:auto;margin-right:auto;align:center'/>
- </div>
+ <div id='viewPanelAnchor'/>
 </div>
 
 </%def>
