@@ -23,7 +23,8 @@ class JobmonitorController(BaseController):
   def display(self):
     pagestart = time()
     c.select = self.__getSelectionData()
-    if credentials.getSelectedGroup() == "lhcb":
+    lhcbGroup = credentials.getSelectedGroup()
+    if lhcbGroup == "lhcb" or lhcbGroup == "lhcb_user":
       if not c.select.has_key("extra"):
         c.select["extra"] = {"owner":credentials.getUsername()}
     gLogger.info("SELECTION RESULTS:",c.select)
