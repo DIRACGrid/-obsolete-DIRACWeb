@@ -256,7 +256,7 @@ function plotViewPanel( cfg )
 		var plotWidth = img.width + 9;
 		var height = ( img.height + 9 )* numPlots;
 		if( height < this.__minHeigth )
-			height < this.__minHeigth;
+			height = this.__minHeigth;
 		this.viewPlotPanel.setSize( plotWidth + this.__minWidth, height );
 	}
 
@@ -303,7 +303,6 @@ function plotViewPanel( cfg )
 	this.setViewID = function( viewID )
 	{
 		this.viewID = viewID;
-		console.log( "View ID to ", this.viewID );
 	}
 
 	this.setVariableData = function( data )

@@ -31,6 +31,15 @@ class ActivitiesmonitoringController(BaseController):
     c.componentName = request.params[ 'componentName' ]
     return render( "/systems/activitiesMonitoring/componentPlots.mako" )
 
+  def plotStaticViews( self ):
+    rpcClient = getRPCClient( "Monitoring/Server" )
+    retVal = rpcClient.getViews( True )
+    if not retVal[ 'OK' ]:
+      c.error = retVal[ 'Message' ]
+      return render( "/error.mako" )
+    c.viewsList = simplejson.dumps( retVal[ 'Value' ] )
+    return render( "/systems/activitiesMonitoring/plotViews.mako" )
+
   def __dateToSecs( self, timeVar ):
     dt = Time.fromString( timeVar )
     return int( Time.toEpoch( dt ) )
