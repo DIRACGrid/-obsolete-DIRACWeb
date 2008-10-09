@@ -40,6 +40,12 @@ class ActivitiesmonitoringController(BaseController):
     c.viewsList = simplejson.dumps( retVal[ 'Value' ] )
     return render( "/systems/activitiesMonitoring/plotViews.mako" )
 
+  def manageViews(self):
+    return render( "/systems/activitiesMonitoring/manageViews.mako" )
+
+  def manageActivities(self):
+    return render( "/systems/activitiesMonitoring/manageActivities.mako" )
+
   def __dateToSecs( self, timeVar ):
     dt = Time.fromString( timeVar )
     return int( Time.toEpoch( dt ) )
@@ -107,3 +113,104 @@ class ActivitiesmonitoringController(BaseController):
       return self.__translateToExpectedExtResult( S_ERROR( "Error while processing plot parameters: %s" % str( e ) ) )
     rpcClient = getRPCClient( "Monitoring/Server" )
     return self.__translateToExpectedExtResult( rpcClient.plotView( plotRequest ) )
+
+  @jsonify
+  def getViewsList(self):
+    try:
+      start = int( request.params[ 'start' ] )
+    except:
+      start = 0
+    try:
+      limit = int( request.params[ 'limit' ] )
+    except:
+      limit = 0
+
+    try:
+      sortField = str( request.params[ 'sortField' ] )
+      sortDir = str( request.params[ 'sortDirection' ] )
+      sort = [ ( sortField, sortDir ) ]
+    except:
+      sort = []
+    rpcClient = getRPCClient( "Monitoring/Server" )
+    retVal = rpcClient.getViews( False )
+    if not retVal[ 'OK' ]:
+      return retVal
+    svcData = retVal[ 'Value' ]
+    data = { 'numViews' : len( svcData ), 'views' : [] }
+    for record in svcData[ start : start + limit ]:
+      data[ 'views' ].append( { 'id': record[0],
+                                'name' : record[1],
+                                'variableData' : record[2], } )
+    return data
+
+  @jsonify
+  def deleteViews(self):
+    try:
+      webIds = simplejson.loads( str( request.params[ 'idList' ] ) )
+    except Exception, e:
+      return S_ERROR( "No valid id's specified" )
+    idList = []
+    for webId in webIds:
+      try:
+        idList.append( int( webId ) )
+      except Exception, e:
+        return S_ERROR( "Error while processing arguments: %s" % str( e ) )
+    rpcClient = getRPCClient( "Monitoring/Server" )
+    print idList
+    retVal = rpcClient.deleteViews( idList )
+    if 'rpcStub' in retVal:
+      del( retVal[ 'rpcStub' ] )
+    return retVal
+
+  @jsonify
+  def getActivitiesList(self):
+    try:
+      start = int( request.params[ 'start' ] )
+    except:
+      start = 0
+    try:
+      limit = int( request.params[ 'limit' ] )
+    except:
+      limit = 0
+
+    try:
+      sortField = str( request.params[ 'sortField' ] ).replace( "_", "." )
+      sortDir = str( request.params[ 'sortDirection' ] )
+      sort = [ ( sortField, sortDir ) ]
+    except:
+      sort = []
+    rpcClient = getRPCClient( "Monitoring/Server" )
+    retVal = rpcClient.getActivitiesContents( {}, sort, start, limit )
+    if not retVal[ 'OK' ]:
+      return retVal
+    svcData = retVal[ 'Value' ]
+    data = { 'numActivities' : svcData[ 'TotalRecords' ], 'activities' : [] }
+    now = Time.toEpoch()
+    for record in svcData[ 'Records' ]:
+      formatted = {}
+      for i in range( len( svcData[ 'Fields' ] ) ):
+        formatted[ svcData[ 'Fields' ][i].replace(".","_") ] = record[i]
+      if 'activities_lastUpdate' in formatted:
+        formatted[ 'activities_lastUpdate' ] = now - int( formatted[ 'activities_lastUpdate' ] )
+      data[ 'activities' ].append( formatted )
+    return data
+
+  @jsonify
+  def deleteActivities(self):
+    try:
+      webIds = simplejson.loads( str( request.params[ 'idList' ] ) )
+    except Exception, e:
+      return S_ERROR( "No valid id's specified" )
+    print webIds,"<-"
+    idList = []
+    for webId in webIds:
+      try:
+        idList.append( [ int( field ) for field in webId.split(".") ] )
+      except Exception, e:
+        return S_ERROR( "Error while processing arguments: %s" % str( e ) )
+    rpcClient = getRPCClient( "Monitoring/Server" )
+    print idList
+    retVal = rpcClient.deleteActivities( idList )
+    if 'rpcStub' in retVal:
+      del( retVal[ 'rpcStub' ] )
+    return retVal
