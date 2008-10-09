@@ -292,7 +292,10 @@ function plotViewPanel( cfg )
 						},
 			failure : function( panel, ajaxEvent )
 						{
-							alert( 'Error: ' + ajaxEvent.result.errors );
+							if( ajaxEvent.result )
+								alert( 'Error: ' + ajaxEvent.result.errors );
+							else
+								alert( "Error: " + ajaxEvent.response.statusText );
 						}
 		} );
 	}

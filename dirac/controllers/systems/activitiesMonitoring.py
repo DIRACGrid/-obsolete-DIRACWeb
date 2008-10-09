@@ -32,8 +32,7 @@ class ActivitiesmonitoringController(BaseController):
     return render( "/systems/activitiesMonitoring/componentPlots.mako" )
 
   def __dateToSecs( self, timeVar ):
-    timeList = timeVar.split( "/" )
-    dt = Time.fromString( "%s-%s-%s" % ( timeList[2], timeList[1], timeList[0] ) )
+    dt = Time.fromString( timeVar )
     return int( Time.toEpoch( dt ) )
 
   def __translateToExpectedExtResult( self, retVal ):
@@ -86,8 +85,8 @@ class ActivitiesmonitoringController(BaseController):
         return S_ERROR( "Missing time span in plot request" )
       timeReq = webRequest[ 'time' ]
       if timeReq[ 'timespan' ] < 0:
-        fromSecs = self.__dateToSecs( str( timeReq[ 'fromDate' ] ) )
         toSecs = self.__dateToSecs( str( timeReq[ 'toDate' ] ) )
+        fromSecs = self.__dateToSecs( str( timeReq[ 'fromDate' ] ) )
       else:
         toSecs = int( Time.toEpoch() )
         fromSecs = toSecs - timeReq[ 'timespan' ]
@@ -96,6 +95,6 @@ class ActivitiesmonitoringController(BaseController):
       if 'varData' in webRequest:
         plotRequest[ 'varData' ] = webRequest[ 'varData' ]
     except Exception, e:
-      return S_ERROR( "Error while processing plot parameters: %s" % str( e ) )
+      return self.__translateToExpectedExtResult( S_ERROR( "Error while processing plot parameters: %s" % str( e ) ) )
     rpcClient = getRPCClient( "Monitoring/Server" )
     return self.__translateToExpectedExtResult( rpcClient.plotView( plotRequest ) )
