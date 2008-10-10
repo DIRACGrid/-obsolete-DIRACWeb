@@ -87,10 +87,12 @@ class AccountingplotsController(BaseController):
       start = end - datetime.timedelta( seconds = pD[ 'timeSelector' ] )
     else:
       for field in ( 'startTime', 'endTime' ):
-        if not field in request.params:
+        if not field in pD:
           return S_ERROR( "Missing %s!" % field )
-      end = Time.fromString( request.params[ 'endTime' ] )
-      start = Time.fromString( request.params[ 'startTime' ] )
+      end = Time.fromString( pD[ 'endTime' ] )
+      del( pD[ 'endTime' ] )
+      start = Time.fromString( pD[ 'startTime' ] )
+      del( pD[ 'startTime' ] )
     del( pD[ 'timeSelector' ] )
     #Listify the rest
     for selName in pD:
@@ -105,9 +107,8 @@ class AccountingplotsController(BaseController):
 
   def __queryForPlot( self ):
     retVal = self.__parseFormParams()
-    print retVal
     if not retVal[ 'OK' ]:
-      return self.__translateToExpectedExtResult( retVal )
+      return retVal
     params = retVal[ 'Value' ]
     repClient = ReportsClient( rpcClient = getRPCClient( "Accounting/ReportGenerator" ) )
     retVal = repClient.generatePlot( *params )
