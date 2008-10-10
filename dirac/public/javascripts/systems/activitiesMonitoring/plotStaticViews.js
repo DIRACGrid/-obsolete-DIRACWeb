@@ -12,13 +12,13 @@ function renderPage( views ){
   							region : 'center',
   							enableTabScroll : true,
   							defaults: { autoScroll:true },
+  							listeners : { tabchange : activeTabChanged },
   							 } );
   renderInMainViewport([ createGridPanel( views ), gTabPanel ]);
   var hash = parent.location.hash;
   if( hash )
   {
 		requestedView = hash.substr(1);
-		console.log( requestedView );
 		for( var i = 0; i< views.length; i++ )
 		{
 			var view = views[i];
@@ -60,8 +60,9 @@ function cellSelected( grid, rowIndex, columnIndex, event )
 
 function openView( viewName )
 {
-	var existingTabs = gTabPanel.items;
 	parent.location.hash=viewName;
+
+	var existingTabs = gTabPanel.items;
 	for( var i = 0; i<existingTabs.length; i++ )
 	{
 		var tab = existingTabs.get(i);
@@ -82,4 +83,9 @@ function openView( viewName )
 	tab.plotViewPanel = new plotViewPanel( { anchor : "tab-"+viewName } );
   	tab.plotViewPanel.setViewID( viewName );
   	tab.plotViewPanel.draw();
+}
+
+function activeTabChanged( tabPanel, tab )
+{
+	parent.location.hash = tab.title;
 }
