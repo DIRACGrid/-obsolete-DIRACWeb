@@ -13,17 +13,33 @@ function initPlotPage( panelName ){
   							region : 'center',
   							enableTabScroll : true,
   							defaults: { autoScroll:true },
+  							listeners : { tabchange : activeTabChanged },
   							 } );
 }
 
 function renderPlotPage()
 {
   renderInMainViewport([ gLeftSidebarPanel, gMainPanel ]);
+  var hash = parent.location.hash;
+  if( hash )
+  {
+		plotRequest = Ext.util.JSON.decode( hash.substr(1) );
+		console.log( plotRequest );
+		if( validateSelection( plotRequest ) )
+		{
+			executeAJAXRequest( plotRequest );
+		}
+  }
 }
 
 function humanReadableDate( dateObj )
 {
 	return dateObj.getFullYear() + "-" + ( dateObj.getMonth() + 1 ) + "-" + dateObj.getDate();
+}
+
+function activeTabChanged( tabPanel, tab )
+{
+	parent.location.hash = tab.sJSONTabDef;
 }
 
 function serverGeneratedPlots( panel, ajaxEvent )
@@ -37,7 +53,7 @@ function serverGeneratedPlots( panel, ajaxEvent )
 		var timeSpan = " for last week";
 	else if ( ajaxParams._timeSelector == '2592000' )
 		var timeSpan = " for last month";
-	else var timeSpan = " since " + humanReadableDate( ajaxParams._startTime ) + " until " + humanReadableDate( ajaxParams._endTime );
+	else var timeSpan = " since " + ajaxParams._startTime + " until " + ajaxParams._endTime;
 
 	var tabTitle = ajaxParams._plotName + " by " + ajaxParams._grouping + timeSpan;
 
@@ -66,6 +82,7 @@ function serverGeneratedPlots( panel, ajaxEvent )
   		});
 	var tab = gMainPanel.add( {
 		title : tabTitle,
+		sJSONTabDef : ajaxEvent.options.sJSONParams,
 		closable : true,
 		iconCls: 'tabs',
 		html : "<img src='getPlotImg?file="+imgFile+"' style='margin:5px'/>",
@@ -76,6 +93,8 @@ function serverGeneratedPlots( panel, ajaxEvent )
 	tab.show();
 	refreshButton.plotTab = tab;
 	autoRefreshMenu.plotTab = tab;
+	//Set the hash anchor
+	parent.location.hash = ajaxEvent.options.sJSONParams;
 }
 
 function cbPlotAutoRefreshHandler( menuItem, clickEvent )
