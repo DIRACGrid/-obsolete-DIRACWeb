@@ -61,17 +61,21 @@ function cbLeftPanelResetHandler( submitButton, clickEvent )
 
 function cbLeftPanelAJAXSubmitHandler( submitButton, clickEvent )
 {
-	var validated = true;
+
 	var parsedParams = gLeftSidebarPanel.userCBParseSelection();
 
 	if( gLeftSidebarPanel.userCBValidatingCallback )
-		validated = gLeftSidebarPanel.userCBValidatingCallback( parsedParams );
+		if( ! gLeftSidebarPanel.userCBValidatingCallback( parsedParams ) )
+			return;
 
-	if( ! validated )
-		return;
+	executeAJAXRequest( parsedParams );
+}
 
+function executeAJAXRequest( parsedParams )
+{
 	gLeftSidebarPanel.form.submit( {
-	    params : parsedParams,
+	   params : parsedParams,
+	   sJSONParams : Ext.util.JSON.encode( parsedParams ),
 		waitTitle : 'Updating...',
 		waitMsg : 'Loading...',
 		timeout : 60000,
@@ -155,7 +159,10 @@ function parseLeftPanelSelections( rootElement )
 			contents[ "_" + currentEl.name ] = currentEl.value;
 		else if( currentEl.isDirty() )
 		{
-			contents[ "_" + currentEl.name ] = currentEl.getValue();
+			var value = currentEl.getValue();
+			if( value.getFullYear )
+			 	value = value.getFullYear()+"-"+value.getMonth()+"-"+value.getDate();
+			contents[ "_" + currentEl.name ] = value;
 		}
 	}
 	return contents;
