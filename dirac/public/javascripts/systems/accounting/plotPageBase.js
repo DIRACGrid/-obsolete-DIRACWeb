@@ -76,8 +76,15 @@ function serverGeneratedPlots( panel, ajaxEvent )
   		menu : autoRefreshMenu ,
   		});
   	autoRefreshMenu.parentButton = autoRefreshButton;
-    var refreshBar = new Ext.Toolbar({
-    	items : [ refreshButton, "->", autoRefreshButton ],
+  	urlParams = []
+  	for( a in ajaxEvent.options.params )
+  		urlParams.push( a+"="+escape(ajaxEvent.options.params[a]).replace('+', '%2B').replace('%20', '+').replace('*', '%2A').replace('/', '%2F').replace('@', '%40') );
+
+   var refreshBar = new Ext.Toolbar({
+    	items : [ refreshButton,
+    				 "<a target='_blank' href='getPlotData?"+urlParams.join("&")+"'>CSV data</a>",
+    				 "->",
+    				 autoRefreshButton ],
    		margins: '0 0 0 0'
   		});
 	var tab = gMainPanel.add( {

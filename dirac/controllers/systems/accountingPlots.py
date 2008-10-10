@@ -114,6 +114,37 @@ class AccountingplotsController(BaseController):
     retVal = repClient.generatePlot( *params )
     return retVal
 
+  def getPlotData(self):
+    retVal = self.__parseFormParams()
+    if not retVal[ 'OK' ]:
+      c.error = retVal[ 'Message' ]
+      return render( "/error.mako" )
+    params = retVal[ 'Value' ]
+    repClient = ReportsClient( rpcClient = getRPCClient( "Accounting/ReportGenerator" ) )
+    retVal = repClient.getReport( *params )
+    if not retVal[ 'OK' ]:
+      c.error = retVal[ 'Message' ]
+      return render( "/error.mako" )
+    rawData = retVal[ 'Value' ]
+    groupKeys = rawData[ 'data' ].keys()
+    granularity = rawData[ 'granularity' ]
+    data = rawData['data']
+    tS = Time.toEpoch( params[2] )
+    timeStart = tS - tS % granularity
+    strData = "epoch,%s\n" % ",".join( groupKeys )
+    for timeSlot in range( timeStart, int( Time.toEpoch( params[3] ) ), granularity ):
+      lineData = [ str( timeSlot ) ]
+      for key in groupKeys:
+        if timeSlot in data[ key ]:
+          lineData.append( str( data[ key ][ timeSlot ] ) )
+        else:
+          lineData.append( "0" )
+      strData += "%s\n" % ",".join( lineData )
+    response.headers['Content-type'] = 'text/csv'
+    #response.headers['Content-Disposition'] = 'attachment; filename="%s"' % plotImageFile
+    response.headers['Content-Length'] = len( strData )
+    return strData
+
   @jsonify
   def generatePlot( self ):
     return self.__translateToExpectedExtResult( self.__queryForPlot() )
@@ -147,5 +178,4 @@ class AccountingplotsController(BaseController):
     #response.headers['Content-Disposition'] = 'attachment; filename="%s"' % plotImageFile
     response.headers['Content-Length'] = len( data )
     response.headers['Content-Transfer-Encoding'] = 'Binary'
-    print len(data)
     return data
