@@ -14,6 +14,21 @@ function renderPage( views ){
   							defaults: { autoScroll:true },
   							 } );
   renderInMainViewport([ createGridPanel( views ), gTabPanel ]);
+  var hash = parent.location.hash;
+  if( hash )
+  {
+		requestedView = hash.substr(1);
+		console.log( requestedView );
+		for( var i = 0; i< views.length; i++ )
+		{
+			var view = views[i];
+			if( view[1] == requestedView )
+			{
+				openView( requestedView );
+				break;
+			}
+		}
+  }
 }
 
 function createGridPanel( views )
@@ -40,9 +55,13 @@ function createGridPanel( views )
 function cellSelected( grid, rowIndex, columnIndex, event )
 {
 	var record = grid.getStore().getAt( rowIndex );
-	var viewName = record.data.name;
+	openView( record.data.name );
+}
 
+function openView( viewName )
+{
 	var existingTabs = gTabPanel.items;
+	parent.location.hash=viewName;
 	for( var i = 0; i<existingTabs.length; i++ )
 	{
 		var tab = existingTabs.get(i);
