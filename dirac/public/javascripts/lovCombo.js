@@ -66,20 +66,20 @@ Ext.ux.form.LovCombo = Ext.extend(Ext.form.ComboBox, {
 		this.list.hide();
 		var v = this.getRawValue();
 		var va = [];
-                if(v == ''){
-                  this.clearValue();
-                }
 		this.store.clearFilter();
+		if(v == ''){
+			this.clearValue();
+		}
 		this.store.each(function(r) {
 			var re = r.get(this.displayField)
-			re = re.split('\(');
-			re = re.split('\)');
-			re = re.split('\.');
-			re = re.split('\{');
+			re = re.replace(/\(/g,'.');
+			re = re.replace(/\)/g,'.');
+			re = re.replace(/\./g,'.');
+			re = re.replace(/\{/g,'.');
 			re = new RegExp(re);
 			if(v.match(re)) {
 				re = r.get(this.displayField);
-				newV = v.splie(',');
+				newV = v.split(', ');
 				for(var s = 0; s < newV.length; s++){
 					if(re == newV[s]){
 						va.push(r.get(this.valueField));
@@ -114,7 +114,7 @@ Ext.ux.form.LovCombo = Ext.extend(Ext.form.ComboBox, {
 		if(v) {
 			v = '' + v;
 			if(this.valueField) {
-				this.store.clearFilter();
+//				this.store.clearFilter();
 				this.store.each(function(r) {
 					var checked = !(!v.match(
 						 '(^|' + this.separator + ')' + r.get(this.valueField) 
@@ -125,7 +125,7 @@ Ext.ux.form.LovCombo = Ext.extend(Ext.form.ComboBox, {
 				this.value = this.getCheckedValue();
                                	this.displayValue = this.getCheckedDisplay();
 				this.displayValue = this.displayValue.replace(/:::/g,',');
-				this.displayValue = this.displayValue.replace(/All, /g,'');
+//				this.displayValue = this.displayValue.replace(/All, /g,'');
 				this.setRawValue(this.displayValue);
 				if(this.hiddenField) {
 					this.hiddenField.value = this.getCheckedDisplay();
