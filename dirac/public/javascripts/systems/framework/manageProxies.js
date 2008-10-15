@@ -37,7 +37,7 @@ function renderPage()
             { header: "User", width: 100, sortable: false, dataIndex: 'username'},
             { header: "DN", width: 350, sortable: true, dataIndex: 'UserDN'},
             { header: "Group", width: 100, sortable: true, dataIndex: 'UserGroup'},
-            { header: "Expiration date (UTC)", width: 150, sortable: true, dataIndex: 'ExpirationTime'},
+            { header: "Expiration date (UTC)", width: 150, sortable: true, dataIndex: 'ExpirationTime', renderer : renderExpirationDate },
             { header: "Persistent", width: 100, sortable: true, dataIndex: 'PersistentFlag' },
         ],
       region : 'center',
@@ -173,4 +173,31 @@ function ajaxCBServerDeleteSelected( ajaxResponse, reqArguments )
 function ajaxFailure( ajaxResponse, reqArguments )
 {
 	alert( "Error in AJAX request : " + ajaxResponse.responseText );
+}
+
+function renderExpirationDate( value, metadata, record, rowIndex, colIndex, store )
+{
+	var expStr = record.data.ExpirationTime.trim();
+	var dayTime = expStr.split( " " );
+	var dayList = dayTime[0].split( "-" ); //YYYY-MM-DD
+	var timeList = dayTime[1].split( ":" ); //HH:MM:SS
+	var expEpoch = new Date( dayList[0], dayList[1], dayList[2], timeList[0], timeList[1], timeList[2] ).getTime()/1000;
+	var nowDate = new Date();
+	var offsetStr = nowDate.getGMTOffset();
+	var secOff = parseInt( offsetStr.substr( 1, 2 ) ) * 3600 + parseInt( offsetStr.substr( 3, 2 ) ) * 60;
+	if( offsetStr.charAt(0) == "+" )
+		var nowEpoch = nowDate.getTime()/1000 + secOff;
+	else
+		var nowEpoch = nowDate.getTime()/1000 - secOff;
+	var secsLeft = expEpoch - nowEpoch;
+
+	var timeLimit = 86400 * 30;
+	if( secsLeft < 0 )
+		secsLeft = 0;
+	else if( secsLeft > timeLimit )
+		secsLeft = timeLimit;
+
+	var red = parseInt( 200 * ( timeLimit - secsLeft ) / timeLimit );
+	var green = parseInt( 200 * ( secsLeft ) / timeLimit );
+	return '<span style="color: rgb('+red+','+green+',0);">' + expStr + '</span>';
 }
