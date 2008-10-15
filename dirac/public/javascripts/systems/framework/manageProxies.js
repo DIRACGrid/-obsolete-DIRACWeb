@@ -181,7 +181,7 @@ function renderExpirationDate( value, metadata, record, rowIndex, colIndex, stor
 	var dayTime = expStr.split( " " );
 	var dayList = dayTime[0].split( "-" ); //YYYY-MM-DD
 	var timeList = dayTime[1].split( ":" ); //HH:MM:SS
-	var expEpoch = new Date( dayList[0], dayList[1], dayList[2], timeList[0], timeList[1], timeList[2] ).getTime()/1000;
+	var expEpoch = new Date( dayList[0], parseInt( dayList[1] ) + 1, dayList[2], timeList[0], timeList[1], timeList[2] ).getTime()/1000;
 	var nowDate = new Date();
 	var offsetStr = nowDate.getGMTOffset();
 	var secOff = parseInt( offsetStr.substr( 1, 2 ) ) * 3600 + parseInt( offsetStr.substr( 3, 2 ) ) * 60;
