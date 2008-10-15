@@ -40,11 +40,35 @@ class ActivitiesmonitoringController(BaseController):
     c.viewsList = simplejson.dumps( retVal[ 'Value' ] )
     return render( "/systems/activitiesMonitoring/plotViews.mako" )
 
+  def createViews( self ):
+    return render( "/systems/activitiesMonitoring/createViews.mako" )
+
   def manageViews(self):
     return render( "/systems/activitiesMonitoring/manageViews.mako" )
 
   def manageActivities(self):
     return render( "/systems/activitiesMonitoring/manageActivities.mako" )
+
+  def variablesHelp(self):
+    return """
+  <html>
+ <head><title>Variables for substitution</title></head>
+ <body>
+  <table summary="">
+   <tr>
+    <th>Variable name</th><th>Description</th>
+   </tr>
+   <tr><td>$DESCRIPTION</td><td>Description of the activity</td></tr>
+   <tr><td>$SITE</td><td>Site for the originating component</td></tr>
+   <tr><td>$COMPONENTTYPE</td><td>Type of component to generate the activity (for example: service, agent, web)</td></tr>
+   <tr><td>$COMPONENTNAME</td><td>Full name of component</td></tr>
+   <tr><td>$COMPONENTLOCATION</td><td>Location of component</td></tr>
+   <tr><td>$UNIT</td><td>Activity unit</td></tr>
+   <tr><td>$CATEGORY</td><td>Activity category</td></tr>
+  </table>
+ </body>
+</html>
+  """
 
   def __dateToSecs( self, timeVar ):
     dt = Time.fromString( timeVar )
@@ -214,3 +238,67 @@ class ActivitiesmonitoringController(BaseController):
     if 'rpcStub' in retVal:
       del( retVal[ 'rpcStub' ] )
     return retVal
+
+  @jsonify
+  def queryFieldValue( self ):
+    """
+    Query a value for a field
+    """
+    fieldQuery = str( request.params[ 'queryField' ] )
+    definedFields = simplejson.loads( request.params[ 'selectedFields' ] )
+    rpcClient = getRPCClient( "Monitoring/Server" )
+    result = rpcClient.queryField( fieldQuery, definedFields )
+    if 'rpcStub' in result:
+      del( result[ 'rpcStub' ] )
+    return result
+
+  @jsonify
+  def tryView( self ):
+    """
+    Try plotting graphs for a view
+    """
+    try:
+      plotRequest = simplejson.loads( request.params[ 'plotRequest' ] )
+      if 'timeLength' in request.params:
+        timeLength = str( request.params[ 'timeLength' ] )
+        toSecs = int( Time.toEpoch() )
+        if timeLength == "hour":
+          fromSecs = toSecs - 3600
+        elif timeLength == "day":
+          fromSecs = toSecs - 86400
+        elif timeLength == "month":
+          fromSecs = toSecs - 2592000
+        elif fromSecs == "year":
+          fromDate = toSecs - 31104000
+        else:
+          return S_ERROR( "Time length value not valid" )
+      else:
+        fromDate = str( request.params[ 'fromDate' ] )
+        toDate = str( request.params[ 'toDate' ] )
+        fromSecs = self.__dateToSecs( fromDate )
+        toSecs = self.__dateToSecs( toDate )
+    except Exception, e:
+      return S_ERROR( "Error while processing plot parameters: %s" % str( e ) )
+    rpcClient = getRPCClient( "Monitoring/Server" )
+    requestStub = DEncode.encode( plotRequest )
+    retVal = rpcClient.tryView( fromSecs, toSecs, requestStub )
+    if not retVal[ 'OK' ]:
+      return retVal
+    return S_OK( { 'images' : retVal[ 'Value' ], 'stub' : requestStub } )
+
+  @jsonify
+  def saveView( self ):
+    """
+    Save a view
+    """
+    try:
+      plotRequest = simplejson.loads( request.params[ 'plotRequest' ] )
+      viewName = str( request.params[ 'viewName' ] )
+    except Exception, e:
+      return S_ERROR( "Error while processing plot parameters: %s" % str( e ) )
+    rpcClient = getRPCClient( "Monitoring/Server" )
+    requestStub = DEncode.encode( plotRequest )
+    result = rpcClient.saveView( viewName, requestStub )
+    if 'rpcStub' in result:
+      del( result[ 'rpcStub' ] )
+    return result
