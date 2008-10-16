@@ -1,4 +1,5 @@
 import logging
+import cgi
 
 from dirac.lib.base import *
 from pylons.controllers.util import redirect_to
@@ -27,11 +28,12 @@ class UserdataController(BaseController):
         ref = ref[ len( scriptName ): ]
     pI = ref.find( '?' );
     if pI > -1:
-      params = ref[ pI: ]
+      params = ref[ pI+1: ]
       ref = ref[ :pI ]
     else:
       params = ""
-    return ( config[ 'routes.map' ].match( ref ), params )
+    pDict = dict( cgi.parse_qsl( params ) ) 
+    return ( config[ 'routes.map' ].match( ref ), pDict  )
 
   def changeGroup( self ):
     return self.__changeURLPropertyAndRedirect( 'dgroup', credentials.getAvailableGroups() )
@@ -43,9 +45,9 @@ class UserdataController(BaseController):
     requestedValue = request.environ[ 'pylons.routes_dict' ][ 'id' ]
     redDict = False
     if 'HTTP_REFERER' in request.environ:
-      refDict, params = self.__mapReferer()
+      refDict, paramsDict = self.__mapReferer()
       if refDict:
-        redDict = {}
+        redDict = paramsDict
         for key in ( 'controller', 'action' ):
           if key in refDict:
             redDict[ key ] = refDict[ key ]
@@ -62,7 +64,7 @@ class UserdataController(BaseController):
     else:
       gLogger.info( "Requested change to %s invalid %s" % ( requestedValue, validValues ) )
     if redDict:
-        return redirect_to( h.url_for( **redDict ) + params )
+      return redirect_to( **redDict )
     return defaultRedirect()
 
   def unauthorizedAction( self ):
