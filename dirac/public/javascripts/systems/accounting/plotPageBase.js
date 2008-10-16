@@ -24,7 +24,6 @@ function renderPlotPage()
   if( hash )
   {
 		plotRequest = Ext.util.JSON.decode( hash.substr(1) );
-		console.log( plotRequest );
 		if( validateSelection( plotRequest ) )
 		{
 			executeAJAXRequest( plotRequest );
