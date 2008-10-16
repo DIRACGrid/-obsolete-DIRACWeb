@@ -525,7 +525,6 @@ function serverCreateOption( ajaxResponse, reqArguments )
 		return;
 	}
 	var csData = retVal.Value;
-	console.log( csData );
 	var newCfg = { text : csData[0],
 						csName : csData[0],
 						csValue : csData[1],
