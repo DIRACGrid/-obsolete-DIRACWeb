@@ -75,7 +75,7 @@ function executeAJAXRequest( parsedParams )
 {
 	gLeftSidebarPanel.form.submit( {
 	   params : parsedParams,
-	   sJSONParams : Ext.util.JSON.encode( parsedParams ),
+	   sDEParams : DEncode.encode( parsedParams ),
 		waitTitle : 'Updating...',
 		waitMsg : 'Loading...',
 		timeout : 60000,

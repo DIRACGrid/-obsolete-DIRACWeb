@@ -23,7 +23,7 @@ function renderPlotPage()
   var hash = parent.location.hash;
   if( hash )
   {
-		plotRequest = Ext.util.JSON.decode( hash.substr(1) );
+		plotRequest = DEncode.decode( hash.substr(1) );
 		if( validateSelection( plotRequest ) )
 		{
 			executeAJAXRequest( plotRequest );
@@ -38,7 +38,7 @@ function humanReadableDate( dateObj )
 
 function activeTabChanged( tabPanel, tab )
 {
-	parent.location.hash = tab.sJSONTabDef;
+	parent.location.hash = tab.sDETabDef;
 }
 
 function serverGeneratedPlots( panel, ajaxEvent )
@@ -88,7 +88,7 @@ function serverGeneratedPlots( panel, ajaxEvent )
   		});
 	var tab = gMainPanel.add( {
 		title : tabTitle,
-		sJSONTabDef : ajaxEvent.options.sJSONParams,
+		sDETabDef : ajaxEvent.options.sDEParams,
 		closable : true,
 		iconCls: 'tabs',
 		html : "<img src='getPlotImg?file="+imgFile+"' style='margin:5px'/>",
@@ -100,7 +100,7 @@ function serverGeneratedPlots( panel, ajaxEvent )
 	refreshButton.plotTab = tab;
 	autoRefreshMenu.plotTab = tab;
 	//Set the hash anchor
-	parent.location.hash = ajaxEvent.options.sJSONParams;
+	parent.location.hash = ajaxEvent.options.sDEParams;
 }
 
 function cbPlotAutoRefreshHandler( menuItem, clickEvent )
