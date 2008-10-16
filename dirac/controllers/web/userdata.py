@@ -25,7 +25,13 @@ class UserdataController(BaseController):
         scriptName = "/%s" % scriptName
       if ref.find( scriptName ) == 0:
         ref = ref[ len( scriptName ): ]
-    return config[ 'routes.map' ].match( ref )
+    pI = ref.find( '?' );
+    if pI > -1:
+      params = ref[ pI: ]
+      ref = ref[ :pI ]
+    else:
+      params = ""
+    return ( config[ 'routes.map' ].match( ref ), params )
 
   def changeGroup( self ):
     return self.__changeURLPropertyAndRedirect( 'dgroup', credentials.getAvailableGroups() )
@@ -37,7 +43,7 @@ class UserdataController(BaseController):
     requestedValue = request.environ[ 'pylons.routes_dict' ][ 'id' ]
     redDict = False
     if 'HTTP_REFERER' in request.environ:
-      refDict = self.__mapReferer()
+      refDict, params = self.__mapReferer()
       if refDict:
         redDict = {}
         for key in ( 'controller', 'action' ):
@@ -56,7 +62,7 @@ class UserdataController(BaseController):
     else:
       gLogger.info( "Requested change to %s invalid %s" % ( requestedValue, validValues ) )
     if redDict:
-        return redirect_to( **redDict )
+        return redirect_to( h.url_for( **redDict ) + params )
     return defaultRedirect()
 
   def unauthorizedAction( self ):
