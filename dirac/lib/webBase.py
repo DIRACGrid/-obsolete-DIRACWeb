@@ -10,17 +10,13 @@ from pylons import request
 from DIRAC import gMonitor, gLogger
 
 def currentPath():
-  path = request.environ[ 'PATH_INFO' ]
-  scriptName = request.environ[ 'SCRIPT_NAME' ]
+  rD = request.environ[ 'pylons.routes_dict' ]
+  path = "%s/%s" % ( rD[ 'controller' ], rD[ 'action' ] )
   if 'QUERY_STRING' in request.environ and len( request.environ[ 'QUERY_STRING' ] ) > 0:
     queryString = "?%s" % request.environ[ 'QUERY_STRING' ]
   else:
     queryString = ""
-  i = path.find( scriptName )
-  if i == -1:
-    return "%s%s" % ( path, queryString )
-  else:
-    return "%s%s%s" % ( path[ :i ], path[ i+len(scriptName): ], queryString )
+  return "%s%s" % ( path, queryString )
 
 def htmlShortcuts():
   htmlData = ""
