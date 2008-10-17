@@ -3,7 +3,7 @@
 <%inherit file="/diracPage.mako" />
 
 <%def name="head_tags()">
-${ h.javascript_include_tag( "/javascripts/json2.js" ) }
+${ h.javascript_include_tag( "/javascripts/dencodelight.js" ) }
 ${ h.javascript_include_tag( "/javascripts/systems/accounting/accountingBase.js" ) }
 ${ h.javascript_include_tag( "/javascripts/systems/accounting/plotPageBase.js" ) }
 ${ h.javascript_include_tag( "/javascripts/systems/accounting/PilotPlotPage.js" ) }
