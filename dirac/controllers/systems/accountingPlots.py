@@ -6,7 +6,7 @@ import tempfile
 from dirac.lib.base import *
 from dirac.lib.diset import getRPCClient, getTransferClient
 
-from DIRAC import S_OK, S_ERROR
+from DIRAC import S_OK, S_ERROR,gLogger
 from DIRAC.Core.Utilities import Time, List
 from DIRAC.AccountingSystem.Client.ReportsClient import ReportsClient
 from dirac.lib.webBase import defaultRedirect
@@ -129,7 +129,7 @@ class AccountingplotsController(BaseController):
     groupKeys = rawData[ 'data' ].keys()
     granularity = rawData[ 'granularity' ]
     data = rawData['data']
-    tS = Time.toEpoch( params[2] )
+    tS = int( Time.toEpoch( params[2] ) )
     timeStart = tS - tS % granularity
     strData = "epoch,%s\n" % ",".join( groupKeys )
     for timeSlot in range( timeStart, int( Time.toEpoch( params[3] ) ), granularity ):
@@ -138,7 +138,7 @@ class AccountingplotsController(BaseController):
         if timeSlot in data[ key ]:
           lineData.append( str( data[ key ][ timeSlot ] ) )
         else:
-          lineData.append( "0" )
+          lineData.append( "" )
       strData += "%s\n" % ",".join( lineData )
     response.headers['Content-type'] = 'text/csv'
     #response.headers['Content-Disposition'] = 'attachment; filename="%s"' % plotImageFile
