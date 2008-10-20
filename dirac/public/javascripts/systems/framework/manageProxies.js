@@ -198,11 +198,11 @@ function renderExpirationDate( value, metadata, record, rowIndex, colIndex, stor
 		secsLeft = timeLimit;
 
         if( secsLeft < 3600 )
-		var red = 200;
+		var green = 0;
 	else
-		var red = 0;
-//	var red = parseInt( 200 * ( timeLimit - secsLeft ) / timeLimit / 2 );
-	var green = parseInt( 200 * ( secsLeft ) / timeLimit );
+		var green = 200;
+	var red = parseInt( 255 * ( timeLimit - secsLeft ) / timeLimit );
+//	var red = parseInt( 200 * ( secsLeft ) / timeLimit );
         console.log( expStr + " " + green + " " + red );
 	return '<span style="color: rgb('+red+','+green+',0);">' + expStr + '</span>';
 }
