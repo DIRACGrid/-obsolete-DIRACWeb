@@ -242,22 +242,34 @@ function plotViewPanel( cfg )
 				extEl.setStyle( "display", "block" );
 				panelEl.appendChild( extEl );
 			}
-
 			var img = panelEl.first( 'img' );
-			img.on( 'load', this.__resizeMainPanel, this, plotsList.length );
+			img.addListener( 'load', this.__resizeMainPanel, this, panelEl );
 			//img.dNumPlots = plotsList.length;
 			//img.onLoad = this.__resizeMainPanel();
 
 		}
 	}
 
-	this.__resizeMainPanel = function( event, img, numPlots )
+	this.__resizeMainPanel = function( event, img, panelEl )
 	{
+		var imgList = panelEl.query( 'img' );
 		var plotWidth = img.width + 9;
-		var height = ( img.height + 9 )* numPlots;
-		if( height < this.__minHeigth )
-			height = this.__minHeigth;
-		this.viewPlotPanel.setSize( plotWidth + this.__minWidth, height );
+		var plotHeight = 0;
+		for( var i = 0; i < imgList.length; i++ )
+		{
+			var img = imgList[i];
+			if( img.height )
+			{
+				plotHeight += img.height + 3;
+			}
+			else
+			{
+				img = Ext.Element( img );
+				img.on( 'load', this.__resizeMainPanel, this, panelEl );
+				return
+			}
+		}
+		this.viewPlotPanel.setSize( plotWidth + this.__minWidth, plotHeight );
 	}
 
 	this.__drawPlots = function()
