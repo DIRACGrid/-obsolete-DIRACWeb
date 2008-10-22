@@ -81,6 +81,7 @@ function initData(store){
     {handler:function(){action('production','stop')},text:'Stop',tooltip:'Click to kill selected production(s)'},
     {handler:function(){action('production','delete')},text:'Delete',tooltip:'Click to delete selected production(s)'}
   ];
+  store.setDefaultSort('id','DESC');
   tableMngr = {'store':store,'columns':columns,'title':title,'tbar':tbar};
   var t = table(tableMngr);
   t.addListener('cellclick',showMenu);
