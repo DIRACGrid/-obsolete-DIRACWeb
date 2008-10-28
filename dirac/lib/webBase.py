@@ -99,6 +99,16 @@ def htmlPath():
 
 mainPageHandler = "mainPageRedirectHandler"
 
+def checkPropertiesWithUser( properties ):
+  if 'all' in properties:
+    return True
+  if credentials.getSelectedGroup() != 'visitor' and 'authenticated' in properties:
+    return True
+  for userProp in credentials.getProperties():
+    if userProp in properties:
+      return True
+  return False
+
 def getAreaContents( area, section ):
   subContents = []
   for subSection in gWebConfig.getSchemaSections( section ):
@@ -108,7 +118,7 @@ def getAreaContents( area, section ):
       subContents.append( "{ text: '%s', menu : %s }" % ( subSection, subJSTxt ) )
   for page in gWebConfig.getSchemaPages( section ):
     pageData = gWebConfig.getSchemaPageData( "%s/%s" % ( section, page ) )
-    if len( pageData ) < 3 or 'all' in pageData[2:] or credentials.getSelectedGroup() in pageData[2:]:
+    if len( pageData ) < 3 or checkPropertiesWithUser( pageData[2:] ):
       if pageData[0].find( "http" ) == 0:
         pagePath = pageData[0]
       else:

@@ -3,9 +3,13 @@ var gTreePanel = false;
 var gOptionMenu = false;
 var gSectionMenu = false;
 var gValuePanel = false;
+var gEditableMode = false;
 
-function createCSTree( rootNodeName )
+function createCSTree( rootNodeName, editable )
 {
+	if( editable )
+		gEditableMode = true;
+
 	var treeLoader = new Ext.tree.TreeLoader({
 		dataUrl:'expandSection',
 		listeners : {
@@ -23,7 +27,7 @@ function createCSTree( rootNodeName )
 		keys : [],
 		autoScroll:true,
 		animate:true,
-		enableDD:true,
+		enableDD: gEditableMode,
 		containerScroll: true,
 		loader: treeLoader
 	});
@@ -38,97 +42,103 @@ function createCSTree( rootNodeName )
 			},
     });
 
-   gOptionMenu = new Ext.menu.Menu({
-   	id : 'OptionContextualMenu',
-   	items : [ { text : 'Change option value',
-   					listeners : { click : cbMenuSetOptionValue }
-   				 },
-   				 new Ext.menu.Separator,
-   				 { text : 'Change comment',
-   					listeners : { click : cbMenuSetCommentValue }
-   				 },
-   				 new Ext.menu.Separator,
-   				 { text : 'Copy option',
-   				   listeners : { click : cbMenuCopyNode }
-   				 },
-   				 { text : 'Rename option',
-   				   listeners : { click : cbMenuRenameNode }
-   				 },
-   				 { text : 'Delete option',
-   				   listeners : { click : cbMenuDeleteNode }
-   				 }
-   			  ]
-   })
+	if( gEditableMode )
+	{
+	   gOptionMenu = new Ext.menu.Menu({
+	   	id : 'OptionContextualMenu',
+	   	items : [ { text : 'Change option value',
+	   					listeners : { click : cbMenuSetOptionValue }
+	   				 },
+	   				 new Ext.menu.Separator,
+	   				 { text : 'Change comment',
+	   					listeners : { click : cbMenuSetCommentValue }
+	   				 },
+	   				 new Ext.menu.Separator,
+	   				 { text : 'Copy option',
+	   				   listeners : { click : cbMenuCopyNode }
+	   				 },
+	   				 { text : 'Rename option',
+	   				   listeners : { click : cbMenuRenameNode }
+	   				 },
+	   				 { text : 'Delete option',
+	   				   listeners : { click : cbMenuDeleteNode }
+	   				 }
+	   			  ]
+	   })
 
-   gSectionMenu = new Ext.menu.Menu({
-   	id : 'SectionContextualMenu',
-   	items : [ { text : 'Create a subsection',
-   					listeners : { click : cbMenuCreateSubsection }
-   				 },
-   				 { text : 'Create an option',
-   					listeners : { click : cbMenuCreateOption }
-   				 },
-   				 new Ext.menu.Separator,
-   				 { text : 'Change comment',
-   					listeners : { click : cbMenuSetCommentValue }
-   				 },
-   				 new Ext.menu.Separator,
-   				 { text : 'Copy section',
-   				   listeners : { click : cbMenuCopyNode }
-   				 },
-   				 { text : 'Rename section',
-   				   listeners : { click : cbMenuRenameNode }
-   				 },
-   				 { text : 'Delete section',
-   				   listeners : { click : cbMenuDeleteNode }
-   				 }
-   			  ]
-   })
+	   gSectionMenu = new Ext.menu.Menu({
+	   	id : 'SectionContextualMenu',
+	   	items : [ { text : 'Create a subsection',
+	   					listeners : { click : cbMenuCreateSubsection }
+	   				 },
+	   				 { text : 'Create an option',
+	   					listeners : { click : cbMenuCreateOption }
+	   				 },
+	   				 new Ext.menu.Separator,
+	   				 { text : 'Change comment',
+	   					listeners : { click : cbMenuSetCommentValue }
+	   				 },
+	   				 new Ext.menu.Separator,
+	   				 { text : 'Copy section',
+	   				   listeners : { click : cbMenuCopyNode }
+	   				 },
+	   				 { text : 'Rename section',
+	   				   listeners : { click : cbMenuRenameNode }
+	   				 },
+	   				 { text : 'Delete section',
+	   				   listeners : { click : cbMenuDeleteNode }
+	   				 }
+	   			  ]
+	   })
 
-	gValuePanel = new Ext.FormPanel ({
-    	id:'value-panel',
-    	region : 'east',
-    	collapsible: true,
-    	title : "Helper panel",
-    	width:300,
-    	minWidth: 150,
-    	border: false,
-    	autoScroll : true,
-    	collapsed : true,
-		onSubmit : Ext.emptyFn,
-		submit : function(){},
-		items : [
-					 { xtype : 'textarea',
-					 	id : 'valueArea',
-					 	hideLabel : true,
-					 	grow : true,
-					 	width : '97%',
-					 }
-					],
-		buttons : [ { text: 'Submit',
-                    handler : cbFormExecuteAction,
-                  },
-                  { text: 'Reset',
-                    handler: function(e) {
-                    		gValuePanel.getComponent( 'valueArea' ).setValue( gValuePanel.csValue );
-                    	},
-                  },
-                  { text : 'Cancel',
-                    handler : function( e ) {
-                    		gValuePanel.collapse( false );
-                  	},
-                  }
-					 ]
+		gValuePanel = new Ext.FormPanel ({
+	    	id:'value-panel',
+	    	region : 'east',
+	    	collapsible: true,
+	    	title : "Helper panel",
+	    	width:300,
+	    	minWidth: 150,
+	    	border: false,
+	    	autoScroll : true,
+	    	collapsed : true,
+			onSubmit : Ext.emptyFn,
+			submit : function(){},
+			items : [
+						 { xtype : 'textarea',
+						 	id : 'valueArea',
+						 	hideLabel : true,
+						 	grow : true,
+						 	width : '97%',
+						 }
+						],
+			buttons : [ { text: 'Submit',
+	                    handler : cbFormExecuteAction,
+	                  },
+	                  { text: 'Reset',
+	                    handler: function(e) {
+	                    		gValuePanel.getComponent( 'valueArea' ).setValue( gValuePanel.csValue );
+	                    	},
+	                  },
+	                  { text : 'Cancel',
+	                    handler : function( e ) {
+	                    		gValuePanel.collapse( false );
+	                  	},
+	                  }
+						 ]
 
 
-	});
+		});
+	}
 
 	gTreePanel.setRootNode(gTreeRootNode);
 	gTreeRootNode.expand();
-	gTreePanel.on( "render", function( e ){
-		gTreePanel.body.on( "contextmenu", function(e){e.preventDefault(); return false;} );
-		} );
-	gTreePanel.on( "contextmenu", cbShowContextMenu );
+	if( gEditableMode )
+	{
+		gTreePanel.on( "render", function( e ){
+			gTreePanel.body.on( "contextmenu", function(e){e.preventDefault(); return false;} );
+			} );
+		gTreePanel.on( "contextmenu", cbShowContextMenu );
+	}
 
 	return [ gTreePanel, gValuePanel ];
 }
@@ -170,7 +180,8 @@ function cbCheckNodeInsertion( tree, parent, node )
 function configureLeafNode( node )
 {
 	node.setText( node.attributes.csName + " = " + node.attributes.csValue );
-	node.on( "beforeclick", inPlaceOptionValueChange );
+	if( gEditableMode )
+		node.on( "beforeclick", inPlaceOptionValueChange );
 }
 
 //Show the menus

@@ -1,5 +1,5 @@
-# $Header: /tmp/libdirac/tmp.stZoy15380/dirac/DIRAC3/DIRAC/Interfaces/Web/dirac/controllers/systems/configuration.py,v 1.17 2008/09/15 13:31:22 acasajus Exp $
-__RCSID__ = "$Id: configuration.py,v 1.17 2008/09/15 13:31:22 acasajus Exp $"
+# $Header: /tmp/libdirac/tmp.stZoy15380/dirac/DIRAC3/DIRAC/Interfaces/Web/dirac/controllers/systems/configuration.py,v 1.18 2008/10/28 14:35:20 acasajus Exp $
+__RCSID__ = "$Id: configuration.py,v 1.18 2008/10/28 14:35:20 acasajus Exp $"
 
 import types
 import logging
@@ -53,9 +53,7 @@ class ConfigurationController(BaseController):
       c.error = "Can't reset configuration<br/>%s" % retVal[ 'Message' ]
       return render( "/error.mako" )
 
-  def manageRemoteConfig( self ):
-    if not authorizeAction():
-      return render( "/error.mako" )
+  def __loadRemoteConfig(self):
     if not 'cfgData' in session or not 'csName' in session:
       if 'csFilename'  in session:
         del( session[ 'csFilename' ] )
@@ -63,7 +61,7 @@ class ConfigurationController(BaseController):
       retVal = self.__getRemoteConfiguration()
       if not retVal[ 'OK' ]:
         c.error = "Can't get configuration from server<br/>%s" % retVal[ 'Message' ]
-        return render( "/error.mako" )
+        return S_ERROR()
     else:
       try:
         gLogger.info( "Recovering configuration" )
@@ -74,8 +72,20 @@ class ConfigurationController(BaseController):
         c.error = "There was an error with your modifications. %s" % str(e)
         c.link = ( 'resetConfigurationToRemote', "Click here to reset your configuration" )
         gLogger.error( "There was an error with modified configuration %s" % str( e ) )
-        return render( "/error.mako" )
+        S_ERROR()
+    return S_OK()
+
+  def manageRemoteConfig( self ):
+    result = self.__loadRemoteConfig()
+    if not result['OK']:
+      return render( "/error.mako" )
     return render( "/systems/configuration/editGlobalConfig.mako" )
+
+  def browseRemoteConfig( self ):
+    result = self.__loadRemoteConfig()
+    if not result['OK']:
+      return render( "/error.mako" )
+    return render( "/systems/configuration/browseGlobalConfig.mako" )
 
   def showTextConfiguration( self ):
     response.headers['Content-type'] = 'text/plain'

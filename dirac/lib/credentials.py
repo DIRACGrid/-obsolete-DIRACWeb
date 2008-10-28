@@ -130,6 +130,13 @@ def getSelectedGroup():
   else:
     return "visitor"
 
+def getProperties( group = False ):
+  if not group:
+    group = getSelectedGroup()
+  if 'visitor' == group:
+    return []
+  return CS.getPropertiesForGroup( group )
+
 def getAvailableGroups():
   if 'DIRAC.userCredentials' in request.environ:
     return request.environ[ 'DIRAC.userCredentials' ][ 'availableGroups' ]
