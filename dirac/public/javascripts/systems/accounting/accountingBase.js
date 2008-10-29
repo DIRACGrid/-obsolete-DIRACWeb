@@ -160,8 +160,20 @@ function parseLeftPanelSelections( rootElement )
 		else if( currentEl.isDirty() )
 		{
 			var value = currentEl.getValue();
+			//Pad properly
 			if( value.getFullYear )
-			 	value = value.getFullYear()+"-"+value.getMonth()+"-"+value.getDate();
+			{
+			 	var valueStr = value.getFullYear()+"-";
+			 	var month = ( value.getMonth() + 1 ) + "";
+			 	if( month.length == 1 )
+			 		valueStr += "0";
+			 	valueStr += month + "-";
+				var day = value.getDate() + "";
+			 	if( day.length == 1 )
+			 		valueStr += "0";
+			 	valueStr += day;
+			 	value = valueStr;
+			}
 			contents[ "_" + currentEl.name ] = value;
 		}
 	}
