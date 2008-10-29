@@ -26,9 +26,53 @@ function renderPlotPage()
 		plotRequest = DEncode.decode( hash.substr(1) );
 		if( validateSelection( plotRequest ) )
 		{
+			fillSelectionPanel( plotRequest );
 			executeAJAXRequest( plotRequest );
 		}
   }
+}
+
+function fillSelectionPanel( plotRequest )
+{
+	//Set the plot name
+	var plotSelector = gLeftSidebarPanel.find( "name", "plotName" )[0];
+	plotSelector.setValue( plotRequest._plotName );
+	//Set grouping
+	var grouping = gLeftSidebarPanel.find( "name", "grouping" );
+	for( var i = 0; i < grouping.length; i++ )
+	{
+		if( grouping[i].boxLabel == plotRequest._grouping )
+			grouping[i].setValue( true );
+		else
+			grouping[i].setValue( false );
+	}
+	//Set time
+	var timeSel = gLeftSidebarPanel.find( "name", "timeSelector" );
+	for( var i = 0; i < timeSel.length; i++ )
+	{
+		if( timeSel[i].value == plotRequest._timeSelector )
+			timeSel[i].setValue( true );
+		else
+			timeSel[i].setValue( false );
+	}
+	if( plotRequest._timeSelector == -1 )
+	{
+		var timeSel = gLeftSidebarPanel.find( "name", "startTime" )[0];
+		timeSel.setValue( plotRequest._startTime );
+		timeSel = gLeftSidebarPanel.find( "name", "endTime" )[0];
+		timeSel.setValue( plotRequest._endTime );
+	}
+	//Restrictions Magic!
+	var selections = gLeftSidebarPanel.find( "name", "Selection conditions" )[0].items.items;
+	for( var i = 0; i< selections.length; i++ )
+	{
+		var selection = selections[i];
+		var name = "_" + selection.name;
+		if( name in plotRequest )
+		{
+			selection.setValue( plotRequest[ name ] );
+		}
+	}
 }
 
 function humanReadableDate( dateObj )
@@ -38,7 +82,8 @@ function humanReadableDate( dateObj )
 
 function activeTabChanged( tabPanel, tab )
 {
-	parent.location.hash = tab.sDETabDef;
+	parent.location.hash = tab.uDETabDef;
+	fillSelectionPanel( tab.uPlotRequest );
 }
 
 function serverGeneratedPlots( panel, ajaxEvent )
@@ -88,7 +133,8 @@ function serverGeneratedPlots( panel, ajaxEvent )
   		});
 	var tab = gMainPanel.add( {
 		title : tabTitle,
-		sDETabDef : ajaxEvent.options.sDEParams,
+		uDETabDef : ajaxEvent.options.sDEParams,
+		uPlotRequest : ajaxParams,
 		closable : true,
 		iconCls: 'tabs',
 		html : "<img src='getPlotImg?file="+imgFile+"' style='margin:5px'/>",
