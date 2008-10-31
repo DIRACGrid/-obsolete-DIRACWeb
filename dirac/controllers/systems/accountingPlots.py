@@ -40,6 +40,9 @@ class AccountingplotsController(BaseController):
   def pilot(self):
     return self.__showPlotPage( "Pilot", "/systems/accounting/Pilot.mako" )
 
+  def SRMSpaceTokenDeployment(self):
+    return self.__showPlotPage( "SRMSpaceTokenDeployment", "/systems/accounting/SRMSpaceTokenDeployment.mako" )
+
   def __showPlotPage( self, typeName, templateFile ):
     #TODO: This can be cached
     retVal = self.__getUniqueKeyValues( typeName )
