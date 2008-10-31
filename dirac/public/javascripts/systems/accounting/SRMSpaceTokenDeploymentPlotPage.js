@@ -18,8 +18,6 @@ function renderPage( plotsList, selectionData ){
 
   var selWidgets = []
 
-  console.log( selectionData );
-
   selWidgets.push( createMultiselect( "Site", "Site", selectionData.Site ) );
   selWidgets.push( createMultiselect( "Hostname", "Hostname", selectionData.Hostname ) );
   selWidgets.push( createMultiselect( "SpaceTokenDesc", "Space Token Description", selectionData.SpaceTokenDesc ) );
