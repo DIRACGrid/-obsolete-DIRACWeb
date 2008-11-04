@@ -108,6 +108,10 @@ DEncode.g_dDecodeFunctions[ "d" ] = DEncode.decodeDict;
 
 DEncode.encode = function( uObject )
 {
+	//FIXME: Adri: Only DEncode for firefox. 
+	//Other browsers are crap and don't support standart .toSource
+	if( navigator.userAgent.indexOf( "Firefox" ) == -1 )
+		return "";
 	if( typeof uObject == "number" )
 		return DEncode.g_dEncodeFunctions[ 'int' ]( uObject );
 	var source = uObject.toSource();
