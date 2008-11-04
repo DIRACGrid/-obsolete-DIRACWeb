@@ -16,6 +16,13 @@ function initRecord(){
     {name:'SystemName'},
     {name:'SubSystemName'},
     {name:'FixedTextString'},
+    {name:'MessageTime'},
+    {name:'LogLevel'},
+    {name:'VariableText'},
+    {name:'OwnerDN'},
+    {name:'OwnerGroup'},
+    {name:'ClientIPNumberString'},
+    {name:'SiteName'},
     {name:'Number of Errors'}
   ]);
   return record
@@ -32,9 +39,16 @@ function initSidebar(){
 }
 function initData(store){
   var columns = [
-    {header:'System',sortable:true,dataIndex:'SystemName',align:'left'},
-    {header:'SubSystem',sortable:true,dataIndex:'SubSystemName',align:'left'},
+    {header:'Component',sortable:true,dataIndex:'SystemName',align:'left'},
+    {header:'SubSystem',sortable:true,dataIndex:'SubSystemName',align:'left',hidden:true},
     {header:'Error',sortable:true,dataIndex:'FixedTextString',align:'left'},
+    {header:'LogLevel',sortable:true,dataIndex:'LogLevel',align:'left',hidden:true},
+    {header:'SiteName',sortable:true,dataIndex:'SiteName',align:'left',hidden:true},
+    {header:'Example',sortable:true,dataIndex:'VariableText',align:'left',hidden:true},
+    {header:'OwnerDN',sortable:true,dataIndex:'OwnerDN',align:'left',hidden:true},
+    {header:'OwnerGroup',sortable:true,dataIndex:'OwnerGroup',align:'left',hidden:true},
+    {header:'IP',sortable:true,dataIndex:'ClientIPNumberString',align:'left',hidden:true},
+    {header:'Message Time',sortable:true,dataIndex:'MessageTime',align:'left',hidden:true},
     {header:'Number of error(s)',sortable:true,dataIndex:'Number of Errors',align:'left'}
   ];
   var title = 'Error Console';
