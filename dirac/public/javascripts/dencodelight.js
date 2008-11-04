@@ -108,19 +108,29 @@ DEncode.g_dDecodeFunctions[ "d" ] = DEncode.decodeDict;
 
 DEncode.encode = function( uObject )
 {
-	//FIXME: Adri: Only DEncode for firefox. 
-	//Other browsers are crap and don't support standart .toSource
-	if( navigator.userAgent.indexOf( "Firefox" ) == -1 )
-		return "";
 	if( typeof uObject == "number" )
 		return DEncode.g_dEncodeFunctions[ 'int' ]( uObject );
-	var source = uObject.toSource();
-	if( source.indexOf( "([" ) == 0 )
-		return DEncode.g_dEncodeFunctions[ 'list' ]( uObject );
-	if( source.indexOf( "({" ) == 0 )
+	//For firefox encode deterministically with toSource function
+	if( uObject.toSource )
+	{
+		var source = uObject.toSource();
+		if( source.indexOf( "([" ) == 0 )
+			return DEncode.g_dEncodeFunctions[ 'list' ]( uObject );
+		if( source.indexOf( "({" ) == 0 )
+			return DEncode.g_dEncodeFunctions[ 'dict' ]( uObject );
+		if( source.indexOf( "(new String" ) == 0 )
+			return DEncode.g_dEncodeFunctions[ 'string' ]( uObject );
+	}
+	//For the rest do a loose dirty match hack because they don't support
+	//standards
+	else
+	{
+		if( uObject.charAt )
+			return DEncode.g_dEncodeFunctions[ 'string' ]( uObject );
+		if( typeof uObject.length == "number" )
+			return DEncode.g_dEncodeFunctions[ 'list' ]( uObject );
 		return DEncode.g_dEncodeFunctions[ 'dict' ]( uObject );
-	if( source.indexOf( "(new String" ) == 0 )
-		return DEncode.g_dEncodeFunctions[ 'string' ]( uObject );
+	}
 	alert( "Unknown object " + uObject + " source: " + source );
 }
 
