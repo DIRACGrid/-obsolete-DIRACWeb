@@ -254,13 +254,14 @@ function plotViewPanel( cfg )
 	{
 		var imgList = panelEl.query( 'img' );
 		var plotWidth = img.width + 9;
-		var plotHeight = 0;
+		var plotHeight = 25;
 		for( var i = 0; i < imgList.length; i++ )
 		{
 			var img = imgList[i];
 			if( img.height )
 			{
-				plotHeight += img.height + 3;
+				//plotHeight += img.clientHeight;
+				plotHeight = img.y - imgList[0].y + img.clientHeight + 25;
 			}
 			else
 			{
