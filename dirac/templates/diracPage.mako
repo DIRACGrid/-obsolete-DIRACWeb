@@ -10,7 +10,7 @@ pageTitle = webBase.htmlPageTitle()
 jsDiracPageObject = webBase.getJSPageData()
 selectedSetup = credentials.getSelectedSetup()
 selectedGroup = credentials.getSelectedGroup()
-pageTitle = "%s@%s: %s" % ( selectedGroup, selectedSetup, pageTitle )
+pageTitle = "%s as %s@%s" % ( pageTitle, selectedGroup, selectedSetup )
 %>
 <html>
  <head>
