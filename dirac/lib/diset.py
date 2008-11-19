@@ -21,7 +21,11 @@ def getTransferClient( *args, **kwargs ):
   kwargs = __prepareArgs( kwargs )
   return TransferClient( *args, **kwargs )
 
-def getUserProfileClient():
+def getUserProfileClient( controller = False, action = False ):
   routingDict = request.environ[ 'wsgiorg.routing_args' ][1]
-  action = str( "%s/%s" % ( routingDict[ 'controller' ], routingDict[ 'action' ] ) )
-  return UserProfileClient( action, rpcClient = getRPCClient( "Framework/UserProfileManager", timeout = 600 ) )
+  if not controller:
+    controller = routingDict[ 'controller' ]
+  if not action:
+    action = routingDict[ 'action' ]
+  actionPath = str( "%s/%s" % ( controller, action ) )
+  return UserProfileClient( actionPath, rpcClient = getRPCClient( "Framework/UserProfileManager", timeout = 600 ) )
