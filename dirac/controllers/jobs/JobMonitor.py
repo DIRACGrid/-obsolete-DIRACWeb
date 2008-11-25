@@ -22,10 +22,14 @@ class JobmonitorController(BaseController):
 ################################################################################
   def display(self):
     pagestart = time()
-    c.select = self.__getSelectionData()
     lhcbGroup = credentials.getSelectedGroup()
-    if lhcbGroup == "lhcb" or lhcbGroup == "lhcb_user":
-      if not c.select.has_key("extra"):
+    if lhcbGroup == "visitor":
+      return render("/login.mako")
+    c.select = self.__getSelectionData()
+    if not c.select.has_key("extra"):
+      if lhcbGroup == "lhcb":
+        c.select["extra"] = {"owner":credentials.getUsername()}
+      elif lhcbGroup == "lhcb_user":
         c.select["extra"] = {"owner":credentials.getUsername()}
     gLogger.info("SELECTION RESULTS:",c.select)
     gLogger.info("\033[0;31mJOB INDEX REQUEST:\033[0m %s" % (time() - pagestart))
@@ -45,9 +49,6 @@ class JobmonitorController(BaseController):
       tmpFile = tempfile.TemporaryFile()
       result = transferClient.receiveFile(tmpFile,id)
       if result["OK"]:
-#        data = result["Value"]
-#        tmpFile = tempfile.TemporaryFile()
-#        tmpFile.write(data)
         tmpFile.seek(0)
         c.result = tmpFile.read()
         response.headers['Content-type'] = 'image/png'
@@ -62,13 +63,20 @@ class JobmonitorController(BaseController):
   def submit(self):
     pagestart = time()
     RPC = getRPCClient("WorkloadManagement/JobMonitoring")
+    lhcbUser = str(credentials.getUsername())
+    result = RPC.getOwners()
+    if result["OK"]:
+      if lhcbUser not in result["Value"]:
+        c.result = {"success":"false","error":"You don't have any jobs in the DIRAC system"}
+        return c.result
+    else:
+      c.result = {"success":"false","error":result["Message"]}
+      return c.result
     result = self.__request()
-    gLogger.info("- REQUEST:",result)
-    gLogger.info("PageNumber:",pageNumber)
-    gLogger.info("NOJ:",numberOfJobs)
     result = RPC.getJobPageSummaryWeb(result,globalSort,pageNumber,numberOfJobs)
     if result["OK"]:
       result = result["Value"]
+      gLogger.info("ReS",result)
       if result.has_key("TotalRecords"):
         if  result["TotalRecords"] > 0:
           if result.has_key("ParameterNames") and result.has_key("Records"):
@@ -84,7 +92,11 @@ class JobmonitorController(BaseController):
                     tmp[head[j]] = i[j]
                   c.result.append(tmp)
                 total = result["TotalRecords"]
-                c.result = {"success":"true","result":c.result,"total":total}
+                if result.has_key("Extras"):
+                  extra = result["Extras"]
+                  c.result = {"success":"true","result":c.result,"total":total,"extra":extra}
+                else:
+                  c.result = {"success":"true","result":c.result,"total":total}
               else:
                 c.result = {"success":"false","result":"","error":"There are no data to display"}
             else:
@@ -102,107 +114,133 @@ class JobmonitorController(BaseController):
 ################################################################################
   def __getSelectionData(self):
     callback = {}
+    lhcbGroup = credentials.getSelectedGroup()
+    lhcbUser = str(credentials.getUsername())
     if len(request.params) > 0:
       tmp = {}
       for i in request.params:
         tmp[i] = str(request.params[i])
       callback["extra"] = tmp
-    RPC = getRPCClient("WorkloadManagement/JobMonitoring")
-    result = RPC.getProductionIds()
-#    gLogger.info("- ProdIDs: ",result)
-#    RPC = getRPCClient("ProductionManagement/ProductionManager")
-#    result = RPC.getProductionSummary()
-    if result["OK"]:
-      prod = []
-      prods = result["Value"]
-      if len(prods)>0:
-        prod.append([str("All")])
-        tmp = []
-        for keys in prods:
-          try:
-            id = str(int(keys)).zfill(8)
-          except:
-            id = str(keys)
-          tmp.append(str(id))
-        tmp.sort(reverse=True)
-        for i in tmp:
-          prod.append([str(i)])
-      else:
-        prod = "Nothing to display"
+    if lhcbUser == "Anonymous":
+      callback["prod"] = [["Insufficient rights"]]
     else:
-      prod = result["Message"]
-    callback["prod"] = prod
-    RPC = getRPCClient("WorkloadManagement/JobMonitoring")
-    result = RPC.getSites()
-    if result["OK"]:
-      site = []
-      tier1 = list(["LCG.CERN.ch","LCG.CNAF.it","LCG.GRIDKA.de","LCG.IN2P3.fr","LCG.NIKHEF.nl","LCG.PIC.es","LCG.RAL.uk"])
-      if len(result["Value"])>0:
-        s = list(result["Value"])
-        site.append([str("All")])
-        for i in tier1:
-          site.append([str(i)])
-          s.remove(i)
-        for i in s:
-          site.append([str(i)])
-        
+      RPC = getRPCClient("WorkloadManagement/JobMonitoring")
+      result = RPC.getProductionIds()
+      if result["OK"]:
+        prod = []
+        prods = result["Value"]
+        if len(prods)>0:
+          prod.append([str("All")])
+          tmp = []
+          for keys in prods:
+            try:
+              id = str(int(keys)).zfill(8)
+            except:
+              id = str(keys)
+            tmp.append(str(id))
+          tmp.sort(reverse=True)
+          for i in tmp:
+            prod.append([str(i)])
+        else:
+          prod = [["Nothing to display"]]
       else:
-        site = "Nothing to display"
+        prod = [["Error during RPC call"]]
+      callback["prod"] = prod
+###
+    if lhcbUser == "Anonymous":
+      callback["site"] = [["Insufficient rights"]]
     else:
-      site = "Error during RPC call"
-    callback["site"] = site
-    result = RPC.getStates()
-    if result["OK"]:
-      stat = []
-      if len(result["Value"])>0:
-        stat.append([str("All")])
-        for i in result["Value"]:
-          stat.append([str(i)])
+      RPC = getRPCClient("WorkloadManagement/JobMonitoring")
+      result = RPC.getSites()
+      if result["OK"]:
+        site = []
+        tier1 = list(["LCG.CERN.ch","LCG.CNAF.it","LCG.GRIDKA.de","LCG.IN2P3.fr","LCG.NIKHEF.nl","LCG.PIC.es","LCG.RAL.uk"])
+        if len(result["Value"])>0:
+          s = list(result["Value"])
+          site.append([str("All")])
+          for i in tier1:
+            site.append([str(i)])
+          for i in s:
+            site.append([str(i)])    
+        else:
+          site = [["Nothing to display"]]
       else:
-        stat = "Nothing to display"
+        site = [["Error during RPC call"]]
+      callback["site"] = site
+###
+    if lhcbUser == "Anonymous":
+      callback["stat"] = [["Insufficient rights"]]
     else:
-      stat = "Error during RPC call"
-    callback["stat"] = stat
-    result = RPC.getMinorStates()
-    if result["OK"]:
-      stat = []
-      if len(result["Value"])>0:
-        stat.append([str("All")])
-        for i in result["Value"]:
-          stat.append([str(i)])
+      result = RPC.getStates()
+      if result["OK"]:
+        stat = []
+        if len(result["Value"])>0:
+          stat.append([str("All")])
+          for i in result["Value"]:
+            stat.append([str(i)])
+        else:
+          stat = [["Nothing to display"]]
       else:
-        stat = "Nothing to display"
+        stat = [["Error during RPC call"]]
+      callback["stat"] = stat
+###
+    if lhcbUser == "Anonymous":
+      callback["minorstat"] = [["Insufficient rights"]]
     else:
-      stat = "Error during RPC call"
-    callback["minorstat"] = stat
-    result = RPC.getApplicationStates()
-    if result["OK"]:
-      app = []
-      if len(result["Value"])>0:
-        app.append([str("All")])
-        for i in result["Value"]:
-          app.append([str(i)])
+      result = RPC.getMinorStates()
+      if result["OK"]:
+        stat = []
+        if len(result["Value"])>0:
+          stat.append([str("All")])
+          for i in result["Value"]:
+            stat.append([str(i)])
+        else:
+          stat = [["Nothing to display"]]
       else:
-        app = "Nothing to display"
+        stat = [["Error during RPC call"]]
+      callback["minorstat"] = stat
+###
+    if lhcbUser == "Anonymous":
+      callback["app"] = [["Insufficient rights"]]
     else:
-      app = "Error during RPC call"
-    callback["app"] = app
-    result = RPC.getOwners()
-    if result["OK"]:
-      owner = []
-      if len(result["Value"])>0:
-        owner.append([str("All")])
-        for i in result["Value"]:
-          owner.append([str(i)])
+      result = RPC.getApplicationStates()
+      if result["OK"]:
+        app = []
+        if len(result["Value"])>0:
+          app.append([str("All")])
+          for i in result["Value"]:
+            app.append([str(i)])
+        else:
+          app = [["Nothing to display"]]
       else:
-        owner = "Nothing to display"
+        app = [["Error during RPC call"]]
+      callback["app"] = app
+###
+    if lhcbUser == "Anonymous":
+      callback["owner"] = [["Insufficient rights"]]
+    elif lhcbGroup == "lhcb":
+      callback["owner"] = [["All"],[str(credentials.getUsername())]]
+    elif lhcbGroup == "lhcb_user":
+      callback["owner"] = [["All"],[str(credentials.getUsername())]]
     else:
-      owner = "Error during RPC call"
-    callback["owner"] = owner
+      result = RPC.getOwners()
+      if result["OK"]:
+        owner = []
+        if len(result["Value"])>0:
+          owner.append([str("All")])
+          for i in result["Value"]:
+            owner.append([str(i)])
+        else:
+          owner = [["Nothing to display"]]
+      else:
+        owner = [["Error during RPC call"]]
+      callback["owner"] = owner
     return callback
 ################################################################################
   def __request(self):
     req = {}
+    lhcbGroup = credentials.getSelectedGroup()
+    lhcbUser = str(credentials.getUsername())
     global pageNumber
     if request.params.has_key("id") and len(request.params["id"]) > 0:
       pageNumber = 0
@@ -233,9 +271,12 @@ class JobmonitorController(BaseController):
       if request.params.has_key("app") and len(request.params["app"]) > 0:
         if str(request.params["app"]) != "All":
           req["ApplicationStatus"] = str(request.params["app"]).split('::: ')
-      if request.params.has_key("owner") and len(request.params["owner"]) > 0:
-        if str(request.params["owner"]) != "All":
-          req["Owner"] = str(request.params["owner"]).split('::: ')
+      if lhcbGroup == "lhcb" or lhcbGroup == "lhcb_user":
+        req["Owner"] = str(lhcbUser)
+      else:
+        if request.params.has_key("owner") and len(request.params["owner"]) > 0:
+          if str(request.params["owner"]) != "All":
+            req["Owner"] = str(request.params["owner"]).split('::: ')
       if request.params.has_key("date") and len(request.params["date"]) > 0:
         if str(request.params["date"]) != "YYYY-mm-dd":
           req["LastUpdate"] = str(request.params["date"])
@@ -280,7 +321,8 @@ class JobmonitorController(BaseController):
       id = request.params["reset"]
       id = id.split(",")
       id = [int(i) for i in id ]
-      return self.__resetJobs(id)
+#      return self.__resetJobs(id)
+      return self.__rescheduleJobs(id)
     elif request.params.has_key("pilotStdOut") and len(request.params["pilotStdOut"]) > 0:
       id = request.params["pilotStdOut"]
       return self.__pilotGetOutput("out",int(id))
@@ -430,6 +472,24 @@ class JobmonitorController(BaseController):
   def __resetJobs(self,id):
     MANAGERRPC = getRPCClient("WorkloadManagement/JobManager")
     result = MANAGERRPC.resetJob(id)
+    if result["OK"]:
+      c.result = ""
+      c.result = {"success":"true","result":c.result}
+    else:
+      if result.has_key("InvalidJobIDs"):
+        c.result = "Invalid JobIDs: %s" % result["InvalidJobIDs"]
+        c.result = {"success":"false","error":c.result}
+      elif result.has_key("NonauthorizedJobIDs"):
+        c.result = "You are nonauthorized to delete jobs with JobID: %s" % result["NonauthorizedJobIDs"]
+        c.result = {"success":"false","error":c.result}
+      else:
+        c.result = {"success":"false","error":result["Message"]}
+    gLogger.info("RESET:",id)
+    return c.result
+################################################################################
+  def __rescheduleJobs(self,id):
+    MANAGERRPC = getRPCClient("WorkloadManagement/JobManager")
+    result = MANAGERRPC.rescheduleJob(id)
     if result["OK"]:
       c.result = ""
       c.result = {"success":"true","result":c.result}
