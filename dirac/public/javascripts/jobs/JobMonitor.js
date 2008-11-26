@@ -70,19 +70,21 @@ function initSidebar(){
   select.insert(6,dateSelect);
   select.insert(7,id);
   var sortGlobal = sortGlobalPanel(); // Initializing the global sort panel
-  var graph = imagePanel();
+//  var graph = imagePanel();
+  var stat = statPanel();
   var bar = sideBar();
   bar.insert(0,select);
   bar.insert(1,sortGlobal);
-  bar.insert(2,graph);
+  bar.insert(2,stat);
+//  bar.insert(3,graph);
   return bar
 }
 function initData(store){
   var columns = [
-    {header:'',name:'checkBox',id:'checkBox',width:10,sortable:false,dataIndex:'JobID',renderer:chkBox,hideable:false},
+    {header:'',name:'checkBox',id:'checkBox',width:26,sortable:false,dataIndex:'JobID',renderer:chkBox,hideable:false},
     {header:'JobId',sortable:true,dataIndex:'JobID',align:'left'},
-    {header:'',width:10,sortable:false,dataIndex:'Status',renderer:status,hideable:false},
-    {header:'Status',sortable:true,dataIndex:'Status',align:'left'},
+    {header:'',width:26,sortable:false,dataIndex:'Status',renderer:status,hideable:false},
+    {header:'Status',width:60,sortable:true,dataIndex:'Status',align:'left'},
     {header:'MinorStatus',sortable:true,dataIndex:'MinorStatus',align:'left'},
     {header:'ApplicationStatus',sortable:true,dataIndex:'ApplicationStatus',align:'left'},
     {header:'Site',sortable:true,dataIndex:'Site',align:'left'},
@@ -99,7 +101,6 @@ function initData(store){
     {header:'OSandboxReadyFlag',sortable:true,dataIndex:'OSandboxReadyFlag',align:'left',hidden:true},
     {header:'Owner',sortable:true,dataIndex:'Owner',align:'left'}
   ];
-  var title = 'Job Monitoring';
   var tbar = [
     {
       cls:"x-btn-text-icon",
@@ -114,9 +115,9 @@ function initData(store){
       text:'Select None',
       tooltip:'Click to uncheck selected row(s)'
     },'->',{
-      handler:function(){action('job','reset')},
-      text:'Reset',
-      tooltip:'Click to reset selected job(s)'
+      handler:function(){action('job','reschedule')},
+      text:'Reschedule',
+      tooltip:'Click to reschedule selected job(s)'
     },{
       handler:function(){action('job','kill')},
       text:'Kill',
@@ -127,25 +128,48 @@ function initData(store){
       tooltip:'Click to delete selected job(s)'
     }
   ];
+  try{
+    if(gPageDescription.userData.group == 'diracAdmin'){
+      var resetButton = {
+        handler:function(){action('job','reset')},
+        text:'Reset',
+        tooltip:'Click to reset selected job(s)'
+      }
+      var a = tbar.slice(), b = a.splice( 3 );
+      a[3] = resetButton;
+      tbar = a.concat( b );
+    }
+  }catch(e){}
   store.setDefaultSort('JobID','DESC'); // Default sorting
-  tableMngr = {'store':store,'columns':columns,'title':title,'tbar':tbar};
+  tableMngr = {'store':store,'columns':columns,'tbar':tbar};
   var t = table(tableMngr);
-  t.addListener('cellclick',showMenu);
-  var tabPanel = new Ext.TabPanel({
-    activeTab:0,
-    enableTabScroll:true,
-    id:'tabPanel',
-    items:[t],
-    margins:'2 0 2 0',
-    region:'center'
-  });
-  return tabPanel
+  t.addListener('cellclick',function(table,rowIndex,columnIndex){
+      showMenu('main',table,rowIndex,columnIndex);
+  })
+  return t
 }
 function renderData(store){
   var leftBar = initSidebar();
   var mainContent = initData(store);
   renderInMainViewport([ leftBar, mainContent ]);
   dataMngr = {'form':leftBar.items.items[0],'store':store}
+  addMenu();
+}
+function addMenu(){
+  var topBar = Ext.getCmp('diracTopBar');
+  if(topBar){
+    var button = new Ext.Toolbar.Button({
+      text:'Tools',
+      menu:[
+        {handler:function(){showURL()},text:'Full URL'},
+        {menu:{items:[
+          {handler:function(){showJobID(', ')},text:'Comma separated'},
+          {handler:function(){showJobID('; ')},text:'Semicolon separated'}
+        ]},text:'Show selected JobIDs'}
+      ]
+    });
+    topBar.insertButton(5,button);
+  }
 }
 function setMenuItems(selections){
   if(selections){
@@ -270,31 +294,33 @@ function AJAXsuccess(value,id,response){
     var store = new Ext.data.Store({
       data:result,
       reader:reader
-    }),
+    });
     panel = new Ext.grid.GridPanel({
+      anchor:'100%',
       columns:columns,
       store:store,
       stripeRows:true,
       viewConfig:{forceFit:true}
+    });
+    panel.addListener('cellclick',function(table,rowIndex,columnIndex){
+      showMenu('nonMain',table,rowIndex,columnIndex);
     });
   }
   id = setTitle(value,id);
   displayWin(panel,id)
 }
 function afterDataLoad(){
-  var panel = Ext.getCmp('imagePanel');
-  if(panel){
-    var items = panel.items.items;
-    var timeout = 150;
-    for(var i = 0; i < items.length; i++){
-      var name = items[i].name
-      items[i].load({
-        callback:function(panel,success,response){callBack(panel,success,response,name)},
-        params:paramsSite(name),
-        timeout:timeout,
-        text:"Loading...",
-        url:'action'
-      });
+  var msg = [];
+  if(dataMngr){
+    if(dataMngr.store){
+      if(dataMngr.store.extra_msg){
+         msg = dataMngr.store.extra_msg;
+      }
     }
+  }
+  var statPanel = Ext.getCmp('statGrid');
+  if((statPanel)&&(msg)){
+    msg = createStateMatrix(msg);
+    statPanel.store.loadData(msg);
   }
 }
