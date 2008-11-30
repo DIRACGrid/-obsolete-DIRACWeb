@@ -161,7 +161,8 @@ class JobmonitorController(BaseController):
           for i in tier1:
             site.append([str(i)])
           for i in s:
-            site.append([str(i)])    
+            if i not in tier1:
+              site.append([str(i)])    
         else:
           site = [["Nothing to display"]]
       else:
@@ -317,12 +318,16 @@ class JobmonitorController(BaseController):
       id = id.split(",")
       id = [int(i) for i in id ]
       return self.__killJobs(id)
+    elif request.params.has_key("reschedule") and len(request.params["reschedule"]) > 0:
+      id = request.params["reschedule"]
+      id = id.split(",")
+      id = [int(i) for i in id ]
+      return self.__rescheduleJobs(id)
     elif request.params.has_key("reset") and len(request.params["reset"]) > 0:
       id = request.params["reset"]
       id = id.split(",")
       id = [int(i) for i in id ]
-#      return self.__resetJobs(id)
-      return self.__rescheduleJobs(id)
+      return self.__resetJobs(id)
     elif request.params.has_key("pilotStdOut") and len(request.params["pilotStdOut"]) > 0:
       id = request.params["pilotStdOut"]
       return self.__pilotGetOutput("out",int(id))
