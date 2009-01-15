@@ -46,18 +46,20 @@ ${ h.javascript_include_tag( "/javascripts/htmlPage.js" ) }
   </tr>
   <tr>
     <td>
-      <p>DIRAC  forms a layer between a particular community and various compute  resources to allow optimized, transparent and reliable usage.</p>
       <p>The  DIRAC architecture consists of numerous cooperating Distributed  Services and Light Agents built within the same DISET framework following the Grid security standards.</p>
+<p>DIRAC  introduced the now widely used concept of Pilot Agents. This allows  efficient Workload Management Systems (WMS) to be built. The workload  of the community is optimized in the central Task Queue.</p>
 		  </td>
     <td align="center"><img src=${ h.url_for( "/images/content/overview2.png" )}></td>
   </tr>
   <tr>
     <td align="center"><img src=${ h.url_for( "/images/content/overview3.png" )}></td>
-    <td><p>DIRAC  introduced the now widely used concept of Pilot Agents. This allows  efficient Workload Management Systems (WMS) to be built. The workload  of the community is optimized in the central Task Queue.</p>
-      <p>The WMS is carefully designed to be resilient to failures in the ever changing Grid environment.</p></td>
+    <td>
+      <p>The WMS is carefully designed to be resilient to failures in the ever changing Grid environment.</p>
+      <p>The  DIRAC project includes a versatile Data Management System (DMS) which  is optimized for reliable data transfers. The DMS automates the routine  data distribution tasks.</p>
+    </td>
   </tr>
   <tr>
-    <td><p>The  DIRAC project includes a versatile Data Management System (DMS) which  is optimized for reliable data transfers. The DMS automates the routine  data distribution tasks.</p>
+    <td>
     <p>The  DIRAC Production Management System is built on top of the Workload and  Data Management services. This provides automated data driven  submission of processing jobs with workflows of arbitrary complexity</p>
     <p>The DIRAC Project has all the necessary components to build Workload and  Data management systems of varying complexity. It offers a complete  and powerful Grid solution for other user grid communities.</p>
 </td>
