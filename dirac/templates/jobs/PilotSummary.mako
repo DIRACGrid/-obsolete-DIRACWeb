@@ -4,7 +4,6 @@
 
 <%def name="head_tags()">
 ${ h.javascript_include_tag( "/javascripts/lovCombo.js" ) }
-${ h.javascript_include_tag( "/javascripts/columnTree.js" ) }
 ${ h.javascript_include_tag( "/javascripts/jobs/Lib.js" ) }
 ${ h.javascript_include_tag( "/javascripts/jobs/PilotSummary.js" ) }
 ${ h.stylesheet_link_tag( "/stylesheets/lovCombo.css" ) }
