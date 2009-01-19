@@ -1,545 +1,343 @@
-var x = 0;
-var y = 0;
-var counter = 25;
-var total = "";
-var page = 0;
-var jobLegend = "";
-var gURLRoot = "";
-function initWebRoot(url){
-  gURLRoot = url;
-  wait = new YAHOO.widget.Panel("w",{visible:false,draggable:false,close:false,fixedcenter:true,modal:true});
-  wait.setBody("<img src='"+gURLRoot+"/loading/loading-3.gif' width='66' height='66'>");
+var dataSelect = ''; // Required to store the data for filters fields. Object.
+var dataMngr = ''; // Required to connect form and table. Object.
+var tableMngr = ''; // Required to handle configuration data for table. Object.
+// Main routine
+function initPilotSummary(reponseSelect){
+  dataSelect = reponseSelect;
+  dataSelect.globalSort = "Site ASC";
+  var record = initRecord();
+  var store = initStore(record);
+  Ext.onReady(function(){
+    renderData(store);
+  });
 }
-function showkal(){
-  if(document.getElementById("kalendar") == null){
-    var k = new YAHOO.widget.Panel("kalendar",{visible:true,draggable:false,close:true,constraintoviewport:true,context:["jobupdate","tl","bl"],zindex:3000});
-    k.setBody("<div id='kal'></div>");
-    k.setHeader("Pick the date:");
-    k.render(document.body);
-    k.subscribe("hide", function(){
-        var z = document.getElementById("kalendar");
-        z = z.parentNode;
-        z.parentNode.removeChild(z);
-      }
-    );
-    var cal = new YAHOO.widget.Calendar("cal1","kal");
-    cal.render();
-    cal.selectEvent.subscribe(handleSelect, cal, true);
+// function describing data structure, should be individual per page
+function initRecord(){
+  var record = new Ext.data.Record.create([
+    {name:'Scheduled'},
+    {name:'Status'},
+    {name:'Aborted_Hour'},
+    {name:'SubmissionEff',type:'float'},
+    {name:'Site'},
+    {name:'Submitted'},
+    {name:'Done_Empty'},
+    {name:'Waiting'},
+    {name:'PilotJobEff',type:'float'},
+    {name:'Done'},
+    {name:'CE'},
+    {name:'Aborted'},
+    {name:'Ready'},
+    {name:'Total'},
+    {name:'Running'}
+  ]);
+  return record
+}
+// Initialisation of selection sidebar, all changes with selection items should goes here
+function initSidebar(){
+  var siteSelect = selectSiteMenu(); // Initializing Site Menu
+  var statSelect = selectPilotStatusMenu(); // Initializing Owner Menu
+  var select = selectPanel(); // Initializing container for selection objects
+  // Insert object to container BEFORE buttons:
+  select.insert(0,siteSelect);
+  select.insert(1,statSelect);
+  var stat = statPanel('Statistics','current','statGrid');
+  var bar = sideBar();
+  bar.insert(0,select);
+  bar.insert(1,stat);
+  bar.setTitle('PilotSummary');
+  return bar
+}
+var expSites = new Array();
+function expSite(value,xxx,obj){
+  if(value == 'Multiple'){
+    var site = 'Empty value'
+    try{
+      var site = obj.data.Site;
+      var recIndex = obj.id;
+      expSites[expSites.length] = [site,recIndex];
+    }catch(e){}
+    var html = '<img id="img.' + site + '" style="cursor: pointer; cursor: hand;" src="'+gURLRoot+'/images/iface/plus.gif"';
+    html = html + ' onclick="addEntries(\'' + site + '\',' + recIndex + ')" />';
+    return html
+  }
+}
+function initData(store){
+  var columns = [
+    {header:'',name:'expand',id:'expand',width:26,sortable:false,dataIndex:'CE',renderer:expSite,hideable:false},
+    {header:'',width:26,sortable:false,dataIndex:'Status',renderer:status,hideable:false},
+    {header:'Site',sortable:true,dataIndex:'Site',align:'left'},
+    {header:'CE',sortable:true,dataIndex:'CE',align:'left'},
+    {header:'Status',width:60,sortable:true,dataIndex:'Status',align:'left'},
+    {header:'SubmissionEff (%)',sortable:true,dataIndex:'SubmissionEff',align:'left'},
+    {header:'PilotJobEff (%)',sortable:true,dataIndex:'PilotJobEff',align:'left'},
+    {header:'Submitted',sortable:true,dataIndex:'Submitted',align:'left',hidden:true},
+    {header:'Ready',sortable:true,dataIndex:'Ready',align:'left',hidden:true},
+    {header:'Waiting',sortable:true,dataIndex:'Waiting',align:'left'},
+    {header:'Scheduled',sortable:true,dataIndex:'Scheduled',align:'left'},
+    {header:'Running',sortable:true,dataIndex:'Running',align:'left'},
+    {header:'Done',sortable:true,dataIndex:'Done',align:'left'},
+    {header:'Aborted',sortable:true,dataIndex:'Aborted',align:'left',hidden:true},
+    {header:'Aborted_Hour',sortable:true,dataIndex:'Aborted_Hour',align:'left'},
+    {header:'Done_Empty',sortable:true,dataIndex:'Done_Empty',align:'left',hidden:true},
+    {header:'Total',sortable:true,dataIndex:'Total',align:'left',hidden:true}
+  ];
+  store.setDefaultSort('Site','ASC'); // Default sorting
+/*
+  var tbar = [
+    {
+      cls:"x-btn-text-icon",
+      handler:function(){expandAll()},
+      icon:gURLRoot+'/images/iface/plus.gif',
+      text:'Expand All',
+      tooltip:'Click to expand all collapsed sites'
+    },{
+      cls:"x-btn-text-icon",
+      handler:function(){collapseAll()},
+      icon:gURLRoot+'/images/iface/minus.gif',
+      text:'Collapse All',
+      tooltip:'Click to collapse CEs to single site'
+    },'->'
+  ];
+*/
+  var tbar = '';
+  tableMngr = {'store':store,'columns':columns,'tbar':tbar};
+  var t = table(tableMngr);
+  t.addListener('cellclick',function(table,rowIndex,columnIndex){
+    showMenu('main',table,rowIndex,columnIndex);
+  });
+  t.store.addListener('beforeload',function(){
+    expSites.length = 0;
+  });
+  return t
+}
+function renderData(store){
+  var leftBar = initSidebar();
+  var mainContent = initData(store);
+  renderInMainViewport([ leftBar, mainContent ]);
+  dataMngr = {'form':leftBar.items.items[0],'store':store}
+  addMenu();
+}
+function addMenu(){
+  var topBar = Ext.getCmp('diracTopBar');
+  if(topBar){
+    var button = new Ext.Toolbar.Button({
+      text:'Tools',
+      menu:[
+        {handler:function(){showURL()},text:'Full URL'},
+        {menu:{items:[
+          {handler:function(){showJobID(', ')},text:'Comma separated'},
+          {handler:function(){showJobID('; ')},text:'Semicolon separated'}
+        ]},text:'Show selected JobIDs'}
+      ]
+    });
+    topBar.insertButton(5,button);
+  }
+}
+function setMenuItems(selections){
+  if(selections){
+    var id = selections.JobID;
+    var status = selections.Status;
   }else{
-    var z = document.getElementById("kalendar");
-    z = z.parentNode;
-    z.parentNode.removeChild(z);
-  }
-}
-function handleSelect(type,args,obj) {
-  var dates = args[0];
-  var date = dates[0];
-  var year = date[0], month = date[1] + "", day = date[2] + "";
-  var show = document.getElementById("jobupdate");
-  if(month.length == 1){
-    month = "0" + month;
-  }
-  if(day.length == 1){
-    day = "0" + day;
-  }
-  show.value = year + "-" + month + "-" + day;
-  var z = document.getElementById("kalendar");
-  z = z.parentNode;
-  z.parentNode.removeChild(z);
-}
-function status(value){
-  if(value == "Done"){
-    return "<img src='"+gURLRoot+"/monitoring/done.gif'>";
-  }else if(value == "Failed"){
-    return "<img src='"+gURLRoot+"/monitoring/failed.gif'>";
-  }else if(value == "Waiting"){
-    return "<img src='"+gURLRoot+"/monitoring/waiting.gif'>";
-  }else if(value == "Deleted"){
-    return "<img src='"+gURLRoot+"/monitoring/deleted.gif'>";
-  }else if(value == "Matched"){
-    return "<img src='"+gURLRoot+"/monitoring/matched.gif'>";
-  }else if(value == "Running"){
-    return "<img src='"+gURLRoot+"/monitoring/running.gif'>";
-  }else{
-    return "<img src='"+gURLRoot+"/monitoring/unknown.gif'>";
-  }
-}
-function parseInput(response,mode){
-  var responseArray = response;
-  if(responseArray.length == 0){
-    xz.hide();
-    alert("Can't parse server response: " + response);
     return
   }
-  var returnArray = new Array();
-  if(mode == "jobs"){
-    page = responseArray.pop();
-    total = responseArray.pop();
-    jobLegend = responseArray.pop();
-    for(var i = 0; i < responseArray.length; i++){
-      var t = responseArray[i];
-      t[0] = t[0].replace("'","");
-      t[8] = t[8].replace("'","");
-      t[9] = status(t[1]);
-      t[0] = t[0] * 1;
-      returnArray[i]={JobId:t[0],StIcon:t[9],Status:t[1],MinorStatus:t[2],ApplicationStatus:t[3],Site:t[4],JobName:t[5],LastUpdate:t[6],SubmissionTime:t[8],Owner:t[7]};
-    }
-  }else if(mode == "prod"){
-    total = responseArray.pop();
-    jobLegend = responseArray.pop();
-    for(var i = 0; i < responseArray.length; i++){
-      var t = responseArray[i];
-      t[0] = t[0].replace(/'/g,"");
-      t[1] = t[1].replace(/'/g,"");
-      t[2] = t[2].replace(/'/g,"");
-      t[3] = t[3].replace(/'/g,"");
-      t[7] = t[7].replace(/'/g,"");
-      t[2] = status(t[2]);
-      returnArray[i]={ProdId:t[0], ProdName:t[1], Status:t[2], DN:t[3], JobsTotal:t[4], JobsSubmitted:t[5], JobLast:t[6], Parent:t[7], Description:t[8]};
-    }
-  }else if(mode == "room"){
-    for(var i = 0; i < responseArray.length; i++){
-      var t = responseArray[i];
-      t[0] = t[0].replace(/'/g,"");
-      t[4] = t[4].replace(/'/g,"");
-      returnArray[i]={Site:"tier1", Stat:tier1[0], Total:tier1[1], Up:tier1[2], Dwn:tier1[3], nOK:tier1[4]};
-    }
-  }else if(mode == "info"){
-    for(var i = 0; i < responseArray.length; i++){
-      var t = responseArray[i];
-      t[0] = t[0].replace(/'/g,"");
-      t[1] = t[1].replace(/'/g,"");
-      returnArray[i]={Name:t[0], Value:t[1]};
-    }
-  }else if(mode == "refresh"){
-    total = responseArray.pop();
-    for(var i = 0; i < responseArray.length; i++){
-      var t = responseArray[i];
-      t[1] = t[1]*1;
-      t[2] = t[2]*1;
-      t[3] = t[3]*1;
-      t[4] = t[4]*1;
-      t[5] = t[5]*1;
-      t[6] = t[6]*1;
-      t[7] = t[7]*1;
-      returnArray[i]={Site:t[0],Submited:t[1],Ready:t[2],Scheduled:t[3],Running:t[4],Done:t[5],Cleared:t[6],Aborted:t[7]};
-    }
-  }else if(mode="log"){
-    for(var i = 0; i < responseArray.length; i++){
-      var t = responseArray[i];
-      t[0] = t[0].replace(/'/g,"");
-      t[1] = t[1].replace(/'/g,"");
-      t[2] = t[2].replace(/'/g,"");
-      t[3] = t[3].replace(/'/g,"");
-      t[4] = t[4].replace(/'/g,"");
-      if(t[2] == "Unknown"){
-        t[2] = "";
-      }
-      returnArray[i]={DateTime:t[3], Status:t[0], MinorStatus:t[1], Source:t[4], ApplicationStatus:t[2]};
-    }
+  if(dirac.menu){
+    dirac.menu.add(
+      {handler:function(){jump('site',id,submited)},text:'Show Pilots for Site'},
+      {handler:function(){jump('CE',id,submited)},text:'Show Pilots for CE'}
+    )
   }
-  return returnArray
-}
-function parseRequest(r){
-  var req = r.responseText;
-  req = JSON.parse(req);
-  wait.hide();
-  if ((req == "There are no jobs to fit your criteria")||(req == "There is no summary for the job(s)")) {
-    xz.hide();
-    alert(req);
+};
+function AJAXsuccess(value,id,response){
+  var jsonData = Ext.util.JSON.decode(response);
+  if(jsonData['success'] == 'false'){
+    alert('Error: ' + jsonData['error']);
     return
   }
-  var type = r.argument;
-  if(type != "jdl"){
-    if(type == "act"){
-      if(req != 0){
-        alert(req);
+  var result = jsonData.result;
+  var panel = {};
+  if((value == 'getJDL')||(value == 'getStandardOutput')||(value == 'pilotStdOut')||(value == 'pilotStdErr')||(value == 'getStagerReport')){
+    var html = '<pre>' + result + '</pre>';
+    panel = new Ext.Panel({border:0,autoScroll:true,html:html,layout:'fit'})
+  }else if(value == 'LogURL'){
+    result = result.replace(/"/g,"");
+    result = result.replace(/\\/g,"");
+    var html = '<iframe id="www_frame" src =' + result + '></iframe>';
+    panel = new Ext.Panel({border:0,autoScroll:false,html:html})
+    panel.on('resize',function(){
+      var wwwFrame = document.getElementById('www_frame');
+      wwwFrame.height = panel.getInnerHeight() - 4;
+      wwwFrame.width = panel.getInnerWidth() - 4;
+    })
+  }else{
+    var reader = {};
+    var columns = [];
+    if((value == 'getBasicInfo')||(value == 'getParams')){
+      reader = new Ext.data.ArrayReader({},[
+        {name:'name'},
+        {name:'value'}
+      ]);
+      columns = [
+        {header:'Name',sortable:true,dataIndex:'name',align:'left'},
+        {header:'Value',sortable:true,dataIndex:'value',align:'left'}
+      ];
+    }else if(value == 'getPending'){
+      reader = new Ext.data.ArrayReader({},[
+        {name:'type'},
+        {name:'operation'},
+        {name:'status'},
+        {name:'order'},
+        {name:'targetSE'},
+        {name:'file'}
+      ]);
+      columns = [
+        {header:'Type',sortable:true,dataIndex:'type',align:'left'},
+        {header:'Operation',sortable:true,dataIndex:'operation',align:'left'},
+        {header:'Status',sortable:true,dataIndex:'status',align:'left'},
+        {header:'Order',sortable:true,dataIndex:'order',align:'left'},
+        {header:'Targert SE',sortable:true,dataIndex:'targetSE',align:'left'},
+        {header:'File',sortable:true,dataIndex:'file',align:'left'}
+      ];
+      var mark = 0;
+      for(var i = 0; i < result.length; i++){
+        if(result[i][0] == 'PendingRequest'){
+          var intermed = result[i][1].split('\n');
+          mark = 1;
+        }
+      }
+      if(mark == 0){
+        alert('Error: No pending request(s) found');
         return
       }else{
-        alert("Operation finished successfully");
-        submit();
-        return
+        for(var j = 0; j < intermed.length; j++){
+          intermed[j] = intermed[j].split(':');
+        }
+        result = intermed;
       }
-    }
-    data = parseInput(req,type);
-    if(type == "jobs"){
-      YAHOO.example.Data = {"startIndex":0,"sort":null,"dir":"asc",jobs:data};
-      YAHOO.example.Basic.myDataTable.initializeTable(YAHOO.example.Data.jobs);
-      var sortedBy = YAHOO.example.Basic.myDataTable._configs.sortedBy.value.key;
-      sortedBy = YAHOO.example.Basic.myDataTable.getColumn(sortedBy);
-      YAHOO.example.Basic.myDataTable.sortColumn(sortedBy);
-      YAHOO.example.Basic.myDataTable.sortColumn(sortedBy);
-      total = parseInt(total);
-      showPage(total);
-    }else if(type == "prod"){
-      YAHOO.example.Data = {"startIndex":0,"sort":null,"dir":"asc",jobs:newJobs};
-      YAHOO.example.Basic.myDataTable.initializeTable(YAHOO.example.Data.jobs);
-      total = parseInt(total);
-      showPage(total);
-    }else if(type == "log"){
-      var temp_defs = [
-        {key:"Source", sortable:true, resizeable:true},
-        {key:"Status", sortable:true, resizeable:true},
-        {key:"MinorStatus", sortable:true, resizeable:true},
-        {key:"ApplicationStatus", sortable:true, resizeable:true},
-        {key:"DateTime", sortable:true, resizeable:true}
+    }else if(value == 'LoggingInfo'){
+      reader = new Ext.data.ArrayReader({},[
+        {name:'status'},
+        {name:'minorstatus'},
+        {name:'applicationstatus'},
+        {name:'datetime',type:'date',dateFormat:'Y-n-j h:i:s'},
+        {name:'source'}
+      ]);
+      columns = [
+        {header:'Source',sortable:true,dataIndex:'source',align:'left'},
+        {header:'Status',sortable:true,dataIndex:'status',align:'left'},
+        {header:'MinorStatus',sortable:true,dataIndex:'minorstatus',align:'left'},
+        {header:'ApplicationStatus',sortable:true,dataIndex:'applicationstatus',align:'left'},
+        {header:'DateTime',sortable:true,dataIndex:'datetime',align:'left'}
       ];
-      var temp_datas = new YAHOO.util.DataSource(data);
-      temp_datas.responseSchema = {fields: ["Source","Status","MinorStatus","ApplicationStatus","DateTime"]};
-      temp_datas.responseType = YAHOO.util.DataSource.TYPE_JSARRAY;
-      var temp_table = new YAHOO.widget.DataTable("xz_body",temp_defs,temp_datas);
-    }else if(type == "info"){
-      var temp_defs = [
-        {key:"Name", lable:"Parameter Name", sortable:true, resizeable:true},
-        {key:"Value", sortable:true, resizeable:true}
-      ];
-      var temp_datas = new YAHOO.util.DataSource(data);
-      temp_datas.responseSchema = {fields: ["Name","Value"]};
-      temp_datas.responseType = YAHOO.util.DataSource.TYPE_JSARRAY;
-      var temp_table = new YAHOO.widget.DataTable("xz_body",temp_defs,temp_datas);
-    }else if(type == "refresh"){
-      YAHOO.example.Data = {"startIndex":0,"sort":null,"dir":"asc",productions:data};
-      YAHOO.example.Basic.myDataTable.initializeTable(YAHOO.example.Data.productions);
-      showTime(total);
     }
-  }else{
-    if (req == "false") {
-      xz.hide();
-      alert("\tNo JDL found");
-      return;
-    }
-    xz.setBody("<div id=\"xz_body\"><pre class=\"jdl\">" + req + "\n</pre></div>");
+    var store = new Ext.data.Store({
+      data:result,
+      reader:reader
+    });
+    panel = new Ext.grid.GridPanel({
+      anchor:'100%',
+      columns:columns,
+      store:store,
+      stripeRows:true,
+      viewConfig:{forceFit:true}
+    });
+    panel.addListener('cellclick',function(table,rowIndex,columnIndex){
+      showMenu('nonMain',table,rowIndex,columnIndex);
+    });
   }
-  setPanel(type);
+  id = setTitle(value,id);
+  displayWin(panel,id)
 }
-function setPanel(type){
-  var width = 'CSS1Compat' && !window.opera?document.documentElement.clientWidth:document.body.clientWidth;
-  if(document.getElementById("xz_body") != null){
-    var width_element = document.getElementById('xz_body').clientWidth;
-    if(width_element > width - 20){
-      width = width - 20;
-    }else{
-      if(type == "jdl"){
-        width = (2 * width) / 3;
-      }else{
-        width = width_element + 20;
-      }
-    }
-    var height = 'CSS1Compat' && !window.opera?document.documentElement.clientHeight:document.body.clientHeight;
-    var height_element = document.getElementById('xz_body').clientHeight;
-    if(height_element > height - 20){
-      height = height - 20;
-    }else{
-      height = height_element + 50;
-    }
-    document.getElementById('xz_body').style.height = (height - 35) + "px";
-    xz.cfg.setProperty("width",width + "px");
-    xz.cfg.setProperty("height",height + "px");
-    document.getElementById("xz_body").style.overflow = "auto";
-  }
-}
-function setupPanel(id,e){
-  xz.cfg.setProperty("width","600px");
-  xz.cfg.setProperty("height","400px");
-  xz.setHeader("Job ID: " + id);
-  xz.setBody("<div id=\"xz_body\"></div>");
-  xz.render(document.body);
-  xz.show();
-  xz.cfg.setProperty("xy", [x-300,y-200]);
-}
-function clear(){
-  var x = document.getElementById("kalendar");
-  if(x != null){
-    x = z.parentNode;
-    x.parentNode.removeChild(z);
-  }
-  xz.hide();
-}
-function showTime(time){
-  document.getElementById("bottom_jobs_counter").innerHTML = "Last update: " + time;
-  document.getElementById("top_jobs_counter").innerHTML = "Last update: " + time;
-}
-function showPage(totaljobs){
-  var url = parseFilter();
-  var pages = Math.ceil(totaljobs/counter);
-  var pages_content = ""
-  page = page * 1;
-  if(pages > 10){
-    if(page > 3){
-      pages_content = pages_content + "<a class=\"yui-dt-page\" href=\"javascript:submit(" + 1 + ");\">" + 1 + "</a>";
-      pages_content = pages_content + "&nbsp;&nbsp;...&nbsp;&nbsp;<a class=\"yui-dt-page\" href=\"javascript:submit(" + (page - 1) + ");\">" + (page - 1) + "</a>";
-    }else if(page == 3){
-      pages_content = pages_content + "<a class=\"yui-dt-page\" href=\"javascript:submit(" + 1 + ");\">" + 1 + "</a>";
-      pages_content = pages_content + "<a class=\"yui-dt-page\" href=\"javascript:submit(" + 2 + ");\">" + 2 + "</a>";
-    }else if(page == 2){
-      pages_content = pages_content + "<a class=\"yui-dt-page\" href=\"javascript:submit(" + 1 + ");\">" + 1 + "</a>";
-    }
-    pages_content = pages_content + "&nbsp;&nbsp;<b>" + page + "</b>&nbsp;&nbsp;";
-    if(page < pages - 2){
-      pages_content = pages_content + "<a class=\"yui-dt-page\" href=\"javascript:submit(" + (page + 1) + ");\">" + (page + 1) + "</a>&nbsp;&nbsp;...&nbsp;&nbsp;";
-      pages_content = pages_content + "<a class=\"yui-dt-page\" href=\"javascript:submit(" + (pages) + ");\">" + (pages) + "</a>";
-    }else if(page == pages - 2){
-      pages_content = pages_content + "<a class=\"yui-dt-page\" href=\"javascript:submit(" + (pages - 1) + ");\">" + (pages - 1) + "</a>";
-      pages_content = pages_content + "<a class=\"yui-dt-page\" href=\"javascript:submit(" + (pages) + ");\">" + (pages) + "</a>";
-    }else if(page == pages - 1){
-      pages_content = pages_content + "<a class=\"yui-dt-page\" href=\"javascript:submit(" + (pages) + ");\">" + (pages) + "</a>";
-    }
-  }else{
-    for(var i = 0; i < pages; i++){
-      var j = i + 1;
-      if(j == page){
-        pages_content = pages_content + "&nbsp;&nbsp;<b>" + j + "</b>&nbsp;&nbsp;";
-      }else{
-        pages_content = pages_content + "<a class=\"yui-dt-page\" href=\"javascript:submit(" + j + ");\">" + j + "</a>";
+function afterDataLoad(){
+  var msg = [];
+  if(dataMngr){
+    if(dataMngr.store){
+      if(dataMngr.store.extra_msg){
+         msg = dataMngr.store.extra_msg;
       }
     }
   }
-  document.getElementById("bottom_jobs_counter").innerHTML = "jobs, out of: " + totaljobs;
-  document.getElementById("top_jobs_counter").innerHTML = "jobs, out of: " + totaljobs;
-  document.getElementById("bottom_page").innerHTML = pages_content;
-  document.getElementById("top_page").innerHTML = pages_content;
-}
-function parseFilter(){
-  var job_up = document.getElementById("jobupdate").value;
-  var job_id = document.getElementById("jobid").value;
-  var owner = document.getElementById("owner").value;
-  var application = document.getElementById("applic").value;
-  var status = document.getElementById("status").value;
-  var site = document.getElementById("site").value;
-  var g_sort = document.getElementById("global_sort").value;
-  var url = "submit?counter=" + counter;
-  if (job_id != ""){
-    url = "submit?jobid=" + job_id;
-  }else{
-    url = url + "&job_up=" + job_up;
-    url = url + "&owner=" + owner + "&applic=" + application;
-    url = url + "&status=" + status + "&site=" + site;
-    url = url + "&sort=" + g_sort;
+  var statPanel = Ext.getCmp('statGrid');
+  if((statPanel)&&(msg)){
+    var data = [];
+    var j = 0;
+    for( var i in msg ){
+      if(i == 'SubmissionEff'){
+        data[j] = ['SubmissionEff (%)',msg[i]];
+      }else if(i == 'PilotJobEff'){
+        data[j] = ['PilotJobEff (%)',msg[i]];
+      }else{
+        data[j] = [i,msg[i]];
+      }
+      j = j + 1;
+    }
+    statPanel.store.loadData(data);
   }
-  return url
 }
-function changePage(sel){
-  if((sel == null) || (sel == "")){
+function addEntries(site,id){
+  var img = document.getElementById('img.' + site);
+  img.src = gURLRoot+'/images/iface/loading.gif';
+  img.onclick = '';
+  Ext.Ajax.request({
+    failure:function(response){
+      AJAXerror(response.responseText);
+      img.onclick = function(){addEntries(site,id)};
+      img.src = gURLRoot+'/images/iface/plus.gif';
+    },
+    method:'POST',
+    params:{'expand':site},
+    success:function(response){
+      var table = Ext.getCmp('JobMonitoringTable');
+      var record = table.store.indexOfId(id);
+      var view = table.getView();
+      var jsonData = Ext.util.JSON.decode(response.responseText);
+      if(dataMngr){
+        if(dataMngr.store){
+          var rec = initRecord();
+          var newRecord = '';
+          var len = jsonData.result.length;
+          var newID = new Array();
+          for(var i = 0; i < len; i++){
+            record = record + 1;
+            newRecord = new rec(jsonData.result[i]);
+            newID[i] = newRecord.id;
+            dataMngr.store.insert(record,newRecord);
+//            table.getView().getRowClass(newRecord,record,{bodyStyle:'background-color: #999999;'},dataMngr.store);
+//            var zzz = 0;
+          }
+        }
+      }
+      img.onclick = function(){killEntries(site,newID)};
+      img.src = gURLRoot+'/images/iface/minus.gif';
+    },
+    url:'submit'
+  }); 
+}
+function killEntries(site,id){
+  var img = document.getElementById('img.' + site);
+  try{
+    var store = dataMngr.store
+  }catch(e){
+    alert('Error: Data store is not defined');
     return;
   }
-  counter = document.getElementById(sel).value;
-  if(sel=="top_pages_number"){
-    document.getElementById("bottom_pages_number").value = counter;
-  }else{
-    document.getElementById("top_pages_number").value = counter;
-  }
-  submit();
-}
-function createURL(mode,id){
-  if(mode == "submit"){
-    if((id == null) || (id == "")){
-      var page = 0;
-    }else{
-      var page = parseInt(id);
-      if (isNaN(page) == true){
-        page = 0;
-      }
-    }
-    return page
-  }
-  var job = new Array();
-  if((id == null) || (id == "")){
-    var inputs = document.getElementsByTagName('input');
-    var j = 0;
-    for (var i = 0; i < inputs.length; i++) {
-      if (inputs[i].checked == true){
-        job[j] = inputs[i].id;
-        j = j + 1;
-      }
-    }
-    if (job.length < 1){
-      alert("No jobs were selected");
-      return 0
-    }
-  }else{
-    job[0] = id;
-  }
-  if (job.length == 1){
-    var c = confirm ("Are you sure you want to " + mode + " job " + job[0] + "?");
-  }else{
-    var c = confirm ("Are you sure you want to " + mode + " these jobs?");
-  }
-  if (c == false){
-    return 0;
-  }
-  var url = "action";
-  if(mode=="delete"){
-    job = "deleteJobs=" + job;
-  }else if(mode=="kill"){
-    job = "killJobs=" + job;
-  }else if(mode=="reset"){
-    job = "resetJobs=" + job;
-  }
-  return job
-}
-function selectAll(e,selection){
-  var inputs = document.getElementsByTagName('input');
-  if(selection=="all"){
-    var ch = 0;
-  }else if(selection=="none"){
-    var ch = 1;
-  }else{
-    var ch = 0;
-  }
-  for (var i = 0; i < inputs.length; i++) {
-    if (inputs[i].type && inputs[i].type == "checkbox"){
-      if (ch == 0){
-        inputs[i].checked = true;
-      }else{
-        inputs[i].checked = false;
-      }
+  var len = id.length;
+  if(len > 0){
+    for(var i = 0; i < len; i++){
+      var rec = store.getById(id[i])
+      store.remove(rec);
     }
   }
+  img.onclick = function(){addEntries(site)};
+  img.src = gURLRoot+'/images/iface/plus.gif';
 }
-function jobch(s){
-  if(s == "s"){
-    document.getElementById("jobupdate").disabled = true;
-    document.getElementById("owner").disabled = true;
-    document.getElementById("applic").disabled = true;
-    document.getElementById("status").disabled = true;
-    document.getElementById("site").disabled = true;
-  }else if(s == "u"){
-    document.getElementById("jobupdate").disabled = false;
-    document.getElementById("owner").disabled = false;
-    document.getElementById("applic").disabled = false;
-    document.getElementById("status").disabled = false;
-    document.getElementById("site").disabled = false;
+function expandAll(){
+  var len = 0;
+  try{
+    len = expSites.length;
+  }catch(e){}
+  if(len > 0){
+    for(var i = 0; i < len; i++){
+      addEntries(expSites[i][0],expSites[i][1]);
+    }
   }
-}
-function submit(id){
-  var url = parseFilter();
-  page = createURL("submit",id)
-  url = url + "&page=" + page;
-  wait.render(document.body);wait.show();
-  var myAjax = YAHOO.util.Connect.asyncRequest('POST',url,{success:parseRequest,failure:connectBad,argument:"jobs"},"");
-}
-function actionJob(some_useless_rubbish_here,mode,job){
-  var id = createURL(mode,job);
-  if(id == 0){
-    return
-  }
-  var url = 'action?' + id;
-  wait.render(document.body);wait.show();
-  var myAjax = YAHOO.util.Connect.asyncRequest('POST',url,{success:parseRequest,failure:connectBad,argument:"act"},"");
-}
-function getJdl(id){
-  if((id == null) || (id == "")) return;
-  var url = "action?getJDL=" + id;
-  wait.render(document.body);wait.show();
-  var myAjax = YAHOO.util.Connect.asyncRequest("GET",url,{success:parseRequest,failure:connectBad,argument:"jdl"},"");
-  setupPanel(id);
-}
-function getStandardOutput(id){
-  if((id == null) || (id == "")) return;
-  var url = "action?getStandardOutput=" + id;
-  wait.render(document.body);wait.show();
-  var myAjax = YAHOO.util.Connect.asyncRequest('GET',url,{success:parseRequest,failure:connectBad,argument:"jdl"},"");
-  setupPanel(id);
-}
-function getBasicInfo(id){
-  if((id == null) || (id == "")) return;
-  var url = "action?getBasicInfo=" + id;
-  wait.render(document.body);wait.show();
-  var myAjax = YAHOO.util.Connect.asyncRequest('GET',url,{success:parseRequest,failure:connectBad,argument:"info"},"");
-  setupPanel(id);
-}
-function getParams(id){
-  if((id == null) || (id == "")) return;
-  var url = "action?getParams=" + id;
-  wait.render(document.body);wait.show();
-  var myAjax = YAHOO.util.Connect.asyncRequest('GET',url,{success:parseRequest,failure:connectBad,argument:"info"},"");
-  setupPanel(id);
-}
-function getLoggingInfo(id){
- if((id == null) || (id == "")) return;
-  var url = "action?LoggingInfo=" + id;
-  wait.render(document.body);wait.show();
-  var myAjax = YAHOO.util.Connect.asyncRequest('GET',url,{success:parseRequest,failure:connectBad,argument:"log"},"");
-  setupPanel(id);
-}
-function pilot(some_useless_rubbish_here,mode,id){
-  if((id == null) || (id == "")) return;
-  if(mode == "out"){
-    var url = "action?pilotStdOut=" + id;
-  }else if(mode == "err"){
-    var url = "action?pilotStdErr=" + id;
-  }
-  wait.render(document.body);wait.show();
-  var myAjax = YAHOO.util.Connect.asyncRequest('GET',url,{success:parseRequest,failure:connectBad,argument:"jdl"},"");
-  setupPanel(id);
-}
-function refresh(){
-  var url = "action?Refresh=true"
-  wait.render(document.body);wait.show();
-  var myAjax = YAHOO.util.Connect.asyncRequest('GET',url,{success:parseRequest,failure:connectBad,argument:"refresh"},"");
-}
-function fuckinMenu(id,x,y){
-  job_menu.clearContent();
-  job_menu.addItems([
-    {text:"JDL",url:"javascript:getJdl(" + id + ")"},
-    {text:"Attributes",url:"javascript:getBasicInfo(" + id + ")"},
-    {text:"Parameters",url:"javascript:getParams(" + id + ")"},
-    {text:"Logging info",url:"javascript:getLoggingInfo(" + id + ")"},
-    {text:"StandardOutput",url:"javascript:getStandardOutput(" + id + ")"},
-    {text:"Actions", submenu:{id:"sub1",itemdata: [
-      {text:"Reset",url:"javascript:actionJob('tmp','reset'," + id + ")"},
-      {text:"Kill",url:"javascript:actionJob('tmp','kill'," + id + ")"},
-      {text:"Delete",url:"javascript:actionJob('tmp','delete'," + id + ")"}
-    ]}},
-    {text:"Pilot", submenu:{id:"sub2",itemdata: [
-      {text:"Get StdOut",url:"javascript:pilot('tmp','out'," + id + ")"},
-      {text:"Get StdErr",url:"javascript:pilot('tmp','err'," + id + ")"}
-    ]}}
-  ]);
-  job_menu.setItemGroupTitle("Job ID: " + id, 0);
-  job_menu.render(document.body);
-  job_menu.cfg.setProperty("xy", [x,y]);
-  job_menu.show();
-}
-xz = new YAHOO.widget.Panel("xz",{visible:false,draggable:true,close:true,constraintoviewport:true});
-job_menu = new YAHOO.widget.Menu("xxx_menu", {xy:[0,0],showdelay:"250",position:"dynamic",zindex:4000});
-YAHOO.util.Event.addListener("submit_filter","click",submit);
-YAHOO.util.Event.addListener("jobupdate","click",showkal);
-YAHOO.util.Event.addListener("global_sort","change",submit);
-YAHOO.util.Event.addListener("top_selectA","click",selectAll,"all");
-YAHOO.util.Event.addListener("top_selectN","click",selectAll,"none");
-YAHOO.util.Event.addListener("top_JRes","click",actionJob,"reset");
-YAHOO.util.Event.addListener("top_JKil","click",actionJob,"kill");
-YAHOO.util.Event.addListener("top_JDel","click",actionJob,"delete");
-YAHOO.util.Event.addListener("top_JRef","click",refresh,"refresh");
-YAHOO.util.Event.addListener("bottom_selectA","click",selectAll,"all");
-YAHOO.util.Event.addListener("bottom_selectN","click",selectAll,"none");
-YAHOO.util.Event.addListener("bottom_JRes","click",actionJob,"reset");
-YAHOO.util.Event.addListener("bottom_JKil","click",actionJob,"kill");
-YAHOO.util.Event.addListener("bottom_JDel","click",actionJob,"delete");
-YAHOO.util.Event.addListener("bottom_JRef","click",refresh,"refresh");
-YAHOO.util.Event.addListener(window, "load", function() {
-  YAHOO.example.Basic = new function() {
-    var myColumnDefs = [
-      {label:"ComputingElement", key:"Site", sortable:true, resizeable:true},
-      {label:"Submited", key:"Submited", formatter:YAHOO.widget.DataTable.formatNumber, sortable:true, resizeable:true},
-      {label:"Ready", key:"Ready", formatter:YAHOO.widget.DataTable.formatNumber, sortable:true, resizeable:true},
-      {label:"Scheduled", key:"Scheduled", formatter:YAHOO.widget.DataTable.formatNumber, sortable:true, resizeable:true},
-      {label:"Running", key:"Running", formatter:YAHOO.widget.DataTable.formatNumber, sortable:true, resizeable:true},
-      {label:"Done", key:"Done", formatter:YAHOO.widget.DataTable.formatNumber, sortable:true, resizeable:true},
-      {label:"Cleared", key:"Cleared", formatter:YAHOO.widget.DataTable.formatNumber, sortable:true, resizeable:true},
-      {label:"Aborted", key:"Aborted", formatter:YAHOO.widget.DataTable.formatNumber, sortable:true, resizeable:true}
-    ];
-    this.myDataSource = new YAHOO.util.DataSource(YAHOO.example.Data.productions);
-    this.myDataSource.responseType = YAHOO.util.DataSource.TYPE_JSARRAY;
-    this.myDataSource.responseSchema = {
-      fields: ["Site","Submited","Ready","Scheduled","Running","Done","Cleared","Aborted"]
-    };
-    this.myDataTable = new YAHOO.widget.DataTable("job_status_div", myColumnDefs, this.myDataSource);
-  };
-});
-function connectBad(){
-  wait.hide();
-  alert("Unable to connect server or it could be an error on server side");
-  return
 }
