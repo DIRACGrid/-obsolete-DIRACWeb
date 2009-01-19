@@ -273,7 +273,7 @@ function imagePanel(){
   });
   return panel;
 }
-function initStore(record){
+function initStore(record,groupBy){
   var reader = new Ext.data.JsonReader({
     root:'result',
     totalProperty:'total'
@@ -295,14 +295,26 @@ function initStore(record){
       delete dataSelect.extra.start;
     }
   }
-  var store = new Ext.data.Store({
-    autoLoad:{params:{start:start,limit:limit}},
-    proxy: new Ext.data.HttpProxy({
-      url:'submit',
-      method:'POST',
-    }),
-    reader:reader
-  });
+  if(groupBy){
+    var store = new Ext.data.GroupingStore({
+      autoLoad:{params:{start:start,limit:limit}},
+      groupField:groupBy,
+      proxy: new Ext.data.HttpProxy({
+        url:'submit',
+        method:'POST',
+      }),
+      reader:reader
+    });
+  }else{
+    var store = new Ext.data.Store({
+      autoLoad:{params:{start:start,limit:limit}},
+      proxy: new Ext.data.HttpProxy({
+        url:'submit',
+        method:'POST',
+      }),
+      reader:reader
+    });
+  }
   store.on('loadexception',function(){
     if(store.reader){
       if(store.reader.jsonData){
@@ -313,16 +325,10 @@ function initStore(record){
     }
   });
   store.on('beforeload',function(){
-    if(dataMngr){
-      if(dataMngr.form){
-        store.baseParams = dataMngr.form.getForm().getValues();
-      }
-    }
-    if(dataSelect){
-      if(dataSelect.globalSort){
-        store.baseParams.sort = dataSelect.globalSort;
-      }
-    }    
+    try{
+      store.baseParams = dataMngr.form.getForm().getValues();
+      store.baseParams.sort = dataSelect.globalSort;
+    }catch(e){}
   });
   store.on('load',function(){
     if(store.reader){
@@ -614,34 +620,24 @@ function selectPanel(){
     var selections = {};
     var sideBar = Ext.getCmp('sideBar');
     sideBar.body.mask('Sending data...');
+    try{
+      selections.sort = dataSelect.globalSort;
+      selections.limit = tableMngr.bbar.pageSize;
+      selections.start = 0;
+    }catch(e){}
     if(tableMngr){
       if(tableMngr.bbar){
-        if(dataSelect){
-          if(dataSelect.globalSort){
-            selections.sort = dataSelect.globalSort;
-          }else{
-            sideBar.body.unmask();
-            alert('Error: dataSelect.globalSort object is absent');
-          }
-        }else{
-          sideBar.body.unmask();
-          alert('Error: dataSelect object is absent');
-        }
-        selections.limit = tableMngr.bbar.pageSize;
-        selections.start = 0;
         panel.form.submit({
           params:selections,
           success:function(form,action){
+            sideBar.body.unmask();
             if(action.result.success == 'false'){
-              sideBar.body.unmask();
               alert('Error: ' + action.result.error);
             }else{
               if(dataMngr.store){
                 store = dataMngr.store;
                 store.loadData(action.result);
-                sideBar.body.unmask();
               }else{
-                sideBar.body.unmask();
                 alert('Error: Unable to load data to the table dataMngr.store is absent');
               }
             }
@@ -709,6 +705,57 @@ function selectPanel(){
   });
   return panel;
 }
+function selectAgentTypeMenu(){
+  var data = [
+    [0,'All'],
+    [1,'Automatic'],
+    [2,'Manual']
+  ];
+  var disabled = false;
+  var store = new Ext.data.SimpleStore({
+    id:0,
+    fields:[{name:'id',type:'int'},'status'],
+    data:data
+  });
+  var combo = new Ext.ux.form.LovCombo({
+    anchor:'90%',
+    disabled:disabled,
+    displayField:'status',
+    emptyText:data[0][1],
+    fieldLabel:'AgentType',
+    hiddenName:'agentType',
+    hideOnSelect:false,
+    id:'agentTypeMenu',
+    mode:'local',
+    resizable:true,
+    store:store,
+    triggerAction:'all',
+    typeAhead:true,
+    valueField:'id'
+  });
+  combo.on({
+    'render':function(){
+      try{
+        var agentType = dataSelect.extra.agentType.split('::: ');
+        var newValue = '';
+        for(var j = 0; j < agentType.length; j++){
+          for(var i = 0; i < store.totalLength; i++){
+            if(store.data.items[i].data.status == agentType[j]){
+              if(newValue.length === 0){
+                newValue = i;
+              }else{
+                newValue = newValue + ':::' + i;
+              }
+            }
+          }
+        }
+        combo.setValue(newValue);
+        delete dataSelect.extra.agentType;
+      }catch(e){}
+    }
+  });
+  return combo;
+};
 function selectAll(selection){
   var inputs = document.getElementsByTagName('input');
   var ch = 0;
@@ -813,6 +860,43 @@ function selectID(){
     id:'selectID',
     mode:'local',
     name:'id',
+    selectOnFocus:true,
+    value:value
+  });
+  number.on({
+    'render':function(){
+      if(number.value !== ''){
+        hideControls(number);
+      }
+    },
+    'blur':function(){
+      hideControls(number);
+    },
+    'keyup':function(){
+      hideControls(number);
+    }
+  });
+  return number;
+}
+function selectProductionID(){
+  var value = '';
+  try{
+    if(dataSelect.extra.productionId){
+      value = dataSelect.extra.productionId;
+    }
+    delete dataSelect.extra.productionId;
+  }catch(e){}
+  var number = new Ext.form.NumberField({
+    anchor:'90%',
+    allowBlank:true,
+    allowDecimals:false,
+    allowNegative:false,
+    baseChars:'0123456789',
+    enableKeyEvents:true,
+    fieldLabel:'ProductionID',
+    id:'productionID',
+    mode:'local',
+    name:'productionID',
     selectOnFocus:true,
     value:value
   });
@@ -991,6 +1075,62 @@ function selectOwnerMenu(){
   });
   return combo;
 }
+function selectPilotStatusMenu(){
+  var data = [
+    [0,'All'],
+    [1,'Bad'],
+    [2,'Fair'],
+    [3,'Good'],
+    [4,'Idle'],
+    [5,'Poor']
+  ];
+  var disabled = false;
+  var store = new Ext.data.SimpleStore({
+    id:0,
+    fields:[{name:'id',type:'int'},'status'],
+    data:data
+  });
+  var combo = new Ext.ux.form.LovCombo({
+    anchor:'90%',
+    disabled:disabled,
+    displayField:'status',
+    emptyText:data[0][1],
+    fieldLabel:'Status',
+    hiddenName:'stat',
+    hideOnSelect:false,
+    id:'pilotStatusMenu',
+    mode:'local',
+    resizable:true,
+    store:store,
+    triggerAction:'all',
+    typeAhead:true,
+    valueField:'id'
+  });
+  combo.on({
+    'render':function(){
+      if(dataSelect.extra){
+        if(dataSelect.extra.pilotStatus){
+          var pilotStatus = dataSelect.extra.pilotStatus.split('::: ');
+          var newValue = '';
+          for(var j = 0; j < pilotStatus.length; j++){
+            for(var i = 0; i < store.totalLength; i++){
+              if(store.data.items[i].data.status == pilotStatus[j]){
+                if(newValue.length === 0){
+                  newValue = i;
+                }else{
+                  newValue = newValue + ':::' + i;
+                }
+              }
+            }
+          }
+          combo.setValue(newValue);
+        }
+        delete dataSelect.extra.pilotStatus;
+      }
+    }
+  });
+  return combo;
+};
 function selectProdMenu(){
   var data = [['']];
   if(dataSelect){
@@ -1055,6 +1195,58 @@ function selectProdMenu(){
   });
   return combo;
 }
+function selectProdStatusMenu(){
+  var data = [
+    [0,'All'],
+    [1,'Active'],
+    [2,'New'],
+    [3,'Stopped']
+  ];
+  var disabled = false;
+  var store = new Ext.data.SimpleStore({
+    id:0,
+    fields:[{name:'id',type:'int'},'status'],
+    data:data
+  });
+  var combo = new Ext.ux.form.LovCombo({
+    anchor:'90%',
+    disabled:disabled,
+    displayField:'status',
+    emptyText:data[0][1],
+    fieldLabel:'Status',
+    hiddenName:'status',
+    hideOnSelect:false,
+    id:'productionStatusMenu',
+    mode:'local',
+    resizable:true,
+    store:store,
+    triggerAction:'all',
+    typeAhead:true,
+    valueField:'id'
+  });
+  combo.on({
+    'render':function(){
+      try{
+        var productionStatus = dataSelect.extra.productionStatus.split('::: ');
+        var newValue = '';
+        for(var j = 0; j < productionStatus.length; j++){
+          for(var i = 0; i < store.totalLength; i++){
+            if(store.data.items[i].data.status == productionStatus[j]){
+              if(newValue.length === 0){
+                newValue = i;
+              }else{
+                newValue = newValue + ':::' + i;
+              }
+            }
+          }
+        }
+        combo.setValue(newValue);
+        delete dataSelect.extra.productionStatus;
+      }catch(e){}
+    }
+  });
+  return combo;
+};
 function selectSiteMenu(){
   var data = [['']];
   if(dataSelect.site){
@@ -1213,10 +1405,10 @@ function showMenu(mode,table,rowIndex,columnIndex){
   dirac.menu = new Ext.menu.Menu(); // Nado li?
   var coords = Ext.EventObject.xy;
   if(record.data){
-    selections = record.data;
-    value = record.get(fieldName);
+    var selections = record.data;
+    var value = record.get(fieldName);
   }
-  if(columnName != 'checkBox'){ // column with checkboxes
+  if((columnName != 'checkBox') && (columnName != 'expand')){ // column with checkboxes
     dirac.menu.removeAll();
     if(mode == 'main'){
       setMenuItems(selections);
@@ -1342,42 +1534,59 @@ function setTitle(value,id){
   return title;
 }
 function status(value){
-  if((value == 'Done')||(value == 'Completed')){
+  if((value == 'Done')||(value == 'Completed')||(value == 'Good')){
     return '<img src="'+gURLRoot+'/images/monitoring/done.gif">';
-  }else if(value == 'Failed'){
+  }else if((value == 'Failed')||(value == 'Bad')){
     return '<img src="'+gURLRoot+'/images/monitoring/failed.gif">';
-  }else if((value == 'Waiting')||(value == 'Stopped')){
+  }else if((value == 'Waiting')||(value == 'Stopped')||(value == 'Poor')){
     return '<img src="'+gURLRoot+'/images/monitoring/waiting.gif">';
   }else if(value == 'Deleted'){
     return '<img src="'+gURLRoot+'/images/monitoring/deleted.gif">';
   }else if(value == 'Matched'){
     return '<img src="'+gURLRoot+'/images/monitoring/matched.gif">';
-  }else if((value == 'Running')||(value == 'Active')){
+  }else if((value == 'Running')||(value == 'Active')||(value == 'Fair')){
     return '<img src="'+gURLRoot+'/images/monitoring/running.gif">';
   }else{
     return '<img src="'+gURLRoot+'/images/monitoring/unknown.gif">';
   }
 }
-function statPanel(){
+function statPanel(title,mode,id){
   var msg = [];
   var reader = new Ext.data.ArrayReader({},[
     {name:'Status'},
     {name:'Number'}
   ]);
-  var columns = [
-    {header:'',width:26,sortable:false,dataIndex:'Status',renderer:status,hideable:false},
-    {header:'Status',width:60,sortable:true,dataIndex:'Status',align:'left'},
-    {header:'Jobs number',sortable:true,dataIndex:'Number',align:'left'}
-  ];
-  var store = new Ext.data.SimpleStore({
-    fields:['Status','Number'],
-    data:msg
-  });
+  if(mode == 'text'){
+    var columns = [
+      {header:'Status',sortable:true,dataIndex:'Status',align:'left'},
+      {header:'Numbers',sortable:true,dataIndex:'Number',align:'left'}
+    ];
+  }else{
+    var columns = [
+      {header:'',width:26,sortable:false,dataIndex:'Status',renderer:status,hideable:false},
+      {header:'Status',width:60,sortable:true,dataIndex:'Status',align:'left'},
+      {header:'Numbers',sortable:true,dataIndex:'Number',align:'left'}
+    ];
+  }
+  if(mode == 'global'){
+    var store = new Ext.data.Store({
+      autoLoad:{params:{globalStat:'true'}},
+      proxy: new Ext.data.HttpProxy({
+        url:'action',
+        method:'POST',
+      }),
+      reader:reader
+    });
+  }else{
+    var store = new Ext.data.SimpleStore({
+      fields:['Status','Number'],
+      data:msg
+    });
+  }
   var p = new Ext.grid.GridPanel({
-//    autoExpandColumn:2,
     border:false,
     columns:columns,
-    id:'statGrid',
+    id:id,
     header:false,
     layout:'fit',
     store:store,
@@ -1387,15 +1596,27 @@ function statPanel(){
   var panel = new Ext.Panel({
     autoScroll:true,
     border:false,
-    id:'statPanel',
+    buttonAlign:'center',
+    id:id + 'Panel',
     items:[p],
     labelAlign:'top',
     collapsible:true,
     width: 200,
     minWidth: 200,
-    buttonAlign:'left',
-    title:'Statistics'
+    title:title
   });
+  if(mode == 'global'){
+    panel.addButton({
+      cls:"x-btn-text-icon",
+      handler:function(){
+        store.load({params:{globalStat:'true'}});
+      },
+      icon:gURLRoot+'/images/iface/refresh.gif',
+      minWidth:'150',
+      tooltip:'Refresh global statistics data',
+      text:'Refresh'
+    })
+  }
   return panel;
 }
 function table(tableMngr){
@@ -1414,7 +1635,13 @@ function table(tableMngr){
   if(tableMngr.title){
     var title = tableMngr.title;
   }else{
-    title = '';
+    var title = '';
+  }
+  if(tableMngr.viewConfig){
+    var viewConfig = tableMngr.viewConfig;
+  }else{
+//    var viewConfig = {forceFit:true};
+    var viewConfig = ''
   }
   var tbar = new Ext.Toolbar({items:[]});
   if(tableMngr.tbar){
@@ -1451,8 +1678,12 @@ function table(tableMngr){
     stripeRows:true,
     title:title,
     tbar:tbar,
-//    viewConfig:{forceFit:true}
+    viewConfig:viewConfig
   });
+  if(tableMngr.tbar == ''){
+    var bar = dataTable.getTopToolbar();
+    bar.hide();
+  }
   dataTable.on({
     'render':function(){
       if(dataSelect){
