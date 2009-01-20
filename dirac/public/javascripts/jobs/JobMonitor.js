@@ -70,13 +70,14 @@ function initSidebar(){
   select.insert(6,dateSelect);
   select.insert(7,id);
   var sortGlobal = sortGlobalPanel(); // Initializing the global sort panel
-//  var graph = imagePanel();
-  var stat = statPanel();
+  var stat = statPanel('Current Statistics','current','statGrid');
+  var glStat = statPanel('Global Statistics','global','glStatGrid');
   var bar = sideBar();
   bar.insert(0,select);
   bar.insert(1,sortGlobal);
   bar.insert(2,stat);
-//  bar.insert(3,graph);
+  bar.insert(3,glStat);
+  bar.setTitle('JobMonitoring');
   return bar
 }
 function initData(store){
@@ -186,7 +187,7 @@ function setMenuItems(selections){
       {handler:function(){AJAXrequest('getParams',id)},text:'Parameters'},
       {handler:function(){AJAXrequest('LoggingInfo',id)},text:'Logging info'},
       '-',
-      {handler:function(){AJAXrequest('getStandardOutput',id)},text:'StandardOutput'},
+      {handler:function(){AJAXrequest('getStandardOutput',id)},text:'Peek StandardOutput'},
       {handler:function(){AJAXrequest('LogURL',id)},text:'Get LogFile'},
       {handler:function(){AJAXrequest('getPending',id)},text:'Get PendingRequest'},
       {handler:function(){AJAXrequest('getStagerReport',id)},text:'Get StagerReport'},
