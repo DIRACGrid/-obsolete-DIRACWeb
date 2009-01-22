@@ -65,21 +65,21 @@ function initData(store){
   var columns = [
     {header:'',name:'expand',id:'expand',width:26,sortable:false,dataIndex:'CE',renderer:expSite,hideable:false},
     {header:'',width:26,sortable:false,dataIndex:'Status',renderer:status,hideable:false},
-    {header:'Site',sortable:true,dataIndex:'Site',align:'left'},
-    {header:'CE',sortable:true,dataIndex:'CE',align:'left'},
-    {header:'Status',width:60,sortable:true,dataIndex:'Status',align:'left'},
-    {header:'SubmissionEff (%)',sortable:true,dataIndex:'SubmissionEff',align:'left'},
-    {header:'PilotJobEff (%)',sortable:true,dataIndex:'PilotJobEff',align:'left'},
-    {header:'Submitted',sortable:true,dataIndex:'Submitted',align:'left',hidden:true},
-    {header:'Ready',sortable:true,dataIndex:'Ready',align:'left',hidden:true},
-    {header:'Waiting',sortable:true,dataIndex:'Waiting',align:'left'},
-    {header:'Scheduled',sortable:true,dataIndex:'Scheduled',align:'left'},
-    {header:'Running',sortable:true,dataIndex:'Running',align:'left'},
-    {header:'Done',sortable:true,dataIndex:'Done',align:'left'},
-    {header:'Aborted',sortable:true,dataIndex:'Aborted',align:'left',hidden:true},
-    {header:'Aborted_Hour',sortable:true,dataIndex:'Aborted_Hour',align:'left'},
-    {header:'Done_Empty',sortable:true,dataIndex:'Done_Empty',align:'left',hidden:true},
-    {header:'Total',sortable:true,dataIndex:'Total',align:'left',hidden:true}
+    {header:'Site',sortable:false,dataIndex:'Site',align:'left'},
+    {header:'CE',sortable:false,dataIndex:'CE',align:'left'},
+    {header:'Status',width:60,sortable:false,dataIndex:'Status',align:'left'},
+    {header:'SubmissionEff (%)',sortable:false,dataIndex:'SubmissionEff',align:'left'},
+    {header:'PilotJobEff (%)',sortable:false,dataIndex:'PilotJobEff',align:'left'},
+    {header:'Submitted',sortable:false,dataIndex:'Submitted',align:'left',hidden:true},
+    {header:'Ready',sortable:false,dataIndex:'Ready',align:'left',hidden:true},
+    {header:'Waiting',sortable:false,dataIndex:'Waiting',align:'left'},
+    {header:'Scheduled',sortable:false,dataIndex:'Scheduled',align:'left'},
+    {header:'Running',sortable:false,dataIndex:'Running',align:'left'},
+    {header:'Done',sortable:false,dataIndex:'Done',align:'left'},
+    {header:'Aborted',sortable:false,dataIndex:'Aborted',align:'left',hidden:true},
+    {header:'Aborted_Hour',sortable:false,dataIndex:'Aborted_Hour',align:'left'},
+    {header:'Done_Empty',sortable:false,dataIndex:'Done_Empty',align:'left',hidden:true},
+    {header:'Total',sortable:false,dataIndex:'Total',align:'left',hidden:true}
   ];
   store.setDefaultSort('Site','ASC'); // Default sorting
 /*
@@ -287,6 +287,7 @@ function addEntries(site,id){
     params:{'expand':site},
     success:function(response){
       var table = Ext.getCmp('JobMonitoringTable');
+      table.getView().getRowClass = function(){return 'new-row'};
       var record = table.store.indexOfId(id);
       var view = table.getView();
       var jsonData = Ext.util.JSON.decode(response.responseText);
@@ -296,18 +297,18 @@ function addEntries(site,id){
           var newRecord = '';
           var len = jsonData.result.length;
           var newID = new Array();
+          newID[0] = id;
           for(var i = 0; i < len; i++){
             record = record + 1;
             newRecord = new rec(jsonData.result[i]);
-            newID[i] = newRecord.id;
+            newID[i+1] = newRecord.id;
             dataMngr.store.insert(record,newRecord);
-//            table.getView().getRowClass(newRecord,record,{bodyStyle:'background-color: #999999;'},dataMngr.store);
-//            var zzz = 0;
           }
         }
       }
       img.onclick = function(){killEntries(site,newID)};
       img.src = gURLRoot+'/images/iface/minus.gif';
+      table.getView().getRowClass = function(){return ''};
     },
     url:'submit'
   }); 
@@ -322,12 +323,12 @@ function killEntries(site,id){
   }
   var len = id.length;
   if(len > 0){
-    for(var i = 0; i < len; i++){
+    for(var i = 1; i < len; i++){
       var rec = store.getById(id[i])
       store.remove(rec);
     }
   }
-  img.onclick = function(){addEntries(site)};
+  img.onclick = function(){addEntries(site,id[0])};
   img.src = gURLRoot+'/images/iface/plus.gif';
 }
 function expandAll(){
