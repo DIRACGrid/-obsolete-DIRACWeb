@@ -138,3 +138,9 @@ p.footer {
   text-align: center;
   font-size: xx-small;
 }
+
+.new-row {
+  background-color : #ccc ! important;
+  border solid #999 ! important;
+  border-top-color:#ccc ! important;
+}
