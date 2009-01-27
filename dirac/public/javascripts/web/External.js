@@ -22,6 +22,8 @@ function renderData(site){
       site = 'http://dashb-lhcb-sam.cern.ch/dashboard/request.py/latestresultssmry?siteSelect3=501&serviceTypeSelect3=vo&sites=CERN-PROD&sites=FZK-LCG2&sites=IN2P3-CC&sites=INFN-T1&sites=NIKHEF-ELPROD&sites=RAL-LCG2&sites=pic&services=CE&tests=37535&tests=398&tests=404&tests=405&tests=406&tests=403&tests=37415&tests=407&tests=399&exitStatus=all&table=true';
     }else if(site=='calendar'){
       site = 'http://romanov.web.cern.ch/romanov/Downtime/calendar.html';
+    }else if(site=='api'){
+      site = 'http://www.cern.ch/paterson/DIRAC3API_091208/';
     }
   }
   var html = '<iframe id="www_frame" src =' + site + '></iframe>';
