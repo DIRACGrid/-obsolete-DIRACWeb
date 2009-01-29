@@ -167,5 +167,3 @@ class PilotsummaryController(BaseController):
       site = int(request.params["ExpandSite"])
       return self.__expSite(site)
 ################################################################################
-  def __expSite(self):
-    fff

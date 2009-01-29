@@ -1,3 +1,13 @@
+#import logging, string
+#from time import time, gmtime, strftime
+
+#from dirac.lib.base import *
+#from dirac.lib.diset import getRPCClient
+#from DIRAC import S_OK, S_ERROR, gConfig
+#from DIRAC.Core.Utilities import Time, List
+#from DIRAC.AccountingSystem.Client.ReportsClient import ReportsClient
+#from dirac.lib.webBase import defaultRedirect
+
 import logging, string
 from time import time, gmtime, strftime
 
@@ -7,6 +17,8 @@ from dirac.lib.credentials import authorizeAction
 from dirac.lib.sessionManager import *
 from DIRAC import gConfig
 import DIRAC.Core.Utilities.Time as Time
+
+
 log = logging.getLogger(__name__)
 
 result = gConfig.getSections("/Security/Users")
