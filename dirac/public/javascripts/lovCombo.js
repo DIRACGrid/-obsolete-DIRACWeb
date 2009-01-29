@@ -66,20 +66,20 @@ Ext.ux.form.LovCombo = Ext.extend(Ext.form.ComboBox, {
 		this.list.hide();
 		var v = this.getRawValue();
 		var va = [];
+                if(v == ''){
+                  this.clearValue();
+                }
 		this.store.clearFilter();
-		if(v == ''){
-			this.clearValue();
-		}
 		this.store.each(function(r) {
 			var re = r.get(this.displayField)
-			re = re.replace(/\(/g,'.');
-			re = re.replace(/\)/g,'.');
-			re = re.replace(/\./g,'.');
-			re = re.replace(/\{/g,'.');
+			re = re.split('\(');
+			re = re.split('\)');
+			re = re.split('\.');
+			re = re.split('\{');
 			re = new RegExp(re);
 			if(v.match(re)) {
 				re = r.get(this.displayField);
-				newV = v.split(', ');
+				newV = v.splie(',');
 				for(var s = 0; s < newV.length; s++){
 					if(re == newV[s]){
 						va.push(r.get(this.valueField));
