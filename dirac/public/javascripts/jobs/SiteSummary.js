@@ -57,6 +57,7 @@ function initData(store){
   dirac.tbar = ['->',
     {handler:function(){store.load()},text:'Refresh it',tooltip:'Click to refresh the data'}
   ];
+  store.setDefaultSort('name','ASC'); // Default sorting
   tableMngr = {'store':store,'columns':columns,'title':title,'tbar':dirac.tbar};
   var t = table(tableMngr);
   t.addListener('cellclick',showMenu);
@@ -102,7 +103,9 @@ function afterDataLoad(store){
   }
 }
 function jump(type,id){
-  var url = document.location.protocol + '//' + document.location.hostname + gURLRoot + '/' + gPageDescription.selectedSetup + '/jobs/JobMonitor/display';
+  var url = document.location.protocol + '//' + document.location.hostname + gURLRoot + '/' + gPageDescription.selectedSetup
+  url = url + '/' + gPageDescription.userData.group + '/jobs/JobMonitor/display';
+//  var url = document.location.protocol + '//' + document.location.hostname + gURLRoot + '/' + gPageDescription.selectedSetup + '/jobs/JobMonitor/display';
   var post_req = '<form id="redirform" action="' + url + '" method="POST" >';
   post_req = post_req + '<input type="hidden" name="' + type + '" value="' + id + '">';
   post_req = post_req + '</form>';
