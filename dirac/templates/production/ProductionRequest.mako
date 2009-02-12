@@ -6,8 +6,8 @@
 ${ h.javascript_include_tag("/ext/examples/grid/RowExpander.js") }
 ${ h.stylesheet_link_tag(   "/TreeGrid/css/TreeGrid.css") }
 ${ h.javascript_include_tag("/TreeGrid/TreeGrid.js") }
-${ h.stylesheet_link_tag(   "/javascripts/jobs/ProductionRequest.css") }
-${ h.javascript_include_tag("/javascripts/jobs/ProductionRequest.js") }
+${ h.stylesheet_link_tag(   "/javascripts/production/ProductionRequest.css") }
+${ h.javascript_include_tag("/javascripts/production/ProductionRequest.js") }
 </%def>
 
 <%def name="body()">

@@ -379,7 +379,7 @@ class ProductionrequestController(BaseController):
     return redirect_to(action='display')
     
   def display(self):
-    return render("jobs/ProductionRequest.mako")
+    return render("production/ProductionRequest.mako")
 
   @jsonify
   def list(self):
