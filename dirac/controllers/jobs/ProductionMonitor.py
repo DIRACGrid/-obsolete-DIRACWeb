@@ -13,22 +13,16 @@ from time import time, gmtime, strftime
 
 from dirac.lib.base import *
 from dirac.lib.diset import getRPCClient
-from dirac.lib.credentials import authorizeAction
-from dirac.lib.sessionManager import *
-from DIRAC import gConfig
+from DIRAC import gConfig, gLogger
 import DIRAC.Core.Utilities.Time as Time
-
+import dirac.lib.credentials as credentials
 
 log = logging.getLogger(__name__)
 
-result = gConfig.getSections("/Security/Users")
-if result["OK"]:
-  users = result["Value"]
-  dndb = {}
-  for j in users:
-    dndb[gConfig.getValue("/Security/Users/%s/DN" % j)] = j
-else:
-  dndb = {}
+numberOfJobs = 25
+pageNumber = 0
+globalSort = []
+globalSort = [["TransformationID","DESC"]]
 
 class ProductionmonitorController(BaseController):
 ################################################################################
@@ -41,80 +35,53 @@ class ProductionmonitorController(BaseController):
   @jsonify
   def submit(self):
     pagestart = time()
+    lhcbGroup = credentials.getSelectedGroup()
+    if lhcbGroup == "visitor":
+      c.result = {"success":"false","error":"You are not authorised"}
+      return c.result
     RPC = getRPCClient("ProductionManagement/ProductionManager")
-#    result = self.__request()
-    result = RPC.getProductionSummary()
-    gLogger.info("- REQUEST:",result)
-    gLogger.info("CALL RESULT:",result["Value"])
+    result = self.__request()
+    result = RPC.getProductionSummaryWeb(result,globalSort,pageNumber,numberOfJobs)
     if result["OK"]:
       result = result["Value"]
-      c.result = []
-      if len(result) > 0:
-        for keys,i in result.items():
-          id = str(int(keys)).zfill(8)
-          DN = i["AuthorDN"]
-          if len(DN) > 0:
-            if dndb.has_key(DN):
-              i["AuthorDN"] = dndb[DN]
+      if result.has_key("TotalRecords") and  result["TotalRecords"] > 0:
+        if result.has_key("ParameterNames") and result.has_key("Records"):
+          if len(result["ParameterNames"]) > 0:
+            if len(result["Records"]) > 0:
+              c.result = []
+              jobs = result["Records"]
+              head = result["ParameterNames"]
+              headLength = len(head)
+              for i in jobs:
+                tmp = {}
+                for j in range(0,headLength):
+                  tmp[head[j]] = i[j]
+                c.result.append(tmp)
+              total = result["TotalRecords"]
+              if result.has_key("Extras"):
+                extra = result["Extras"]
+                c.result = {"success":"true","result":c.result,"total":total,"extra":extra}
+              else:
+                c.result = {"success":"true","result":c.result,"total":total}
             else:
-              i["AuthorDN"] = "Owner Unknown" # Zdes' nado probovat' esche raz
+              c.result = {"success":"false","result":"","error":"There are no data to display"}
           else:
-            i["AuthorDN"] = "Owner Unknown"
-          jobStat = i["JobStats"]
-          created = jobStat["Created"]
-          submited = jobStat["Submitted"]
-          wait = jobStat["Waiting"]
-          running = jobStat["Running"]
-          done = jobStat["Done"]
-          failed = jobStat["Failed"]
-          stalled = jobStat["Stalled"]
-          nof = i["NumberOfFiles"]
-          if nof == -1:
-            nof = 0
-          c.result.append({"id":id,"name":i["TransformationName"],"status":i["Status"],"dn":i["AuthorDN"],"created":created,"submited":submited,"wait":wait,"running":running,"done":done,"failed":failed,"agenttype":i["AgentType"],"description":i["Description"],"creationdate":i["CreationDate"],"stalled":stalled,"numberOfFiles":nof})
-        total = len(c.result)
-        c.result = {"success":"true","result":c.result,"total":total}
+            c.result = {"success":"false","result":"","error":"ParameterNames field is undefined"}
+        else:
+          c.result = {"success":"false","result":"","error":"Data structure is corrupted"}
       else:
-        c.result = {"success":"false","error":"There are no data to display"}
+        c.result = {"success":"false","result":"","error":"There were no data matching your selection"}
     else:
       c.result = {"success":"false","error":result["Message"]}
-    gLogger.info("\033[0;31mPRODUCTION SUBMIT REQUEST:\033[0m %s" % (time() - pagestart))
+    gLogger.info("\033[0;31m PRODUCTION SUBMIT REQUEST: \033[0m %s" % (time() - pagestart))
     return c.result
-################################################################################
-#  def display(self):
-#    if result["OK"]:
-#      prods = result["Value"]
-#      print "PRODS:",prods
-#      if len(prods) < 1:
-#        return "There is no production available"
-#      else:
-#        valueList = []
-#        for keys,i in prods.items():
-#          id = str(int(keys)).zfill(8)
-#          DN = i["AuthorDN"]
-#          if len(DN) > 0:
-#            if dndb.has_key(DN):
-#              i["AuthorDN"] = dndb[DN]
-#            else:
-#              i["AuthorDN"] = "Owner Unknown" # Zdes' nado probovat' esche raz
-#          else:
-#            i["AuthorDN"] = "Owner Unknown"
-#          jobStat = i["JobStats"]
-#          created = jobStat["Created"]
-#          submited = jobStat["Submitted"]
-#          wait = jobStat["Waiting"]
-#          running = jobStat["Running"]
-#          done = jobStat["Done"]
-#          failed = jobStat["Failed"]
-#          stalled = jobStat["Stalled"]
-#          valueList.append([id,i["TransformationName"],i["Status"],i["AuthorDN"],created,submited,wait,running,done,failed,i["AgentType"],i["Description"],i["CreationDate"],stalled])
 ################################################################################
   def __request(self):
     req = {}
     global pageNumber
-    if request.params.has_key("id") and len(request.params["id"]) > 0:
+    if request.params.has_key("productionID") and len(request.params["productionID"]) > 0:
       pageNumber = 0
-      req["JobID"] = str(request.params["id"])
+      req["TransformationID"] = str(request.params["productionID"])
     else:
       global numberOfJobs
       global globalSort
@@ -129,22 +96,24 @@ class ProductionmonitorController(BaseController):
           pageNumber = 0
       else:
         numberOfJobs = 25
-      if request.params.has_key("prod") and len(request.params["prod"]) > 0:
-        req["JobGroup"] = str(request.params["prod"])
-      if request.params.has_key("site") and len(request.params["site"]) > 0:
-        req["Site"] = str(request.params["site"])
-      if request.params.has_key("stat") and len(request.params["stat"]) > 0:
-        req["Status"] = str(request.params["stat"])
-      if request.params.has_key("app") and len(request.params["app"]) > 0:
-        req["ApplicationStatus"] = str(request.params["app"])
-      if request.params.has_key("owner") and len(request.params["owner"]) > 0:
-        req["Owner"] = str(request.params["owner"])
+      if request.params.has_key("agentType") and len(request.params["agentType"]) > 0:
+        req["AgentType"] = str(request.params["agentType"])
+      if request.params.has_key("prodStatus") and len(request.params["prodStatus"]) > 0:
+        req["Status"] = str(request.params["prodStatus"])
+      if request.params.has_key("plugin") and len(request.params["plugin"]) > 0:
+        req["Plugin"] = str(request.params["plugin"])
+      if request.params.has_key("productionType") and len(request.params["productionType"]) > 0:
+        req["Type"] = str(request.params["productionType"])
+      if request.params.has_key("transformationGroup") and len(request.params["transformationGroup"]) > 0:
+        req["TransformationGroup"] = str(request.params["transformationGroup"])
       if request.params.has_key("date") and len(request.params["date"]) > 0:
-        req["LastUpdate"] = str(request.params["date"])
+        if str(request.params["date"]) != "YYYY-mm-dd":
+          req["CreationDate"] = str(request.params["date"])
       if request.params.has_key("sort") and len(request.params["sort"]) > 0:
         globalSort = str(request.params["sort"])
       else:
-        globalSort = "JobID:DESC"
+        globalSort = []
+    gLogger.info(" PRODUCTION REQUEST: ",req)
     return req
 ################################################################################
   def __getSelectionData(self):
@@ -163,18 +132,72 @@ class ProductionmonitorController(BaseController):
     else:
       prod = "Error during RPC call"
     callback["prod"] = prod
-    RPC = getRPCClient("WorkloadManagement/JobMonitoring")
-    result = RPC.getSites()
+####
+    result = RPC.getDistinctAttributeValues("Plugin",{})
     if result["OK"]:
-      site = []
+      plugin = []
       if len(result["Value"])>0:
+        plugin.append([str("All")])
         for i in result["Value"]:
-          site.append([str(i)])
+          plugin.append([str(i)])
       else:
-        site = "Nothing to display"
+        plugin.append("Nothing to display")
     else:
-      site = "Error during RPC call"
-    callback["site"] = site
+      plugin = "Error during RPC call"
+    callback["plugin"] = plugin
+####
+    result = RPC.getDistinctAttributeValues("Status",{})
+    if result["OK"]:
+      status = []
+      if len(result["Value"])>0:
+        status.append([str("All")])
+        for i in result["Value"]:
+          status.append([str(i)])
+      else:
+        status = "Nothing to display"
+    else:
+      status = "Error during RPC call"
+    callback["prodStatus"] = status
+####
+    result = RPC.getDistinctAttributeValues("TransformationGroup",{})
+    if result["OK"]:
+      group = []
+      if len(result["Value"])>0:
+        group.append([str("All")])
+        for i in result["Value"]:
+          group.append([str(i)])
+      else:
+        group = "Nothing to display"
+    else:
+      group = "Error during RPC call"
+    callback["transformationGroup"] = group
+####
+    result = RPC.getDistinctAttributeValues("AgentType",{})
+    if result["OK"]:
+      atype = []
+      if len(result["Value"])>0:
+        atype.append([str("All")])
+        for i in result["Value"]:
+          atype.append([str(i)])
+      else:
+        atype = "Nothing to display"
+    else:
+      atype = "Error during RPC call"
+    callback["agentType"] = atype
+####
+    result = RPC.getDistinctAttributeValues("Type",{})
+    if result["OK"]:
+      type = []
+      if len(result["Value"])>0:
+        type.append([str("All")])
+        for i in result["Value"]:
+          type.append([str(i)])
+      else:
+        type = "Nothing to display"
+    else:
+      type = "Error during RPC call"
+    callback["productionType"] = type
+####
     return callback
 ################################################################################
   @jsonify
@@ -203,13 +226,18 @@ class ProductionmonitorController(BaseController):
       result = result["Value"]
       if len(result) > 0:
         c.result = []
+        resultUser = gConfig.getSections("/Security/Users")
+        if resultUser["OK"]:
+          users = resultUser["Value"]
+          dndb = {}
+          for j in users:
+            dndb[gConfig.getValue("/Security/Users/%s/DN" % j)] = j
+        else:
+          dndb = {}
         for i in result:
           DN = i["AuthorDN"]
-          if len(DN) > 0:
-            if dndb.has_key(DN):
-              i["AuthorDN"] = dndb[DN]
-            else:
-              i["AuthorDN"] = "Owner Unknown" # Zdes' nado probovat' esche raz
+          if dndb.has_key(DN):
+            i["AuthorDN"] = dndb[DN]
           else:
             i["AuthorDN"] = "Owner Unknown"
           date = Time.toString(i["MessageDate"])
@@ -223,7 +251,6 @@ class ProductionmonitorController(BaseController):
     return c.result
 ################################################################################
   def __actProduction(self,prodid,cmd):
-
     prodid = prodid.split(",")
     RPC = getRPCClient("ProductionManagement/ProductionManager")
     c.result = []

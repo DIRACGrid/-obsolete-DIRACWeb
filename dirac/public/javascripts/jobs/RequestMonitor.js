@@ -29,17 +29,20 @@ function initSidebar(){
   var id = selectID(); // Initialize field for JobIDs
   var reqId = selectRequestID();
   var select = selectPanel(); // Initializing container for selection objects
+  select.buttons[2].hide(); // Remove refresh button
   // Insert object to container BEFORE buttons:
   select.insert(0,id);
   select.insert(0,reqId);
   var bar = sideBar();
   bar.insert(0,select);
+  bar.setTitle('RequestMonitor');
   return bar
 }
 function initData(store){
   var columns = [
     {header:'RequestId',sortable:true,dataIndex:'RequestID',align:'left'},
     {header:'JobID',sortable:true,dataIndex:'JobID',align:'left'},
+    {header:'',width:26,sortable:false,dataIndex:'Status',renderer:status,hideable:false},
     {header:'Status',sortable:true,dataIndex:'Status',align:'left'},
     {header:'RequestType',sortable:true,dataIndex:'RequestType',align:'left'},
     {header:'Operation',sortable:true,dataIndex:'Operation',align:'left'},
@@ -47,7 +50,6 @@ function initData(store){
     {header:'OwnerGroup',sortable:true,dataIndex:'OwnerGroup',align:'left'},
     {header:'RequestName',sortable:true,dataIndex:'RequestName',align:'left',hidden:true}
   ];
-  var title = 'Request Monitoring';
   var tbar = [
     {
       cls:"x-btn-text-icon",
@@ -76,18 +78,20 @@ function initData(store){
     }
   ];
   store.setDefaultSort('RequestID','DESC'); // Default sorting
-  tableMngr = {'store':store,'columns':columns,'title':title,'tbar':''};
+  tableMngr = {'store':store,'columns':columns,'tbar':''};
   var t = table(tableMngr);
-  t.addListener('cellclick',showMenu);
-  var tabPanel = new Ext.TabPanel({
-    activeTab:0,
-    enableTabScroll:true,
-    id:'tabPanel',
-    items:[t],
-    margins:'2 0 2 0',
-    region:'center'
+  t.addListener('cellclick',function(table,rowIndex,columnIndex){
+      showMenu('main',table,rowIndex,columnIndex);
   });
-  return tabPanel
+//  var tabPanel = new Ext.TabPanel({
+//    activeTab:0,
+//    enableTabScroll:true,
+//    id:'tabPanel',
+//    items:[t],
+//    margins:'2 0 2 0',
+//    region:'center'
+//  });
+  return t
 }
 function renderData(store){
   var leftBar = initSidebar();

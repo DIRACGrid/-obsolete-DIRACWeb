@@ -1,4 +1,4 @@
-import logging
+import logging, tempfile
 from time import time, gmtime, strftime
 
 from DIRAC.Core.Utilities import Time
@@ -6,10 +6,20 @@ from DIRAC.Core.Utilities import Time
 from dirac.lib.base import *
 from dirac.lib.diset import getRPCClient
 from dirac.lib.credentials import authorizeAction
-from dirac.lib.sessionManager import *
+#from dirac.lib.sessionManager import *
 from DIRAC import gLogger
+from DIRAC.Core.Utilities.DictCache import DictCache
+import dirac.lib.credentials as credentials
 
 log = logging.getLogger(__name__)
+
+numberOfJobs = 25
+pageNumber = 0
+globalSort = []
+
+global imgCache
+imgCache = DictCache()
+#globalSort = [["SiteName","DESC"]]
 
 class SitesummaryController(BaseController):
 ################################################################################
@@ -23,47 +33,54 @@ class SitesummaryController(BaseController):
   @jsonify
   def submit(self):
     pagestart = time()
-    RPC = getRPCClient("WorkloadManagement/JobMonitoring")
-    result = RPC.getSiteSummary()
+    RPC = getRPCClient("WorkloadManagement/WMSAdministrator")
+    result = self.__request()
+    result = RPC.getSiteSummaryWeb(result,globalSort,pageNumber,numberOfJobs)
+    gLogger.info("\033[0;31m YO: \033[0m",result)
     if result["OK"]:
       result = result["Value"]
-      c.result = []
-      now = Time.dateTime()
-      currentDate = now.strftime("%Y-%m-%d %H:%M:%S %Z")
-      currentDate = "%s UTC" % currentDate
-      gLogger.info("1")
-      for i in result:
-        stat = result[i]
-        gLogger.info(i)
-        gLogger.info(stat)
-#        if i == "Total":
-#          total = []
-#          total.append(i)
-#          total.append(int(stat["Waiting"]))
-#          total.append(int(stat["Running"]))
-#          total.append(int(stat["Done"]))
-#          total.append(int(stat["Failed"]))
-#          total.append(int(stat["Stalled"]))
-#        else:
-#          tmp = []
-#          tmp.append(i)
-#          tmp.append(int(stat["Waiting"]))
-#          tmp.append(int(stat["Running"]))
-#          tmp.append(int(stat["Done"]))
-#          tmp.append(int(stat["Failed"]))
-#          tmp.append(int(stat["Stalled"]))
-#          c.result.append(tmp)
-        gLogger.info("+")
-        c.result.append({"name":str(i),"waiting":int(stat["Waiting"]),"running":int(stat["Running"]),"done":int(stat["Done"]),"failed":int(stat["Failed"]),"stalled":int(stat["Stalled"])})
-      gLogger.info("end")
-      c.result = {"success":"true","result":c.result,"total":len(c.result),"time":currentDate}
-#      else:
-#        c.result = {"success":"false","error":"There are no data to display"}
+      if result.has_key("TotalRecords") and  result["TotalRecords"] > 0:
+        if result.has_key("ParameterNames") and result.has_key("Records"):
+          if len(result["ParameterNames"]) > 0:
+            if len(result["Records"]) > 0:
+              c.result = []
+              jobs = result["Records"]
+              head = result["ParameterNames"]
+              headLength = len(head)
+              for i in jobs:
+                tmp = {}
+                for j in range(0,headLength):
+                  tmp[head[j]] = i[j]
+                c.result.append(tmp)
+              total = result["TotalRecords"]
+              plots = 'test.png'
+              if result.has_key("Plots"):
+                imgCache.add("test.png",600,result["Plots"])
+                res = imgCache.exists(name)
+                gLogger.info("exists? ", res)
+#                tmpFile = tempfile.NamedTemporaryFile(suffix='.png')
+#                tmpFile.write(result["Plots"])
+#                tmpFile.close()
+#                plots = tmpFile.name
+#                gLogger.info("\033[0;31mSITESUMMARY INDEX REQUEST:\033[0m",tempfile.gettempdir())
+              if result.has_key("Extras"):
+                extra = result["Extras"]
+                c.result = {"success":"true","result":c.result,"total":total,"extra":extra,"plots":plots}
+              else:
+                c.result = {"success":"true","result":c.result,"total":total,"plots":plots}
+            else:
+              c.result = {"success":"false","result":"","error":"There are no data to display"}
+          else:
+            c.result = {"success":"false","result":"","error":"ParameterNames field is undefined"}
+        else:
+          c.result = {"success":"false","result":"","error":"Data structure is corrupted"}
+      else:
+        c.result = {"success":"false","result":"","error":"There were no data matching your selection"}
     else:
       c.result = {"success":"false","error":result["Message"]}
-    gLogger.info("\033[0;31mSITESUMMARY SUBMIT REQUEST:\033[0m %s" % (time() - pagestart))
+    gLogger.info("\033[0;31mJOB SUBMIT REQUEST:\033[0m %s" % (time() - pagestart))
     return c.result
-################################################################################
+###############################################################################
   def __getSelectionData(self):
     callback = {}
     RPC = getRPCClient("ProductionManagement/ProductionManager")
@@ -94,99 +111,67 @@ class SitesummaryController(BaseController):
     callback["site"] = site
     return callback
 ################################################################################
-#  def display(self):
-#    RPC = getRPCClient("WorkloadManagement/JobMonitoring")
-#    pagestart = time()
-#    result = RPC.getSiteSummary()
-#    now = Time.dateTime()
-#    currentDate = now.strftime("%Y-%m-%d %H:%M:%S %Z")
-#    currentDate = "%s UTC" % currentDate
-#    currentTime = []
-#    currentTime.append(currentDate)
-#    if result["OK"]:
-#      result = result["Value"]
-#      c.listResult = []
-#      for i in result:
-#        stat = result[i]
-#        i = i.replace("\""," ? ")
-#        if i == "Total":
-#          total = []
-#          total.append(i)
-#          total.append(int(stat["Waiting"]))
-#          total.append(int(stat["Running"]))
-#          total.append(int(stat["Done"]))
-#          total.append(int(stat["Failed"]))
-#          total.append(int(stat["Stalled"]))
-#        else:
-#          tmp = []
-#          tmp.append(i)
-#          tmp.append(int(stat["Waiting"]))
-#          tmp.append(int(stat["Running"]))
-#          tmp.append(int(stat["Done"]))
-#          tmp.append(int(stat["Failed"]))
-#          tmp.append(int(stat["Stalled"]))
-#          c.listResult.append(tmp)
-#      c.listResult.append(total)
-#      c.listResult.append(currentTime)
-#      gLogger.info("SiteSummary call successful")
-#      return render("/jobs/SiteSummary.mako")
-#    else:
-#      gLogger.info(result["Message"])
-#      return result["Message"]
+  def __request(self):
+    req = {}
+    global pageNumber
+    if request.params.has_key("id") and len(request.params["id"]) > 0:
+      pageNumber = 0
+      req["JobID"] = str(request.params["id"])
+    else:
+      global numberOfJobs
+      global globalSort
+      if request.params.has_key("limit") and len(request.params["limit"]) > 0:
+        if request.params.has_key("start") and len(request.params["start"]) > 0:
+          numberOfJobs = int(request.params["limit"])
+          pageNumber = int(request.params["start"])
+        else:
+          pageNumber = 0
+      else:
+        numberOfJobs = 25
+      if request.params.has_key("prod") and len(request.params["prod"]) > 0:
+        if str(request.params["prod"]) != "All":
+          req["JobGroup"] = str(request.params["prod"]).split('::: ')
+      if request.params.has_key("site") and len(request.params["site"]) > 0:
+        if str(request.params["site"]) != "All":
+          req["GridSite"] = str(request.params["site"]).split('::: ')
+      if request.params.has_key("stat") and len(request.params["stat"]) > 0:
+        if str(request.params["stat"]) != "All":
+          req["Status"] = str(request.params["stat"]).split('::: ')
+      if request.params.has_key("minorstat") and len(request.params["minorstat"]) > 0:
+        if str(request.params["minorstat"]) != "All":
+          req["MinorStatus"] = str(request.params["minorstat"]).split('::: ')
+      if request.params.has_key("app") and len(request.params["app"]) > 0:
+        if str(request.params["app"]) != "All":
+          req["ApplicationStatus"] = str(request.params["app"]).split('::: ')
+      else:
+        if request.params.has_key("owner") and len(request.params["owner"]) > 0:
+          if str(request.params["owner"]) != "All":
+            req["Owner"] = str(request.params["owner"]).split('::: ')
+      if request.params.has_key("date") and len(request.params["date"]) > 0:
+        if str(request.params["date"]) != "YYYY-mm-dd":
+          req["LastUpdate"] = str(request.params["date"])
+      globalSort = []
+    gLogger.info("REQUEST:",req)
+    return req
 ################################################################################
-#  @jsonify
-#  def action(self):
-#    pagestart = time()
-#    if request.params.has_key("Refresh") and len(request.params["Refresh"]) > 0:
-#      id = str(request.params["Refresh"])
-#      return self.__getData(id)
-#    else:
-#      c.error = "Failed to get data"
-#      gLogger.info("+++ E:",c.error)
-#      return c.error
-################################################################################
-#  def __getData(self,id):
-#    if id == "true":
-#      RPC = getRPCClient("WorkloadManagement/JobMonitoring")
-#      pagestart = time()
-#      result = RPC.getSiteSummary()
-#      now = Time.dateTime()
-#      currentDate = now.strftime("%Y-%m-%d %H:%M:%S %Z")
-#      currentDate = "%s UTC" % currentDate
-#      currentTime = []
-#      currentTime.append(currentDate)
-#      if result["OK"]:
-#        result = result["Value"]
-#        c.listResult = []
-#        for i in result:
-#          stat = result[i]
-#          i = i.replace("\""," ? ")
-#          if i == "Total":
-#            total = []
-#            total.append(i)
-#            total.append(int(stat["Waiting"]))
-#            total.append(int(stat["Running"]))
-#            total.append(int(stat["Done"]))
-#            total.append(int(stat["Failed"]))
-#            total.append(int(stat["Stalled"]))
-#          else:
-#            tmp = []
-#            tmp.append(i)
-#            tmp.append(int(stat["Waiting"]))
-#            tmp.append(int(stat["Running"]))
-#            tmp.append(int(stat["Done"]))
-#            tmp.append(int(stat["Failed"]))
-#            tmp.append(int(stat["Stalled"]))
-#            c.listResult.append(tmp)
-#        c.listResult.append(total)
-#        c.listResult.append(currentTime)
-#        gLogger.info("SiteSummary call successful")
-#        return c.listResult
-#      else:
-#        c.error = result["Message"]
-#        gLogger.info("+++ E:",c.error)
-#        return c.error
-#    else:
-#      c.error = "Not a correct argument"
-#      gLogger.info("+++ E:",c.error)
-#      return c.error
+  def getImg(self):
+    if "name" not in request.params:
+      c.result = "file name is absent"
+      return c.result
+    name = request.params["name"]
+    if name.find( ".png" ) < -1:
+      c.result = "Not a valid image file"
+      return c.result
+    gLogger.info("request for the file:", name)
+    res = imgCache.exists(name)
+    gLogger.info("exists? ", res)
+    data = imgCache.getKeys()
+    gLogger.info("getKeys ", data) 
+#    tmpFile.seek( 0 )
+#    data = tmpFile.read()
+#    response.headers['Content-type'] = 'image/png'
+#    response.headers['Content-Disposition'] = 'attachment; filename="%s"' % name
+#    response.headers['Content-Length'] = len(data)
+#    response.headers['Content-Transfer-Encoding'] = 'Binary'
+    return data
+

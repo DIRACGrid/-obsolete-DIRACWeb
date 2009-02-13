@@ -13,12 +13,22 @@ function initSiteSummary(reponseSelect){
 // function describing data structure, should be individual per page
 function initRecord(){
   var record = new Ext.data.Record.create([
-    {name:'name'},
-    {name:'waiting',type:'int'},
-    {name:'running',type:'int'},
-    {name:'done',type:'int'},
-    {name:'failed',type:'int'},
-    {name:'stalled',type:'int'}
+    {name:'Site'},
+    {name:'Grid'},
+    {name:'Country'},
+    {name:'MaskStatus'},
+    {name:'Received',type:'int'},
+    {name:'Checking',type:'int'},
+    {name:'Staging',type:'int'},
+    {name:'Waiting',type:'int'},
+    {name:'Matched',type:'int'},
+    {name:'Running',type:'int'},
+    {name:'Stalled',type:'int'},
+    {name:'Done',type:'int'},
+    {name:'Completed',type:'int'},
+    {name:'Failed',type:'int'},
+    {name:'Efficiency'},
+    {name:'Status'}
   ]);
   return record
 }
@@ -46,21 +56,35 @@ function initSidebar(){
 }
 function initData(store){
   var columns = [
-    {header:'Name',sortable:true,dataIndex:'name',align:'left'},
-    {header:'Waiting',sortable:true,dataIndex:'waiting',align:'left'},
-    {header:'Running',sortable:true,dataIndex:'running',align:'left'},
-    {header:'Done',sortable:true,dataIndex:'done',align:'left'},
-    {header:'Failed',sortable:true,dataIndex:'failed',align:'left'},
-    {header:'Stalled',sortable:true,dataIndex:'stalled',align:'left'}
+    {header:'Name',sortable:true,dataIndex:'Grid',align:'left'},
+    {header:'Type',sortable:true,dataIndex:'Site',align:'left'},
+    {header:'Country',sortable:true,dataIndex:'Country',align:'left'},
+    {header:'MaskStatus',sortable:true,dataIndex:'MaskStatus',align:'left'},
+    {header:'Waiting',sortable:true,dataIndex:'Waiting',align:'left'},
+    {header:'Running',sortable:true,dataIndex:'Running',align:'left'},
+    {header:'Done',sortable:true,dataIndex:'Done',align:'left'},
+    {header:'Failed',sortable:true,dataIndex:'Failed',align:'left'},
+    {header:'Stalled',sortable:true,dataIndex:'Stalled',align:'left'},
+    {header:'Received',sortable:true,dataIndex:'Received',align:'left'},
+    {header:'Checking',sortable:true,dataIndex:'Checking',align:'left'},
+    {header:'Staging',sortable:true,dataIndex:'Staging',align:'left'},
+    {header:'Matched',sortable:true,dataIndex:'Matched',align:'left'},
+    {header:'Completed',sortable:true,dataIndex:'Completed',align:'left'},
+    {header:'Efficiency',sortable:true,dataIndex:'Efficiency',align:'left'},
+    {header:'Status',sortable:true,dataIndex:'Status',align:'left'}
   ];
   var title = 'Site Summary';
   dirac.tbar = ['->',
     {handler:function(){store.load()},text:'Refresh it',tooltip:'Click to refresh the data'}
   ];
-  store.setDefaultSort('name','ASC'); // Default sorting
+//  tableMngr = {'store':store,'columns':columns,'title':title,'tbar':dirac.tbar};
+//  tableMngr = {'store':store,'columns':columns,'title':title,'tbar':''};
+  store.setDefaultSort('Grid','ASC'); // Default sorting
   tableMngr = {'store':store,'columns':columns,'title':title,'tbar':dirac.tbar};
   var t = table(tableMngr);
-  t.addListener('cellclick',showMenu);
+  t.addListener('cellclick',function(table,rowIndex,columnIndex){
+      showMenu('main',table,rowIndex,columnIndex);
+  });
   t.footer = false;
   return t
 }
@@ -83,6 +107,9 @@ function renderData(store){
   dataMngr = {'form':leftBar,'store':store}
 }
 function afterDataLoad(store){
+  try{
+    var img = '<img src="getImg?name="'+store.reader.jsonData.plots+'>';
+  }catch(e){}
   var last = 'Refresh it';
   if(store){
     if(store.reader){

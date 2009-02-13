@@ -117,6 +117,8 @@ function renderData(store){
   dataMngr = {'form':leftBar.items.items[0],'store':store}
   addMenu();
 }
+function AJAXsuccess(value,id,response){
+}
 function addMenu(){
   var topBar = Ext.getCmp('diracTopBar');
   if(topBar){
@@ -142,111 +144,10 @@ function setMenuItems(selections){
   }
   if(dirac.menu){
     dirac.menu.add(
-      {handler:function(){jump('site',id,submited)},text:'Show Pilots for Site'},
-      {handler:function(){jump('CE',id,submited)},text:'Show Pilots for CE'}
+      {handler:function(){jump('pilots',selections)},text:'Show Pilots'}
     )
   }
 };
-function AJAXsuccess(value,id,response){
-  var jsonData = Ext.util.JSON.decode(response);
-  if(jsonData['success'] == 'false'){
-    alert('Error: ' + jsonData['error']);
-    return
-  }
-  var result = jsonData.result;
-  var panel = {};
-  if((value == 'getJDL')||(value == 'getStandardOutput')||(value == 'pilotStdOut')||(value == 'pilotStdErr')||(value == 'getStagerReport')){
-    var html = '<pre>' + result + '</pre>';
-    panel = new Ext.Panel({border:0,autoScroll:true,html:html,layout:'fit'})
-  }else if(value == 'LogURL'){
-    result = result.replace(/"/g,"");
-    result = result.replace(/\\/g,"");
-    var html = '<iframe id="www_frame" src =' + result + '></iframe>';
-    panel = new Ext.Panel({border:0,autoScroll:false,html:html})
-    panel.on('resize',function(){
-      var wwwFrame = document.getElementById('www_frame');
-      wwwFrame.height = panel.getInnerHeight() - 4;
-      wwwFrame.width = panel.getInnerWidth() - 4;
-    })
-  }else{
-    var reader = {};
-    var columns = [];
-    if((value == 'getBasicInfo')||(value == 'getParams')){
-      reader = new Ext.data.ArrayReader({},[
-        {name:'name'},
-        {name:'value'}
-      ]);
-      columns = [
-        {header:'Name',sortable:true,dataIndex:'name',align:'left'},
-        {header:'Value',sortable:true,dataIndex:'value',align:'left'}
-      ];
-    }else if(value == 'getPending'){
-      reader = new Ext.data.ArrayReader({},[
-        {name:'type'},
-        {name:'operation'},
-        {name:'status'},
-        {name:'order'},
-        {name:'targetSE'},
-        {name:'file'}
-      ]);
-      columns = [
-        {header:'Type',sortable:true,dataIndex:'type',align:'left'},
-        {header:'Operation',sortable:true,dataIndex:'operation',align:'left'},
-        {header:'Status',sortable:true,dataIndex:'status',align:'left'},
-        {header:'Order',sortable:true,dataIndex:'order',align:'left'},
-        {header:'Targert SE',sortable:true,dataIndex:'targetSE',align:'left'},
-        {header:'File',sortable:true,dataIndex:'file',align:'left'}
-      ];
-      var mark = 0;
-      for(var i = 0; i < result.length; i++){
-        if(result[i][0] == 'PendingRequest'){
-          var intermed = result[i][1].split('\n');
-          mark = 1;
-        }
-      }
-      if(mark == 0){
-        alert('Error: No pending request(s) found');
-        return
-      }else{
-        for(var j = 0; j < intermed.length; j++){
-          intermed[j] = intermed[j].split(':');
-        }
-        result = intermed;
-      }
-    }else if(value == 'LoggingInfo'){
-      reader = new Ext.data.ArrayReader({},[
-        {name:'status'},
-        {name:'minorstatus'},
-        {name:'applicationstatus'},
-        {name:'datetime',type:'date',dateFormat:'Y-n-j h:i:s'},
-        {name:'source'}
-      ]);
-      columns = [
-        {header:'Source',sortable:true,dataIndex:'source',align:'left'},
-        {header:'Status',sortable:true,dataIndex:'status',align:'left'},
-        {header:'MinorStatus',sortable:true,dataIndex:'minorstatus',align:'left'},
-        {header:'ApplicationStatus',sortable:true,dataIndex:'applicationstatus',align:'left'},
-        {header:'DateTime',sortable:true,dataIndex:'datetime',align:'left'}
-      ];
-    }
-    var store = new Ext.data.Store({
-      data:result,
-      reader:reader
-    });
-    panel = new Ext.grid.GridPanel({
-      anchor:'100%',
-      columns:columns,
-      store:store,
-      stripeRows:true,
-      viewConfig:{forceFit:true}
-    });
-    panel.addListener('cellclick',function(table,rowIndex,columnIndex){
-      showMenu('nonMain',table,rowIndex,columnIndex);
-    });
-  }
-  id = setTitle(value,id);
-  displayWin(panel,id)
-}
 function afterDataLoad(){
   var msg = [];
   if(dataMngr){
@@ -341,4 +242,22 @@ function expandAll(){
       addEntries(expSites[i][0],expSites[i][1]);
     }
   }
+}
+function jump(type,selections){
+  var request = ''
+  try{
+    if(selections.CE == 'Multiple'){
+      request = 'name="site" value=' + selections.Site;
+    }else{
+      request = 'name="ce" value=' + selections.CE;
+    }
+    var url = document.location.protocol + '//' + document.location.hostname + gURLRoot + '/' + gPageDescription.selectedSetup;
+    url = url + '/' + gPageDescription.userData.group + '/jobs/PilotMonitor/display';
+    var post_req = '<form id="redirform" action="' + url + '" method="POST" >';
+    post_req = post_req + '<input type="hidden" ' + request + '">';
+    post_req = post_req + '</form>';
+    document.body.innerHTML = document.body.innerHTML + post_req;
+    var form = document.getElementById('redirform');
+    form.submit();
+  }catch(e){}
 }
