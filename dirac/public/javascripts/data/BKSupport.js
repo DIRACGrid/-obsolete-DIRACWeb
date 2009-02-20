@@ -1,10 +1,12 @@
+
 function bkRight(){
   function createField(id,label){
     var txtField = new Ext.form.TextField({
       anchor:'90%',
       fieldLabel:label,
       id:id,
-      name:id
+      name:id,
+      readOnly:true
     });
     return txtField;
   }
@@ -128,24 +130,12 @@ function saveFile(panel){
       start = document.recordsHTML.textfield1.value;
       if(start == ''){
         alert('Initial record index is absent');
-        return;
+        return
       }
       end = document.recordsHTML.textfield2.value;
       if(end == ''){
         alert('Final record index is absent');
-        return;
-      }
-    }else if(records == 'pages'){
-      var perPage = table.bottomToolbar.pageSize;
-      start = document.recordsHTML.textfield3.value;
-      if(start == ''){
-        alert('Initial page index is absent');
-        return;
-      }
-      end = document.recordsHTML.textfield4.value;
-      if(end == ''){
-        alert('Final page index is absent');
-        return;
+        return
       }
     }
   }catch(e){
@@ -158,16 +148,16 @@ function saveFile(panel){
 function bkSaveDialog(){
   try{
     var table = Ext.getCmp('DataMonitoringTable');
-    if(table.bbar.pageSize){
-      var perPage = table.bbar.pageSize;
-    }else{
+    if(!table.store.totalLength){
       alert('Error: There are no records in the table');
+      return
     }
   }catch(e){
     alert('Error: There are no records in the table');
+    return
   }
   var filetypeHTML = '<form id="filetypeHTML" name="filetypeHTML" method="post" action="">';
-  filetypeHTML = filetypeHTML + '<table width="400" border="0" cellspacing="5" cellpadding="0">';
+  filetypeHTML = filetypeHTML + '<table width="350" border="0" cellspacing="5" cellpadding="0">';
   filetypeHTML = filetypeHTML + '<tr><td width="20"><label valign="middle">';
   filetypeHTML = filetypeHTML + '<input name="radiobutton" type="radio" value="txt" tabindex="1" checked="checked"/></label>';
   filetypeHTML = filetypeHTML + '</td><td>Save as a text file (*.txt) </td>';
@@ -175,23 +165,15 @@ function bkSaveDialog(){
   filetypeHTML = filetypeHTML + '<input name="radiobutton" type="radio" value="py" tabindex="2" /></label>';
   filetypeHTML = filetypeHTML + '</td><td>Save as a python file (*.py)</td></tr></table></form>';
   var recordsHTML = '<form id="recordsHTML" name="recordsHTML" method="post" action="">';
-  recordsHTML = recordsHTML + '<table width="400" border="0" cellspacing="5" cellpadding="0"><tr><td width="20"><label>';
+  recordsHTML = recordsHTML + '<table width="350" border="0" cellspacing="5" cellpadding="0"><tr><td width="20"><label>';
   recordsHTML = recordsHTML + '<input name="radio" id="radioAll" type="radio" tabindex="3" value="all" checked="checked" onChange="rClick(\'All\')" /></label>';
-  recordsHTML = recordsHTML + '</td><td colspan="6">All</td></tr><tr><td><label>';
+  recordsHTML = recordsHTML + '</td><td colspan="5">All</td></tr><tr><td><label>';
   recordsHTML = recordsHTML + '<input name="radio" id="radioR" type="radio" tabindex="4" value="recs" onChange="rClick(\'radioR\')" /></label>';
   recordsHTML = recordsHTML + '</td><td>Records</td><td align="right">From:</td><td><label>';
   recordsHTML = recordsHTML + '<input id="textF1" name="textfield1" type="text" size="10" disabled="disabled" /></label>';
   recordsHTML = recordsHTML + '</td><td align="right">To:</td><td><label>';
-  recordsHTML = recordsHTML + '<input id="textF2" name="textfield2" type="text" size="10" disabled="disabled" />';
-  recordsHTML = recordsHTML + '</label></td><td><div id="testButt"></td></tr><tr><td><label>';
-  recordsHTML = recordsHTML + '<input name="radio" id="radioP" type="radio" tabindex="5" value="pages" onChange="rClick(\'radioP\')" /></label>';
-  recordsHTML = recordsHTML + '</td><td>Page(s)</td><td align="right">From:</td><td>';
-  recordsHTML = recordsHTML + '<input id="textF3" name="textfield3" type="text" size="10" disabled="disabled" />';
-  recordsHTML = recordsHTML + '</td><td align="right">To:</td><td>';
-  recordsHTML = recordsHTML + '<input id="textF4" name="textfield4" type="text" size="10" disabled="disabled" />';
-  recordsHTML = recordsHTML + '</td></tr><tr><td colspan="2"></td><td colspan="5">' + perPage + ' entries per page</td></tr>';
+  recordsHTML = recordsHTML + '<input id="textF2" name="textfield2" type="text" size="10" disabled="disabled" /></label>';
   recordsHTML = recordsHTML + '</td></tr></table></form>';
-//  var panel = new Ext.FormPanel({
   var panel = new Ext.Panel({
     labelAlign: 'top',
     bodyStyle:'padding:5px',
@@ -202,7 +184,7 @@ function bkSaveDialog(){
         saveFile(panel);
       },
       icon:gURLRoot+'/images/iface/save.gif',
-      minWidth:'200',
+      minWidth:'150',
       tooltip:'Will open a standard browser save file dialog',
       text:'Save'
     },{
@@ -215,6 +197,16 @@ function bkSaveDialog(){
       minWidth:'100',
       tooltip:'Click here to discard changes and close the window',
       text:'Cancel'
+    },{
+      cls:"x-btn-text-icon",
+      handler:function(){
+        getBKInfo('textF1','textF2');
+      },
+      icon:gURLRoot+'/images/iface/info.gif',
+      id:'infoButtonRec',
+      minWidth:'100',
+      text:'Info',
+      tooltip:'Get statistical information for the chosen entries'
     }],
     items:[{
       autoHeight:true,
@@ -227,37 +219,82 @@ function bkSaveDialog(){
       title:'Records',
       xtype:'fieldset'
     }]
-  })
-  var window = displayWin(panel,'Save dialog','true');
-  new Ext.Button({applyTo:'testButt',text:'Simple Button'});
+  });
+  var window = displayWin(panel,'Save dialog','true',true);
+  window.setSize(400,265);
+}
+function getBKInfo(first,last){
+  var table = Ext.getCmp('DataMonitoringTable');
+  var root = '';
+  try{
+    if(table.store.baseParams.level){
+      if(table.store.baseParams.level == 'showFiles'){
+        root = table.store.baseParams.root;
+      }else{
+        alert('Unable to get table.store.baseParams.root value');
+        return;
+      }
+    }
+  }catch(e){
+    alert('Unable to get table.store.baseParams.level value');
+    return;
+  }
+  var len = 0;
+  try{
+    if(table.store.totalLength){
+      len = table.store.totalLength;
+    }
+  }catch(e){
+    alert('Unable to get table.store.totalLength value');
+    return
+  }
+  var t1 = document.getElementById(first);
+  var t2 = document.getElementById(last);
+  var all = document.getElementById('radioAll');
+  if(all.checked){
+    t1 = 0;
+    t2 = len;
+  }else{
+    if(t1.value == ''){
+      alert('Field "From" is empty');
+      return
+    }else if(t1.value > len){
+      alert('The value in the field "From" is bigger than the total number of entries');
+      return
+    }else{
+      t1 = t1.value;
+    }
+    if(t2.value == ''){
+      alert('Field "To" is empty');
+      return
+    }else if(t2.value > len){
+      alert('The value in the field "To" is bigger than the total number of entries');
+      return
+    }else{
+      t2 = t2.value;
+    }
+  }
+  var url ='info?&root=' + root + '&start=' + t1 + '&limit=' + t2;
+  var panel = new Ext.Panel({autoLoad:url,bodyStyle:'padding: 5px'});
+  var window = displayWin(panel,'Statistics','',true);
+  window.setSize(200,100);
+  window.center();
 }
 function rClick(radioID){
   var t1 = document.getElementById('textF1');
   var t2 = document.getElementById('textF2');
-  var t3 = document.getElementById('textF3');
-  var t4 = document.getElementById('textF4');
   if(radioID == 'radioR'){
     t1.disabled = false;
     t2.disabled = false;
-    t3.disabled = true;
-    t4.disabled = true;
-    t3.value = '';
-    t4.value = '';
   }else if(radioID == 'radioP'){
     t1.disabled = true;
     t2.disabled = true;
-    t3.disabled = false;
-    t4.disabled = false;
     t1.value = '';
     t2.value = '';
   }else{
     t1.disabled = true;
     t2.disabled = true;
-    t3.disabled = true;
-    t4.disabled = true;
     t1.value = '';
     t2.value = '';
-    t3.value = '';
-    t4.value = '';
   }
 }
