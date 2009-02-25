@@ -953,6 +953,64 @@ function selectRequestID(){
   });
   return number;
 }
+function createMenu(dataName,menuName){
+  var data = [['']];
+  try{
+    data = dataSelect[dataName];
+  }catch(e){}
+  var disabled = true;
+  if(data == 'Nothing to display'){
+    data = [[0,'Nothing to display']];
+  }else{
+    for (var i = 0; i < data.length; i++) {
+      data[i] = [i ,data[i][0]];
+    }
+    disabled = false;
+  }
+  var store = new Ext.data.SimpleStore({
+    id:0,
+    fields:[{name:'id',type:'int'},dataName],
+    data:data
+  });
+  var combo = new Ext.ux.form.LovCombo({
+    anchor:'90%',
+    disabled:disabled,
+    displayField:dataName,
+    emptyText:data[0][1],
+    fieldLabel:menuName,
+    hiddenName:dataName,
+    hideOnSelect:false,
+    id:menuName,
+    mode:'local',
+    resizable:true,
+    store:store,
+    triggerAction:'all',
+    typeAhead:true,
+    valueField:'id'
+  });
+  combo.on({
+    'render':function(){
+      try{
+        var nameList = dataSelect.extra.dataName.split('::: ');
+        var newValue = '';
+        for(var j = 0; j < nameList.length; j++){
+          for(var i = 0; i < store.totalLength; i++){
+            if(store.data.items[i].data.status == nameList[j]){
+              if(newValue.length == 0){
+                newValue = i;
+              }else{
+                newValue = newValue + ':::' + i;
+              }
+            }
+          }
+        }
+        combo.setValue(newValue);
+        delete dataSelect.extra.dataName;
+      }catch(e){}
+    }
+  });
+  return combo;
+}
 function selectMinorStatus(){
   var data = [['']];
   if(dataSelect.minorstat){
@@ -1195,58 +1253,26 @@ function selectProdMenu(){
   });
   return combo;
 }
+function selectProdAgentMenu(){
+  var menu = createMenu('agentType','AgentType');
+  return menu
+}
 function selectProdStatusMenu(){
-  var data = [
-    [0,'All'],
-    [1,'Active'],
-    [2,'New'],
-    [3,'Stopped']
-  ];
-  var disabled = false;
-  var store = new Ext.data.SimpleStore({
-    id:0,
-    fields:[{name:'id',type:'int'},'status'],
-    data:data
-  });
-  var combo = new Ext.ux.form.LovCombo({
-    anchor:'90%',
-    disabled:disabled,
-    displayField:'status',
-    emptyText:data[0][1],
-    fieldLabel:'Status',
-    hiddenName:'status',
-    hideOnSelect:false,
-    id:'productionStatusMenu',
-    mode:'local',
-    resizable:true,
-    store:store,
-    triggerAction:'all',
-    typeAhead:true,
-    valueField:'id'
-  });
-  combo.on({
-    'render':function(){
-      try{
-        var productionStatus = dataSelect.extra.productionStatus.split('::: ');
-        var newValue = '';
-        for(var j = 0; j < productionStatus.length; j++){
-          for(var i = 0; i < store.totalLength; i++){
-            if(store.data.items[i].data.status == productionStatus[j]){
-              if(newValue.length === 0){
-                newValue = i;
-              }else{
-                newValue = newValue + ':::' + i;
-              }
-            }
-          }
-        }
-        combo.setValue(newValue);
-        delete dataSelect.extra.productionStatus;
-      }catch(e){}
-    }
-  });
-  return combo;
-};
+  var menu = createMenu('prodStatus','Status');
+  return menu
+}
+function selectProdTypeMenu(){
+  var menu = createMenu('productionType','Type');
+  return menu
+}
+function selectTransGroupMenu(){
+  var menu = createMenu('transformationGroup','Group');
+  return menu
+}
+function selectPluginMenu(){
+  var menu = createMenu('plugin','Plugin');
+  return menu
+}
 function selectSiteMenu(){
   var data = [['']];
   if(dataSelect.site){
