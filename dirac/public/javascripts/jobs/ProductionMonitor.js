@@ -96,7 +96,7 @@ function initData(store){
     {header:'Done',sortable:true,dataIndex:'Jobs_Done',align:'left'},
     {header:'Failed',sortable:true,dataIndex:'Jobs_Failed',align:'left'},
     {header:'Bk_ConfigName',sortable:true,dataIndex:'Bk_ConfigName',align:'left',hidden:true},
-    {header:'Bk_Events',sortable:true,dataIndex:'Bk_Events',align:'left'},
+//    {header:'Bk_Events',sortable:true,dataIndex:'Bk_Events',align:'left'},
     {header:'Bk_ConfigVersion',sortable:true,dataIndex:'Bk_ConfigVersion',align:'left',hidden:true},
     {header:'Bk_Steps',sortable:true,dataIndex:'Bk_Steps',align:'left',hidden:true},
     {header:'BkQueryID',sortable:true,dataIndex:'BkQueryID',align:'left',hidden:true},
