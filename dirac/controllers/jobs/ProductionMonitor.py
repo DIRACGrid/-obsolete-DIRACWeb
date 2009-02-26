@@ -42,6 +42,7 @@ class ProductionmonitorController(BaseController):
     RPC = getRPCClient("ProductionManagement/ProductionManager")
     result = self.__request()
     result = RPC.getProductionSummaryWeb(result,globalSort,pageNumber,numberOfJobs)
+    gLogger.info("\033[0;31m VAL: \033[0m globalSort: %s, pageNumber: %s, numberOfJobs: %s" % (globalSort,pageNumber,numberOfJobs))
     if result["OK"]:
       result = result["Value"]
       if result.has_key("TotalRecords") and  result["TotalRecords"] > 0:
@@ -89,7 +90,8 @@ class ProductionmonitorController(BaseController):
         if request.params.has_key("start") and len(request.params["start"]) > 0:
           numberOfJobs = int(request.params["limit"])
           startRecord = int(request.params["start"])
-          pageNumber = startRecord/numberOfJobs
+          pageNumber = startRecord
+#/numberOfJobs
           if pageNumber <= 0:
             pageNumber = 0
         else:
@@ -112,7 +114,7 @@ class ProductionmonitorController(BaseController):
       if request.params.has_key("sort") and len(request.params["sort"]) > 0:
         globalSort = str(request.params["sort"])
       else:
-        globalSort = []
+        globalSort = [["TransformationID","DESC"]]
     gLogger.info(" PRODUCTION REQUEST: ",req)
     return req
 ################################################################################
