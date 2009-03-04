@@ -70,6 +70,9 @@ function action(type,mode,id){
   });
 }
 function AJAXerror(response){
+  try{
+    gMainLayout.container.unmask();
+  }catch(e){}
   if(response){
     var jsonData = Ext.util.JSON.decode(response.responseText);
   }else{
@@ -93,6 +96,9 @@ function AJAXerror(response){
   }
 }
 function AJAXrequest(value,id){
+  try{
+    gMainLayout.container.mask('Please wait');
+  }catch(e){}
   var params = value + '=' + id;
   Ext.Ajax.request({
     failure:function(response){
