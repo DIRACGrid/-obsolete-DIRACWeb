@@ -141,7 +141,7 @@ function renderData(store){
   var leftBar = initSidebar();
   var mainContent = initData(store);
   renderInMainViewport([ leftBar, mainContent ]);
-  dataMngr = {'form':leftBar,'store':store}
+  dataMngr = {'form':leftBar.items.items[0],'store':store}
 }
 function setMenuItems(selections){
   if(selections){
@@ -177,6 +177,9 @@ function setMenuItems(selections){
   }
 };
 function AJAXsuccess(value,id,response){
+  try{
+    gMainLayout.container.unmask();
+  }catch(e){}
   var jsonData = Ext.util.JSON.decode(response);
   if(jsonData['success'] == 'false'){
     alert('Error: ' + jsonData['error']);
