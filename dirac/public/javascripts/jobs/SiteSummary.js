@@ -140,3 +140,8 @@ function jump(type,id){
   var form = document.getElementById('redirform');
   form.submit();
 }
+function AJAXsuccess(value,id,response){
+  try{
+    gMainLayout.container.unmask();
+  }catch(e){}
+}
