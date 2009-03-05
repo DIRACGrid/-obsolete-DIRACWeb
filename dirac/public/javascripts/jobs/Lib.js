@@ -312,6 +312,10 @@ function initStore(record,groupBy){
       reader:reader
     });
   }else{
+//    try{
+//      store.baseParams = dataMngr.form.getForm().getValues();
+//      store.baseParams.sort = dataSelect.globalSort;
+//    }catch(e){}
     var store = new Ext.data.Store({
       autoLoad:{params:{start:start,limit:limit}},
       proxy: new Ext.data.HttpProxy({
@@ -997,11 +1001,11 @@ function createMenu(dataName,menuName){
   combo.on({
     'render':function(){
       try{
-        var nameList = dataSelect.extra.dataName.split('::: ');
+        var nameList = dataSelect.extra[dataName].split('::: ');
         var newValue = '';
         for(var j = 0; j < nameList.length; j++){
           for(var i = 0; i < store.totalLength; i++){
-            if(store.data.items[i].data.status == nameList[j]){
+            if(store.data.items[i].data[dataName] == nameList[j]){
               if(newValue.length == 0){
                 newValue = i;
               }else{
