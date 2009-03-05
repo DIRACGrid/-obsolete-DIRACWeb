@@ -29,6 +29,7 @@ class ProductionmonitorController(BaseController):
   def display(self):
     pagestart = time()
     c.select = self.__getSelectionData()
+    c.select["extra"] = {"prodStatus":"Active::: Stopped::: New"}
     gLogger.info("\033[0;31mPRODUCTION INDEX REQUEST:\033[0m %s" % (time() - pagestart))
     return render("jobs/ProductionMonitor.mako")
 ################################################################################
@@ -41,6 +42,7 @@ class ProductionmonitorController(BaseController):
       return c.result
     RPC = getRPCClient("ProductionManagement/ProductionManager")
     result = self.__request()
+    gLogger.info("\033[0;31m result: \033[0m %s" % result)
     result = RPC.getProductionSummaryWeb(result,globalSort,pageNumber,numberOfJobs)
     gLogger.info("\033[0;31m VAL: \033[0m globalSort: %s, pageNumber: %s, numberOfJobs: %s" % (globalSort,pageNumber,numberOfJobs))
     if result["OK"]:
@@ -79,6 +81,8 @@ class ProductionmonitorController(BaseController):
 ################################################################################
   def __request(self):
     req = {}
+    lhcbGroup = credentials.getSelectedGroup()
+    lhcbUser = str(credentials.getUsername())
     global pageNumber
     if request.params.has_key("productionID") and len(request.params["productionID"]) > 0:
       pageNumber = 0
@@ -91,7 +95,6 @@ class ProductionmonitorController(BaseController):
           numberOfJobs = int(request.params["limit"])
           startRecord = int(request.params["start"])
           pageNumber = startRecord
-#/numberOfJobs
           if pageNumber <= 0:
             pageNumber = 0
         else:
@@ -99,23 +102,30 @@ class ProductionmonitorController(BaseController):
       else:
         numberOfJobs = 25
       if request.params.has_key("agentType") and len(request.params["agentType"]) > 0:
-        req["AgentType"] = str(request.params["agentType"])
+        if str(request.params["agentType"]) != "All":
+          req["AgentType"] = str(request.params["agentType"]).split('::: ')
       if request.params.has_key("prodStatus") and len(request.params["prodStatus"]) > 0:
-        req["Status"] = str(request.params["prodStatus"])
+        if str(request.params["prodStatus"]) != "All":
+          req["Status"] = str(request.params["prodStatus"]).split('::: ')
       if request.params.has_key("plugin") and len(request.params["plugin"]) > 0:
-        req["Plugin"] = str(request.params["plugin"])
+        if str(request.params["plugin"]) != "All":
+          req["Plugin"] = str(request.params["plugin"]).split('::: ')
       if request.params.has_key("productionType") and len(request.params["productionType"]) > 0:
-        req["Type"] = str(request.params["productionType"])
+        if str(request.params["productionType"]) != "All":
+          req["Type"] = str(request.params["productionType"]).split('::: ')
       if request.params.has_key("transformationGroup") and len(request.params["transformationGroup"]) > 0:
-        req["TransformationGroup"] = str(request.params["transformationGroup"])
+        if str(request.params["transformationGroup"]) != "All":
+          req["TransformationGroup"] = str(request.params["transformationGroup"]).split('::: ')
       if request.params.has_key("date") and len(request.params["date"]) > 0:
         if str(request.params["date"]) != "YYYY-mm-dd":
           req["CreationDate"] = str(request.params["date"])
       if request.params.has_key("sort") and len(request.params["sort"]) > 0:
         globalSort = str(request.params["sort"])
+        key,value = globalSort.split(" ")
+        globalSort = [[str(key),str(value)]]
       else:
         globalSort = [["TransformationID","DESC"]]
-    gLogger.info(" PRODUCTION REQUEST: ",req)
+    gLogger.info("REQUEST:",req)
     return req
 ################################################################################
   def __getSelectionData(self):
