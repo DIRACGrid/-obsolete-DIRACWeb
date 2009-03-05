@@ -113,6 +113,9 @@ function setMenuItems(selections){
   }
 };
 function AJAXsuccess(value,id,response){
+  try{
+    gMainLayout.container.unmask();
+  }catch(e){}
 }
 function jump(type,id){
   var url = document.location.protocol + '//' + document.location.hostname + gURLRoot + '/' + gPageDescription.selectedSetup + '/jobs/JobMonitor/display';
