@@ -211,6 +211,9 @@ function setMenuItems(selections){
   }
 };
 function AJAXsuccess(value,id,response){
+  try{
+    gMainLayout.container.unmask();
+  }catch(e){}
   var jsonData = Ext.util.JSON.decode(response);
   if(jsonData['success'] == 'false'){
     alert('Error: ' + jsonData['error']);

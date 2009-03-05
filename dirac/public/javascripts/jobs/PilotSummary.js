@@ -108,6 +108,8 @@ function initData(store){
   t.store.addListener('beforeload',function(){
     expSites.length = 0;
   });
+  var bar = t.getBottomToolbar();
+  bar.hide();
   return t
 }
 function renderData(store){
