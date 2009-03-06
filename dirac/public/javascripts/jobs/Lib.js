@@ -284,26 +284,40 @@ function initStore(record,groupBy){
     root:'result',
     totalProperty:'total'
   },record);
-  var limit = 25;
-  if(dataSelect){
-    if(dataSelect.extra){
-      if(dataSelect.extra.limit){ // Will be deleted in table function
-        limit = dataSelect.extra.limit/1;
-      }
+  try{
+    if(!dataSelect.extra){
+      dataSelect.extra = {};
     }
+  }catch(e){
+    dataSelect.extra = {};
   }
-  var start = 0;
-  if(dataSelect){
-    if(dataSelect.extra){
-      if(dataSelect.extra.start){
-        start = dataSelect.extra.start/1;
-      }
-      delete dataSelect.extra.start;
+  try{
+    if(!dataSelect.extra.limit){
+      dataSelect.extra.limit = 25;
     }
+  }catch(e){
+    dataSelect.extra.limit = 25;
+  }
+  try{
+    if(!dataSelect.extra.start){
+      dataSelect.extra.start = 0;
+    }
+  }catch(e){
+    dataSelect.extra.start = 0;
+  }
+  var auto = {};
+  try{
+    if(dataSelect.extra){
+      auto = {params:dataSelect.extra};
+    }else{
+      auto = {params:{start:0,limit:25}};
+    }
+  }catch(e){
+    auto = {params:{start:0,limit:25}};
   }
   if(groupBy){
     var store = new Ext.data.GroupingStore({
-      autoLoad:{params:{start:start,limit:limit}},
+      autoLoad:auto,
       groupField:groupBy,
       proxy: new Ext.data.HttpProxy({
         url:'submit',
@@ -312,12 +326,8 @@ function initStore(record,groupBy){
       reader:reader
     });
   }else{
-//    try{
-//      store.baseParams = dataMngr.form.getForm().getValues();
-//      store.baseParams.sort = dataSelect.globalSort;
-//    }catch(e){}
     var store = new Ext.data.Store({
-      autoLoad:{params:{start:start,limit:limit}},
+      autoLoad:auto,
       proxy: new Ext.data.HttpProxy({
         url:'submit',
         method:'POST',
@@ -326,12 +336,16 @@ function initStore(record,groupBy){
     });
   }
   store.on('loadexception',function(){
-    if(store.reader){
+    try{
       if(store.reader.jsonData){
         if(store.reader.jsonData.success == 'false'){
           alert(store.reader.jsonData.error);
         }
+      }else{
+        alert("There is an exception while loading data. Please, refresh table");
       }
+    }catch(e){
+      alert("There is an exception while loading data. Please, refresh table");
     }
   });
   store.on('beforeload',function(){
@@ -1015,7 +1029,7 @@ function createMenu(dataName,menuName){
           }
         }
         combo.setValue(newValue);
-        delete dataSelect.extra.dataName;
+        delete dataSelect.extra[dataName];
       }catch(e){}
     }
   });
@@ -1200,68 +1214,8 @@ function selectPilotStatusMenu(){
   return combo;
 };
 function selectProdMenu(){
-  var data = [['']];
-  if(dataSelect){
-    if(dataSelect.prod){
-      data = dataSelect.prod;
-    }
-  }
-  var disabled = true;
-  if(data == 'Nothing to display'){
-    data = [[0,'Nothing to display']];
-  }else{
-    for (var i = 0; i < data.length; i++) {
-      data[i] = [i ,data[i][0]];
-    }
-    disabled = false;
-  }
-  var store = new Ext.data.SimpleStore({
-    id:0,
-    fields:[{name:'id',type:'int'},'prod'],
-    data:data
-  });
-  var combo = new Ext.ux.form.LovCombo({
-    anchor:'90%',
-    disabled:disabled,
-    displayField:'prod',
-    emptyText:data[0][1],
-    fieldLabel:'JobGroup',
-    hiddenName:'prod',
-    hideOnSelect:false,
-    id:'prodMenu',
-    mode:'local',
-    resizable:true,
-    store:store,
-    triggerAction:'all',
-    typeAhead:true,
-    valueField:'id'
-  });
-  combo.on({
-    'render':function(){
-      if(dataSelect.extra){
-        if(dataSelect.extra.prod){
-          var prodList = dataSelect.extra.prod.split('::: ');
-          if(store){
-            var newValue = '';
-            for(var j = 0; j < prodList.length; j++){
-              for(var i = 0; i < store.totalLength; i++){
-                if(store.data.items[i].data.prod == prodList[j]){
-                  if(newValue.length === 0){
-                    newValue = i;
-                  }else{
-                    newValue = newValue + ':::' + i;
-                  }
-                }
-              }
-            }
-            combo.setValue(newValue);
-          }
-        }
-        delete dataSelect.extra.prod;
-      }
-    }
-  });
-  return combo;
+  var menu = createMenu('prod','JobGroup');
+  return menu
 }
 function selectProdAgentMenu(){
   var menu = createMenu('agentType','AgentType');
@@ -1676,7 +1630,6 @@ function table(tableMngr){
   if(tableMngr.viewConfig){
     var viewConfig = tableMngr.viewConfig;
   }else{
-//    var viewConfig = {forceFit:true};
     var viewConfig = ''
   }
   var tbar = new Ext.Toolbar({items:[]});
@@ -1701,7 +1654,6 @@ function table(tableMngr){
   });
   var dataTable = new Ext.grid.GridPanel({
     autoHeight:false,
-//    autoWidth:true,
     bbar:tableMngr.bbar,
     columns:columns,
     id:'JobMonitoringTable',
@@ -1720,14 +1672,17 @@ function table(tableMngr){
     var bar = dataTable.getTopToolbar();
     bar.hide();
   }
+/*
   dataTable.on({
     'render':function(){
-      if(dataSelect){
-        if(dataSelect.extra){
-          delete dataSelect.extra.limit;
-        }
-      }
+      try{
+        delete dataSelect.extra.limit;
+      }catch(e){}
+      try{
+        delete dataSelect.extra.start;
+      }catch(e){}
     }
   });
+*/
   return dataTable;
 }
