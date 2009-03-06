@@ -121,7 +121,7 @@ class RealRequestEngine:
   def __fromlocal(self,req):
     result = {}
     for x,y in zip(self.localFields[2:-3],self.serviceFields[2:-3]):
-      if x in req and str(req[x])!='':
+      if x in req:
         result[y] = req[x]
 
     SimCondDetail = {}
@@ -130,8 +130,6 @@ class RealRequestEngine:
         SimCondDetail[x]=req[x]
     if len(SimCondDetail):
       result['SimCondDetail'] = cPickle.dumps(SimCondDetail)
-    else:
-      result['SimCondDetail'] = None
 
     ProDetail = {}  
     for x in req:
@@ -140,8 +138,6 @@ class RealRequestEngine:
           ProDetail[x]=req[x]
     if len(ProDetail):
       result['ProDetail'] = cPickle.dumps(ProDetail)
-    else:
-      result['ProDetail'] = None
 
     return result
 
@@ -150,7 +146,7 @@ class RealRequestEngine:
     result = RPC.getProductionRequest(ids);
     if not result['OK']:
       return result
-    rr = result['Value']['Rows']
+    rr = result['Value']
     lr = {}
     for x in rr:
       lr[x] = self.__2local(rr[x])
@@ -192,6 +188,10 @@ class RealRequestEngine:
     RPC = getRPCClient( "ProductionManagement/ProductionRequest" )
     result = RPC.deleteProductionRequest(id)
     return result
+
+  def duplicateProductionRequest(self,id):
+    RPC = getRPCClient( "ProductionManagement/ProductionRequest" )
+    return RPC.duplicateProductionRequest(id)
 
   def reset(self):
     return S_ERROR('You must be joking...')
@@ -353,6 +353,9 @@ class FakeRequestEngine:
     session.save();
     return S_OK(id);
 
+  def duplicateProductionRequest(self,id):
+    return S_ERROR('Not implemented')
+  
   def getProductionProgressList(self,requestID):
     return S_ERROR('Not implemented')
 
@@ -410,6 +413,15 @@ class ProductionrequestController(BaseController):
     except Exception, e:
       return S_ERROR('Reqiest ID is not a number')
     return self.engine.deleteProductionRequest(id);
+
+  @jsonify
+  def duplicate(self):
+    id  = str(request.params.get('ID', ''))
+    try:
+      id = long(id);
+    except Exception, e:
+      return S_ERROR('Reqiest ID is not a number')
+    return self.engine.duplicateProductionRequest(id);
 
   @jsonify
   def reset(self):
@@ -575,7 +587,7 @@ class ProductionrequestController(BaseController):
       if not step[0]:
         ret.append(None)
       else:
-        ret.append("%s %s/%s/%s/%s" % step)
+        ret.append("%s %s/%s/%s/%s/None" % step)
       i += 5
     return ret    
 
@@ -625,6 +637,7 @@ class ProductionrequestController(BaseController):
 
   @jsonify
   def bkk_passidx(self):
+    reqType       = str(request.params.get('reqType',''))
     RPC = getRPCClient('Bookkeeping/BookkeepingManager')
     result = RPC.getPass_index();
     if not result['OK']:
@@ -635,6 +648,8 @@ class ProductionrequestController(BaseController):
       if not ret['OK']:
         return ret
       passAll,pl = ret['Value']
+      if reqType=='Simulation' and len(pl[0])>2 and pl[0][2] != 'Gauss':
+        continue
       row = { 'pID': pas[0], 'pDsc': pas[1], 'pAll': passAll }
       for i in range(0,7):
         if not pl[i][0]:
@@ -663,6 +678,7 @@ class ProductionrequestController(BaseController):
     configVersion = str(request.params.get('configVersion', ''))
     simCondID     = str(request.params.get('simCondID',''))
     passTotal     = str(request.params.get('passTotal',''))
+    reqType       = str(request.params.get('reqType',''))
 
     RPC = getRPCClient('Bookkeeping/BookkeepingManager')
     value = []
@@ -745,7 +761,10 @@ class ProductionrequestController(BaseController):
           continue
         ppdesc = self.__get_last_pass(pp[0])
         ppid = ''
+        testlist = []
         for pi in pplist:
+          if pi[1] == ppdesc:
+            testlist.append(self.__steps2pp(pi))
           if pi[1] == ppdesc and self.__steps2pp(pi) == list(pp[1:]):
             ppid = pi[0]
             break
@@ -755,6 +774,8 @@ class ProductionrequestController(BaseController):
         if not ret['OK']:
           return ret
         passAll,pl = ret['Value']
+        if reqType=='Simulation' and len(pl[0])>2 and pl[0][2] != 'Gauss':
+          continue
         if passTotal:
           path = str(pp[0])+'/'+str(ppid)
           text = passAll
@@ -865,3 +886,12 @@ class ProductionrequestController(BaseController):
     except Exception, e:
       return S_ERROR('Reqiest ID is not a number')
     return self.engine.getRequestHistory(id);
+
+  @jsonify
+  def getRequest(self):
+    id  = str(request.params.get('RequestID', ''))
+    try:
+      id = long(id);
+    except Exception, e:
+      return S_ERROR('Reqiest ID is not a number')
+    return self.engine.getProductionRequest([id]);
