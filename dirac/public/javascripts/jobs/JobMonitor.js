@@ -327,4 +327,12 @@ function afterDataLoad(){
     msg = createStateMatrix(msg);
     statPanel.store.loadData(msg);
   }
+/*
+  try{
+    delete dataSelect.extra.limit;
+  }catch(e){}
+  try{
+    delete dataSelect.extra.start;
+  }catch(e){}
+*/
 }
