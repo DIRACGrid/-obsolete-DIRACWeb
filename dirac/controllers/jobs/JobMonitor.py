@@ -4,8 +4,8 @@ from time import time, gmtime, strftime
 from dirac.lib.base import *
 from dirac.lib.diset import getRPCClient, getTransferClient
 from dirac.lib.credentials import authorizeAction
-#from dirac.lib.sessionManager import *
 from DIRAC import gLogger
+from DIRAC.Core.Utilities.List import sortList
 from DIRAC.AccountingSystem.Client.ReportsClient import ReportsClient
 from DIRAC.Core.Utilities.DictCache import DictCache
 import dirac.lib.credentials as credentials
@@ -61,14 +61,17 @@ class JobmonitorController(BaseController):
 ################################################################################
   @jsonify
   def submit(self):
+    gLogger.info(" -- SUBMIT --")
     pagestart = time()
     RPC = getRPCClient("WorkloadManagement/JobMonitoring")
     lhcbUser = str(credentials.getUsername())
     result = RPC.getOwners()
     if result["OK"]:
-      if lhcbUser not in result["Value"]:
-        c.result = {"success":"false","error":"You don't have any jobs in the DIRAC system"}
-        return c.result
+      lhcbGroup = credentials.getSelectedGroup()
+      if lhcbGroup == "lhcb" or lhcbGroup == "lhcb_user":
+        if lhcbUser not in result["Value"]:
+          c.result = {"success":"false","error":"You don't have any jobs in the DIRAC system"}
+          return c.result
     else:
       c.result = {"success":"false","error":result["Message"]}
       return c.result
@@ -121,6 +124,11 @@ class JobmonitorController(BaseController):
       for i in request.params:
         tmp[i] = str(request.params[i])
       callback["extra"] = tmp
+      if callback["extra"].has_key("prod"):
+        callback["extra"]["prod"] = callback["extra"]["prod"].zfill(8)
+        if callback["extra"]["prod"] == "00000000":
+          callback["extra"]["prod"] = ""
+      gLogger.info(" - ",callback["extra"])
     if lhcbUser == "Anonymous":
       callback["prod"] = [["Insufficient rights"]]
     else:
@@ -345,6 +353,8 @@ class JobmonitorController(BaseController):
       return self.__getSandBox(int(id))
     elif request.params.has_key("refreshSelection") and len(request.params["refreshSelection"]) > 0:
       return self.__getSelectionData()
+    elif request.params.has_key("globalStat"):
+      return self.__globalStat()
     elif request.params.has_key("getPlotSrc") and len(request.params["getPlotSrc"]) > 0:
       id = request.params["getPlotSrc"]
       if request.params.has_key("type") and len(request.params["type"]) > 0:
@@ -561,6 +571,18 @@ class JobmonitorController(BaseController):
       c.result = {"success":"false","error":result["Message"]}
     gLogger.info("getStagerReport:",id)
     return c.result
+################################################################################
+  def __globalStat(self):
+    RPC = getRPCClient("WorkloadManagement/JobMonitoring")
+    result = RPC.getJobPageSummaryWeb({},globalSort,0,1)
+    if result["OK"]:
+      result = result["Value"]
+      if result.has_key("Extras"):
+        extra = result["Extras"]
+        back = []
+        for i in sortList(extra.keys()):
+          back.append([i,extra[i]])
+        return back
 ################################################################################
   def __getSandBox(self,id):
     return "Not ready yet"
