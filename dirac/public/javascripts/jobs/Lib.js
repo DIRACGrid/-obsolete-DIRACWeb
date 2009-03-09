@@ -284,6 +284,8 @@ function initStore(record,groupBy){
     root:'result',
     totalProperty:'total'
   },record);
+  var limit = 25;
+  var start = 0;
   try{
     if(!dataSelect.extra){
       dataSelect.extra = {};
@@ -294,6 +296,8 @@ function initStore(record,groupBy){
   try{
     if(!dataSelect.extra.limit){
       dataSelect.extra.limit = 25;
+    }else{
+      dataSelect.extra.limit = dataSelect.extra.limit/1;
     }
   }catch(e){
     dataSelect.extra.limit = 25;
@@ -301,6 +305,8 @@ function initStore(record,groupBy){
   try{
     if(!dataSelect.extra.start){
       dataSelect.extra.start = 0;
+    }else{
+      dataSelect.extra.start = dataSelect.extra.start/1;
     }
   }catch(e){
     dataSelect.extra.start = 0;
@@ -355,6 +361,9 @@ function initStore(record,groupBy){
     }catch(e){}
   });
   store.on('load',function(){
+    store.baseParams = dataMngr.form.getForm().getValues();
+    store.baseParams.limit = 25;
+    store.baseParams.start = 0;
     if(store.reader){
       if(store.reader.jsonData){
         if(store.reader.jsonData.success == 'false'){
