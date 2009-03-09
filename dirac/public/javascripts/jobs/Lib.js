@@ -361,9 +361,9 @@ function initStore(record,groupBy){
     }catch(e){}
   });
   store.on('load',function(){
-    store.baseParams = dataMngr.form.getForm().getValues();
-    store.baseParams.limit = 25;
-    store.baseParams.start = 0;
+//    store.baseParams = dataMngr.form.getForm().getValues();
+//    store.baseParams.limit = 25;
+//    store.baseParams.start = 0;
     if(store.reader){
       if(store.reader.jsonData){
         if(store.reader.jsonData.success == 'false'){
