@@ -582,13 +582,13 @@ class ProductionrequestController(BaseController):
     ret = []
     i = 2
     stlen = len(steps)
-    while i+5 <= stlen:
-      step = steps[i:i+5]
+    while i+6 <= stlen:
+      step = steps[i:i+6]
       if not step[0]:
         ret.append(None)
       else:
-        ret.append("%s %s/%s/%s/%s/None" % step)
-      i += 5
+        ret.append("%s %s/%s/%s/%s/%s" % step)
+      i += 6
     return ret    
 
   def __step2label(self,step):
@@ -610,6 +610,8 @@ class ProductionrequestController(BaseController):
       s += '<br>&nbsp;&nbsp;DDDb: %s' % step[3]
     if step[4]:
       s += '<br>&nbsp;&nbsp;condDb: %s' % step[4]
+    if step[5]:
+      s += '<br>&nbsp;&nbsp;extraPackages: %s' % step[5]
     return s
 
   def __idx_steps_convert(self,steps):
@@ -618,15 +620,15 @@ class ProductionrequestController(BaseController):
     all = ''
     i = 2
     stlen = len(steps)
-    while i+5 <= stlen:
-      x = steps[i:i+5]
+    while i+6 <= stlen:
+      x = steps[i:i+6]
       if not x[0]:
         break
       label = self.__step2label(x)
       html  = self.__step2html(x)
       ret.append( [label,html] + list(x) )
       all += ",%s" % label
-      i += 5
+      i += 6
     all = all[1:] # remove first ','
     for x in steps[i:]:
       if x:
@@ -661,6 +663,7 @@ class ProductionrequestController(BaseController):
         row['p%dOpt' % (i+1)] = pl[i][4]
         row['p%dDDDb' % (i+1)]= pl[i][5]
         row['p%dCDb' % (i+1)] = pl[i][6]
+        row['p%dEP'  % (i+1)] = pl[i][7]
       rows.append(row)
 #    !!! Sorting and selection must be moved to MySQL/Service side
     return SelectAndSort(rows,'pDsc')
@@ -805,6 +808,7 @@ class ProductionrequestController(BaseController):
           row['p%dOpt' % (i+1)] = pl[i][4]
           row['p%dDDDb' % (i+1)]= pl[i][5]
           row['p%dCDb' % (i+1)] = pl[i][6]
+          row['p%dEP'  % (i+1)] = pl[i][7]
         value.append(row)
       return {'OK': True, 'Value': value}
 

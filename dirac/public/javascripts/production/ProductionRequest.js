@@ -527,7 +527,7 @@ PR.BkAllPassesStore = function(config) {
     fields = fields.concat([
       'p'+i+'Lbl','p'+i+'Html','p'+i+'App',
       'p'+i+'Ver','p'+i+'Opt','p'+i+'DDDb',
-      'p'+i+'CDb']);
+      'p'+i+'CDb','p'+i+'EP']);
   var opts = ''
   if(config.reqType)
     opts='?reqType='+config.reqType;
@@ -734,7 +734,9 @@ PR.RequestEditor = Ext.extend(Ext.FormPanel, {
 	  }
 	]},
 	{xtype: 'textfield', fieldLabel: 'Option files', 
-	 name: 'p'+no+'Opt', anchor: '100%'}
+	 name: 'p'+no+'Opt', anchor: '100%'},
+	{xtype: 'textfield', fieldLabel: 'Extra packages', 
+	 name: 'p'+no+'EP', anchor: '100%'}
       ]},
       { layout: 'form', autoHeight: true, labelWidth: 50, columnWidth: 1.,
 	bodyStyle: 'padding-left: 5px;',
@@ -1064,6 +1066,7 @@ PR.RequestEditor = Ext.extend(Ext.FormPanel, {
       var pOpt  = this.getOpt(i).getValue();
       var pDDDb = this.getDDDb(i).getValue();
       var pCDb  = this.getCDb(i).getValue();
+      var pEP   = this.getEP(i).getValue();
       var pLbl  = pApp+'-'+pVer;
       if(pAll)
 	pAll = pAll+',';
@@ -1075,6 +1078,8 @@ PR.RequestEditor = Ext.extend(Ext.FormPanel, {
 	pHtml = pHtml+'<br>&nbsp;&nbsp;DDDb: '+pDDDb;
       if(pCDb)
 	pHtml = pHtml+'<br>&nbsp;&nbsp;condDb: '+pCDb;
+      if(pEP)
+	pHtml = pHtml+'<br>&nbsp;&nbsp;extraPackages: '+pEP;
       pHtml = pHtml+'<br>';
       this.getHtml(i).setValue(pHtml);
     }
@@ -1424,6 +1429,10 @@ PR.RequestEditor = Ext.extend(Ext.FormPanel, {
     return this.stepPanel[i-1].find('name', 'p'+i+'Opt')[0];
   },
 
+  getEP: function(i) {
+    return this.stepPanel[i-1].find('name', 'p'+i+'EP')[0];
+  },
+
   getHtml: function(i) {
     return this.stepPanel[i-1].find('name', 'p'+i+'Html')[0];
   },
@@ -1472,11 +1481,13 @@ PR.RequestEditor = Ext.extend(Ext.FormPanel, {
       this.getOpt(i+1).setValue(this.pData['p'+(i+1)+'Opt']);
       this.getDDDb(i+1).setValue(this.pData['p'+(i+1)+'DDDb']);
       this.getCDb(i+1).setValue(this.pData['p'+(i+1)+'CDb']);
+      this.getEP(i+1).setValue(this.pData['p'+(i+1)+'EP']);
       PR.setReadOnly(verCombo,id || force);
       PR.setReadOnly(appCombo,id || force);
       PR.setReadOnly(this.getOpt(i+1),id || force);
       PR.setReadOnly(this.getDDDb(i+1),id || force);
       PR.setReadOnly(this.getCDb(i+1),id || force);
+      PR.setReadOnly(this.getEP(i+1),id || force);
     }
     for(j=i;j<7;++j){
       if(j==0 && force){
@@ -1503,8 +1514,8 @@ PR.RequestEditor = Ext.extend(Ext.FormPanel, {
       else
 	pVer = '';
       this.onAppSet(appCombo,pVer);
-      //var verCombo = this.getVerCombo(i+1);
-      //verCombo.setValue(pVer);      
+      var verCombo = this.getVerCombo(1);
+      verCombo.setValue(pVer);      
       PR.setReadOnly(appCombo,true);
     }
 
@@ -2121,6 +2132,7 @@ PR.RequestListStore = function(config) {
       {name:'p'+i+'Opt'},
       {name:'p'+i+'DDDb'},
       {name:'p'+i+'CDb'},
+      {name:'p'+i+'EP'},
       {name:'p'+i+'Html'}
     ]);
   var record = Ext.data.Record.create(fields);
