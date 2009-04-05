@@ -5,7 +5,7 @@ var tableMngr = ''; // Required to handle configuration data for table. Object.
 function initSiteSummary(reponseSelect){
   dataSelect = reponseSelect;
   var record = initRecord();
-  var store = initStore(record);
+  var store = initStore(record,'FullCountry');
   Ext.onReady(function(){
     renderData(store);
   });
@@ -13,8 +13,8 @@ function initSiteSummary(reponseSelect){
 // function describing data structure, should be individual per page
 function initRecord(){
   var record = new Ext.data.Record.create([
+    {name:'GridType'},
     {name:'Site'},
-    {name:'Grid'},
     {name:'Country'},
     {name:'MaskStatus'},
     {name:'Received',type:'int'},
@@ -28,69 +28,91 @@ function initRecord(){
     {name:'Completed',type:'int'},
     {name:'Failed',type:'int'},
     {name:'Efficiency'},
-    {name:'Status'}
+    {name:'Status'},
+    {name:'Tier'},
+    {name:'FullCountry'},
+    {name:'MaskStatusIcon',mapping:'MaskStatus'},
+    {name:'StatusIcon',mapping:'Status'}
   ]);
   return record
 }
 // Initialisation of selection sidebar, all changes with selection items should goes here
 function initSidebar(){
-  var siteSelect = selectSiteMenu(); // Initializing Site Menu
-  var ownerSelect = selectOwnerMenu(); // Initializing Owner Menu
-  var appSelect = selectAppMenu(); // Initializing Application status Menu
-  var statSelect = selectStatusMenu(); // Initializing JobStatus Menu
-  var prodSelect = selectProdMenu(); // Initializing JobGroup Menu
+//  var siteSelect = selectSiteSummaryMenu(); // Initializing Site Menu
+  var selectStatusSiteSummary = selectStatusSiteSummaryMenu(); // Initializing Owner Menu
+  var selectGridType = selectGridTypeMenu(); // Initializing Application status Menu
+  var selectMaskStatus = selectMaskStatusMenu(); // Initializing JobStatus Menu
+  var selectCountry = selectCountryMenu(); // Initializing JobGroup Menu
   var dateSelect = dateSelectMenu(); // Initializing date dialog
   var id = selectID(); // Initialize field for JobIDs
   var select = selectPanel(); // Initializing container for selection objects
   // Insert object to container BEFORE buttons:
-  select.insert(0,siteSelect);
-  select.insert(1,statSelect);
-  select.insert(2,appSelect);
-  select.insert(3,ownerSelect);
-  select.insert(4,prodSelect);
-  select.insert(5,dateSelect);
-  select.insert(6,id);
-//  select.collapsed = true;
-  select.hide();
-  return select
+//  select.insert(0,siteSelect);
+  select.insert(1,selectStatusSiteSummary);
+  select.insert(2,selectGridType);
+  select.insert(3,selectMaskStatus);
+  select.insert(4,selectCountry);
+//  select.insert(5,id);
+//  var sortGlobal = sortGlobalPanel(); // Initializing the global sort panel
+//  var stat = statPanel('Current Statistics','current','statGrid');
+//  var glStat = statPanel('Global Statistics','global','glStatGrid');
+  var bar = sideBar();
+  bar.insert(0,select);
+//  bar.insert(1,sortGlobal);
+//  bar.insert(2,stat);
+//  bar.insert(3,glStat);
+  bar.setTitle('SiteSummary');
+  return bar
 }
 function initData(store){
   var columns = [
-    {header:'Name',sortable:true,dataIndex:'Grid',align:'left'},
-    {header:'Type',sortable:true,dataIndex:'Site',align:'left'},
-    {header:'Country',sortable:true,dataIndex:'Country',align:'left'},
+    {header:'Name',sortable:true,dataIndex:'Site',align:'left'},
+    {header:'Tier',sortable:true,dataIndex:'Tier',align:'left'},
+    {header:'GridType',sortable:true,dataIndex:'GridType',align:'left'},
+    {header:'',width:26,sortable:false,dataIndex:'Country',renderer:flag,hideable:false,fixed:true,menuDisabled:true},
+    {header:'Country',sortable:true,dataIndex:'FullCountry',align:'left'},
+    {header:'',width:26,sortable:false,dataIndex:'MaskStatusIcon',renderer:status,hideable:false,fixed:true,menuDisabled:true},
     {header:'MaskStatus',sortable:true,dataIndex:'MaskStatus',align:'left'},
-    {header:'Waiting',sortable:true,dataIndex:'Waiting',align:'left'},
-    {header:'Running',sortable:true,dataIndex:'Running',align:'left'},
-    {header:'Done',sortable:true,dataIndex:'Done',align:'left'},
-    {header:'Failed',sortable:true,dataIndex:'Failed',align:'left'},
-    {header:'Stalled',sortable:true,dataIndex:'Stalled',align:'left'},
-    {header:'Received',sortable:true,dataIndex:'Received',align:'left'},
-    {header:'Checking',sortable:true,dataIndex:'Checking',align:'left'},
+    {header:'Efficiency (%)',sortable:true,dataIndex:'Efficiency',align:'left'},
+    {header:'',width:26,sortable:false,dataIndex:'StatusIcon',renderer:status,hideable:false,fixed:true,menuDisabled:true},
+    {header:'Status',sortable:true,dataIndex:'Status',align:'left'},
+    {header:'Received',sortable:true,dataIndex:'Received',align:'left',hidden:true},
+    {header:'Checking',sortable:true,dataIndex:'Checking',align:'left',hidden:true},
     {header:'Staging',sortable:true,dataIndex:'Staging',align:'left'},
-    {header:'Matched',sortable:true,dataIndex:'Matched',align:'left'},
+    {header:'Waiting',sortable:true,dataIndex:'Waiting',align:'left',hidden:true},
+    {header:'Matched',sortable:true,dataIndex:'Matched',align:'left',hidden:true},
+    {header:'Running',sortable:true,dataIndex:'Running',align:'left'},
     {header:'Completed',sortable:true,dataIndex:'Completed',align:'left'},
-    {header:'Efficiency',sortable:true,dataIndex:'Efficiency',align:'left'},
-    {header:'Status',sortable:true,dataIndex:'Status',align:'left'}
+    {header:'Done',sortable:true,dataIndex:'Done',align:'left'},
+    {header:'Stalled',sortable:true,dataIndex:'Stalled',align:'left'},
+    {header:'Failed',sortable:true,dataIndex:'Failed',align:'left'}
   ];
-  var title = 'Site Summary';
-  dirac.tbar = ['->',
-    {handler:function(){store.load()},text:'Refresh it',tooltip:'Click to refresh the data'}
-  ];
-//  tableMngr = {'store':store,'columns':columns,'title':title,'tbar':dirac.tbar};
-//  tableMngr = {'store':store,'columns':columns,'title':title,'tbar':''};
-  store.setDefaultSort('Grid','ASC'); // Default sorting
-  tableMngr = {'store':store,'columns':columns,'title':title,'tbar':dirac.tbar};
+  dirac.tbar = ['->',{
+    cls:"x-btn-text-icon",
+    handler:function(){store.load()},
+    icon:gURLRoot+'/images/iface/refresh.gif',
+    text:'Refresh',
+    tooltip:'Click to refresh the data in the table'
+  }];
+  dirac.tbar = '';
+  var view = new Ext.grid.GroupingView({
+    groupTextTpl: '<tpl if="dataMngr.store.groupField==\'FullCountry\'">{group}:</tpl><tpl if="dataMngr.store.groupField!=\'FullCountry\'">{text},</tpl> {[values.rs.length]} {[values.rs.length > 1 ? "Sites" : "Site"]}',
+//    groupTextTpl: '{text}, {[values.rs.length]} {[values.rs.length > 1 ? "Sites" : "Site"]}',
+  })
+  store.setDefaultSort('FullCountry','ASC'); // Default sorting
+  tableMngr = {'store':store,'columns':columns,'tbar':dirac.tbar,'view':view};
   var t = table(tableMngr);
   t.addListener('cellclick',function(table,rowIndex,columnIndex){
       showMenu('main',table,rowIndex,columnIndex);
   });
+  var bar = t.getBottomToolbar();
+  bar.hide();
   t.footer = false;
   return t
 }
 function setMenuItems(selections){
   if(selections){
-    var id = selections.name;
+    var id = selections.Site;
   }else{
     return
   }
@@ -132,7 +154,6 @@ function afterDataLoad(store){
 function jump(type,id){
   var url = document.location.protocol + '//' + document.location.hostname + gURLRoot + '/' + gPageDescription.selectedSetup
   url = url + '/' + gPageDescription.userData.group + '/jobs/JobMonitor/display';
-//  var url = document.location.protocol + '//' + document.location.hostname + gURLRoot + '/' + gPageDescription.selectedSetup + '/jobs/JobMonitor/display';
   var post_req = '<form id="redirform" action="' + url + '" method="POST" >';
   post_req = post_req + '<input type="hidden" name="' + type + '" value="' + id + '">';
   post_req = post_req + '</form>';
