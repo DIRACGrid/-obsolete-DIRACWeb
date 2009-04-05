@@ -361,9 +361,6 @@ function initStore(record,groupBy){
     }catch(e){}
   });
   store.on('load',function(){
-//    store.baseParams = dataMngr.form.getForm().getValues();
-//    store.baseParams.limit = 25;
-//    store.baseParams.start = 0;
     if(store.reader){
       if(store.reader.jsonData){
         if(store.reader.jsonData.success == 'false'){
@@ -390,6 +387,9 @@ function initStore(record,groupBy){
     afterDataLoad();
   });
   return store;
+}
+function flag(code){
+  return '<img src="'+gURLRoot+'/images/flags/' + code + '.gif">';
 }
 function hideControls(caller){
   if(caller){
@@ -419,7 +419,7 @@ function hideControls(caller){
 function itemsNumber(){
   var store = new Ext.data.SimpleStore({
     fields:['number'],
-    data:[[25],[50],[100],[200],[500],[1000]]
+    data:[[25],[50],[100],[200],[500],[1000],[5000]]
   });
   var value = 25;
   if(dataSelect){
@@ -986,7 +986,7 @@ function selectRequestID(){
   });
   return number;
 }
-function createMenu(dataName,menuName){
+function createMenu(dataName,menuName,altValue){
   var data = [['']];
   try{
     data = dataSelect[dataName];
@@ -995,8 +995,19 @@ function createMenu(dataName,menuName){
   if(data == 'Nothing to display'){
     data = [[0,'Nothing to display']];
   }else{
-    for (var i = 0; i < data.length; i++) {
-      data[i] = [i ,data[i][0]];
+    try{
+      var length = data.length;
+    }catch(e){
+      data = [[0,'Error, can not get data.length']];
+    }
+    if(altValue){
+      for (var i = 0; i < length; i++) {
+        data[i] = [i ,data[i][0],data[i][1]];
+      }
+    }else{
+      for (var i = 0; i < length; i++) {
+        data[i] = [i ,data[i][0]];
+      }
     }
     disabled = false;
   }
@@ -1244,6 +1255,26 @@ function selectTransGroupMenu(){
 }
 function selectPluginMenu(){
   var menu = createMenu('plugin','Plugin');
+  return menu
+}
+function selectCountryMenu(){
+  var menu = createMenu('country','Country',true);
+  return menu
+}
+function selectMaskStatusMenu(){
+  var menu = createMenu('maskstatus','MaskStatus');
+  return menu
+}
+function selectGridTypeMenu(){
+  var menu = createMenu('gridtype','GridType');
+  return menu
+}
+function selectStatusSiteSummaryMenu(){
+  var menu = createMenu('status','Status');
+  return menu
+}
+function selectSiteSummaryMenu(){
+  var menu = createMenu('site','Site');
   return menu
 }
 function selectSiteMenu(){
@@ -1533,9 +1564,9 @@ function setTitle(value,id){
   return title;
 }
 function status(value){
-  if((value == 'Done')||(value == 'Completed')||(value == 'Good')){
+  if((value == 'Done')||(value == 'Completed')||(value == 'Good')||(value == 'Active')){
     return '<img src="'+gURLRoot+'/images/monitoring/done.gif">';
-  }else if((value == 'Failed')||(value == 'Bad')){
+  }else if((value == 'Failed')||(value == 'Bad')||(value == 'Banned')){
     return '<img src="'+gURLRoot+'/images/monitoring/failed.gif">';
   }else if((value == 'Waiting')||(value == 'Stopped')||(value == 'Poor')){
     return '<img src="'+gURLRoot+'/images/monitoring/waiting.gif">';
@@ -1545,6 +1576,8 @@ function status(value){
     return '<img src="'+gURLRoot+'/images/monitoring/matched.gif">';
   }else if((value == 'Running')||(value == 'Active')||(value == 'Fair')){
     return '<img src="'+gURLRoot+'/images/monitoring/running.gif">';
+  }else if(value == 'NoMask'){
+    return '<img src="'+gURLRoot+'/images/monitoring/unknown.gif">';
   }else{
     return '<img src="'+gURLRoot+'/images/monitoring/unknown.gif">';
   }
@@ -1636,6 +1669,11 @@ function table(tableMngr){
   }else{
     var title = '';
   }
+  if(tableMngr.view){
+    var view = tableMngr.view;
+  }else{
+    var view = ''
+  }
   if(tableMngr.viewConfig){
     var viewConfig = tableMngr.viewConfig;
   }else{
@@ -1675,23 +1713,12 @@ function table(tableMngr){
     stripeRows:true,
     title:title,
     tbar:tbar,
+    view:view,
     viewConfig:viewConfig
   });
   if(tableMngr.tbar == ''){
     var bar = dataTable.getTopToolbar();
     bar.hide();
   }
-/*
-  dataTable.on({
-    'render':function(){
-      try{
-        delete dataSelect.extra.limit;
-      }catch(e){}
-      try{
-        delete dataSelect.extra.start;
-      }catch(e){}
-    }
-  });
-*/
   return dataTable;
 }
