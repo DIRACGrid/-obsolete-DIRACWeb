@@ -123,11 +123,10 @@ class SitesummaryController(BaseController):
         for i in result["Country"]:
           if countryCode.has_key(i):
             j = countryCode[i]
-          else:
-            j = "Unknown"
-          country.append([str(j),str(i)])
+          country.append([str(j)])
       else:
         country = [["Nothing to display"]]
+      country.sort()
       callback["country"] = country
     else:
       callback["status"] = [["Error during RPC call"]]
