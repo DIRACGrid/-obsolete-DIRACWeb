@@ -1,5 +1,5 @@
-# $Header: /tmp/libdirac/tmp.stZoy15380/dirac/DIRAC3/DIRAC/Interfaces/Web/dirac/controllers/systems/configuration.py,v 1.18 2008/10/28 14:35:20 acasajus Exp $
-__RCSID__ = "$Id: configuration.py,v 1.18 2008/10/28 14:35:20 acasajus Exp $"
+# $Header: /tmp/libdirac/tmp.stZoy15380/dirac/DIRAC3/DIRAC/Interfaces/Web/dirac/controllers/systems/configuration.py,v 1.19 2009/04/07 14:27:25 acasajus Exp $
+__RCSID__ = "$Id: configuration.py,v 1.19 2009/04/07 14:27:25 acasajus Exp $"
 
 import types
 import logging
@@ -190,6 +190,9 @@ class ConfigurationController(BaseController):
     return render( "/systems/configuration/uploadUserConfig.mako" )
 
   def doUploadConfig( self ):
+    if not 'cfgFile' in request.POST:
+      c.error = "Oops! Missing file!"
+      return render( "/error.mako" )
     file = request.POST[ 'cfgFile' ]
     if len( file.value ) > self.maxFileSize:
       c.error = "File size %s is too big" % len( file.value )
