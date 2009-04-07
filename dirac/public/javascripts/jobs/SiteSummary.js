@@ -66,7 +66,7 @@ function initSidebar(){
 }
 function initData(store){
   var columns = [
-    {header:'Name',sortable:true,dataIndex:'Site',align:'left'},
+    {header:'Name',sortable:true,dataIndex:'Site',align:'left',hideable:false},
     {header:'Tier',sortable:true,dataIndex:'Tier',align:'left'},
     {header:'GridType',sortable:true,dataIndex:'GridType',align:'left'},
     {header:'',width:26,sortable:false,dataIndex:'Country',renderer:flag,hideable:false,fixed:true,menuDisabled:true},
@@ -97,7 +97,6 @@ function initData(store){
   dirac.tbar = '';
   var view = new Ext.grid.GroupingView({
     groupTextTpl: '<tpl if="dataMngr.store.groupField==\'FullCountry\'">{group}:</tpl><tpl if="dataMngr.store.groupField!=\'FullCountry\'">{text},</tpl> {[values.rs.length]} {[values.rs.length > 1 ? "Sites" : "Site"]}',
-//    groupTextTpl: '{text}, {[values.rs.length]} {[values.rs.length > 1 ? "Sites" : "Site"]}',
   })
   store.setDefaultSort('FullCountry','ASC'); // Default sorting
   tableMngr = {'store':store,'columns':columns,'tbar':dirac.tbar,'view':view};
