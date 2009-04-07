@@ -1,11 +1,10 @@
 import logging
 import os.path
 from pylons import request
-#from paste.deploy import CONFIG
 
 from dirac.lib.base import *
 from dirac.lib.webconfig import gWebConfig
-from pylons.decorators.cache import beaker_cache
+from dirac.lib.sanitizeInputs import sanitizeAllWebInputs
 
 from DIRAC import gLogger
 from DIRAC.Core.DISET.AuthManager import AuthManager
@@ -16,6 +15,9 @@ gAuthManager = AuthManager( "%s/Authorization" % gWebConfig.getWebSection() )
 log = logging.getLogger(__name__)
 
 def checkURL( environ, routesDict ):
+  #Before all we try to sanitize inputs
+  sanitizeAllWebInputs( environ )
+  #Time for Auth!
   routesDict[ 'dsetup' ] = __checkSetup( routesDict[ 'dsetup' ] )
   userDN, userName = __checkDN( environ )
   userGroup, availableGroups = __checkGroup( userName, routesDict[ 'dgroup' ] )
