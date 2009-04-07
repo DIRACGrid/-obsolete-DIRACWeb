@@ -12,18 +12,18 @@ pageTitle = webBase.htmlPageTitle()
  <head>
   <title>DIRAC: ${ pageTitle }</title>
   <link rel="SHORTCUT ICON" href='${ h.url_for( "/images/favicon.ico" )}'>
-  ${ h.stylesheet_link_tag( "/yui/reset-fonts-grids/reset-fonts-grids.css" ) }
-  ${ h.stylesheet_link_tag( "dirac.css" ) }
+  ${ h.stylesheet_link( "/yui/reset-fonts-grids/reset-fonts-grids.css" ) }
+  ${ h.stylesheet_link( "/stylesheets/dirac.css" ) }
   <!-- Font size -->
-  ${ h.stylesheet_link_tag( "/yui/fonts/fonts-min.css" ) }
+  ${ h.stylesheet_link( "/yui/fonts/fonts-min.css" ) }
   <!-- Yui skins -->
-  ${ h.stylesheet_link_tag( "/yui/menu/assets/skins/sam/menu.css" ) }
+  ${ h.stylesheet_link( "/yui/menu/assets/skins/sam/menu.css" ) }
   <!-- js -->
-  ${ h.javascript_include_tag( "/yui/yahoo-dom-event/yahoo-dom-event.js" ) }
-  ${ h.javascript_include_tag( "/yui/container/container_core-min.js" ) }
-  ${ h.javascript_include_tag( "/yui/yahoo/yahoo-min.js" ) }
-  ${ h.javascript_include_tag( "/yui/event/event-min.js" ) }
-  ${ h.javascript_include_tag( "/yui/menu/menu.js" ) }
+  ${ h.javascript_link( "/yui/yahoo-dom-event/yahoo-dom-event.js" ) }
+  ${ h.javascript_link( "/yui/container/container_core-min.js" ) }
+  ${ h.javascript_link( "/yui/yahoo/yahoo-min.js" ) }
+  ${ h.javascript_link( "/yui/event/event-min.js" ) }
+  ${ h.javascript_link( "/yui/menu/menu.js" ) }
   <!-- init YUI -->
   <script>
 <%

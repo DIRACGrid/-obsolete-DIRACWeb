@@ -3,10 +3,10 @@
 <%inherit file="/diracPage.mako" />
 
 <%def name="head_tags()">
-${ h.javascript_include_tag( "/javascripts/dencodelight.js" ) }
-${ h.javascript_include_tag( "/javascripts/systems/accounting/accountingBase.js" ) }
-${ h.javascript_include_tag( "/javascripts/systems/accounting/plotPageBase.js" ) }
-${ h.javascript_include_tag( "/javascripts/systems/accounting/SRMSpaceTokenDeploymentPlotPage.js" ) }
+${ h.javascript_link( "/javascripts/dencodelight.js" ) }
+${ h.javascript_link( "/javascripts/systems/accounting/accountingBase.js" ) }
+${ h.javascript_link( "/javascripts/systems/accounting/plotPageBase.js" ) }
+${ h.javascript_link( "/javascripts/systems/accounting/SRMSpaceTokenDeploymentPlotPage.js" ) }
 </%def>
 
 <%def name="body()">

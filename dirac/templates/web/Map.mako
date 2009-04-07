@@ -3,13 +3,13 @@
 <%inherit file="/diracPage.mako" />
 
 <%def name="head_tags()">
-${ h.javascript_include_tag( "/OpenLayers-2.6/OpenLayers.js" ) }
-${ h.javascript_include_tag( "/javascripts/web/Lib.js" ) }
-${ h.javascript_include_tag( "/javascripts/web/Map.js" ) }
-${ h.javascript_include_tag( "/javascripts/web/mymap.js" ) }
-${ h.stylesheet_link_tag( "/stylesheets/lovCombo.css" ) }
-${ h.stylesheet_link_tag( "/stylesheets/infostyles.css" ) }
-${ h.stylesheet_link_tag( "/stylesheets/main.css" ) }
+${ h.javascript_link( "/OpenLayers-2.6/OpenLayers.js" ) }
+${ h.javascript_link( "/javascripts/web/Lib.js" ) }
+${ h.javascript_link( "/javascripts/web/Map.js" ) }
+${ h.javascript_link( "/javascripts/web/mymap.js" ) }
+${ h.stylesheet_link( "/stylesheets/lovCombo.css" ) }
+${ h.stylesheet_link( "/stylesheets/infostyles.css" ) }
+${ h.stylesheet_link( "/stylesheets/main.css" ) }
 </%def>
 
 <%def name="body()">

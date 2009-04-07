@@ -6,14 +6,14 @@ numFields = 6
 <%inherit file="/base.mako" />
 
 <%def name="head_tags()">
-${ h.stylesheet_link_tag( "/yui/logger/assets/skins/sam/logger.css" ) }
-${ h.stylesheet_link_tag( "/yui/datatable/assets/skins/sam/datatable.css" ) }
-${ h.javascript_include_tag( "/yui/logger/logger-min.js" ) }
-${ h.javascript_include_tag( "/yui/element/element-beta-min.js" ) }
-${ h.javascript_include_tag( "/yui/datasource/datasource-beta-min.js" ) }
-${ h.javascript_include_tag( "/yui/dragdrop/dragdrop-min.js" ) }
-${ h.javascript_include_tag( "/yui/datatable/datatable-beta-min.js" ) }
-${ h.javascript_include_tag( "json2.js" ) }
+${ h.stylesheet_link( "/yui/logger/assets/skins/sam/logger.css" ) }
+${ h.stylesheet_link( "/yui/datatable/assets/skins/sam/datatable.css" ) }
+${ h.javascript_link( "/yui/logger/logger-min.js" ) }
+${ h.javascript_link( "/yui/element/element-beta-min.js" ) }
+${ h.javascript_link( "/yui/datasource/datasource-beta-min.js" ) }
+${ h.javascript_link( "/yui/dragdrop/dragdrop-min.js" ) }
+${ h.javascript_link( "/yui/datatable/datatable-beta-min.js" ) }
+${ h.javascript_link( "json2.js" ) }
 <style>
  div#loading
  {

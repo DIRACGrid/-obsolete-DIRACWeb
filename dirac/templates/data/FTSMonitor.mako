@@ -3,19 +3,19 @@
 
 <%def name="head_tags()">
 <!-- Dependencies for data table -->
-${ h.javascript_include_tag( "/yui/element/element-beta-min.js" ) }
-${ h.javascript_include_tag( "/yui/datasource/datasource-beta-min.js" ) }
-${ h.javascript_include_tag( "/yui/dragdrop/dragdrop-min.js" ) }
-${ h.javascript_include_tag( "/yui/datatable/datatable-beta-min.js" ) }
-${ h.javascript_include_tag( "/yui/container/container-min.js" ) }
-${ h.javascript_include_tag( "/yui/connection/connection-min.js" ) }
-${ h.javascript_include_tag( "/yui/calendar/calendar-min.js" ) }
-${ h.javascript_include_tag( "/yui/button/button-min.js" ) }
-${ h.javascript_include_tag( "/javascripts/data/FTSMonitor.js" ) }
-${ h.javascript_include_tag( "json2.js" ) }
-${ h.stylesheet_link_tag( "/yui/datatable/assets/skins/sam/datatable.css" ) }
-${ h.stylesheet_link_tag( "/yui/container/assets/container.css" ) }
-${ h.stylesheet_link_tag( "/yui/calendar/assets/skins/sam/calendar.css" ) }
+${ h.javascript_link( "/yui/element/element-beta-min.js" ) }
+${ h.javascript_link( "/yui/datasource/datasource-beta-min.js" ) }
+${ h.javascript_link( "/yui/dragdrop/dragdrop-min.js" ) }
+${ h.javascript_link( "/yui/datatable/datatable-beta-min.js" ) }
+${ h.javascript_link( "/yui/container/container-min.js" ) }
+${ h.javascript_link( "/yui/connection/connection-min.js" ) }
+${ h.javascript_link( "/yui/calendar/calendar-min.js" ) }
+${ h.javascript_link( "/yui/button/button-min.js" ) }
+${ h.javascript_link( "/javascripts/data/FTSMonitor.js" ) }
+${ h.javascript_link( "json2.js" ) }
+${ h.stylesheet_link( "/yui/datatable/assets/skins/sam/datatable.css" ) }
+${ h.stylesheet_link( "/yui/container/assets/container.css" ) }
+${ h.stylesheet_link( "/yui/calendar/assets/skins/sam/calendar.css" ) }
 
 <style type="text/css">
 .env {

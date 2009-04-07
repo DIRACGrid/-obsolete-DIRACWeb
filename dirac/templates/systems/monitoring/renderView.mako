@@ -6,10 +6,10 @@ import simplejson
 <%namespace file="/systems/monitoring/calendarDisplay.mako" name="calDisplay"/>
 
 <%def name="head_tags()">
-${ h.javascript_include_tag( "/yui/logger/logger-min.js" ) }
-${ h.javascript_include_tag( "/yui/connection/connection-min.js" ) }
-${ h.javascript_include_tag( "json2.js" ) }
-${ h.javascript_include_tag( "systems/monitoring/plotView.js" ) }
+${ h.javascript_link( "/yui/logger/logger-min.js" ) }
+${ h.javascript_link( "/yui/connection/connection-min.js" ) }
+${ h.javascript_link( "json2.js" ) }
+${ h.javascript_link( "systems/monitoring/plotView.js" ) }
 ${calDisplay.head_tags()}
 <script>
  YAHOO.util.Event.onContentReady( 'monitoringPlotsForm', initMonitoringViews, '${h.url_for( controller='systems/monitoring' )}' );

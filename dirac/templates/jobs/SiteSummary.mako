@@ -3,10 +3,10 @@
 <%inherit file="/diracPage.mako" />
 
 <%def name="head_tags()">
-${ h.javascript_include_tag( "/javascripts/lovCombo.js" ) }
-${ h.javascript_include_tag( "/javascripts/jobs/Lib.js" ) }
-${ h.stylesheet_link_tag( "/stylesheets/lovCombo.css" ) }
-${ h.javascript_include_tag( "/javascripts/jobs/SiteSummary.js" ) }
+${ h.javascript_link( "/javascripts/lovCombo.js" ) }
+${ h.javascript_link( "/javascripts/jobs/Lib.js" ) }
+${ h.stylesheet_link( "/stylesheets/lovCombo.css" ) }
+${ h.javascript_link( "/javascripts/jobs/SiteSummary.js" ) }
 </%def>
 
 <%def name="body()">

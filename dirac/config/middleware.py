@@ -1,4 +1,7 @@
 """Pylons middleware initialization"""
+from beaker.middleware import CacheMiddleware, SessionMiddleware
+from routes.middleware import RoutesMiddleware
+
 from paste.cascade import Cascade
 from paste.registry import RegistryManager
 from paste.urlparser import StaticURLParser
@@ -37,11 +40,13 @@ def make_app(global_conf, full_stack=True, **app_conf):
     app = PylonsApp()
 
     # CUSTOM MIDDLEWARE HERE (filtered by error handling middlewares)
+    app = RoutesMiddleware(app, config['routes.map'])
+    app = SessionMiddleware(app, config)
+    app = CacheMiddleware(app, config)
 
     if asbool(full_stack):
         # Handle Python exceptions
-        app = ErrorHandler(app, global_conf, error_template=error_template,
-                           **config['pylons.errorware'])
+        app = ErrorHandler(app, global_conf, **config['pylons.errorware'])
 
         # Display error documents for 401, 403, 404 status codes (and
         # 500 when debug is disabled)

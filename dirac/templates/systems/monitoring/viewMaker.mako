@@ -8,11 +8,11 @@ numFields = 6
 
 <%def name="head_tags()">
 ${calDisplay.head_tags()}
-${ h.stylesheet_link_tag( "/yui/logger/assets/skins/sam/logger.css" ) }
-${ h.javascript_include_tag( "/yui/logger/logger-min.js" ) }
-${ h.javascript_include_tag( "/yui/connection/connection-min.js" ) }
-${ h.javascript_include_tag( "systems/monitoring/viewMaker.js" ) }
-${ h.javascript_include_tag( "json2.js" ) }
+${ h.stylesheet_link( "/yui/logger/assets/skins/sam/logger.css" ) }
+${ h.javascript_link( "/yui/logger/logger-min.js" ) }
+${ h.javascript_link( "/yui/connection/connection-min.js" ) }
+${ h.javascript_link( "systems/monitoring/viewMaker.js" ) }
+${ h.javascript_link( "json2.js" ) }
 <style>
  div#loading
  {

@@ -1,8 +1,8 @@
 # -*- coding: utf-8 -*-
 
 <%def name="head_tags()">
-${ h.stylesheet_link_tag( "/yui/calendar/assets/skins/sam/calendar.css" ) }
-${ h.javascript_include_tag( "/yui/calendar/calendar-min.js" ) }
+${ h.stylesheet_link( "/yui/calendar/assets/skins/sam/calendar.css" ) }
+${ h.javascript_link( "/yui/calendar/calendar-min.js" ) }
 <script type="text/javascript">
   var acCalendar;
   var acSelectedEdit;

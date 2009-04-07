@@ -3,7 +3,7 @@
 <%inherit file="/diracPage.mako" />
 
 <%def name="head_tags()">
-${ h.javascript_include_tag( "/javascripts/htmlPage.js" ) }
+${ h.javascript_link( "/javascripts/htmlPage.js" ) }
 </%def>
 
 <%def name="body()">
@@ -14,9 +14,10 @@ ${ h.javascript_include_tag( "/javascripts/htmlPage.js" ) }
 <div id='mainBody' style='text-align:center;margin-top:30px;'>
 <h1 style='margin:10px'> Upload a configuration file to modify </h1>
 
-${ h.form( h.url( action = 'doUploadConfig' ), multipart=True ) }
-Upload file:      ${h.file_field('cfgFile')} <br />
-                  ${h.submit('Submit')}
+${ h.form( h.url_for( action = 'doUploadConfig' ), multipart=True ) }
+<!-- ${ h.form( h.url_for( action = 'uploadUserConfig', a='<i>b</i>' ), multipart=True ) } -->
+Upload file:          ${h.file('cfgFile')} <br />
+                      ${h.submit('Submit','Upload user cfg')}
 ${h.end_form()}
 </div>
 </%def>

@@ -22,8 +22,15 @@ def make_map():
     condDict = dict(function=credentials.checkURL)
 
     map.connect(':dsetup/:dgroup/:controller/:action/:id', conditions=condDict )
-    map.connect(':dsetup/:controller/:action/:id', dgroup='unknown', conditions=condDict )
-    map.connect(':controller/:action/:id', dgroup='unknown', dsetup='unknown', conditions=condDict )
+    map.connect(':dsetup/:controller/:action/:id',         dgroup='unknown', conditions=condDict )
+    map.connect(':controller/:action/:id',                 dsetup='unknown', dgroup='unknown', conditions=condDict )
+    map.connect(':dsetup/:dgroup/:controller/:action', id=None, conditions=condDict )
+    map.connect(':dsetup/:controller/:action',         id=None, dgroup='unknown', conditions=condDict )
+    map.connect(':controller/:action',                 id=None, dsetup='unknown', dgroup='unknown', conditions=condDict )
+    map.connect(':dsetup/:dgroup/:controller', action='index', id=None, conditions=condDict )
+    map.connect(':dsetup/:controller',         action='index', id=None, dgroup='unknown', conditions=condDict )
+    map.connect(':controller',                 action='index', id=None, dsetup='unknown', dgroup='unknown', conditions=condDict )
+
     map.connect('*url', controller='template', action='view')
 
     return map
