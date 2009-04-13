@@ -2,6 +2,17 @@
 # Note the following rules:
 #   After each session modification, __addActinfo must be calles, so
 #         __popActinfo save the session without explicit session.save() call
+#
+# 9.4.9 AZ Currently, WF size limit is 64k. So I use some tricks...
+#          1) in case parameter description in instance equal to
+#          parameter description in definition: set it to empty and
+#          restore on edit.
+#          2) the same for values (in case it is linked)
+#          3) descriptions are also removed from definitions of
+#             steps in case they are redundund
+#          4) the same for values (in case it is linked)
+#          5) for definitions, in case linked parameter name
+#             equal parameter name, clean it (POTENTIALLY DANGEROUS!)
 import logging
 
 from dirac.lib.base import *
@@ -48,7 +59,7 @@ def _AttributeCollectionWithParametersToJS(spaces,ac):
     if v == 'parent':
       continue # doing nothing
     if v == 'body' or v == 'description':
-      ret=ret+spaces+_AZNameFix(v)+':"'+str(ac[v]).replace('\n', '\\n')+'",\n'
+      ret=ret+spaces+_AZNameFix(v)+':"'+str(ac[v]).replace('\\','\\\\').replace('\n', '\\n').replace('"','\\"')+'",\n'
     else:
       ret=ret+spaces+_AZNameFix(v)+':"'+str(ac[v])+'",\n'
   return ret+_ParametersToJS(spaces, ac.parameters)
@@ -79,7 +90,66 @@ def _StepDefinitionsToJS(spaces,st):
     prefix = ',\n'
   return ret
 
+def _WFDeCompress( wf ):
+  """ Restore redundund information to make is editable """
+  try:
+    # module definitions
+    for md in wf.module_definitions:
+      for p in wf.module_definitions[md].parameters:
+        if p.isLinked():
+          if not p.getLinkedParameter():
+            p.linked_parameter = p.getName()
+    # module instances
+    for sd in wf.step_definitions:
+      for mi in wf.step_definitions[sd].module_instances:
+        mdp = wf.module_definitions[mi.getType()].parameters
+        for p in mi.parameters:
+          dp = mdp.find(str(p.getName()))
+          if dp:
+            if not p.getDescription():
+              p.setDescription(dp.getDescription())
+            if p.isLinked():
+              if not p.getValue():
+                p.setValue(dp.getValue())
+    # step definitions
+    for sd in wf.step_definitions:
+      for p in wf.step_definitions[sd].parameters:
+        if not p.getDescription():
+          pname = str(p.getName())
+          for mi in wf.step_definitions[sd].module_instances:
+            mp = mi.parameters.find(pname)
+            if mp:
+              p.setDescription(mp.getDescription())
+              break
+        if p.isLinked():
+          if not p.getLinkedParameter():
+            p.linked_parameter = p.getName()
+    # step instances
+    for si in wf.step_instances:
+      sdp = wf.step_definitions[si.getType()].parameters
+      for p in si.parameters:
+        dp = sdp.find(str(p.getName()))
+        if dp:
+          if not p.getDescription():
+            p.setDescription(dp.getDescription())
+          if p.isLinked():
+            if not p.getValue():
+              p.setValue(dp.getValue())
+    # with workflow itself
+    for p in wf.parameters:
+      if not p.getDescription():
+        pname = str(p.getName())
+        for si in wf.step_instances:
+          sp = si.parameters.find(pname)
+          if sp:
+            p.setDescription(sp.getDescription())
+            break
+  except Exception,e:
+    return S_ERROR(str(e))
+  return S_OK(wf)
+
 def _WorkflowToJS( wf ):
+  _WFDeCompress(wf)
   ret  = '{\n'
   ret += _AttributeCollectionWithParametersToJS('  ',wf)+',\n'
   ret += '  module_definitions: [\n'+_ModuleDefinitionsToJS('    ',wf.module_definitions)+'\n  ],\n'
@@ -103,7 +173,76 @@ def _JSToIt (js,it):
     it.setVersion(js["Version"])
   for p in js["parameters"]:
     it.addParameter(Parameter(p["Name"],p["Value"],p["Type"],
-                              p["LinkedModule"],p["LinkedParameter"],p["In"],p["Out"],p["Description"]))
+                              p["LinkedModule"],p["LinkedParameter"],
+                              p["In"],p["Out"],p["Description"]))
+
+def _WFCompress( wf ):
+  """ Remove redundund information to make is smaller """
+  try:
+    # start with workflow itself
+    for p in wf.parameters:
+      pname = str(p.getName())
+      inherited = False
+      clean = True
+      for si in wf.step_instances:
+        sp = si.parameters.find(pname)
+        if sp:
+          inherited = True
+          if sp.getDescription() != p.getDescription():
+            clean = False
+            break
+      if inherited and clean:
+        p.setDescription("")
+    # step instances
+    for si in wf.step_instances:
+      sdp = wf.step_definitions[si.getType()].parameters
+      for p in si.parameters:
+        dp = sdp.find(str(p.getName()))
+        if dp:
+          if dp.getDescription() == p.getDescription():
+            p.setDescription('')
+          if p.isLinked():
+            if dp.getValue() == p.getValue():
+              p.setValue('')
+    # step definitions
+    for sd in wf.step_definitions:
+      for p in wf.step_definitions[sd].parameters:
+        pname = str(p.getName())
+        inherited = False
+        clean = True
+        for mi in wf.step_definitions[sd].module_instances:
+          mp = mi.parameters.find(pname)
+          if mp:
+            inherited = True
+            if mp.getDescription() != p.getDescription():
+              clean = False
+              break
+        if inherited and clean:
+          p.setDescription("")
+        if p.isLinked():
+          if p.getLinkedParameter() == p.getName():
+            p.linked_parameter = ''
+    # module instances
+    for sd in wf.step_definitions:
+      for mi in wf.step_definitions[sd].module_instances:
+        mdp = wf.module_definitions[mi.getType()].parameters
+        for p in mi.parameters:
+          dp = mdp.find(str(p.getName()))
+          if dp:
+            if dp.getDescription() == p.getDescription():
+              p.setDescription('')
+            if p.isLinked():
+              if dp.getValue() == p.getValue():
+                p.setValue('')
+    # module definitions
+    for md in wf.module_definitions:
+      for p in wf.module_definitions[md].parameters:
+        if p.isLinked():
+          if p.getLinkedParameter() == p.getName():
+            p.linked_parameter = ''
+  except Exception,e:
+    return S_ERROR(str(e))
+  return S_OK(wf)
 
 def _JSToWorkflow ( js ):
   try:
@@ -133,7 +272,8 @@ def _JSToWorkflow ( js ):
       _JSToIt(s,step)
   except Exception,msg:
     return S_ERROR(msg);
-  return S_OK(wf)
+  return _WFCompress(wf)
+#  return S_OK(wf)
 
 class ProductionworkflowController(BaseController):
   
