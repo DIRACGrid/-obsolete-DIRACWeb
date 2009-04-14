@@ -141,7 +141,11 @@ class PilotsummaryController(BaseController):
           req["JobGroup"] = str(request.params["prod"]).split('::: ')
       if request.params.has_key("site") and len(request.params["site"]) > 0:
         if str(request.params["site"]) != "All":
-          req["GridSite"] = str(request.params["site"]).split('::: ')
+          tmp = str(request.params["site"]).split('::: ')
+          if len(tmp) == 1:
+            req["ExpandSite"] = tmp[0]
+          else:
+            req["GridSite"] = tmp
       if request.params.has_key("stat") and len(request.params["stat"]) > 0:
         if str(request.params["stat"]) != "All":
           req["Status"] = str(request.params["stat"]).split('::: ')
