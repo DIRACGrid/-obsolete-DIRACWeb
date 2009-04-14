@@ -28,7 +28,8 @@ function initRecord(){
     {name:'Aborted'},
     {name:'Ready'},
     {name:'Total'},
-    {name:'Running'}
+    {name:'Running'},
+    {name:'StatusIcon',mapping:'Status'}
   ]);
   return record
 }
@@ -63,10 +64,10 @@ function expSite(value,xxx,obj){
 }
 function initData(store){
   var columns = [
-    {header:'',name:'expand',id:'expand',width:26,sortable:false,dataIndex:'CE',renderer:expSite,hideable:false},
-    {header:'',width:26,sortable:false,dataIndex:'Status',renderer:status,hideable:false},
-    {header:'Site',sortable:false,dataIndex:'Site',align:'left'},
-    {header:'CE',sortable:false,dataIndex:'CE',align:'left'},
+    {header:'',name:'expand',id:'expand',width:26,sortable:false,dataIndex:'CE',renderer:expSite,hideable:false,hideable:false,fixed:true,menuDisabled:true},
+    {header:'',width:26,sortable:false,dataIndex:'StatusIcon',renderer:status,hideable:false,hideable:false,fixed:true,menuDisabled:true},
+    {header:'Site',sortable:false,dataIndex:'Site',align:'left',hideable:false,fixed:true},
+    {header:'CE',sortable:false,dataIndex:'CE',align:'left',hideable:false,fixed:true},
     {header:'Status',width:60,sortable:false,dataIndex:'Status',align:'left'},
     {header:'PilotJobEff (%)',sortable:false,dataIndex:'PilotJobEff',align:'left'},
     {header:'PilotsPerJob',sortable:false,dataIndex:'PilotsPerJob',align:'left'},
