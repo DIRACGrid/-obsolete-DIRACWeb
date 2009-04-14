@@ -2120,6 +2120,8 @@ PR.RequestListStore = function(config) {
     {name:'EventNumberTotal'},
     {name:'eventBKTotal'},
     {name:'progress'},
+    {name:'creationTime'},
+    {name:'lastUpdateTime'},
 
     {name:'_parent', type: 'auto'},
     {name:'_is_leaf', type: 'bool'},
@@ -2247,7 +2249,10 @@ PR.RequestGrid = Ext.extend(Ext.ux.maximgb.treegrid.GridPanel, {
 	{header:'Event type', sortable:true, dataIndex:'eventType' },
 	{header:'Events requested', sortable:true, dataIndex:'EventNumberTotal' },
 	{header:'Events in BK', dataIndex:'eventBKTotal' },
-	{header:'Progress (%)', dataIndex:'progress' }
+	{header:'Progress (%)', dataIndex:'progress' },
+	{header:'Created at',   dataIndex:'creationTime', hidden: true },
+	{header:'Last state update', dataIndex:'lastUpdateTime', hidden:true },
+	{header:'Author', dataIndex:'reqAuthor', hidden:true }
       ],
       autoHeight:    false,
       autoWidth:     true,

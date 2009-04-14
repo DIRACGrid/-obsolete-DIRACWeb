@@ -87,7 +87,7 @@ class RealRequestEngine:
                     'SimCondition', 'SimCondID',
                     'ProPath', 'ProID',
                     'EventType', 'NumberOfEvents', 'Comments', 'Description',
-                    'bk','bkTotal','rqTotal']
+                    'bk','bkTotal','rqTotal','crTime','upTime' ]
   
   localFields  = [ 'ID', '_is_leaf', '_parent', '_master',
                    'reqName', 'reqType', 'reqState',
@@ -95,7 +95,8 @@ class RealRequestEngine:
                    'simDesc', 'simCondID',
                    'pDsc', 'pID',
                    'eventType', 'eventNumber', 'reqComment', 'reqDesc',
-                   'eventBK','eventBKTotal','EventNumberTotal' ]
+                   'eventBK','eventBKTotal','EventNumberTotal',
+                   'creationTime', 'lastUpdateTime' ]
 
   simcondFields = [ 'Generator', 'MagneticField', 'BeamEnergy',
                     'Luminosity', 'DetectorCond', 'BeamCond' ]
@@ -113,6 +114,8 @@ class RealRequestEngine:
       result.update(cPickle.loads(req['SimCondDetail']))
     if req['ProDetail']:
       result.update(cPickle.loads(req['ProDetail']))
+    result['creationTime'] = str(result['creationTime'])
+    result['lastUpdateTime'] = str(result['lastUpdateTime'])
     for x in result:
       if x != '_parent' and result[x] == None:
         result[x] = ''
@@ -120,7 +123,7 @@ class RealRequestEngine:
 
   def __fromlocal(self,req):
     result = {}
-    for x,y in zip(self.localFields[2:-3],self.serviceFields[2:-3]):
+    for x,y in zip(self.localFields[2:-5],self.serviceFields[2:-5]):
       if x in req:
         result[y] = req[x]
 
