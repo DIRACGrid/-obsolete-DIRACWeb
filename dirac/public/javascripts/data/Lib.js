@@ -81,24 +81,132 @@ function AJAXrequest(value,id){
 function chkBox(id){
   return '<input id="' + id + '" type="checkbox"/>'
 }
-function dateSelectMenu(){
+function createMenu(dataName,menuName,altValue){
+  var data = [['']];
+  try{
+    data = dataSelect[dataName];
+  }catch(e){}
+  var disabled = true;
+  if(data == 'Nothing to display'){
+    data = [[0,'Nothing to display']];
+  }else{
+    try{
+      var length = data.length;
+    }catch(e){
+      data = [[0,'Error: Can\'t get data.length']];
+    }
+    if(altValue){
+      for (var i = 0; i < length; i++) {
+        data[i] = [i ,data[i][0],data[i][1]];
+      }
+    }else{
+      for (var i = 0; i < length; i++) {
+        data[i] = [i ,data[i]];
+      }
+    }
+    disabled = false;
+  }
+  var store = new Ext.data.SimpleStore({
+    id:0,
+    fields:[{name:'id',type:'int'},dataName],
+    data:data
+  });
+  var combo = new Ext.ux.form.LovCombo({
+    anchor:'90%',
+    disabled:disabled,
+    displayField:dataName,
+    emptyText:data[0][1],
+    fieldLabel:menuName,
+    hiddenName:dataName,
+    hideOnSelect:false,
+    id:menuName,
+    mode:'local',
+    resizable:true,
+    store:store,
+    triggerAction:'all',
+    typeAhead:true,
+    valueField:'id'
+  });
+  combo.on({
+    'render':function(){
+      try{
+        var nameList = dataSelect.extra[dataName].split('::: ');
+        var newValue = '';
+        for(var j = 0; j < nameList.length; j++){
+          for(var i = 0; i < store.totalLength; i++){
+            if(store.data.items[i].data[dataName] == nameList[j]){
+              if(newValue.length == 0){
+                newValue = i;
+              }else{
+                newValue = newValue + ':::' + i;
+              }
+            }
+          }
+        }
+        combo.setValue(newValue);
+        delete dataSelect.extra[dataName];
+      }catch(e){
+        if(combo.store.totalLength < 2){
+          combo.disable();
+        }
+      }
+    }
+  });
+  return combo;
+}
+function dateStartSelectMenu(){
   var date = new Ext.form.DateField({
     anchor:'90%',
     allowBlank:true,
     emptyText:'YYYY-mm-dd',
-    fieldLabel:'Date',
+    fieldLabel:'Start Date',
     format:'Y-m-d',
-    name:'date',
+    name:'startDate',
     selectOnFocus:true,
     startDay:1,
     value:''
   });
+  date.on({
+    'render':function(){
+      try{
+        var sDate = dataSelect.extra['startTime'];
+        sDate = sDate.substring(0,10);
+        date.setValue(sDate);
+        delete dataSelect.extra['startTime'];
+      }catch(e){}
+    }
+  });
+  return date
+}
+function dateEndSelectMenu(){
+  var date = new Ext.form.DateField({
+    anchor:'90%',
+    allowBlank:true,
+    emptyText:'YYYY-mm-dd',
+    fieldLabel:'End Date',
+    format:'Y-m-d',
+    name:'endDate',
+    selectOnFocus:true,
+    startDay:1,
+    value:''
+  });
+  date.on({
+    'render':function(){
+      try{
+        var sDate = dataSelect.extra['endTime'];
+        sDate = sDate.substring(0,10);
+        date.setValue(sDate);
+        delete dataSelect.extra['endTime'];
+      }catch(e){}
+    }
+  });
   return date
 }
 function displayWin(panel,title,modal,closeOnly){
-  var modal = true;
   if((modal == null) || (modal == '')){
-    modal = false;
+    var modal = false;
+  }else{
+    var modal = true;
   }
   var maximizable = true;
   var collapsible = true;
@@ -294,67 +402,152 @@ function initProductionLookup(){
   });
   return panel
 }
-function initStore(record){
+function createStateMatrix(msg){
+  var result = [];
+  if((msg == null) || (msg == '')){
+    return;
+  }
+  var j = 0;
+  for( i in msg){
+    result[j] = [i,msg[i]]
+    j++;
+  }
+/*
+  var list = Ext.getCmp('statMenu');
+  if(list){
+    if(list.store){
+      if(list.store.totalLength > 0){
+        var len = list.store.totalLength;
+        for(var i = 1; i < len; i++ ){
+          var j = list.store.getAt(i).data.stat;
+          if(j){
+            if(msg[j] >= 0){
+              result[(i - 1)] = [j,msg[j]];
+            }else{
+              result[(i - 1)] = [j,"-"];
+            }
+          }
+        }
+      }
+    }
+  }else{
+    return;
+  }
+*/
+  return result;
+}
+function initStore(record,groupBy){
   var reader = new Ext.data.JsonReader({
     root:'result',
     totalProperty:'total'
   },record);
   var limit = 25;
-  try{
-    limit = dataSelect.extra.limit/1;
-  }catch(e){}
   var start = 0;
   try{
-    start = dataSelect.extra.start/1;
-    delete dataSelect.extra.start;
-  }catch(e){}
-  var store = new Ext.data.Store({
-    proxy: new Ext.data.HttpProxy({
-      callback:function(options,success,response){
-        var test = 0;
-      },
-      method:'POST',
-      timeout:610000,
-      url:'submit'
-    }),
-    reader:reader
-  });
+    if(dataSelect == ""){
+      dataSelect = {};
+    }
+  }catch(e){
+    dataSelect = {};
+  }
+  try{
+    if(!dataSelect.extra){
+      dataSelect.extra = {};
+    }
+  }catch(e){
+    dataSelect.extra = {};
+  }
+  try{
+    if(!dataSelect.extra.limit){
+      dataSelect.extra.limit = 25;
+    }else{
+      dataSelect.extra.limit = dataSelect.extra.limit/1;
+    }
+  }catch(e){
+    dataSelect.extra.limit = 25;
+  }
+  try{
+    if(!dataSelect.extra.start){
+      dataSelect.extra.start = 0;
+    }else{
+      dataSelect.extra.start = dataSelect.extra.start/1;
+    }
+  }catch(e){
+    dataSelect.extra.start = 0;
+  }
+  var auto = {};
+  try{
+    if(dataSelect.extra){
+      auto = {params:dataSelect.extra};
+    }else{
+      auto = {params:{start:0,limit:25}};
+    }
+  }catch(e){
+    auto = {params:{start:0,limit:25}};
+  }
+  if(groupBy){
+    var store = new Ext.data.GroupingStore({
+      autoLoad:auto,
+      groupField:groupBy,
+      proxy: new Ext.data.HttpProxy({
+        url:'submit',
+        method:'POST',
+      }),
+      reader:reader
+    });
+  }else{
+    var store = new Ext.data.Store({
+      autoLoad:auto,
+      proxy: new Ext.data.HttpProxy({
+        url:'submit',
+        method:'POST',
+      }),
+      reader:reader
+    });
+  }
   store.on('loadexception',function(){
+    try{
+      if(store.reader.jsonData){
+        if(store.reader.jsonData.success == 'false'){
+          alert(store.reader.jsonData.error);
+        }
+      }else{
+        alert("There is an exception while loading data. Please, refresh table");
+      }
+    }catch(e){
+      alert("There is an exception while loading data. Please, refresh table");
+    }
+  });
+  store.on('beforeload',function(){
+    try{
+      store.baseParams = dataMngr.form.getForm().getValues();
+      store.baseParams.sort = dataSelect.globalSort;
+    }catch(e){}
+  });
+  store.on('load',function(){
     if(store.reader){
       if(store.reader.jsonData){
         if(store.reader.jsonData.success == 'false'){
           alert(store.reader.jsonData.error);
         }
+        if(store.reader.jsonData.extra){
+          store.extra_msg = store.reader.jsonData.extra;
+        }
+        var value = store.baseParams.sort;
+        if(value){
+          var sort = value.split(' ');
+          if(sort.length == 2){
+            store.sort(sort[0],sort[1]);
+          }
+        }
+      }else{
+        alert("Error in store.reader.jsonData, trying to reload data store...");
+        store.load();
       }
+    }else{
+      alert("Error in store.reader, trying to reload data store...");
+      store.load();
     }
-  });
-  store.on('beforeload',function(){
-    try{
-      for(i = 0; i < dataMngr.form.items.length; i++){
-        if(dataMngr.form.items.items[i].name == 'prod'){
-          dataMngr.form.items.items[i].setValue(dataSelect.productionID);
-        }
-      }
-      delete dataSelect.productionID;
-      store.baseParams = dataMngr.form.getForm().getValues();
-    }catch(e){}
-  });
-  store.on('load',function(){
-    try{
-      if(store.reader.jsonData.success == 'false'){
-        alert(store.reader.jsonData.error);
-      }
-      if(store.reader.jsonData.extra){
-        store.extra_msg = store.reader.jsonData.extra;
-      }
-      var value = store.baseParams.sort;
-      if(value){
-        var sort = value.split(' ');
-        if(sort.length == 2){
-          store.sort(sort[0],sort[1]);
-        }
-      }
-    }catch(e){}
     afterDataLoad();
   });
   return store;
@@ -392,6 +585,7 @@ function itemsNumber(){
   return combo
 }
 */
+/*
 function itemsNumber(){
   var store = new Ext.data.SimpleStore({
     fields:['number'],
@@ -435,7 +629,65 @@ function itemsNumber(){
   });
   return combo;
 }
-
+*/
+function itemsNumber(){
+  var store = new Ext.data.SimpleStore({
+    fields:['number'],
+    data:[[25],[50],[100],[200],[500],[1000]]
+  });
+  var value = 25;
+  if(dataSelect){
+    if(dataSelect.extra){
+      if(dataSelect.extra.limit){ // Will be deleted in table function
+        value = dataSelect.extra.limit/1;
+      }
+    }
+  }
+  var combo = new Ext.form.ComboBox({
+    allowBlank:false,
+    displayField:'number',
+    editable:false,
+    maxLength:4,
+    maxLengthText:'The maximum value for this field is 1000',
+    minLength:1,
+    minLengthText:'The minimum value for this field is 1',
+    mode:'local',
+    name:'number',
+    selectOnFocus:true,
+    store:store,
+    triggerAction:'all',
+    typeAhead:true,
+    value:value,
+    width:50
+  });
+  combo.on({
+    'collapse':function(){
+      if(dataMngr.store){
+        if(tableMngr.bbar){
+          if(tableMngr.bbar.pageSize){
+            if(tableMngr.bbar.pageSize != combo.value){
+              tableMngr.bbar.pageSize = combo.value;
+              dataMngr.store.autoLoad.params.limit = combo.value;
+              var sortGlobalPanel = Ext.getCmp('sortGlobalPanel');
+              var sort = false;
+              if(sortGlobalPanel){
+                if(sortGlobalPanel.globalSort){
+                  sort = true;
+                }
+              }
+              if(sort){
+                dataMngr.store.load({params:{start:0,limit:tableMngr.bbar.pageSize,sort:sortGlobalPanel.globalSort}});
+              }else{
+                dataMngr.store.load({params:{start:0,limit:tableMngr.bbar.pageSize}});
+              }
+            }
+          }
+        }
+      }
+    }
+  });
+  return combo;
+}
 function hideControls(caller){
   if(caller){
     var value = caller.getRawValue();
@@ -494,8 +746,7 @@ function sideBar(){
   return panel;
 }
 function sideTree(loader,title,root){
-//  var tree = new Ext.tree.TreePanel({
-  var tree = new Ext.tree.ColumnTree({
+  var tree = new Ext.tree.TreePanel({
     border:false,
     collapsible:true,
     columns:[{
@@ -539,7 +790,321 @@ function selectAll(selection){
     }
   }
 }
+function sortGlobalPanel(){
+  function sortGlobal(value){
+    dataSelect.globalSort = value;
+    if(tableMngr){
+      if(tableMngr.bbar){
+        if(tableMngr.bbar.pageSize){
+          dataMngr.store.baseParams.sort = value;
+          dataMngr.store.load({params:{start:0,limit:tableMngr.bbar.pageSize,sort:value}});
+        }else{
+          alert('Error: Failed to get ExtJS component: tableMngr.bbar.pageSize');
+        }
+      }else{
+        alert('Error: Failed to get ExtJS component: tableMngr.bbar');
+      }
+    }else{
+      alert('Error: Failed to get ExtJS component: tableMngr');
+    }
+  }
+  function createButton(label,value,state){
+    var button = new Ext.Button({
+      allowDepress:false,
+      enableToggle:true,
+      id:value,
+      minWidth:'170',
+      pressed:state,
+      style:'padding:2px;padding-bottom:0px;width:100%!important;',
+      text:label,
+      toggleGroup:'sortToggle',
+      toggleHandler:function(button,state){
+        if(state){
+          sortGlobal(value);
+        }
+      }
+    });
+    return button;
+  }
+  function buttons(type){
+    var value = [
+      ['JobID Ascending','JobID ASC'],
+      ['JobID Descending','JobID DESC'],
+      ['LastUpdate Ascending','LastUpdateTime ASC'],
+      ['LastUpdate Descending','LastUpdateTime DESC'],
+      ['Site Ascending','Site ASC'],
+      ['Site Descending','Site DESC']
+    ];
+    var defaultSort = 'JobID DESC';
+    if(dataSelect.extra){
+      if(dataSelect.extra.sort){
+        for(var i = 0; i < value.length; i++){
+          if(value[i][1] == dataSelect.extra.sort){
+            defaultSort = dataSelect.extra.sort;
+          }
+        }
+      }
+      delete dataSelect.extra.sort;
+    }
+    var buttonArray = [];
+    for(var j = 0; j < value.length; j++){
+      if(value[j][1] == defaultSort){
+        buttonArray[j] = createButton(value[j][0],value[j][1],true);
+      }else{
+        buttonArray[j] = createButton(value[j][0],value[j][1],false);
+      }
+    }
+    dataSelect.globalSort = defaultSort;
+    return buttonArray;
+  }
+  var p = new Ext.Panel({
+    border:false,
+    id:'buttonsHandler',
+    items:buttons(),
+    style:'padding-top:10px;width:100%'
+  });
+  var panel = new Ext.Panel({
+    autoScroll:true,
+    border:false,
+    id:'sortGlobalPanel',
+    items:[p],
+    labelAlign:'top',
+    layout:'column',
+    title:'Global Sort'
+  });
+  return panel;
+}
+function selectPanel(){
+  function submitForm(){
+    var selections = {};
+    var sideBar = Ext.getCmp('sideBar');
+    sideBar.body.mask('Sending data...');
+    try{
+      selections.sort = dataSelect.globalSort;
+      selections.limit = tableMngr.bbar.pageSize;
+      selections.start = 0;
+    }catch(e){}
+    if(tableMngr){
+      if(tableMngr.bbar){
+        panel.form.submit({
+          params:selections,
+          success:function(form,action){
+            sideBar.body.unmask();
+            if(action.result.success == 'false'){
+              alert('Error: ' + action.result.error);
+            }else{
+              if(dataMngr.store){
+                store = dataMngr.store;
+                store.loadData(action.result);
+              }else{
+                alert('Error: Unable to load data to the table dataMngr.store is absent');
+              }
+            }
+          },
+          failure:function(form,action){
+            sideBar.body.unmask();
+            alert('Error: ' + action.response.statusText);
+          }
+        });
+      }else{
+        sideBar.body.unmask();
+        alert('Error: Unable to load parameters for form submition');
+      }
+    }else{
+      sideBar.body.unmask();
+      alert('Error: Unable to find data store manager');
+    }
+  }
+  var refresh = new Ext.Button({
+    cls:"x-btn-icon",
+    handler:function(){
+      refreshSelect();
+    },
+    icon:gURLRoot+'/images/iface/refresh.gif',
+    minWidth:'20',
+    tooltip:'Refresh data in the selection boxes',
+    width:'100%'
+  });
+  var reset = new Ext.Button({
+    cls:"x-btn-text-icon",
+    handler:function(){
+      panel.form.reset();
+      var number = Ext.getCmp('selectID');
+      hideControls(number);
+    },
+    icon:gURLRoot+'/images/iface/reset.gif',
+    minWidth:'70',
+    tooltip:'Reset values in the form',
+    text:'Reset'
+  });
+  var submit = new Ext.Button({
+    cls:"x-btn-text-icon",
+    handler:function(){
+      submitForm();
+    },
+    icon:gURLRoot+'/images/iface/submit.gif',
+    minWidth:'70',
+    tooltip:'Send request to the server',
+    text:'Submit'
+  });
+  var panel = new Ext.FormPanel({
+    autoScroll:true,
+    bodyStyle:'padding: 5px',
+    border:false,
+    buttonAlign:'center',
+    buttons:[submit,reset,refresh],
+    collapsible:true,
+    id:'selectPanel',
+    labelAlign:'top',
+    method:'POST',
+    minWidth:'200',
+    title:'Selections',
+    url:'submit',
+    waitMsgTarget:true
+  });
+  return panel;
+}
+function statPanel(title,mode,id){
+  var msg = [];
+  var reader = new Ext.data.ArrayReader({},[
+    {name:'Status'},
+    {name:'Number'}
+  ]);
+  if(mode == 'text'){
+    var columns = [
+      {header:'Status',sortable:true,dataIndex:'Status',align:'left'},
+      {header:'Numbers',sortable:true,dataIndex:'Number',align:'left'}
+    ];
+  }else{
+    var columns = [
+      {header:'',width:26,sortable:false,dataIndex:'Status',renderer:status,hideable:false},
+      {header:'Status',width:60,sortable:true,dataIndex:'Status',align:'left'},
+      {header:'Numbers',sortable:true,dataIndex:'Number',align:'left'}
+    ];
+  }
+  if(mode == 'global'){
+    var store = new Ext.data.Store({
+      autoLoad:{params:{globalStat:'true'}},
+      proxy: new Ext.data.HttpProxy({
+        url:'action',
+        method:'POST',
+      }),
+      reader:reader
+    });
+  }else{
+    var store = new Ext.data.SimpleStore({
+      fields:['Status','Number'],
+      data:msg
+    });
+  }
+  var p = new Ext.grid.GridPanel({
+    border:false,
+    columns:columns,
+    id:id,
+    header:false,
+    layout:'fit',
+    store:store,
+    stripeRows:true,
+    viewConfig:{forceFit:true}
+  });
+  var panel = new Ext.Panel({
+    autoScroll:true,
+    border:false,
+    buttonAlign:'center',
+    id:id + 'Panel',
+    items:[p],
+    labelAlign:'top',
+    collapsible:true,
+    width: 200,
+    minWidth: 200,
+    title:title
+  });
+  if(mode == 'global'){
+    panel.addButton({
+      cls:"x-btn-text-icon",
+      handler:function(){
+        store.load({params:{globalStat:'true'}});
+      },
+      icon:gURLRoot+'/images/iface/refresh.gif',
+      minWidth:'150',
+      tooltip:'Refresh global statistics data',
+      text:'Refresh'
+    })
+  }
+  return panel;
+}
 // Input fields
+function selectDestinationsMenu(){
+  var menu = createMenu('destination','Destination');
+  return menu
+}
+function selectPartitionNamesMenu(){
+  var menu = createMenu('partitionname','PartitionName');
+  return menu
+}
+function selectStatesMenu(){
+  var menu = createMenu('state','State');
+  return menu
+}
+function selectFillIDMenu(){
+  var menu = createMenu('fillid','FillID');
+  return menu
+}
+function selectRunTypesMenu(){
+  var menu = createMenu('runtype','RunType');
+  return menu
+}
+function selectEndLumiMenu(){
+  var menu = createMenu('endlumi','EndLumi');
+  return menu
+}
+function selectStartLumiMenu(){
+  var menu = createMenu('startlumi','StartLumi');
+  return menu
+}
+function selectBeamEnergyMenu(){
+  var menu = createMenu('beamenergy','BeamEnergy');
+  return menu
+}
+function selectID(){
+  var value = '';
+  if(dataSelect){
+    if(dataSelect.extra){
+      if(dataSelect.extra.id){
+        value = dataSelect.extra.id;
+      }
+      delete dataSelect.extra.id;
+    }
+  }
+  var number = new Ext.form.NumberField({
+    anchor:'90%',
+    allowBlank:true,
+    allowDecimals:false,
+    allowNegative:false,
+    baseChars:'0123456789',
+    enableKeyEvents:true,
+    fieldLabel:'RunID',
+    id:'selectID',
+    mode:'local',
+    name:'id',
+    selectOnFocus:true,
+    value:value
+  });
+  number.on({
+    'render':function(){
+      if(number.value !== ''){
+        hideControls(number);
+      }
+    },
+    'blur':function(){
+      hideControls(number);
+    },
+    'keyup':function(){
+      hideControls(number);
+    }
+  });
+  return number;
+}
 function selectFileID(){
   var number = new Ext.form.NumberField({
     anchor:'90%',
@@ -789,6 +1354,48 @@ function showMenu(mode,table,rowIndex,columnIndex){
     dirac.menu.showAt(coords);
   }
 }
+function setTitle(value,id){
+  var titleID = '';
+  var titleValue = '';
+  if((id === null) || (id === '')){
+    titleID = 'Unknown';
+  }else{
+    titleID = id;
+  }
+  if((value === null) || (value === '')){
+    titleValue = 'Unknown window for item with ID: ';
+  }else{
+    if(value == 'getJDL'){
+      titleValue = 'JDL for JobID: ';
+    }else if(value == 'getBasicInfo'){
+      titleValue = 'Attributes for JobID: ';
+    }else if(value == 'getParams'){
+      titleValue = 'Parameters for JobID: ';
+    }else if(value == 'LoggingInfo'){
+      titleValue = 'Logging info for JobID: ';
+    }else if(value == 'getStandardOutput'){
+      titleValue = 'Standard output for JobID: ';
+    }else if(value == 'LogURL'){
+      titleValue = 'Log file(s) for JobID: ';
+    }else if(value == 'getStagerReport'){
+      titleValue = 'Stager report for JobID: ';
+    }else if(value == 'pilotStdOut'){
+      titleValue = 'Pilot StdOut for JobID: ';
+    }else if(value == 'pilotStdErr'){
+      titleValue = 'Pilot StdErr for JobID: ';
+    }else if(value == 'log'){
+      titleValue = 'Logs for JobGroup ID: ';
+    }else if(value == 'getPending'){
+      titleValue = 'Pending Request(s) for JobID: ';
+    }else if(value == 'getLogInfoLFN'){
+      titleValue = 'File: ';
+    }else{
+      titleValue = 'Item ID: ';
+    }
+  }
+  title = titleValue + titleID;
+  return title;
+}
 function status(value){
   if(value == 'Done'){
     return '<img src="'+gURLRoot+'/images/monitoring/done.gif">';
@@ -822,7 +1429,12 @@ function table(tableMngr){
   if(tableMngr.title){
     var title = tableMngr.title;
   }else{
-    title = '';
+    var title = '';
+  }
+  if(tableMngr.plugins){
+    var plugins = tableMngr.plugins;
+  }else{
+    var plugins = '';
   }
   var iNumber = itemsNumber();
   var pageSize = 25;
@@ -850,12 +1462,13 @@ function table(tableMngr){
     loadMask:true,
     margins:'2 0 2 0',
     region:'center',
+    plugins:plugins,
     split:true,
     store:store,
     stripeRows:true,
     tbar:tbar,
     title:title,
-//    viewConfig:{forceFit:true}
+    viewConfig:{forceFit:true}
   });
   if(tableMngr.tbar == ''){
     var bar = dataTable.getTopToolbar();
@@ -872,13 +1485,10 @@ function table(tableMngr){
 }
 function columnTreeee(){
   var tree = new Ext.tree.ColumnTree({
-//    width: 550,
-//    height: 300,
     rootVisible:false,
     autoScroll:true,
     margins:'2 0 2 0',
     region:'center',
-//    title: 'ColumnTree Test',
     columns:[{
       header:'Site, CE',
       width:330,
@@ -909,4 +1519,23 @@ function columnTreeee(){
     })
   });
   return tree
+}
+function status(value){
+  if((value == 'Done')||(value == 'Completed')||(value == 'Good')||(value == 'Active')||(value == 'IN BKK')||(value == 'ENDED')){
+    return '<img src="'+gURLRoot+'/images/monitoring/done.gif">';
+  }else if((value == 'Failed')||(value == 'Bad')||(value == 'Banned')||(value == 'UNKNOWN')){
+    return '<img src="'+gURLRoot+'/images/monitoring/failed.gif">';
+  }else if((value == 'Waiting')||(value == 'Stopped')||(value == 'Poor')){
+    return '<img src="'+gURLRoot+'/images/monitoring/waiting.gif">';
+  }else if(value == 'Deleted'){
+    return '<img src="'+gURLRoot+'/images/monitoring/deleted.gif">';
+  }else if((value == 'Matched')||(value == 'CREATED')){
+    return '<img src="'+gURLRoot+'/images/monitoring/matched.gif">';
+  }else if((value == 'Running')||(value == 'Active')||(value == 'Fair')||(value == 'ACTIVE')||(value == 'MIGRATING')){
+    return '<img src="'+gURLRoot+'/images/monitoring/running.gif">';
+  }else if((value == 'NoMask')||(value == 'NOT NEEDED')){
+    return '<img src="'+gURLRoot+'/images/monitoring/unknown.gif">';
+  }else{
+    return '<img src="'+gURLRoot+'/images/monitoring/unknown.gif">';
+  }
 }
