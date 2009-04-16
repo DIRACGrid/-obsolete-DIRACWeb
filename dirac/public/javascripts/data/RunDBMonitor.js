@@ -120,76 +120,74 @@ function AJAXsuccess(value,id,response){
   }
   var result = jsonData.result;
   var panel = {};
-  if(value == 'showRunFiles'){
+  if((value == 'ForPlainText')||(value == 'plainText')){
     var html = '<pre>' + result + '</pre>';
     panel = new Ext.Panel({border:0,autoScroll:true,html:html,layout:'fit'})
   }else{
-    var reader = {};
-    var columns = [];
-    if(value == 'getRunParams'){
-      reader = new Ext.data.ArrayReader({},[
+    if((value == 'getRunParams')||(value == 'void')){
+      var reader = new Ext.data.ArrayReader({},[
         {name:'name'},
         {name:'value'}
       ]);
-      columns = [
+      var columns = [
         {header:'Name',sortable:true,dataIndex:'name',align:'left'},
         {header:'Value',sortable:true,dataIndex:'value',align:'left'}
       ];
-    }else if(value == 'getPending'){
-      reader = new Ext.data.ArrayReader({},[
-        {name:'type'},
-        {name:'operation'},
-        {name:'status'},
-        {name:'order'},
-        {name:'targetSE'},
-        {name:'file'}
+      var store = new Ext.data.Store({
+        data:result,
+        reader:reader
+      });
+    }else if(value == 'showRunFiles'){
+      var record = new Ext.data.Record.create([
+        {name:'fileID'},
+        {name:'runID'},
+        {name:'name'},
+        {name:'state'},
+        {name:'bytes'},
+        {name:'events'},
+        {name:'stream'},
+        {name:'creationTime',type:'date',dateFormat:'Y-n-j h:i:s'},
+        {name:'timeStamp',type:'date',dateFormat:'Y-n-j h:i:s'},
+        {name:'refCount'},
+        {name:'StatusIcon',mapping:'state'}
       ]);
-      columns = [
-        {header:'Type',sortable:true,dataIndex:'type',align:'left'},
-        {header:'Operation',sortable:true,dataIndex:'operation',align:'left'},
-        {header:'Status',sortable:true,dataIndex:'status',align:'left'},
-        {header:'Order',sortable:true,dataIndex:'order',align:'left'},
-        {header:'Targert SE',sortable:true,dataIndex:'targetSE',align:'left'},
-        {header:'File',sortable:true,dataIndex:'file',align:'left'}
+      var reader = new Ext.data.JsonReader({
+        root:'result',
+        totalProperty:'total'
+      },record);
+      var columns = [
+        {header:'FileID',width:40,sortable:true,dataIndex:'fileID',align:'left',hideable:false},
+        {header:'RunID',width:40,sortable:true,dataIndex:'runID',align:'left',hideable:false},
+        {header:'',width:26,sortable:false,dataIndex:'StatusIcon',renderer:status,hideable:false,fixed:true,menuDisabled:true},
+        {header:'State',sortable:true,dataIndex:'state',align:'left',hideable:false},
+        {header:'Name',sortable:true,dataIndex:'name',align:'left'},
+        {header:'Bytes',sortable:true,dataIndex:'bytes',align:'left'},
+        {header:'Events',sortable:true,dataIndex:'events',align:'left'},
+        {header:'Stream',sortable:true,dataIndex:'stream',align:'left'},
+        {header:'RefCount',sortable:true,dataIndex:'refCount',align:'left'},
+        {header:'CreationTime [UTC]',sortable: true,renderer:Ext.util.Format.dateRenderer('Y-m-d H:i'),dataIndex:'creationTime'},
+        {header:'TimeStamp [UTC]',sortable:true,renderer:Ext.util.Format.dateRenderer('Y-m-d H:i'),dataIndex:'timeStamp'}
       ];
-      var mark = 0;
-      for(var i = 0; i < result.length; i++){
-        if(result[i][0] == 'PendingRequest'){
-          var intermed = result[i][1].split('\n');
-          mark = 1;
-        }
-      }
-      if(mark == 0){
-        alert('Error: No pending request(s) found');
-        return
-      }else{
-        for(var j = 0; j < intermed.length; j++){
-          intermed[j] = intermed[j].split(':');
-        }
-        result = intermed;
-      }
-    }else if(value == 'LoggingInfo'){
-      reader = new Ext.data.ArrayReader({},[
-        {name:'status'},
-        {name:'minorstatus'},
-        {name:'applicationstatus'},
-        {name:'datetime',type:'date',dateFormat:'Y-n-j h:i:s'},
-        {name:'source'}
-      ]);
-      columns = [
-        {header:'Source',sortable:true,dataIndex:'source',align:'left'},
-        {header:'Status',sortable:true,dataIndex:'status',align:'left'},
-        {header:'MinorStatus',sortable:true,dataIndex:'minorstatus',align:'left'},
-        {header:'ApplicationStatus',sortable:true,dataIndex:'applicationstatus',align:'left'},
-        {header:'DateTime',sortable:true,dataIndex:'datetime',align:'left'}
-      ];
+      var store = new Ext.data.Store({
+        baseParams:{'showRunFiles':id},
+        proxy: new Ext.data.HttpProxy({
+          url:'action',
+          method:'POST',
+        }),
+        reader:reader
+      });
+      var bbar = new Ext.PagingToolbar({
+        displayInfo:true,
+        items:['-','Maximum items per page: 100'],
+        pageSize:100,
+        refreshText:'Click to refresh current page',
+        store:store
+      });
+      store.loadData(jsonData);
     }
-    var store = new Ext.data.Store({
-      data:result,
-      reader:reader
-    });
     panel = new Ext.grid.GridPanel({
       anchor:'100%',
+      bbar:bbar,
       columns:columns,
       store:store,
       stripeRows:true,
@@ -200,7 +198,10 @@ function AJAXsuccess(value,id,response){
     });
   }
   id = setTitle(value,id);
-  displayWin(panel,id)
+  var tmpWin = displayWin(panel,id);
+  if(value == 'showRunFiles'){
+    tmpWin.setWidth(1000);
+  }
 }
 function afterDataLoad(){
   var msg = [];

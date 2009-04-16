@@ -58,12 +58,7 @@ class RundbmonitorController(BaseController):
     pagestart = time()
     RPC = getRPCClient("dips://volhcb09.cern.ch:9300/DataManagement/RunDBInterface")
     result = self.__request()
-    gLogger.info(" - result - ",result)
     result = RPC.getRunsSummaryWeb(result,globalSort,pageNumber,numberOfJobs)
-    gLogger.info(" - result - ",result)
-    gLogger.info(" - result - ",globalSort)
-    gLogger.info(" - result - ",pageNumber)
-    gLogger.info(" - result - ",numberOfJobs)
     if result["OK"]:
       result = result["Value"]
       gLogger.info("ReS",result)
@@ -180,19 +175,67 @@ class RundbmonitorController(BaseController):
   def action(self):
     if request.params.has_key("showRunFiles") and len(request.params["showRunFiles"]) > 0:
       id = str(request.params["showRunFiles"])
-      return self.__showRunFiles(id)
+      if request.params.has_key("limit") and len(request.params["limit"]) > 0:
+        pageLimit = str(request.params["limit"])
+      else:
+        pageLimit = 100
+      if request.params.has_key("start") and len(request.params["start"]) > 0:
+        pageStart = str(request.params["start"])
+      else:
+        pageStart = 0
+      return self.__showRunFiles(id,pageLimit,pageStart)
     elif request.params.has_key("getRunParams") and len(request.params["getRunParams"]) > 0:
       id = str(request.params["getRunParams"])
       return self.__getRunParams(id)
     else:
       c.result = {"success":"false","error":"No actions are defined"}
-      return c.error
+      return c.result
 ################################################################################
-  def __showRunFiles(self,id):
-    id = id.split(",")
+  def __showRunFiles(self,id,pageLimit,pageStart):
+    try:
+      id = int(id)
+      start = int(pageStart)
+      limit = int(pageLimit)
+    except:
+      c.result = {"success":"false","error":"Wrong data type, numerical expected"}
+      return c.result
     RPC = getRPCClient("dips://volhcb09.cern.ch:9300/DataManagement/RunDBInterface")
-#    result = getRunParams()
-    c.result = {"success":"true","result":"Not implemented yet"}
+    result = RPC.getFilesSummaryWeb({'runID':[id]},[],start,limit)
+    if result["OK"]:
+      result = result["Value"]
+      gLogger.info("ReS",result)
+      if result.has_key("TotalRecords"):
+        if  result["TotalRecords"] > 0:
+          if result.has_key("ParameterNames") and result.has_key("Records"):
+            if len(result["ParameterNames"]) > 0:
+              if len(result["Records"]) > 0:
+                c.result = []
+                jobs = result["Records"]
+                head = result["ParameterNames"]
+                headLength = len(head)
+                for i in jobs:
+                  tmp = {}
+                  for j in range(0,headLength):
+                    tmp[head[j]] = i[j]
+                  c.result.append(tmp)
+                total = result["TotalRecords"]
+                if result.has_key("Extras"):
+                  extra = result["Extras"]
+                  c.result = {"success":"true","result":c.result,"total":total,"extra":extra}
+                else:
+                  c.result = {"success":"true","result":c.result,"total":total}
+              else:
+                c.result = {"success":"false","result":"","error":"There are no data to display"}
+            else:
+              c.result = {"success":"false","result":"","error":"ParameterNames field is missing"}
+          else:
+            c.result = {"success":"false","result":"","error":"Data structure is corrupted"}
+        else:
+          c.result = {"success":"false","result":"","error":"There were no data matching your selection"}
+      else:
+        c.result = {"success":"false","result":"","error":"Data structure is corrupted"}
+    else:
+      c.result = {"success":"false","error":result["Message"]}
     return c.result
 ################################################################################
   def __getRunParams(self,id):
@@ -204,18 +247,13 @@ class RundbmonitorController(BaseController):
     RPC = getRPCClient("dips://volhcb09.cern.ch:9300/DataManagement/RunDBInterface")
     result = RPC.getRunParams(id)
     if result["OK"]:
-      attr = result["Value"]
+      res = result["Value"]
       c.result = []
-      for i in attr.items():
-#        if i[0] != "StandardOutput":
+      for i in res.items():
         c.result.append([i[0],i[1]])
       c.result = {"success":"true","result":c.result}
     else:
       c.result = {"success":"false","error":result["Message"]}
-    gLogger.info("Params:",id)
+    gLogger.info("RunParams:",id)
     return c.result
-#
-#
-#    c.result = {"success":"true","result":"Not implemented yet"}
-#    return c.result
 

@@ -19,7 +19,7 @@ function action(type,mode,id){
       }
     }
     if (items.length < 1){
-      alert('No jobs were selected');
+      alert('No items were selected');
       return
     }
   }else{
@@ -55,6 +55,9 @@ function action(type,mode,id){
   })
 }
 function AJAXerror(response){
+  try{
+    gMainLayout.container.unmask();
+  }catch(e){}
   var jsonData = Ext.util.JSON.decode(response.responseText);
   if(jsonData['success'] == 'false'){
     alert('Error: ' + jsonData['error']);
@@ -65,6 +68,9 @@ function AJAXerror(response){
   }
 }
 function AJAXrequest(value,id){
+  try{
+    gMainLayout.container.mask('Please wait');
+  }catch(e){}
   var params = value + '=' + id;
   Ext.Ajax.request({
     failure:function(response){
@@ -552,84 +558,6 @@ function initStore(record,groupBy){
   });
   return store;
 }
-/*
-function itemsNumber(){
-  var store = new Ext.data.SimpleStore({
-    fields:['number'],
-    data:[[25],[50],[100],[200],[500],[1000]]
-  });
-  var combo = new Ext.form.ComboBox({
-    displayField:'number',
-    mode:'local',
-    name:'number',
-    selectOnFocus:true,
-    store:store,
-    triggerAction:'all',
-    typeAhead:true,
-    value:25,
-    width:50
-  });
-  combo.on({
-    'collapse':function(){
-      try{
-        var table = Ext.getCmp('DataMonitoringTable');
-        if(table){
-          if(table.bbar.pageSize != combo.value){
-            table.bbar.pageSize = combo.value;
-            table.store.load({params:{start:0,limit:table.bbar.pageSize}});
-          }
-        }
-      }catch(e){}
-    }
-  });
-  return combo
-}
-*/
-/*
-function itemsNumber(){
-  var store = new Ext.data.SimpleStore({
-    fields:['number'],
-    data:[[25],[50],[100],[200],[500],[1000]]
-  });
-  var value = 25;
-  try{
-    if(dataSelect.extra.limit){ // Will be deleted in table function
-      value = dataSelect.extra.limit/1;
-    }
-  }catch(e){}
-  var combo = new Ext.form.ComboBox({
-    allowBlank:false,
-    displayField:'number',
-    editable:false,
-    maxLength:4,
-    maxLengthText:'The maximum value for this field is 1000',
-    minLength:1,
-    minLengthText:'The minimum value for this field is 1',
-    mode:'local',
-    name:'number',
-    selectOnFocus:true,
-    store:store,
-    triggerAction:'all',
-    typeAhead:true,
-    value:value,
-    width:50
-  });
-  combo.on({
-    'collapse':function(){
-      try{
-        var table = Ext.getCmp('DataMonitoringTable');
-        if(table){
-          if(table.bbar.pageSize != combo.value){
-            table.bbar.pageSize = combo.value;
-            table.store.load({params:{start:0,limit:table.bbar.pageSize}});
-          }
-        }
-      }catch(e){}
-    }
-  });
-  return combo;
-}
-*/
 function itemsNumber(){
   var store = new Ext.data.SimpleStore({
     fields:['number'],
@@ -1396,23 +1324,6 @@ function setTitle(value,id){
   title = titleValue + titleID;
   return title;
 }
-function status(value){
-  if(value == 'Done'){
-    return '<img src="'+gURLRoot+'/images/monitoring/done.gif">';
-  }else if(value == 'Failed'){
-    return '<img src="'+gURLRoot+'/images/monitoring/failed.gif">';
-  }else if((value == 'Waiting')||(value == 'Stopped')){
-    return '<img src="'+gURLRoot+'/images/monitoring/waiting.gif">';
-  }else if(value == 'Deleted'){
-    return '<img src="'+gURLRoot+'/images/monitoring/deleted.gif">';
-  }else if(value == 'Matched'){
-    return '<img src="'+gURLRoot+'/images/monitoring/matched.gif">';
-  }else if((value == 'Running')||(value == 'Active')){
-    return '<img src="'+gURLRoot+'/images/monitoring/running.gif">';
-  }else{
-    return '<img src="'+gURLRoot+'/images/monitoring/unknown.gif">';
-  }
-}
 function table(tableMngr){
   if(tableMngr.store){
     var store = tableMngr.store;
@@ -1531,7 +1442,7 @@ function status(value){
     return '<img src="'+gURLRoot+'/images/monitoring/deleted.gif">';
   }else if((value == 'Matched')||(value == 'CREATED')){
     return '<img src="'+gURLRoot+'/images/monitoring/matched.gif">';
-  }else if((value == 'Running')||(value == 'Active')||(value == 'Fair')||(value == 'ACTIVE')||(value == 'MIGRATING')){
+  }else if((value == 'Running')||(value == 'Active')||(value == 'Fair')||(value == 'ACTIVE')||(value == 'MIGRATING')||(value == 'OPENED')){
     return '<img src="'+gURLRoot+'/images/monitoring/running.gif">';
   }else if((value == 'NoMask')||(value == 'NOT NEEDED')){
     return '<img src="'+gURLRoot+'/images/monitoring/unknown.gif">';
