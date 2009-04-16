@@ -43,6 +43,7 @@ function initSidebar(){
   var endLSelect = selectEndLumiMenu();
   var startLSelect = selectStartLumiMenu();
   var beamSelect = selectBeamEnergyMenu();
+  select.buttons[2].hide(); // Remove refresh button
   // Insert object to container BEFORE buttons:
   select.insert(0,id);
   select.insert(1,stateSelect);
