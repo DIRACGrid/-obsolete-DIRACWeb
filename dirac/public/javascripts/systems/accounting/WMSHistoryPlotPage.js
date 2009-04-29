@@ -26,7 +26,7 @@ function renderPage( plotsList, selectionData ){
   selWidgets.push( createMultiselect( "Status", "Major status", selectionData.Status ) );
   selWidgets.push( createMultiselect( "MinorStatus", "Minor status", selectionData.MinorStatus ) );
   selWidgets.push( createMultiselect( "ApplicationStatus", "Application status", selectionData.ApplicationStatus ) );
-  selWidgets.push( createMultiselect( "Site", "Site", selectionData.Site ) );
+  selWidgets.push( createMultiselect( "Site", "Site", orderSiteList( selectionData.Site ) ) );
   selWidgets.push( createMultiselect( "JobGroup", "Job Group", selectionData.JobGroup ) );
   selWidgets.push( createMultiselect( "JobSplitType", "Job Split Type", selectionData.JobSplitType ) );
 

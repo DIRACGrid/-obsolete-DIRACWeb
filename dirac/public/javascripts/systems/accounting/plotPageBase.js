@@ -208,3 +208,27 @@ function validateSelection( parsedSelection )
 	}
 	return true;
 }
+
+
+function orderSiteList( siteList )
+{
+  var firstSites = [ "LCG.CERN.ch", "LCG.CNAF.it", "LCG.GRIDKA.de", "LCG.IN2P3.fr", 
+                     "LCG.NIKHEF.nl", "LCG.PIC.es", "LCG.RAL.uk" ];
+  var orderedSites = [];
+  for( var i = 0; i < firstSites.length; i++ )
+  {
+    site = firstSites[i];
+    for( var j = 0; j < siteList.length; j++ )
+    {
+      if( site == siteList[j] )
+      {
+        orderedSites.push( site );
+        delete siteList[j];
+        break; 
+      }
+    }
+  }
+  for( var i = 0; i < siteList.length; i++ )
+    orderedSites.push( siteList[i] );
+  return orderedSites;
+}
