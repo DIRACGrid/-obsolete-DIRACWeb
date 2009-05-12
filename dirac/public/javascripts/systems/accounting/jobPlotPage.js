@@ -33,11 +33,13 @@ function renderPage( plotsList, selectionData ){
   selWidgets.push( createHidden( "typeName", "Job" ) );
   appendToLeftPanel( createPanel( "Selection conditions", selWidgets ) );
 
-  var orderKeys = []
+  var orderKeys = [];
   for( key in selectionData )
   {
   	orderKeys.push( [ key, key ] );
   }
+  orderKeys.push( [ 'Country', 'Country' ] );
+  orderKeys.push( [ 'Grid', 'Grid' ] );
 
   appendToLeftPanel( createRadioBoxPanel( "grouping", "Group by", orderKeys ) );
 

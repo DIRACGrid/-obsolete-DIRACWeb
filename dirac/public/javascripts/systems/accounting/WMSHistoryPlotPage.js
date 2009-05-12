@@ -38,6 +38,8 @@ function renderPage( plotsList, selectionData ){
   {
   	orderKeys.push( [ key, key ] );
   }
+  orderKeys.push( [ 'Country', 'Country' ] );
+  orderKeys.push( [ 'Grid', 'Grid' ] );
 
   appendToLeftPanel( createRadioBoxPanel( "grouping", "Group by", orderKeys ) );
 
