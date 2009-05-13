@@ -238,7 +238,7 @@ YAHOO.util.Event.onDOMReady(WFE.Init,WFE,true);
 		</tr>
 		<tr>
 			<td style="text-align: right;">Value:</td>
-			<td> <input name="ParEditValue" id="ParEditValue" type="text" maxlength="256" size="64"></td>
+			<td> <input name="ParEditValue" id="ParEditValue" type="text" maxlength="1024" size="64"></td>
 		</tr>
 	</table>
 	<hr>
