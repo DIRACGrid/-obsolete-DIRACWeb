@@ -61,12 +61,23 @@ class AccountingplotsController(BaseController):
 
   def __parseFormParams( self ):
     pD = {}
+    extraParams = {}
+    pinDates = False
     for name in request.params:
       if name.find( "_" ) != 0:
         continue
       value = request.params[ name ]
       name = name[1:]
       pD[ name ] = str( value )
+    #Personalized title?
+    if 'plotTitle' in pD:
+      extraParams[ 'plotTitle' ] = pD[ 'plotTitle' ]
+      del( pD[ 'plotTitle' ] )
+    #Pin dates?
+    if 'pinTime' in pD:
+      pinDates = pD[ 'pinTime' ]
+      del( pD[ 'pinTime' ] )
+      pinDates = pinDates.lower() in ( "yes", "y", "true", "1" )
     #Get plotname
     if not 'grouping' in pD:
       return S_ERROR( "Missing grouping!" )
@@ -84,23 +95,29 @@ class AccountingplotsController(BaseController):
     #Get times
     if not 'timeSelector' in pD:
       return S_ERROR( "Missing time span!" )
+    #Find the proper time!
     pD[ 'timeSelector' ] = int( pD[ 'timeSelector' ] )
     if pD[ 'timeSelector' ] > 0:
       end = Time.dateTime()
       start = end - datetime.timedelta( seconds = pD[ 'timeSelector' ] )
+      if not pinDates:
+        extraParams[ 'lastSeconds' ] = pD[ 'timeSelector' ]
     else:
-      for field in ( 'startTime', 'endTime' ):
-        if not field in pD:
-          return S_ERROR( "Missing %s!" % field )
-      end = Time.fromString( pD[ 'endTime' ] )
-      del( pD[ 'endTime' ] )
-      start = Time.fromString( pD[ 'startTime' ] )
-      del( pD[ 'startTime' ] )
+      if 'endTime' not in pD:
+        end = Time.dateTime()
+      else:
+        end = Time.fromString( pD[ 'endTime' ] )
+        del( pD[ 'endTime' ] )
+      if 'startTime' not in pD:
+        return S_ERROR( "Missing starTime!" )
+      else:
+        start = Time.fromString( pD[ 'startTime' ] )
+        del( pD[ 'startTime' ] )
     del( pD[ 'timeSelector' ] )
     #Listify the rest
     for selName in pD:
       pD[ selName ] = List.fromChar( pD[ selName ], "," )
-    return S_OK( ( typeName, reportName, start, end, pD, grouping, {} ) )
+    return S_OK( ( typeName, reportName, start, end, pD, grouping, extraParams ) )
 
   def __translateToExpectedExtResult( self, retVal ):
     if retVal[ 'OK' ]:
