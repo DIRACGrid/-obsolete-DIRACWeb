@@ -38,14 +38,14 @@ function fillSelectionPanel( plotRequest )
 	var plotSelector = gLeftSidebarPanel.find( "name", "plotName" )[0];
 	plotSelector.setValue( plotRequest._plotName );
 	//Set grouping
-	var grouping = gLeftSidebarPanel.find( "name", "grouping" );
-	for( var i = 0; i < grouping.length; i++ )
-	{
-		if( grouping[i].boxLabel == plotRequest._grouping )
-			grouping[i].setValue( true );
-		else
-			grouping[i].setValue( false );
-	}
+	var groupingSelector = gLeftSidebarPanel.find( "name", "grouping" )[0];
+	groupingSelector.setValue( plotRequest._grouping );
+	//Set pinned
+	var pinningCheck = gLeftSidebarPanel.find( "name", "pinDates" )[0];
+	pinningCheck.setValue ( "_pinDates" in plotRequest && plotRequest[ '_pinDates' ]+"" == "true" )
+	//Set title
+	var plotTitleText = gLeftSidebarPanel.find( "name", "plotTitle" )[0];
+	plotTitleText.setValue( plotRequest._plotTitle );
 	//Set time
 	var timeSel = gLeftSidebarPanel.find( "name", "timeSelector" );
 	for( var i = 0; i < timeSel.length; i++ )
@@ -71,6 +71,10 @@ function fillSelectionPanel( plotRequest )
 		if( name in plotRequest )
 		{
 			selection.setValue( plotRequest[ name ] );
+		}
+		else
+		{
+			selection.setValue( false );
 		}
 	}
 }
@@ -190,12 +194,12 @@ function validateSelection( parsedSelection )
 	}
 	if( parsedSelection._timeSelector == -1 )
 	{
-		if ( ! parsedSelection._endTime || ! parsedSelection._startTime )
+		if ( ! parsedSelection._startTime )
 		{
-			alert( "Start and end dates?" );
+			alert( "Start date?" );
 			return false;
 		}
-		else if( parsedSelection._endTime <= parsedSelection._startTime )
+		else if( parsedSelection._endTime && parsedSelection._endTime <= parsedSelection._startTime )
 		{
 			alert( "End time has to be greater than start time" );
 			return false;

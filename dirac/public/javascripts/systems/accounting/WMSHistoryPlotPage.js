@@ -14,6 +14,15 @@ function renderPage( plotsList, selectionData ){
 
   appendToLeftPanel( createComboBox( "plotName", "Plot to generate", "Select a plot", plotsList ) );
 
+  var orderKeys = [];
+  for( key in selectionData )
+  {
+  	orderKeys.push( [ key, key ] );
+  }
+  orderKeys.push( [ 'Country', 'Country' ] );
+  orderKeys.push( [ 'Grid', 'Grid' ] );
+  appendToLeftPanel( createComboBox( "grouping", "Group by", "Select grouping", orderKeys ) );
+
   appendTimeSelectorToLeftPanel();
 
   var selWidgets = []
@@ -33,15 +42,10 @@ function renderPage( plotsList, selectionData ){
   selWidgets.push( createHidden( "typeName", "WMSHistory" ) );
   appendToLeftPanel( createPanel( "Selection conditions", selWidgets ) );
 
-  var orderKeys = []
-  for( key in selectionData )
-  {
-  	orderKeys.push( [ key, key ] );
-  }
-  orderKeys.push( [ 'Country', 'Country' ] );
-  orderKeys.push( [ 'Grid', 'Grid' ] );
-
-  appendToLeftPanel( createRadioBoxPanel( "grouping", "Group by", orderKeys ) );
+  var advWidgets = [];
+  advWidgets.push( createTextField( "plotTitle", "Plot title", "" ) );
+  advWidgets.push( createCheckBox( "pinDates", "Pin dates", "true" ) );
+  appendToLeftPanel( createPanel( "Advanced options", advWidgets ) );
 
   renderPlotPage();
 }

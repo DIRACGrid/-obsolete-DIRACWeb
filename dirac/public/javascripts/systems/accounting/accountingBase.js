@@ -156,7 +156,8 @@ function parseLeftPanelSelections( rootElement )
 		else if( currentEl.inputType == "hidden" )
 			contents[ "_" + currentEl.name ] = currentEl.value;
 		else if( currentEl.checked )
-			contents[ "_" + currentEl.name ] = currentEl.value;
+			// + "" hack to ensure value is converted to string
+			contents[ "_" + currentEl.name ] = currentEl.value + "";
 		else if( currentEl.isDirty() )
 		{
 			var value = currentEl.getValue();
