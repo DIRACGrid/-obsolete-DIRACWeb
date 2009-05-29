@@ -131,7 +131,7 @@ class AccountingplotsController(BaseController):
       return retVal
     params = retVal[ 'Value' ]
     repClient = ReportsClient( rpcClient = getRPCClient( "Accounting/ReportGenerator" ) )
-    retVal = repClient.generatePlot( *params )
+    retVal = repClient.generateDelayedPlot( *params )
     return retVal
 
   def getPlotData(self):
