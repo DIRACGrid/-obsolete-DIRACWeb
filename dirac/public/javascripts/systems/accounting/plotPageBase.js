@@ -42,7 +42,7 @@ function fillSelectionPanel( plotRequest )
 	groupingSelector.setValue( plotRequest._grouping );
 	//Set pinned
 	var pinningCheck = gLeftSidebarPanel.find( "name", "pinDates" )[0];
-	pinningCheck.setValue ( "_pinDates" in plotRequest && plotRequest[ '_pinDates' ]+"" == "true" )
+	pinningCheck.setValue ( '_pinDates' in plotRequest && plotRequest[ '_pinDates' ]+"" == "true" )
 	//Set title
 	var plotTitleText = gLeftSidebarPanel.find( "name", "plotTitle" )[0];
 	plotTitleText.setValue( plotRequest._plotTitle );
@@ -86,11 +86,106 @@ function humanReadableDate( dateObj )
 
 function activeTabChanged( tabPanel, tab )
 {
-	parent.location.hash = tab.uDETabDef;
-	fillSelectionPanel( tab.uPlotRequest );
+	if( tab.uDETabDef )
+		parent.location.hash = tab.uDETabDef;
+	if( tab.uPlotRequest )
+		fillSelectionPanel( tab.uPlotRequest );
 }
 
-function serverGeneratedPlots( panel, ajaxEvent )
+function createNewTab()
+{
+	var refreshButton = new Ext.Toolbar.Button({
+    	text : "Refresh",
+    	plotParams : {},
+    	handler : cbPlotRefreshHandler,
+  		});
+  	var autoRefreshMenu = new Ext.menu.Menu( {
+  			items : [ { text : 'Disabled', value : 0 },
+  					  { text : 'Each 15m', value : 900 },
+  					  { text : 'Each hour', value : 3600 },
+  					  { text : 'Each day', value : 86400 }
+  				    ],
+  			listeners : { itemclick : cbPlotAutoRefreshHandler },
+  			plotParams : {},
+  			} );
+  	var autoRefreshButton = new Ext.Toolbar.Button({
+  		text : "Auto refresh :  Disabled",
+  		menu : autoRefreshMenu ,
+  		});
+  	autoRefreshMenu.parentButton = autoRefreshButton;
+   var refreshBar = new Ext.Toolbar({
+    	items : [ refreshButton,
+    				 "<a target='_blank' href='getPlotData'>CSV data</a>",
+    				 "->",
+    				 autoRefreshButton ],
+   		margins: '0 0 0 0'
+  		});
+	var tab = gMainPanel.add( {
+		title : "Empty tab",
+		uDETabDef : "",
+		uPlotRequest : {},
+		closable : true,
+		iconCls: 'tabs',
+		//html : "",
+		// Plots are generated on the fly now
+		//"<img src='getPlotImg?file="+imgFile+"' style='margin:5px'/>",
+		tbar : refreshBar,
+		listeners : { close : cbTabDeactivate, deactivate : cbTabDeactivate },
+		uAutoRefreshButton : autoRefreshButton,
+		} );
+	tab.show();
+	refreshButton.plotTab = tab;
+	autoRefreshMenu.plotTab = tab;
+}
+
+function serverGeneratedPlots( panel, ajaxEvent, submitButton )
+{
+	var imgFile = ajaxEvent.result.data;
+
+	var ajaxParams = ajaxEvent.options.params;
+	if( ajaxParams._timeSelector == '86400' )
+		var timeSpan = " for last day";
+	else if ( ajaxParams._timeSelector == '604800' )
+		var timeSpan = " for last week";
+	else if ( ajaxParams._timeSelector == '2592000' )
+		var timeSpan = " for last month";
+	else var timeSpan = " since " + ajaxParams._startTime + " until " + ajaxParams._endTime;
+
+	var tabTitle = ajaxParams._plotName + " by " + ajaxParams._grouping + timeSpan;
+
+  	var urlParams = []
+  	for( a in ajaxEvent.options.params )
+  		urlParams.push( a+"="+escape(ajaxEvent.options.params[a]).replace('+', '%2B').replace('%20', '+').replace('*', '%2A').replace('/', '%2F').replace('@', '%40') );
+
+	if ( ! gMainPanel.getActiveTab() || ( 'createNewTab' in submitButton && submitButton.createNewTab ) )
+	{
+		createNewTab();
+		fillSelectionPanel( ajaxParams )
+	}
+
+	var activeTab = gMainPanel.getActiveTab();
+
+	activeTab.setTitle( tabTitle );
+	activeTab.uDETabDef = ajaxEvent.options.sDEParams;
+	activeTab.uPlotRequest = ajaxParams;
+
+	var tabBar = activeTab.getTopToolbar();
+	var barItems = tabBar.items;
+	var refreshButton = barItems.items[0];
+	refreshButton.plotParams = ajaxParams;
+	var csvLink = barItems.items[1];
+	csvLink.el.innerHTML = "<a target='_blank' href='getPlotData?"+urlParams.join("&")+"'>CSV data</a>";
+	var autoRefreshButton = barItems.items[3];
+	autoRefreshButton.menu.plotParams = ajaxParams;
+
+	//Set the anchor
+	parent.location.hash = ajaxEvent.options.sDEParams;
+	//Trigger fist update of the tab
+	activeTab.getUpdater().update({ url : gHTMLPlottingURL, params : ajaxParams, text : 'Generating plot...' });
+
+}
+
+function OLDserverGeneratedPlots( panel, ajaxEvent, submitButton )
 {
 	var imgFile = ajaxEvent.result.data;
 
@@ -141,7 +236,9 @@ function serverGeneratedPlots( panel, ajaxEvent )
 		uPlotRequest : ajaxParams,
 		closable : true,
 		iconCls: 'tabs',
-		html : "<img src='getPlotImg?file="+imgFile+"' style='margin:5px'/>",
+		html : "",
+		// Plots are generated on the fly now
+		//"<img src='getPlotImg?file="+imgFile+"' style='margin:5px'/>",
 		tbar : refreshBar,
 		listeners : { close : cbTabDeactivate, deactivate : cbTabDeactivate },
 		uAutoRefreshButton : autoRefreshButton,
@@ -151,6 +248,8 @@ function serverGeneratedPlots( panel, ajaxEvent )
 	autoRefreshMenu.plotTab = tab;
 	//Set the hash anchor
 	parent.location.hash = ajaxEvent.options.sDEParams;
+	//Trigger fist update of the tab
+	tab.getUpdater().update({ url : gHTMLPlottingURL, params : ajaxParams, text : 'Generating plot...' });
 }
 
 function cbPlotAutoRefreshHandler( menuItem, clickEvent )
@@ -216,7 +315,7 @@ function validateSelection( parsedSelection )
 
 function orderSiteList( siteList )
 {
-  var firstSites = [ "LCG.CERN.ch", "LCG.CNAF.it", "LCG.GRIDKA.de", "LCG.IN2P3.fr", 
+  var firstSites = [ "LCG.CERN.ch", "LCG.CNAF.it", "LCG.GRIDKA.de", "LCG.IN2P3.fr",
                      "LCG.NIKHEF.nl", "LCG.PIC.es", "LCG.RAL.uk" ];
   var orderedSites = [];
   for( var i = 0; i < firstSites.length; i++ )
@@ -228,7 +327,7 @@ function orderSiteList( siteList )
       {
         orderedSites.push( site );
         delete siteList[j];
-        break; 
+        break;
       }
     }
   }

@@ -41,8 +41,13 @@ function createLeftSelectPanel( panelTitle, submitURL, cbParseSelection , cbSucc
     method : 'POST',
     items : [ { layout : 'form',
                 border : false,
-                buttons : [ { text: 'Submit',
+                buttons : [ { text: 'Plot',
                               handler : cbLeftPanelAJAXSubmitHandler,
+                              createNewTab : false,
+                            },
+                            { text: 'Plot in new tab',
+                              handler : cbLeftPanelAJAXSubmitHandler,
+                              createNewTab : true,
                             },
                             { text: 'Reset',
                               handler: cbLeftPanelResetHandler,
@@ -68,10 +73,10 @@ function cbLeftPanelAJAXSubmitHandler( submitButton, clickEvent )
 		if( ! gLeftSidebarPanel.userCBValidatingCallback( parsedParams ) )
 			return;
 
-	executeAJAXRequest( parsedParams );
+	executeAJAXRequest( parsedParams, submitButton );
 }
 
-function executeAJAXRequest( parsedParams )
+function executeAJAXRequest( parsedParams, submitButton )
 {
 	gLeftSidebarPanel.form.submit( {
 	   params : parsedParams,
@@ -81,7 +86,7 @@ function executeAJAXRequest( parsedParams )
 		timeout : 60000,
 		success : function( panel, ajaxEvent )
 			{
-				gLeftSidebarPanel.userCBSuccessAJAXCallback( panel, ajaxEvent );
+				gLeftSidebarPanel.userCBSuccessAJAXCallback( panel, ajaxEvent, submitButton );
 			},
 		failure : function( panel, ajaxEvent )
 			{
