@@ -149,7 +149,11 @@ function serverGeneratedPlots( panel, ajaxEvent, submitButton )
 		var timeSpan = " for last week";
 	else if ( ajaxParams._timeSelector == '2592000' )
 		var timeSpan = " for last month";
-	else var timeSpan = " since " + ajaxParams._startTime + " until " + ajaxParams._endTime;
+	else {
+		var timeSpan = " since " + ajaxParams._startTime;
+		if( ajaxParams._endTime )
+			timeSpan = timeSpan + " until " + ajaxParams._endTime;
+	}
 
 	var tabTitle = ajaxParams._plotName + " by " + ajaxParams._grouping + timeSpan;
 
