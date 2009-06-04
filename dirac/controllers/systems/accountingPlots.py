@@ -74,9 +74,9 @@ class AccountingplotsController(BaseController):
       extraParams[ 'plotTitle' ] = pD[ 'plotTitle' ]
       del( pD[ 'plotTitle' ] )
     #Pin dates?
-    if 'pinTime' in pD:
-      pinDates = pD[ 'pinTime' ]
-      del( pD[ 'pinTime' ] )
+    if 'pinDates' in pD:
+      pinDates = pD[ 'pinDates' ]
+      del( pD[ 'pinDates' ] )
       pinDates = pinDates.lower() in ( "yes", "y", "true", "1" )
     #Get plotname
     if not 'grouping' in pD:
