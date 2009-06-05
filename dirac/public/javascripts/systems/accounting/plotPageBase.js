@@ -161,7 +161,7 @@ function serverGeneratedPlots( panel, ajaxEvent, submitButton )
   	for( a in ajaxEvent.options.params )
   		urlParams.push( a+"="+escape(ajaxEvent.options.params[a]).replace('+', '%2B').replace('%20', '+').replace('*', '%2A').replace('/', '%2F').replace('@', '%40') );
 
-	if ( ! gMainPanel.getActiveTab() || ( 'createNewTab' in submitButton && submitButton.createNewTab ) )
+	if ( 0 == gMainPanel.items.length || ( 'createNewTab' in submitButton && submitButton.createNewTab ) )
 	{
 		createNewTab();
 		fillSelectionPanel( ajaxParams )
