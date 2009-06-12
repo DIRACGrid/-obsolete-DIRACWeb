@@ -155,7 +155,10 @@ function serverGeneratedPlots( panel, ajaxEvent, submitButton )
 			timeSpan = timeSpan + " until " + ajaxParams._endTime;
 	}
 
-	var tabTitle = ajaxParams._plotName + " by " + ajaxParams._grouping + timeSpan;
+    if( ajaxParams._plotTitle )
+        var tabTitle = ajaxParams._plotTitle + " by " + ajaxParams._grouping + timeSpan;
+    else
+        var tabTitle = ajaxParams._plotName + " by " + ajaxParams._grouping + timeSpan;
 
   	var urlParams = []
   	for( a in ajaxEvent.options.params )
