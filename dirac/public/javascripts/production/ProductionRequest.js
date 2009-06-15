@@ -445,6 +445,512 @@ PR.BkSimCondBrowser = Ext.extend(Ext.Window, {
   }
 });
 
+
+/**
+ * PR.TemplateStore
+ * @extends Ext.data.JsonStore
+ * That is a specialized Store for Production Templates
+ *
+ * Portal based version.
+ */
+PR.TemplateStore = function(config) {
+  var config = config || {};
+  Ext.applyIf(config, {
+    // autoLoad:   true,
+    url:        'templates',
+    root:       'result',
+    remoteSort: false,
+    fields: [
+      "AuthorGroup",
+      "Author",
+      "PublishingTime",
+      "LongDescription", 
+      "WFName",
+      "AuthorDN",
+      "WFParent",
+      "Description"
+    ],
+    listeners : { 
+      'loadexception' : { 
+	fn: storeBugger('list of Production Templates'), 
+	scope: this
+      }
+    }
+  });
+  PR.TemplateStore.superclass.constructor.call(this, config);
+}
+Ext.extend(PR.TemplateStore,Ext.data.JsonStore);
+
+
+/**
+ * PR.TemplateList
+ * @extends Ext.grid.GridPanel
+ * This is a custom grid to display the list of Templates
+ */
+PR.TemplateList = Ext.extend(Ext.grid.GridPanel, {
+  // override
+  initComponent: function() {
+    var store = new PR.TemplateStore();
+    store.load();
+
+    Ext.apply(this, {
+      columns: [
+	{header:'Template',sortable:true, dataIndex:'WFName'}
+      ],
+      autoHeight:    false,
+      autoWidth:     true,
+      loadMask:      true,
+
+      store:         store,
+      sm:            new Ext.grid.RowSelectionModel({singleSelect: true}),
+      stripeRows:    true,
+      viewConfig:    {forceFit:true},
+    });
+    PR.TemplateList.superclass.initComponent.call(this);
+  }
+});
+
+/**
+ * PR.TemplateDetail
+ * @extends Ext.Panel
+ * Specialized Panel to show information about
+ * template.
+ *
+ * Markup version
+ */
+PR.TemplateDetail = Ext.extend(Ext.Panel, {
+  tplMarkup: [
+    '<b>Name:</b> {WFName}<br/>',
+    '<b>Short description:</b> {Description}<br/>',
+    '<b>Author:</b> {Author}<br/>',
+    '<b>Last modified:</b> {PublishingTime}<br/>',
+    '<b>Description:</b> {LongDescription}<br/>'
+  ],
+
+  initComponent: function() {
+    this.tpl = new Ext.Template(this.tplMarkup);
+    this.data = {};
+    PR.TemplateDetail.superclass.initComponent.call(this);
+  },
+
+  updateDetail: function(data) {
+    this.data = data;
+    this.tpl.overwrite(this.body, this.data);
+  }
+});
+
+/**
+ * PR.SubrequestStore
+ * @extends Ext.data.JsonStore
+ * That is a specialized Store for Subrequests (without TreeGrid)
+ *
+ * Portal based version.
+ */
+PR.SubrequestStore = function(config) {
+  var config = config || {};
+  Ext.applyIf(config, {
+    // autoLoad:   true,
+    url:        'list',
+    root:       'result',
+    id:         'ID',
+    remoteSort: false,
+    fields: [
+      {name:'ID', type: 'auto'},
+      {name:'eventType'},
+      {name:'eventNumber'},
+      {name:'eventBK'},
+      {name:'progress'},
+    ],
+    listeners : { 
+      'loadexception' : { 
+	fn: storeBugger('list of Subrequests'), 
+	scope: this
+      }
+    }
+  });
+  PR.SubrequestStore.superclass.constructor.call(this, config);
+}
+Ext.extend(PR.SubrequestStore,Ext.data.JsonStore);
+
+
+/**
+ * PR.SubrequestList
+ * @extends Ext.grid.GridPanel
+ * This is a custom grid to display the list of subrequests
+ */
+PR.SubrequestList = Ext.extend(Ext.grid.GridPanel, {
+  // override
+  initComponent: function() {
+    store = new PR.SubrequestStore();
+    sm = new Ext.grid.CheckboxSelectionModel();
+    Ext.apply(this, {
+      columns: [
+	sm,
+	{id: 'Id', header:'Id', sortable:true, dataIndex:'ID', width:40},
+	{header:'Event type', sortable:true, dataIndex:'eventType' },
+	{header:'Events requested', sortable:true,dataIndex:'eventNumber' },
+	{header:'Events in BK', dataIndex:'eventBK' },
+	{header:'Progress (%)', dataIndex:'progress' }
+      ],
+      autoHeight:    false,
+      autoWidth:     true,
+      loadMask:      true,
+
+      store:         store,
+      sm:            sm,          
+      stripeRows:    true,
+      viewConfig:    {forceFit:true},
+    });
+    store.setDefaultSort('ID', 'ASC');
+    PR.SubrequestList.superclass.initComponent.call(this);
+  }
+});
+
+/**
+ * PR.TemplateParStore
+ * @extends Ext.data.JsonStore
+ * That is a specialized Store for Template parameters
+ *
+ * Portal based version.
+ */
+PR.TemplateParStore = function(config) {
+  var config = config || {};
+  Ext.applyIf(config, {
+    // autoLoad:   true,
+    url:        'template_parlist',
+    root:       'result',
+    remoteSort: false,
+    fields: [
+      "par",
+      "label",
+      "value"
+    ],
+    listeners : { 
+      'loadexception' : { 
+	fn: storeBugger('list of Template parameters'), 
+	scope: this
+      }
+    }
+  });
+  PR.TemplateParStore.superclass.constructor.call(this, config);
+}
+Ext.extend(PR.TemplateParStore,Ext.data.JsonStore);
+
+/**
+ * PR.TemplateParList
+ * @extends Ext.grid.EditorGridPanel
+ * This is a custom grid to display and edit the list of Template Parameters
+ */
+PR.TemplateParList = Ext.extend(Ext.grid.EditorGridPanel, {
+  // override
+  initComponent: function() {
+    store = new PR.TemplateParStore();
+    Ext.apply(this, {
+      columns: [
+	{header:'Parameter', sortable:true, dataIndex:'label'},
+	{header:'Value', sortable:false, dataIndex:'value', 
+	 editor: new Ext.form.TextField() }
+      ],
+      autoHeight:    false,
+      autoWidth:     true,
+      loadMask:      true,
+
+      store:         store,
+      stripeRows:    true,
+      clicksToEdit:  1,
+      viewConfig:    {forceFit:true},
+    });
+    store.setDefaultSort('label', 'ASC');
+    PR.SubrequestList.superclass.initComponent.call(this);
+  }
+});
+
+
+/**
+ * PR.PrWorkflow
+ * @extends Ext.Window
+ * Generate a workflow from template and request
+ */
+PR.PrWorkflow = Ext.extend(Ext.Window, {
+  initComponent : function() {
+    var list = new PR.TemplateList({
+      region:  'center',
+      split:   true,
+      margins: '5 0 5 5',
+      minWidth: 300,
+    });
+    list.getSelectionModel().on('rowselect', this.onTemplateSelect, this);
+
+    this.detail = new PR.TemplateDetail({
+      region: 'east',
+      split: true,
+      width: 350,
+      minWidth: 200,
+      margins: '5 5 5 0',
+      
+      title: 'Template details',
+      bodyStyle: 'padding-left:15px; padding-top:5px',
+
+      html: '<p>Plese select Template on the left side</p>',
+    });
+
+    template_select  = new Ext.Panel({
+      id: 'prw-template-card',
+      layout: 'border',
+      items: [ list, this.detail ]
+    });
+
+
+    this.parlist = new PR.TemplateParList({
+      id: 'prw-parlist-card',
+      title: 'Please specify Production parameters'
+    });
+    this.parlist.getStore().on('load',this.onTemplateLoad,this);
+
+    this.sublist = new PR.SubrequestList({
+      id: 'prw-subrequest-card',
+      title: 'Select subrequest(s)'
+    });
+    if(!this.pData._is_leaf){
+      this.sublist.store.load({params: {anode:this.pData.ID}});
+    }
+    
+    this.sublist.getSelectionModel().on('selectionchange', 
+					this.onSubrequestSelection, this);
+
+    this.scriptlist = new Ext.TabPanel({
+      items: [{ xtype: 'textarea', title: 'Something', readOnly: true }],
+      enableTabScroll:  true,
+      layoutOnTabChange: true, // !!! BF: forms bug !!!
+      id: 'prw-scripts-card',
+      activeTab:        0
+    });
+
+    Ext.apply(this, {
+      title: 'Generate production script',
+      width: 750,
+      height: 350,
+      minWidth: 500,
+      minHeight: 300,
+      maximizable: true,
+      modal: true,
+      layout: 'card',
+      activeItem: 0,
+      items: [ template_select, this.parlist, this.sublist, this.scriptlist ],
+      buttonAlign: 'right',
+      buttons: [
+	{text: '&laquo; Previous', handler: this.onPrevious, scope:this,
+	 id: 'prw-prev-btn', disabled: true },
+	{text: 'Next &raquo;', handler: this.onNext, scope:this,
+	 id: 'prw-next-btn', disabled: true },
+	{text: 'Generate', handler: this.onGenerate, scope:this,
+	 id: 'prw-finish-btn', disabled: true },
+	{text: 'Cancel', handler: this.close, scope: this }
+      ]
+    });
+    PR.PrWorkflow.superclass.initComponent.call(this);
+  },
+  onTemplateSelect: function(sm, row, rec) {
+    Ext.getCmp('prw-next-btn').disable();
+    Ext.getCmp('prw-finish-btn').disable();
+    this.detail.updateDetail(rec.data);
+    this.parlist.getStore().load({ params:{tpl:rec.data.WFName} })
+  },
+  onTemplateLoad: function(st,rec,opt) {
+    if(st.getTotalCount() != 0 || !this.pData._is_leaf)
+      Ext.getCmp('prw-next-btn').enable();
+    else
+      Ext.getCmp('prw-finish-btn').enable();
+  },
+  onSubrequestSelection: function(sm) {
+    var sel = sm.getSelections();
+    if(!sel.length)
+      Ext.getCmp('prw-finish-btn').disable();
+    else
+      Ext.getCmp('prw-finish-btn').enable();
+  },
+  onNext: function() {
+    sll = this.sublist.getSelectionModel().getSelections().length;
+    if(this.layout.activeItem.id == 'prw-template-card'){
+      if(this.parlist.getStore().getTotalCount() == 0){
+	Ext.getCmp('prw-next-btn').disable();
+	if(sll)
+	  Ext.getCmp('prw-finish-btn').enable();
+	else
+	  Ext.getCmp('prw-finish-btn').disable();
+	Ext.getCmp('prw-prev-btn').enable();
+	this.layout.setActiveItem('prw-subrequest-card');
+      } else {
+	if(this.pData._is_leaf){
+	  Ext.getCmp('prw-next-btn').disable();
+	  Ext.getCmp('prw-finish-btn').enable();
+	} else {
+	  Ext.getCmp('prw-next-btn').enable();
+	  Ext.getCmp('prw-finish-btn').disable();
+	}
+	Ext.getCmp('prw-prev-btn').enable();
+	this.layout.setActiveItem('prw-parlist-card');
+      }
+    } else if(this.layout.activeItem.id == 'prw-parlist-card'){
+      Ext.getCmp('prw-next-btn').disable();
+      if(sll)
+	Ext.getCmp('prw-finish-btn').enable();
+      else
+	Ext.getCmp('prw-finish-btn').disable();
+      this.layout.setActiveItem('prw-subrequest-card');
+    }
+  },
+  onPrevious: function() {
+    if(this.layout.activeItem.id == 'prw-subrequest-card'){
+      if(this.parlist.getStore().getTotalCount() == 0){
+	Ext.getCmp('prw-next-btn').enable();
+	Ext.getCmp('prw-finish-btn').disable();
+	Ext.getCmp('prw-prev-btn').disable();
+	this.layout.setActiveItem('prw-template-card');
+      } else {
+	Ext.getCmp('prw-next-btn').enable();
+	Ext.getCmp('prw-finish-btn').disable();
+	this.layout.setActiveItem('prw-parlist-card');
+      }
+    } else if(this.layout.activeItem.id == 'prw-parlist-card'){
+      Ext.getCmp('prw-next-btn').enable();
+      Ext.getCmp('prw-finish-btn').disable();
+      Ext.getCmp('prw-prev-btn').disable();
+      this.layout.setActiveItem('prw-template-card');
+    } else if(this.layout.activeItem.id == 'prw-scripts-card'){
+      if(!this.pData._is_leaf){
+	Ext.getCmp('prw-next-btn').disable();
+	Ext.getCmp('prw-finish-btn').enable();
+	this.layout.setActiveItem('prw-subrequest-card');
+      } else {
+	if(this.parlist.getStore().getTotalCount() == 0){
+	  Ext.getCmp('prw-next-btn').disable();
+	  Ext.getCmp('prw-prev-btn').disable();
+	  Ext.getCmp('prw-finish-btn').enable();
+	  this.layout.setActiveItem('prw-template-card');
+	} else {
+	  Ext.getCmp('prw-next-btn').disable();
+	  Ext.getCmp('prw-prev-btn').enable();
+	  Ext.getCmp('prw-finish-btn').enable();
+	  this.layout.setActiveItem('prw-parlist-card');
+	}
+      }
+    }
+  },
+  onFinish: function() {
+    var pdict = {};
+    pdict['RequestID'] = this.pData.ID;
+    pdict['Template']  = this.detail.data.WFName;
+    var recs  = this.parlist.getStore().getRange();
+    for(var i=0;i<recs.length;++i)
+      pdict[recs[i].data.par] = recs[i].data.value;
+    
+    var subr = this.sublist.getSelectionModel().getSelections();
+    var slist = [];
+    for(var i=0;i<subr.length;++i)
+      slist = slist.concat([subr[i].data.ID]);
+    pdict['Subrequests'] = slist.join(',');
+
+    var conn = new Ext.data.Connection();
+    conn.request({
+      url: 'create_workflow',
+      method: 'POST',
+      params: pdict,
+      scope: this,
+      success: function(response){
+	if (response) { // check that it is really OK... AZ: !! ??
+	  var str = '';
+	  try {
+	    var result = Ext.decode(response.responseText);
+	    if ( !result.OK )
+              str = result.Message;
+	  } catch (e2) {
+	    str = "unparsable reply from the portal: "+e2.message;
+	  }
+	  if(str){
+	    Ext.MessageBox.show({
+	      title: 'Create Workflow fail',
+	      msg: str,
+	      buttons: Ext.MessageBox.OK,
+	      icon: Ext.MessageBox.ERROR
+	    });
+	    return;
+	  }
+	}
+	this.close();
+      },
+      failure: connectBugger('Create Workflow')
+    });
+  },
+  onGenerate: function() {
+    var pdict = {};
+    pdict['RequestID'] = this.pData.ID;
+    pdict['Template']  = this.detail.data.WFName;
+    var recs  = this.parlist.getStore().getRange();
+    for(var i=0;i<recs.length;++i)
+      pdict[recs[i].data.par] = recs[i].data.value;
+    
+    var subr = this.sublist.getSelectionModel().getSelections();
+    var slist = [];
+    for(var i=0;i<subr.length;++i)
+      slist = slist.concat([subr[i].data.ID]);
+    pdict['Subrequests'] = slist.join(',');
+
+    var conn = new Ext.data.Connection();
+    conn.request({
+      url: 'create_workflow',
+      method: 'POST',
+      params: pdict,
+      scope: this,
+      success: function(response){
+	if (response) { // check that it is really OK... AZ: !! ??
+	  var str = '';
+	  try {
+	    var result = Ext.decode(response.responseText);
+	    if ( !result.OK )
+              str = result.Message;
+	  } catch (e2) {
+	    str = "unparsable reply from the portal: "+e2.message;
+	  }
+	  if(str){
+	    Ext.MessageBox.show({
+	      title: 'Create Workflow fail',
+	      msg: str,
+	      buttons: Ext.MessageBox.OK,
+	      icon: Ext.MessageBox.ERROR
+	    });
+	    return;
+	  }
+	}
+	sll = this.sublist.getSelectionModel().getSelections().length;
+	Ext.getCmp('prw-next-btn').disable();
+	Ext.getCmp('prw-finish-btn').disable();
+	Ext.getCmp('prw-prev-btn').enable();
+
+	while(this.scriptlist.items.length)
+	  this.scriptlist.remove(this.scriptlist.items.first(0));
+	for(var i=0;i<result.Value.length;++i){
+	  this.scriptlist.add(new Ext.form.TextArea({
+	    title: result.Value[i].ID,
+	    value: result.Value[i].Body,
+	    readOnly: true
+	  })).show();
+	}
+	Ext.getCmp('prw-finish-btn').disable();
+	this.layout.setActiveItem('prw-scripts-card');
+	/*
+	Ext.MessageBox.show({
+	  title: 'Production script',
+	  msg: result.Value,
+	  buttons: Ext.MessageBox.OK,
+	});*/
+      },
+      failure: connectBugger('Create Workflow')
+    });
+  }
+
+});
+
 /**
  * PR.PassDetail
  * @extends Ext.Panel
@@ -996,14 +1502,16 @@ PR.RequestEditor = Ext.extend(Ext.FormPanel, {
       buttons = [
 	{text: 'Activate', handler: this.onActivate,   scope: this},
 	{text: 'Reject the request (better first comment why)', handler: this.onReject, scope: this},
-	{text: 'Save comments', handler: this.onSave,   scope: this},
+	{text: 'Return to Tech. expert', handler: this.onReturn, scope: this},
+	{text: 'Save changes', handler: this.onSave,   scope: this},
+	{text: 'Generate', handler: this.onWorkflow, scope: this},
 	{text: 'Cancel', handler: this.onCancel, scope: this}
       ];
     } else if(this.state == "Active"){
       buttons = [
 	{text: 'Done', handler: this.onDone,   scope: this},
-	{text: 'Cancel (better first comment why)', handler: this.onCancelReq, scope: this},
-	{text: 'Save comments', handler: this.onSave,   scope: this},
+	{text: 'Cancel request (better first comment why)', handler: this.onCancelReq, scope: this},
+	{text: 'Save changes', handler: this.onSave,   scope: this},
 	{text: 'Cancel', handler: this.onCancel, scope: this}
       ];
     }
@@ -1238,6 +1746,13 @@ PR.RequestEditor = Ext.extend(Ext.FormPanel, {
     this._submit();
   },
 
+  onReturn: function() {
+    if(!this.checkProcessingPass())
+      return;
+    this.getForm().findField('reqState').setValue('PPG OK');
+    this._submit();
+  },
+
   onActivate: function() {
     if(!this.checkProcessingPass())
       return;
@@ -1443,13 +1958,11 @@ PR.RequestEditor = Ext.extend(Ext.FormPanel, {
     if(rm){
       if(rm.state == 'New' && rm.user == rm.author)
 	force = false;
-      if(rm.state == 'Submitted' && rm.group == 'lhcb_ppg')
-	force = false;
       if(rm.state == 'Submitted' && rm.group == 'lhcb_tech')
 	force = false;
       if(rm.state == 'PPG OK' && rm.group == 'lhcb_tech')
 	force = false;
-      if(rm.state == 'Tech OK' && rm.group == 'lhcb_ppg')
+      if(rm.group == 'lhcb_prmgr')
 	force = false;
     } else
       force = false;
@@ -1601,7 +2114,13 @@ PR.RequestEditor = Ext.extend(Ext.FormPanel, {
     PR.setReadOnly(this.getForm().findField('reqPrio'),
 		   (this.state!='Submitted' && this.state!='Tech OK') ||
 		   rm.group != 'lhcb_ppg');
-  }
+  },
+
+  onWorkflow: function() {
+    prw = new PR.PrWorkflow({ pData: this.pData });
+    prw.show();
+  },
+
 });
 Ext.reg('preditor', PR.RequestEditor);
 
@@ -2231,7 +2750,7 @@ PR.RequestGrid = Ext.extend(Ext.ux.maximgb.treegrid.GridPanel, {
 		     ]
     this.pagingBar = new Ext.ux.maximgb.treegrid.PagingToolbar(pbOpts);
 
-    store.setDefaultSort('ID', 'ASC');
+    store.setDefaultSort('ID', 'DESC');
     store.load({params: {start:0, limit:this.pagingBar.pageSize}});
 
     Ext.apply(this, {
@@ -2337,7 +2856,7 @@ PR.RequestManager = Ext.extend(Ext.TabPanel, {
       this.menu.add( 
 	{handler: function() {this.viewEditor(r)}, scope: this, text: 'Sign' }
       );
-    } else if( (rm.state=="Accepted" || rm.state=="Active") && rm.group=="lhcb_tech" )
+    } else if( (rm.state=="Accepted" || rm.state=="Active") && rm.group=="lhcb_prmgr" )
       this.menu.add( 
 	{handler: function() {this.viewEditor(r)}, scope: this, text: 'Edit' }
       );

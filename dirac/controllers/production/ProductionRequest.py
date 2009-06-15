@@ -1,15 +1,62 @@
 import urllib
 import re
 import cPickle
+import os
 
 import logging
 
 from dirac.lib.base import *
 from dirac.lib.diset import getRPCClient
 import dirac.lib.credentials as credentials # getUserDN() getUsername()
-from DIRAC import S_ERROR,S_OK 
+from DIRAC import S_ERROR,S_OK, gConfig
+from DIRAC.ConfigurationSystem.Client import PathFinder
+
+from DIRAC.Core.Workflow.Workflow import Workflow,fromXMLString
+
 
 log = logging.getLogger(__name__)
+
+class PrTpl(object):
+  """ Production Template engine
+  AZ: I know it is not the best :)
+  It undestand: {{<sep><ParName>[#<Label>]}}
+  Where:
+    <sep> - not alpha character to be inserted
+            before parameter value in case it
+            is not empty
+    <ParName> - parameter name (must begin
+            with alpha character) to substitute
+    <Label> - if '#' is found after '{{', everything after
+            it till '}}' is Label for the parameter
+            (default to ParName) In case you use one parameter
+            several times, you can specify the label only once.
+  """
+  __par_re  = "\{\{(\W)?([^\}#]+)#?([^\}]*)\}\}"
+  __par_sub = "\{\{(\W|)?%s[^\}]*\}\}"
+  def __init__(self,tpl_xml):
+    self.tpl = tpl_xml
+    self.pdict = {}
+    for x in re.findall(self.__par_re,self.tpl):
+      if x[1] in self.pdict and not x[2]:
+        continue
+      label = x[2]
+      if not label:
+        label = x[1]
+      self.pdict[x[1]] = label
+
+  def getParams(self):
+    """ Return the dictionary with parameters (value is label) """
+    return self.pdict
+
+  def apply(self,pdict):
+    """ Return template with substituted values from pdict """
+    result = self.tpl
+    for p in self.pdict:
+      value = str(pdict.get(p,''))
+      if value:
+        value = "\\g<1>" + value
+      result = re.sub(self.__par_sub % p, value, result)
+    return result
 
 softBaseURL = 'http://lhcbproject.web.cern.ch/lhcbproject/dist/'
 
@@ -101,6 +148,14 @@ class RealRequestEngine:
   simcondFields = [ 'Generator', 'MagneticField', 'BeamEnergy',
                     'Luminosity', 'DetectorCond', 'BeamCond' ]
 
+  def getRequestFields(self):
+    result = dict.fromkeys(self.localFields,None)
+    result.update(dict.fromkeys(self.simcondFields))
+    for x in ['App','Ver','Opt','DDDb','CDb','EP']:
+      for i in range(1,8):
+        result['p%d%s' % (i,x)] = None
+    return result
+    
   def __2local(self,req):
     result = {}
     for x,y in zip(self.localFields,self.serviceFields):
@@ -228,6 +283,47 @@ class RealRequestEngine:
     for row in rows:
       row['TimeStamp'] = str(row['TimeStamp'])
     return { 'OK':True, 'result':rows,'total': result['Value']['Total'] }
+
+  def getTemplate(self,name):
+    RPC = getRPCClient( "ProductionManagement/ProductionRequest" )
+    return RPC.getProductionTemplate(str(name))
+    #RPC = getRPCClient("ProductionManagement/ProductionManager")
+    #return RPC.getWorkflow(str(name))
+
+  def __cnFromCred(self,cred):
+    for field in cred.split('/'):
+      if field.startswith('CN='):
+        return field[3:]
+    return cred
+    
+  def __beautifyWfList(self,wflist):
+    """ Make the content user friendly (if possible)
+    Extract CN from credential and use it as user name
+    """
+    result = []
+    for wf in wflist:
+      wf['Author'] = self.__cnFromCred(wf['AuthorDN'])+'@'+wf['AuthorGroup']
+      result.append( wf )
+    return result
+
+  def templates(self):
+    RPC = getRPCClient( "ProductionManagement/ProductionRequest" )
+    ret = RPC.getProductionTemplateList()
+    if not ret['OK']:
+      return ret
+    return { 'OK':True, 'total': len(ret['Value']), 'result': ret['Value'] }
+
+    #RPC = getRPCClient("ProductionManagement/ProductionManager")
+    #result = RPC.getListWorkflows()
+    #if not result['OK']:
+    #  return result
+    #wflist = self.__beautifyWfList(result['Value'])
+    #templates = []
+    #for x in wflist:
+    #  if x['WFParent'] == 'production/template':
+    #    templates.append(x)
+    #return { 'OK':True, 'total': len(wflist), 'result': templates }
+
 
 # Session based
 class FakeRequestEngine:
@@ -902,3 +998,147 @@ class ProductionrequestController(BaseController):
     except Exception, e:
       return S_ERROR('Reqiest ID is not a number')
     return self.engine.getProductionRequest([id]);
+
+  @jsonify
+  def templates(self):
+    return self.engine.templates()
+
+  def __getTemplate(self,name):
+    return self.engine.getTemplate(name)
+
+  @jsonify
+  def template_parlist(self):
+    tpl_name  = str(request.params.get('tpl', ''))
+    result = self.__getTemplate(tpl_name)
+    if not result['OK']:
+      return result
+    tpl = PrTpl(result['Value'])
+    rqf = self.engine.getRequestFields()
+    tpf = tpl.getParams()
+    plist = []
+    for x in tpf:
+      if not x in rqf:
+        plist.append({'par':x, 'label':tpf[x], 'value':""})
+    return { 'OK':True, 'total': len(plist), 'result': plist }
+
+  @jsonify
+  def create_workflow(self):
+    """ !!! Note: 1 level parent=master assumed !!! """
+    rdict = dict(request.params)
+    for x in ['RequestID','Template','Subrequests']:
+      if not x in rdict:
+        return S_ERROR('Required parameter %s is not specified' % x)
+    try:
+      id       = long(rdict['RequestID'])
+      tpl_name = str(request.params['Template'])
+      sstr  = str(request.params['Subrequests'])
+      if sstr:
+        slist = [long(x) for x in sstr.split(',')]
+      else:
+        slist = []
+      sdict = dict.fromkeys(slist,None)
+      del rdict['RequestID']
+      del rdict['Template']
+      del rdict['Subrequests']
+    except Exception, e:
+      return S_ERROR('Wrong parameters (%s)' % str(e))
+
+    ret = self.__getTemplate(tpl_name)
+    if not ret['OK']:
+      return ret
+    tpl = PrTpl(ret['Value'])
+
+    ret = self.engine.getProductionRequest([id])
+    if not ret['OK']:
+      return ret
+    rqdict  = ret['Value'][id]
+    
+    dictlist = []
+    if rqdict['_is_leaf']:
+      d = self.engine.getRequestFields()
+      d.update(rqdict)
+      d.update(rdict)
+      dictlist.append(d)
+    else:
+      if not len(sdict):
+        return S_ERROR('Subrequests are not specified (but required)')
+      ret = self.engine.getProductionRequestList(id)
+      if not ret['OK']:
+        return ret
+      for x in ret['result']:
+        if not x['ID'] in sdict:
+          continue
+        d = self.engine.getRequestFields()
+        d.update(rqdict)
+        for y in x:
+          if x[y]:
+            d[y]=x[y]
+        d.update(rdict)
+        dictlist.append(d)
+    success = []
+    fail = []
+#    RPC = getRPCClient("ProductionManagement/ProductionManager")
+    for x in dictlist:
+      for y in x:
+        if x[y] == None:
+          x[y] = ''
+        else:
+          x[y] = str(x[y])
+      success.append({ 'ID': x['ID'], 'Body': tpl.apply(x)})
+      continue # not working with WF DB for now
+    
+      name = 'PRQ_%s' % x['ID']
+      wf = fromXMLString(tpl.apply(x))
+      wf.setName(name)
+      wf.setType('production/requests')
+      try:
+        wfxml = wf.toXML()
+        result = RPC.publishWorkflow(str(wfxml),True)
+      except Exception,msg:
+        result = {'OK':False, 'Message': str(msg)}
+      if not result['OK']:
+        fail.append(str(x['ID']))
+      else:
+        success.append(str(x['ID']))
+
+    if len(fail):
+      return S_ERROR("Couldn't create workflows for %s. Success with %s" \
+                     % (','.join(fail),','.join(success)))
+    else:
+      # return S_OK("Success with %s" % ','.join(success))
+      return S_OK(success)
+
+  def request_parameters(self):
+    """ !!! Note: 1 level parent=master assumed !!! """
+    id  = str(request.params.get('RequestID', ''))
+    try:
+      id = long(id);
+    except Exception, e:
+      return S_ERROR('Reqiest ID is not a number')
+    d = self.engine.getRequestFields()
+
+    ret = self.engine.getProductionRequest([id])
+    if not ret['OK']:
+      return ret
+    rqdict  = ret['Value'][id]
+    master = rqdict['_master']
+    if master:
+      ret = self.engine.getProductionRequest([master])
+      if not ret['OK']:
+        return ret
+      d.update(ret['Value'][master])
+    for x in rqdict:
+      if rqdict[x]:
+        d[x]=rqdict[x]
+    for x in d:
+      if d[x] == None:
+        d[x] = ''
+      else:
+        d[x] = str(d[x])
+    response.headers['Content-type'] = "text/html"
+    html = "<html>\n<body>\n<H1>Parameters for request %s</H1>\n" % id
+    html+= "<TABLE border=\"1\" width=\"100%\">\n"
+    for x in sorted(d.keys()):
+      html+= "<TR><TD>%s<TD>%s</TR>\n" % (x,d[x])
+    html+= "</TABLE>\n</body>\n</html>"
+    return html
