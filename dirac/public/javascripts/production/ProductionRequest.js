@@ -144,7 +144,7 @@ PR.RequestDetail = Ext.extend(Ext.Panel, {
     '<b>Event type:</b> {eventType}<br/>',
     '<b>Number of events:</b> {eventNumber}<br/><br>',
 
-    '<b>Simulation Conditions:</b> {simCondDesc}<br/>',
+    '<b>Simulation Conditions:</b> {simDesc}<br/>',
     '<b>Beam:</b> {BeamCond} ',
     '<b>Beam energy:</b> {BeamEnergy} ',
     '<b>Generator:</b> {Generator}<br/>',
@@ -442,6 +442,237 @@ PR.BkSimCondBrowser = Ext.extend(Ext.Window, {
   onListSelect: function(sm, row, rec) {
     this.detail.updateDetail(rec.data);
     Ext.getCmp('sim-cond-select').enable();
+  }
+});
+
+/**
+ * PR.SubRequestAdder
+ * @extends Ext.Window
+ * Add multiple subrequests at once
+ */
+PR.SubRequestAdder = Ext.extend(Ext.Window, {
+  initComponent : function() {
+    this.master = new PR.RequestDetail({ID: this.data.ID, 
+					minWidth: 200, region: 'center', frame:true,
+					title: 'Master request', autoScroll:true});
+    this.master.on('render',function() { this.master.updateDetail(this.data); }, this);
+
+    var store = new Ext.data.SimpleStore({
+      fields: [ {name: 'eventType'}, {name: 'eventNumber', type: 'int'} ],
+      data: []
+    });
+    store.on('datachanged',this.onStoreChanged,this);
+
+    this.subrq = new Ext.grid.GridPanel({
+      region: 'center',
+      frame: true,
+      margins: '0 0 5 0',
+      store: store,
+      columns: [
+	{header:'Event type', dataIndex:'eventType'},
+	{header:'Events requested', dataIndex:'eventNumber'}
+      ],
+      stripeRows: true,
+      title:'Subrequests to create',
+      autoHeight:    false,
+      autoWidth:     true,
+      sm:            new Ext.grid.RowSelectionModel({singleSelect: true}),
+      viewConfig:    {forceFit:true}
+    });
+    this.menu = new Ext.menu.Menu();
+    this.menu.add( 
+      {handler: function() {
+	var r = this.subrq.getSelectionModel().getSelected();
+	this.subrq.store.remove(r);
+	this.onStoreChanged(this.subrq.store);
+      },scope: this,text: 'Remove' }
+    );
+
+    this.subrq.on('rowclick',this.onRowClick, this);
+
+    var eventStore = new Ext.data.Store({
+      proxy: new Ext.data.HttpProxy({
+	url: 'bkk_event_types?addempty'}),
+      reader: new Ext.data.JsonReader({
+        totalProperty: 'total',
+	root:'result'
+      }, [{name: 'id'},{name: 'text'}]),
+      listeners : { 
+	'loadexception' : { 
+	  fn: storeBugger('list of Event Types'), scope: this
+	}
+      }
+    });
+    eventStore.load({callback: this.onEventTypesLoaded, scope: this});
+
+
+    this.addev = new Ext.Button();
+
+    this.evset = new Ext.form.FieldSet({
+      region: 'south',
+      title: 'Select event type to add as subrequest',
+      autoHeight: true, width: 622,
+      items: [
+	{ xtype: 'combo', fieldLabel: 'Type', hiddenName: 'eventType',
+	  store: eventStore, displayField: 'text', valueField: 'id',
+	  forceSelection: true, mode: 'local',
+	  triggerAction: 'all', selectOnFocus: true, 
+	  emptyText: 'Select event type',
+	  autoCreate: {
+	    tag: "input", type: "text", size: "60", autocomplete: "off"
+	  },
+	  listeners : {
+	    'select' : { fn: this.onEventTypeSelect, scope: this }
+	  }
+	},
+	{ xtype: 'panel',
+	  layout: 'column',
+	  border: false,
+	  items: [{
+	    width: 300,
+	    layout: 'form',
+	    autoHeight: true,
+	    items: {
+	      xtype: 'numberfield', fieldLabel: 'Number', name: 'eventNumber',
+	      anchor: '100%'
+	    }
+	  },{
+	    width: 60,
+	    bodyStyle: 'padding-left: 5px;',
+	    items: {xtype: 'button',text: 'Add',handler: this.onAdd, scope: this}
+	  }]
+	}	      
+      ]
+    });
+    
+    this.east = new Ext.Panel({
+      region: 'east',
+      split: true,
+      width: 600,
+      minWidth: 600,
+      border: false,
+
+      layout: 'border',
+      items: [ this.subrq, this.evset ],
+
+      buttonAlign: 'center',
+      buttons: [
+	{text: 'Create', disabled: true, id: 'srq-create-btn', 
+	 handler: this.onCreate, scope: this },
+	{text: 'Cancel', handler: this.close, scope: this }
+      ]
+    });
+
+    this.form = new Ext.FormPanel({
+      border: false,
+      items: {
+	xtype:  'panel',
+	layout: 'border',
+	frame: true,
+	border: false,
+	anchor: '100% 100%',
+	items: [ this.master, this.east ]
+      }
+    });
+
+    Ext.apply(this, {
+      width: 950,
+      height: 350,
+      minWidth: 500,
+      minHeight: 300,
+      maximizable: true,
+      modal: true,
+      layout: 'fit',
+      items: this.form
+    });
+    PR.SubRequestAdder.superclass.initComponent.call(this);
+  },
+  initEvents: function() {
+    PR.SubRequestAdder.superclass.initEvents.call(this);
+    this.addEvents( 'saved' );
+  },
+  onEventTypeSelect: function(combo,record,index) {
+    if(combo.getValue() == 99999999)
+      combo.setValue('');
+  },
+  onAdd : function(){
+    var form = this.form.getForm();
+    evtype  = form.findField('eventType').getValue();
+    evnumber = form.findField('eventNumber').getValue();
+    if(!evtype || !evnumber){
+      Ext.Msg.alert('Please specify information',
+		    'Both event type and number must be specified');
+      return;
+    }
+    this.subrq.store.add(new this.subrq.store.recordType({
+      eventType: evtype, eventNumber: evnumber
+    }));
+    this.onStoreChanged(this.subrq.store);
+  },
+  onStoreChanged: function(store){
+    var btn = Ext.getCmp('srq-create-btn');
+    if(store.getCount())
+      btn.enable();
+    else
+      btn.disable();
+  },
+  onRowClick: function(grid, rowIdx, e) {
+    this.menu.showAt(Ext.EventObject.xy);
+  },
+  onCreate: function() {
+    var store = this.subrq.store;
+    for(var i=0;i<store.getCount();++i){
+      var r=store.getAt(i);
+      this.saveOne(r.data.eventType,r.data.eventNumber);
+    }
+    this.fireEvent('saved',this);
+    this.close();
+  },
+  saveOne: function(evtype,evnumber) {
+    if(!evtype || !evnumber){
+      Ext.MessageBox.show({
+	title: 'Incomplete subrequest',
+	msg: "You have to specify event type and number. ",
+	buttons: Ext.MessageBox.OK,
+	icon: Ext.MessageBox.ERROR
+      });
+      return;
+    }
+    var pdict = {
+      _master: this.data.ID,
+      _parent: this.data.ID,
+      eventType: evtype,
+      eventNumber: evnumber
+    };
+    var conn = new Ext.data.Connection();
+    conn.request({
+      url: 'save',
+      method: 'POST',
+      params: pdict,
+      scope: this,
+      success: function(response){
+	if (response) { // check that it is really OK... AZ: !! ??
+	  var str = '';
+	  try {
+	    var result = Ext.decode(response.responseText);
+	    if ( !result.OK )
+              str = result.Message;
+	  } catch (e2) {
+	    str = "unparsable reply from the portal: "+e2.message;
+	  }
+	  if(str){
+	    Ext.MessageBox.show({
+	      title: 'Subrequest create failed',
+	      msg: str,
+	      buttons: Ext.MessageBox.OK,
+	      icon: Ext.MessageBox.ERROR
+	    });
+	    return;
+	  }
+	}
+      },
+      failure: connectBugger('Subrequest create')
+    });
   }
 });
 
@@ -2883,7 +3114,7 @@ PR.RequestManager = Ext.extend(Ext.TabPanel, {
     if(rm.state=='New' && !r.data._master)
       this.menu.add(
 	'-',
-	{handler: function() {this.addSubRequest(r);}, 
+	{handler: function() {this.addSubRequests(r);}, 
 	 scope: this, text: 'Add subrequest'}
       );
     if(rm.state=='Active' || rm.state=='Done')
@@ -3175,6 +3406,19 @@ PR.RequestManager = Ext.extend(Ext.TabPanel, {
       },
       failure: connectBugger('Duplicate Request')
     });
+  },
+
+  addSubRequests : function(r) {
+    var adder = new PR.SubRequestAdder({
+      title: 'Add subrequests to '+r.data.ID,
+      data: r.data
+    });
+    adder.on('saved', function(){
+      this.getStore().setActiveNode(null);
+      this.getStore().load({params: {start:0, limit:this.pagingBar.pageSize},
+			    add: true});
+    }, this.grid);
+    adder.show();
   },
 
   addSubRequest : function(r) {
