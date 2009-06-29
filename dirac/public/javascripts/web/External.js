@@ -10,7 +10,7 @@ function renderData(site){
   var leftBar = new Ext.Panel();
   leftBar.hide();
   if(site){
-    if((site=='volhcb01')||(site=='volhcb02')||(site=='volhcb03')||(site=='volhcb04')||(site=='volhcb05')||(site=='volhcb06')||(site=='volhcb07')||(site=='volhcb08')||(site=='volhcb09')||(site=='volhcb10')||(site=='volhcb11')){
+    if((site=='volhcb01')||(site=='volhcb02')||(site=='volhcb03')||(site=='volhcb04')||(site=='volhcb05')||(site=='volhcb06')||(site=='volhcb07')||(site=='volhcb08')||(site=='volhcb09')||(site=='volhcb10')||(site=='volhcb11')||(site=='volhcb12')||(site=='volhcb13')||(site=='volhcb14')){
       site = 'https://lemonweb.cern.ch/lemon-web/info.php?entity=' + site + '&detailed=yes';
     }else if((site=='LHCbDST')||(site=='LHCbRDST')||(site=='LHCbMDST')||(site=='LHCbUSER')||(site=='LHCbFAILOVER')||(site=='LHCbRAW')||(site=='LHCbMC-MDST')||(site=='LHCbMC-DST')){
       site = 'https://santinel.web.cern.ch/santinel/sls/storage_space/' + site + '.html';
