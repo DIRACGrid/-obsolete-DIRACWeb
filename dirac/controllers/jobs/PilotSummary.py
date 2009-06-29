@@ -11,7 +11,8 @@ from DIRAC import gLogger
 import dirac.lib.credentials as credentials
 
 log = logging.getLogger(__name__)
-
+global numberOfJobs
+global globalSort
 numberOfJobs = 25
 pageNumber = 0
 globalSort = []
@@ -113,29 +114,13 @@ class PilotsummaryController(BaseController):
       pageNumber = 0
       req["JobID"] = str(request.params["id"])
     elif request.params.has_key("expand") and len(request.params["expand"]) > 0:
-      global globalSort
-      global numberOfJobs
       globalSort = [["GridSite","ASC"]]
-#      numberOfJobs = 25
       numberOfJobs = 500
       pageNumber = 0
       req["ExpandSite"] = str(request.params["expand"])
     else:
-      global numberOfJobs
-      global globalSort
       pageNumber = 0
       numberOfJobs = 500
-#      global numberOfJobs
-#      global globalSort
-#      if request.params.has_key("limit") and len(request.params["limit"]) > 0:
-#        if request.params.has_key("start") and len(request.params["start"]) > 0:
-#          numberOfJobs = int(request.params["limit"])
-#          pageNumber = int(request.params["start"])
-#        else:
-#          pageNumber = 0
-#      else:
-#        pageNumber = 0
-#        numberOfJobs = 25
       if request.params.has_key("prod") and len(request.params["prod"]) > 0:
         if str(request.params["prod"]) != "All":
           req["JobGroup"] = str(request.params["prod"]).split('::: ')
