@@ -13,6 +13,9 @@ import dirac.lib.credentials as credentials
 
 log = logging.getLogger(__name__)
 
+global numberOfJobs
+global pageNumber
+global globalSort
 numberOfJobs = 25
 pageNumber = 0
 globalSort = []
