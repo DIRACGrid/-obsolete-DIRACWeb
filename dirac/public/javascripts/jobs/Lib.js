@@ -287,6 +287,13 @@ function initStore(record,groupBy){
   var limit = 25;
   var start = 0;
   try{
+    if(dataSelect == ""){
+      dataSelect = {};
+    }
+  }catch(e){
+    dataSelect = {};
+  }
+  try{
     if(!dataSelect.extra){
       dataSelect.extra = {};
     }
@@ -337,6 +344,7 @@ function initStore(record,groupBy){
       proxy: new Ext.data.HttpProxy({
         url:'submit',
         method:'POST',
+        timeout:360000
       }),
       reader:reader
     });
@@ -1277,6 +1285,18 @@ function selectSiteSummaryMenu(){
   var menu = createMenu('site','Site');
   return menu
 }
+function selectOwnerGroupMenu(){
+  var menu = createMenu('ownerGroup','OwnerGroup');
+  return menu
+}
+function selectCEMenu(){
+  var menu = createMenu('ce','CE');
+  return menu
+}
+function selectPilotStatusMenu(){
+  var menu = createMenu('pilotStatus','Status');
+  return menu
+}
 function selectSiteMenu(){
   var data = [['']];
   if(dataSelect.site){
@@ -1721,4 +1741,174 @@ function table(tableMngr){
     bar.hide();
   }
   return dataTable;
+}
+function dateTimeWidget(pin){
+  function retDate(name,nameExtra,fieldLabel){
+    var date = new Ext.form.DateField({
+      anchor:'90%',
+      allowBlank:true,
+      emptyText:'YYYY-mm-dd',
+      fieldLabel:fieldLabel,
+      format:'Y-m-d',
+      name:name,
+      selectOnFocus:true,
+      startDay:1,
+      value:'',
+      width:98
+    });
+    date.on({
+      'render':function(){
+        try{
+          var sDate = dataSelect.extra[nameExtra];
+          sDate = sDate.substring(0,10); // First 10 digits
+          date.setValue(sDate);
+          delete dataSelect.extra[nameExtra];
+        }catch(e){}
+      },
+      'valid':function(){
+        var zz = 0;
+        var xxx = 0;
+      }
+    });
+    return date
+  }
+  function retTime(name,nameExtra,fieldLabel){
+    var time = new Ext.form.TimeField({
+      emptyText:'00:00',
+      fieldLabel:fieldLabel,
+      forceSelection:true,
+      format:'H:i',
+      increment:30,
+      name:name,
+      value:'00:00',
+      width:60,
+    });
+    time.on({
+      'render':function(){
+        try{
+          var sTime = dataSelect.extra[nameExtra];
+          sTime = sTime.substring(11,16); // First 5 digits
+          time.setValue(sTime);
+          delete dataSelect.extra[nameExtra];
+        }catch(e){}
+      }
+    });
+    return time
+  }
+  var startDate = retDate('startDate','startDate','Start Date');
+  var endDate = retDate('endDate','endDate','End Date');
+  var startTime = retTime('startTime','startTime','');
+  var endTime = retTime('endTime','endTime','End Time');
+  var store = new Ext.data.SimpleStore({
+    fields:['timeSpan'],
+    data:[['Last hour'],['Last day'],['Last week'],['Last month'],['Manual selection']]
+  });
+  var timeSpan = new Ext.form.ComboBox({
+    allowBlank:true,
+    displayField:'timeSpan',
+    colspan:2,
+    editable:false,
+    emptyText:'Select time span',
+    mode:'local',
+    name:'timeSpan',
+    selectOnFocus:true,
+    store:store,
+    triggerAction:'all',
+    typeAhead:true,
+  });
+  timeSpan.setWidth(158);
+  timeSpan.on({
+    'render':function(){
+      try{
+        var sTime = dataSelect.extra['timeSpan'];
+        timeSpan.setValue(sTime);
+        delete dataSelect.extra['timeSpan'];
+      }catch(e){}
+    },
+    'valid':function(){
+      var currentTime = new Date();
+      var value = timeSpan.getValue();
+      if(value == 'Last hour'){
+        startTime.setValue(currentTime.add(Date.HOUR,-1));
+        startDate.setValue(currentTime);
+      }else if(value == 'Last day'){
+        startTime.setValue(currentTime);
+        startDate.setValue(currentTime.add(Date.DAY,-1));
+      }else if(value == 'Last week'){
+        startTime.setValue(currentTime);
+        startDate.setValue(currentTime.add(Date.DAY,-7));
+      }else if(value == 'Last month'){
+        startTime.setValue(currentTime);
+        startDate.setValue(currentTime.add(Date.MONTH,-1));
+      }else if(value == 'Manual selection'){
+        var startDateValue = startDate.getValue();
+        if(startDateValue == ''){
+          startDate.setValue(currentTime);
+        }
+        endTime.setValue(currentTime);
+        endDate.setValue(currentTime);
+      }
+      if(value == 'Manual selection'){
+        panel.items.items[5].body.update('End:');
+        endDate.enable();
+        endTime.enable();
+      }else{
+        panel.items.items[5].body.update('End: <b>Now</b>');
+        endDate.disable();
+        endTime.disable();
+      }
+      delete currentTime
+    }
+  });
+  startDate.menuListeners.select = function(menu, date) {
+    timeSpan.setValue('Manual selection');
+    timeSpan.validate();
+    startDate.setValue(date);
+  };
+  startDate.on({
+    'KeyUp':function(){
+      alert('XXX');
+    }
+  });
+  startTime.on({
+    'select':function(){
+      var startDateValue = startDate.getValue();
+      if(startDateValue == ''){
+        timeSpan.setValue('Manual selection');
+        timeSpan.validate();
+      }
+    }
+  });
+  var datePin = {xtype:'checkbox',id:'datePin',fieldLabel:'',name:'datePin',boxLabel:'Pin the date'};
+  var panel = new Ext.Panel({
+    layout:'table',
+    id:'time-panel',
+    defaults: {
+      bodyStyle:'padding:5px',
+    },
+    layoutConfig: {
+      columns: 2
+    },
+    cls:'x-form-item',
+    bodyStyle:'padding: 5px',
+    items:[
+      {html:'Time Span:',colspan:2,bodyStyle:'border:0px'}
+      ,timeSpan
+      ,{html:'Start:',colspan:2,bodyStyle:'border:0px'}
+      ,startDate
+      ,startTime
+      ,{html:'End: <b>Now</b>',colspan:2,bodyStyle:'border:0px'}
+      ,endDate.disable()
+      ,endTime.disable()
+    ],
+    labelAlign:'top',
+    minWidth:'170',
+    width:'170'
+  });
+  try{
+    if(pin){
+      panel.insert(8,datePin);
+    }
+  }catch(e){}
+  return panel
 }
