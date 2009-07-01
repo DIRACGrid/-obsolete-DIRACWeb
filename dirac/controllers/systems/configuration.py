@@ -1,5 +1,5 @@
-# $Header: /tmp/libdirac/tmp.stZoy15380/dirac/DIRAC3/DIRAC/Interfaces/Web/dirac/controllers/systems/configuration.py,v 1.19 2009/04/07 14:27:25 acasajus Exp $
-__RCSID__ = "$Id: configuration.py,v 1.19 2009/04/07 14:27:25 acasajus Exp $"
+# $Header: /tmp/libdirac/tmp.stZoy15380/dirac/DIRAC3/DIRAC/Interfaces/Web/dirac/controllers/systems/configuration.py,v 1.20 2009/07/01 14:19:34 acasajus Exp $
+__RCSID__ = "$Id: configuration.py,v 1.20 2009/07/01 14:19:34 acasajus Exp $"
 
 import types
 import logging
@@ -13,7 +13,7 @@ from dirac.lib.credentials import authorizeAction
 from dirac.lib.diset import getRPCClient
 import dirac.lib.credentials as credentials
 from DIRAC.ConfigurationSystem.private.Modificator import Modificator
-from DIRAC.ConfigurationSystem.Client.CFG import CFG
+from DIRAC.Core.Utilities.CFG import CFG
 from DIRAC.ConfigurationSystem.Client.Config import gConfig
 import DIRAC.Core.Utilities.List as List
 from DIRAC import S_OK, S_ERROR
