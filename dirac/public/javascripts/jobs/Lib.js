@@ -1764,10 +1764,6 @@ function dateTimeWidget(pin){
           date.setValue(sDate);
           delete dataSelect.extra[nameExtra];
         }catch(e){}
-      },
-      'valid':function(){
-        var zz = 0;
-        var xxx = 0;
       }
     });
     return date
@@ -1775,6 +1771,7 @@ function dateTimeWidget(pin){
   function retTime(name,nameExtra,fieldLabel){
     var time = new Ext.form.TimeField({
       emptyText:'00:00',
+      enableKeyEvents:true,
       fieldLabel:fieldLabel,
       forceSelection:true,
       format:'H:i',
@@ -1797,6 +1794,30 @@ function dateTimeWidget(pin){
   }
   var startDate = retDate('startDate','startDate','Start Date');
   var endDate = retDate('endDate','endDate','End Date');
+/*
+  var startDate = new Ext.form.DateField({
+      anchor:'90%',
+      allowBlank:true,
+      emptyText:'YYYY-mm-dd',
+      fieldLabel:'Start Date',
+      format:'Y-m-d',
+      name:'startDate',
+      selectOnFocus:true,
+      value:'',
+      width:98
+    });
+    var endDate = new Ext.form.DateField({
+      anchor:'90%',
+      allowBlank:true,
+      emptyText:'YYYY-mm-dd',
+      fieldLabel:'End Date',
+      format:'Y-m-d',
+      name:'endDate',
+      selectOnFocus:true,
+      value:'',
+      width:98
+    });
+*/
   var startTime = retTime('startTime','startTime','');
   var endTime = retTime('endTime','endTime','End Time');
   var store = new Ext.data.SimpleStore({
@@ -1860,23 +1881,24 @@ function dateTimeWidget(pin){
       delete currentTime
     }
   });
-  startDate.menuListeners.select = function(menu, date) {
-    timeSpan.setValue('Manual selection');
-    timeSpan.validate();
-    startDate.setValue(date);
+  startDate.menuListeners.select = function(menu,date,parent){
+    timeSpan.setValue('Manual selection');  
+    this.setValue(date);
   };
-  startDate.on({
-    'KeyUp':function(){
-      alert('XXX');
+  function manualSelection(th){
+    var timeSpanValue = timeSpan.getValue();
+    if(timeSpanValue != 'Manual selection'){
+      timeSpan.setValue('Manual selection');
+    }
+  }
+  startTime.on({
+    'keyup':function(){
+      manualSelection();
     }
   });
   startTime.on({
     'select':function(){
-      var startDateValue = startDate.getValue();
-      if(startDateValue == ''){
-        timeSpan.setValue('Manual selection');
-        timeSpan.validate();
-      }
+      manualSelection();
     }
   });
   var datePin = {xtype:'checkbox',id:'datePin',fieldLabel:'',name:'datePin',boxLabel:'Pin the date'};
