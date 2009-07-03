@@ -1748,7 +1748,11 @@ function dateTimeWidget(pin){
       anchor:'90%',
       allowBlank:true,
       emptyText:'YYYY-mm-dd',
+      enableKeyEvents:true,
       fieldLabel:fieldLabel,
+      fireKey:function(e){
+//        manualSelection();
+      },
       format:'Y-m-d',
       name:name,
       selectOnFocus:true,
@@ -1773,6 +1777,9 @@ function dateTimeWidget(pin){
       emptyText:'00:00',
       enableKeyEvents:true,
       fieldLabel:fieldLabel,
+      fireKey:function(e){
+        manualSelection();
+      },
       forceSelection:true,
       format:'H:i',
       increment:30,
@@ -1794,30 +1801,6 @@ function dateTimeWidget(pin){
   }
   var startDate = retDate('startDate','startDate','Start Date');
   var endDate = retDate('endDate','endDate','End Date');
-/*
-  var startDate = new Ext.form.DateField({
-      anchor:'90%',
-      allowBlank:true,
-      emptyText:'YYYY-mm-dd',
-      fieldLabel:'Start Date',
-      format:'Y-m-d',
-      name:'startDate',
-      selectOnFocus:true,
-      value:'',
-      width:98
-    });
-    var endDate = new Ext.form.DateField({
-      anchor:'90%',
-      allowBlank:true,
-      emptyText:'YYYY-mm-dd',
-      fieldLabel:'End Date',
-      format:'Y-m-d',
-      name:'endDate',
-      selectOnFocus:true,
-      value:'',
-      width:98
-    });
-*/
   var startTime = retTime('startTime','startTime','');
   var endTime = retTime('endTime','endTime','End Time');
   var store = new Ext.data.SimpleStore({
@@ -1881,23 +1864,19 @@ function dateTimeWidget(pin){
       delete currentTime
     }
   });
-  startDate.menuListeners.select = function(menu,date,parent){
-    timeSpan.setValue('Manual selection');  
-    this.setValue(date);
-  };
-  function manualSelection(th){
+  function manualSelection(){
     var timeSpanValue = timeSpan.getValue();
     if(timeSpanValue != 'Manual selection'){
       timeSpan.setValue('Manual selection');
     }
   }
-  startTime.on({
-    'keyup':function(){
+  startDate.on({
+    'focus':function(){
       manualSelection();
     }
   });
   startTime.on({
-    'select':function(){
+    'focus':function(){
       manualSelection();
     }
   });
@@ -1914,14 +1893,14 @@ function dateTimeWidget(pin){
     cls:'x-form-item',
     bodyStyle:'padding: 5px',
     items:[
-      {html:'Time Span:',colspan:2,bodyStyle:'border:0px'}
-      ,timeSpan
-      ,{html:'Start:',colspan:2,bodyStyle:'border:0px'}
-      ,startDate
-      ,startTime
-      ,{html:'End: <b>Now</b>',colspan:2,bodyStyle:'border:0px'}
-      ,endDate.disable()
-      ,endTime.disable()
+      {html:'Time Span:',colspan:2,bodyStyle:'border:0px'},
+      timeSpan,
+      {html:'Start:',colspan:2,bodyStyle:'border:0px'},
+      startDate,
+      startTime,
+      {html:'End: <b>Now</b>',colspan:2,bodyStyle:'border:0px'},
+      endDate.disable(),
+      endTime.disable()
     ],
     labelAlign:'top',
     minWidth:'170',
