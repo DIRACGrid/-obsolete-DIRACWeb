@@ -45,7 +45,11 @@ function initRecord(){
     {name:'ISandboxReadyFlag'},
     {name:'UserPriority'},
     {name:'Owner'},
-    {name:'DeletedFlag'}
+    {name:'DeletedFlag'},
+    {name:'TaskQueueID'},
+    {name:'JobIDcheckBox',mapping:'JobID'},
+    {name:'StatusIcon',mapping:'Status'},
+    {name:'OwnerGroup'}
   ]);
   return record
 }
@@ -53,22 +57,23 @@ function initRecord(){
 function initSidebar(){
   var siteSelect = selectSiteMenu(); // Initializing Site Menu
   var ownerSelect = selectOwnerMenu(); // Initializing Owner Menu
-  var appSelect = selectAppMenu(); // Initializing Application status Menu
+//  var appSelect = selectAppMenu(); // Initializing Application status Menu
   var statSelect = selectStatusMenu(); // Initializing JobStatus Menu
   var minSelect = selectMinorStatus(); // Initializing Minor Status Menu
   var prodSelect = selectProdMenu(); // Initializing JobGroup Menu
-  var dateSelect = dateSelectMenu(); // Initializing date dialog
+//  var dateSelect = dateSelectMenu(); // Initializing date dialog
   var id = selectID(); // Initialize field for JobIDs
+  var dateSelect = dateTimeWidget();
   var select = selectPanel(); // Initializing container for selection objects
   // Insert object to container BEFORE buttons:
   select.insert(0,siteSelect);
   select.insert(1,statSelect);
   select.insert(2,minSelect);
-  select.insert(3,appSelect);
+//  select.insert(3,appSelect);
   select.insert(4,ownerSelect);
   select.insert(5,prodSelect);
-  select.insert(6,dateSelect);
-  select.insert(7,id);
+  select.insert(6,id);
+  select.insert(7,dateSelect);
   var sortGlobal = sortGlobalPanel(); // Initializing the global sort panel
   var stat = statPanel('Current Statistics','current','statGrid');
   var glStat = statPanel('Global Statistics','global','glStatGrid');
@@ -82,9 +87,9 @@ function initSidebar(){
 }
 function initData(store){
   var columns = [
-    {header:'',name:'checkBox',id:'checkBox',width:26,sortable:false,dataIndex:'JobID',renderer:chkBox,hideable:false},
-    {header:'JobId',sortable:true,dataIndex:'JobID',align:'left'},
-    {header:'',width:26,sortable:false,dataIndex:'Status',renderer:status,hideable:false},
+    {header:'',name:'checkBox',id:'checkBox',width:26,sortable:false,dataIndex:'JobIDcheckBox',renderer:chkBox,hideable:false,fixed:true,menuDisabled:true},
+    {header:'JobId',sortable:true,dataIndex:'JobID',align:'left',hideable:false},
+    {header:'',width:26,sortable:false,dataIndex:'StatusIcon',renderer:status,hideable:false,fixed:true,menuDisabled:true},
     {header:'Status',width:60,sortable:true,dataIndex:'Status',align:'left'},
     {header:'MinorStatus',sortable:true,dataIndex:'MinorStatus',align:'left'},
     {header:'ApplicationStatus',sortable:true,dataIndex:'ApplicationStatus',align:'left'},
@@ -100,7 +105,9 @@ function initData(store){
     {header:'JobGroup',sortable:true,dataIndex:'JobGroup',align:'left',hidden:true},
     {header:'AccountedFlag',sortable:true,dataIndex:'AccountedFlag',align:'left',hidden:true},
     {header:'OSandboxReadyFlag',sortable:true,dataIndex:'OSandboxReadyFlag',align:'left',hidden:true},
-    {header:'Owner',sortable:true,dataIndex:'Owner',align:'left'}
+    {header:'Owner',sortable:true,dataIndex:'Owner',align:'left'},
+    {header:'TaskQueueID',sortable:true,dataIndex:'TaskQueueID',align:'left',hidden:true},
+    {header:'OwnerGroup',sortable:true,dataIndex:'OwnerGroup',align:'left',hidden:true}
   ];
   var tbar = [
     {
