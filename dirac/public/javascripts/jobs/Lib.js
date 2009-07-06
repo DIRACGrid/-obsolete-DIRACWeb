@@ -1748,11 +1748,7 @@ function dateTimeWidget(pin){
       anchor:'90%',
       allowBlank:true,
       emptyText:'YYYY-mm-dd',
-      enableKeyEvents:true,
       fieldLabel:fieldLabel,
-      fireKey:function(e){
-//        manualSelection();
-      },
       format:'Y-m-d',
       name:name,
       selectOnFocus:true,
@@ -1773,21 +1769,39 @@ function dateTimeWidget(pin){
     return date
   }
   function retTime(name,nameExtra,fieldLabel){
-    var time = new Ext.form.TimeField({
-      emptyText:'00:00',
-      enableKeyEvents:true,
-      fieldLabel:fieldLabel,
-      fireKey:function(e){
-        manualSelection();
-      },
-      forceSelection:true,
-      format:'H:i',
-      increment:30,
-      name:name,
-      value:'00:00',
-      width:60,
+    var data = new Array();
+    var j = 0;
+    for(i=0;i<24;i++){
+      var heure = '';
+      if(i < 10){
+        heure = i + '';
+        heure = '0' + '' + heure;
+      }else{
+        heure = i + '';
+      }
+      data[j] = [heure + ':00'];
+      data[j + 1] = [heure + ':30'];
+      j = j + 2;
+    }
+    var store = new Ext.data.SimpleStore({
+      fields:['time'],
+      data:data
     });
-    time.on({
+    var timeField = new Ext.form.ComboBox({
+      allowBlank:true,
+      displayField:'time',
+      editable:true,
+      emptyText:'00:00',
+      fieldLabel:fieldLabel,
+      mode:'local',
+      name:name,
+      selectOnFocus:true,
+      store:store,
+      triggerAction:'all',
+      typeAhead:true,
+      width:60
+    });
+    timeField.on({
       'render':function(){
         try{
           var sTime = dataSelect.extra[nameExtra];
@@ -1797,7 +1811,7 @@ function dateTimeWidget(pin){
         }catch(e){}
       }
     });
-    return time
+    return timeField
   }
   var startDate = retDate('startDate','startDate','Start Date');
   var endDate = retDate('endDate','endDate','End Date');
@@ -1817,8 +1831,7 @@ function dateTimeWidget(pin){
     name:'timeSpan',
     selectOnFocus:true,
     store:store,
-    triggerAction:'all',
-    typeAhead:true,
+    triggerAction:'all'
   });
   timeSpan.setWidth(158);
   timeSpan.on({
@@ -1831,25 +1844,34 @@ function dateTimeWidget(pin){
     },
     'valid':function(){
       var currentTime = new Date();
+      var timeToSet = currentTime.getHours()
+      if(timeToSet < 10){
+        timeToSet = '0' + timeToSet;
+      }
+      timeToSet = timeToSet + ':' + currentTime.getMinutes();
       var value = timeSpan.getValue();
       if(value == 'Last hour'){
-        startTime.setValue(currentTime.add(Date.HOUR,-1));
+        var minHour = currentTime.add(Date.HOUR,-1).getHours()
+        if(minHour < 10){
+          minHour = '0' + minHour;
+        }
+        startTime.setValue(minHour + ':' + currentTime.getMinutes());
         startDate.setValue(currentTime);
       }else if(value == 'Last day'){
-        startTime.setValue(currentTime);
+        startTime.setValue(timeToSet);
         startDate.setValue(currentTime.add(Date.DAY,-1));
       }else if(value == 'Last week'){
-        startTime.setValue(currentTime);
+        startTime.setValue(timeToSet);
         startDate.setValue(currentTime.add(Date.DAY,-7));
       }else if(value == 'Last month'){
-        startTime.setValue(currentTime);
+        startTime.setValue(timeToSet);
         startDate.setValue(currentTime.add(Date.MONTH,-1));
       }else if(value == 'Manual selection'){
         var startDateValue = startDate.getValue();
         if(startDateValue == ''){
           startDate.setValue(currentTime);
         }
-        endTime.setValue(currentTime);
+        endTime.setValue(timeToSet);
         endDate.setValue(currentTime);
       }
       if(value == 'Manual selection'){
@@ -1913,3 +1935,22 @@ function dateTimeWidget(pin){
   }catch(e){}
   return panel
 }
+/*
+    var date = new Ext.form.DateField({
+      anchor:'90%',
+      allowBlank:true,
+      emptyText:'YYYY-mm-dd',
+//      enableKeyEvents:true,
+      fieldLabel:fieldLabel,
+//      fireKey:function(e){
+//        manualSelection();
+//      },
+      format:'Y-m-d',
+      name:name,
+      selectOnFocus:true,
+      startDay:1,
+      value:'',
+      width:98
+    });
+*/
+
