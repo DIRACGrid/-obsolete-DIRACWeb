@@ -890,7 +890,7 @@ function selectID(){
       delete dataSelect.extra.id;
     }
   }
-  var regex = new RegExp( /^[0-9,; ]+$/);
+  var regex = new RegExp( /^[0-9, ]+$/);
   var number = new Ext.form.TextField({
     anchor:'90%',
     allowBlank:true,
@@ -900,7 +900,7 @@ function selectID(){
     mode:'local',
     name:'id',
     regex:regex,
-    regexText:'Only digits, commas or semicolons are allowed',
+    regexText:'Only digits separated by semicolons are allowed',
     selectOnFocus:true,
     value:value
   });
@@ -1844,18 +1844,26 @@ function dateTimeWidget(pin){
     },
     'valid':function(){
       var currentTime = new Date();
-      var timeToSet = currentTime.getHours()
-      if(timeToSet < 10){
-        timeToSet = '0' + timeToSet;
+      var hoursToSet = currentTime.getHours();
+      if(hoursToSet < 10){
+        hoursToSet = '0' + hoursToSet;
       }
-      timeToSet = timeToSet + ':' + currentTime.getMinutes();
+      var minutesToSet = currentTime.getMinutes();
+      if(minutesToSet < 10){
+        minutesToSet = '0' + minutesToSet;
+      }
+      timeToSet = hoursToSet + ':' + minutesToSet;
       var value = timeSpan.getValue();
       if(value == 'Last hour'){
         var minHour = currentTime.add(Date.HOUR,-1).getHours()
         if(minHour < 10){
           minHour = '0' + minHour;
         }
-        startTime.setValue(minHour + ':' + currentTime.getMinutes());
+        var minMinutes = currentTime.getMinutes();
+        if(minMinutes < 10){
+          minMinutes = '0' + minMinutes;
+        }
+        startTime.setValue(minHour + ':' + minMinutes);
         startDate.setValue(currentTime);
       }else if(value == 'Last day'){
         startTime.setValue(timeToSet);
@@ -1913,6 +1921,8 @@ function dateTimeWidget(pin){
       columns: 2
     },
     cls:'x-form-item',
+    disabledClass:Ext.emptyFn,
+//    disabledClass:'',
     bodyStyle:'padding: 5px',
     items:[
       {html:'Time Span:',colspan:2,bodyStyle:'border:0px'},
