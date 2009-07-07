@@ -890,17 +890,17 @@ function selectID(){
       delete dataSelect.extra.id;
     }
   }
-  var number = new Ext.form.NumberField({
+  var regex = new RegExp( /^[0-9,; ]+$/);
+  var number = new Ext.form.TextField({
     anchor:'90%',
     allowBlank:true,
-    allowDecimals:false,
-    allowNegative:false,
-    baseChars:'0123456789',
     enableKeyEvents:true,
     fieldLabel:'JobID',
     id:'selectID',
     mode:'local',
     name:'id',
+    regex:regex,
+    regexText:'Only digits, commas or semicolons are allowed',
     selectOnFocus:true,
     value:value
   });
