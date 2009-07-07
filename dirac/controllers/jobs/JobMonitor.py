@@ -23,8 +23,8 @@ class JobmonitorController(BaseController):
   def display(self):
     pagestart = time()
     lhcbGroup = credentials.getSelectedGroup()
-    if lhcbGroup == "visitor":
-      return render("/login.mako")
+#    if lhcbGroup == "visitor":
+#      return render("/login.mako")
     c.select = self.__getSelectionData()
     if not c.select.has_key("extra"):
       if lhcbGroup == "lhcb":
@@ -155,75 +155,65 @@ class JobmonitorController(BaseController):
         prod = [["Error during RPC call"]]
       callback["prod"] = prod
 ###
-    if lhcbUser == "Anonymous":
-      callback["site"] = [["Insufficient rights"]]
-    else:
-      RPC = getRPCClient("WorkloadManagement/JobMonitoring")
-      result = RPC.getSites()
-      if result["OK"]:
-        site = []
-        tier1 = list(["LCG.CERN.ch","LCG.CNAF.it","LCG.GRIDKA.de","LCG.IN2P3.fr","LCG.NIKHEF.nl","LCG.PIC.es","LCG.RAL.uk"])
-        if len(result["Value"])>0:
-          s = list(result["Value"])
-          site.append([str("All")])
-          for i in tier1:
-            site.append([str(i)])
-          for i in s:
-            if i not in tier1:
-              site.append([str(i)])    
-        else:
-          site = [["Nothing to display"]]
+    RPC = getRPCClient("WorkloadManagement/JobMonitoring")
+    result = RPC.getSites()
+    if result["OK"]:
+      site = []
+      tier1 = list(["LCG.CERN.ch","LCG.CNAF.it","LCG.GRIDKA.de","LCG.IN2P3.fr","LCG.NIKHEF.nl","LCG.PIC.es","LCG.RAL.uk"])
+      if len(result["Value"])>0:
+        s = list(result["Value"])
+        site.append([str("All")])
+        for i in tier1:
+          site.append([str(i)])
+        for i in s:
+          if i not in tier1:
+            site.append([str(i)])    
       else:
-        site = [["Error during RPC call"]]
-      callback["site"] = site
+        site = [["Nothing to display"]]
+    else:
+      site = [["Error during RPC call"]]
+    callback["site"] = site
 ###
-    if lhcbUser == "Anonymous":
-      callback["stat"] = [["Insufficient rights"]]
-    else:
-      result = RPC.getStates()
-      if result["OK"]:
-        stat = []
-        if len(result["Value"])>0:
-          stat.append([str("All")])
-          for i in result["Value"]:
-            stat.append([str(i)])
-        else:
-          stat = [["Nothing to display"]]
+    result = RPC.getStates()
+    if result["OK"]:
+      stat = []
+      if len(result["Value"])>0:
+        stat.append([str("All")])
+        for i in result["Value"]:
+          stat.append([str(i)])
       else:
-        stat = [["Error during RPC call"]]
-      callback["stat"] = stat
+        stat = [["Nothing to display"]]
+    else:
+      stat = [["Error during RPC call"]]
+    callback["stat"] = stat
 ###
-    if lhcbUser == "Anonymous":
-      callback["minorstat"] = [["Insufficient rights"]]
-    else:
-      result = RPC.getMinorStates()
-      if result["OK"]:
-        stat = []
-        if len(result["Value"])>0:
-          stat.append([str("All")])
-          for i in result["Value"]:
-            stat.append([str(i)])
-        else:
-          stat = [["Nothing to display"]]
+    result = RPC.getMinorStates()
+    if result["OK"]:
+      stat = []
+      if len(result["Value"])>0:
+        stat.append([str("All")])
+        for i in result["Value"]:
+          i = i.replace(",",";")
+          stat.append([i])
       else:
-        stat = [["Error during RPC call"]]
-      callback["minorstat"] = stat
+        stat = [["Nothing to display"]]
+    else:
+      stat = [["Error during RPC call"]]
+    callback["minorstat"] = stat
 ###
-    if lhcbUser == "Anonymous":
-      callback["app"] = [["Insufficient rights"]]
-    else:
-      result = RPC.getApplicationStates()
-      if result["OK"]:
-        app = []
-        if len(result["Value"])>0:
-          app.append([str("All")])
-          for i in result["Value"]:
-            app.append([str(i)])
-        else:
-          app = [["Nothing to display"]]
+    result = RPC.getApplicationStates()
+    if result["OK"]:
+      app = []
+      if len(result["Value"])>0:
+        app.append([str("All")])
+        for i in result["Value"]:
+          i = i.replace(",",";")
+          app.append([i])
       else:
-        app = [["Error during RPC call"]]
-      callback["app"] = app
+        app = [["Nothing to display"]]
+    else:
+      app = [["Error during RPC call"]]
+    callback["app"] = app
 ###
     if lhcbUser == "Anonymous":
       callback["owner"] = [["Insufficient rights"]]
@@ -251,20 +241,41 @@ class JobmonitorController(BaseController):
     lhcbGroup = credentials.getSelectedGroup()
     lhcbUser = str(credentials.getUsername())
     global pageNumber
-    if request.params.has_key("id") and len(request.params["id"]) > 0:
-      pageNumber = 0
-      req["JobID"] = str(request.params["id"])
-    else:
-      global numberOfJobs
-      global globalSort
-      if request.params.has_key("limit") and len(request.params["limit"]) > 0:
-        if request.params.has_key("start") and len(request.params["start"]) > 0:
-          numberOfJobs = int(request.params["limit"])
-          pageNumber = int(request.params["start"])
-        else:
-          pageNumber = 0
+    global numberOfJobs
+    global globalSort
+    if request.params.has_key("limit") and len(request.params["limit"]) > 0:
+      if request.params.has_key("start") and len(request.params["start"]) > 0:
+        numberOfJobs = int(request.params["limit"])
+        pageNumber = int(request.params["start"])
       else:
-        numberOfJobs = 25
+        pageNumber = 0
+    else:
+      numberOfJobs = 25
+    if request.params.has_key("id") and len(request.params["id"]) > 0:
+      testString = str(request.params["id"])
+      testString = testString.strip(';, ')
+      testString = testString.split(', ')
+      if len(testString) == 1:
+        testString = testString[0].split('; ')
+        if len(testString) == 1:
+          testString = testString[0].split(' ')
+          if len(testString) == 1:
+            testString = testString[0].split(',')
+            if len(testString) == 1:
+              testString = testString[0].split(';')
+              if len(testString) == 1:
+                req["JobID"] = testString[0]
+              else:
+                req["JobID"] = testString
+            else:
+              req["JobID"] = testString
+          else:
+            req["JobID"] = testString
+        else:
+          req["JobID"] = testString
+      else:
+        req["JobID"] = testString
+    else:
       if request.params.has_key("prod") and len(request.params["prod"]) > 0:
         if str(request.params["prod"]) != "All":
           req["JobGroup"] = str(request.params["prod"]).split('::: ')
@@ -286,6 +297,18 @@ class JobmonitorController(BaseController):
         if request.params.has_key("owner") and len(request.params["owner"]) > 0:
           if str(request.params["owner"]) != "All":
             req["Owner"] = str(request.params["owner"]).split('::: ')
+      if request.params.has_key("startDate") and len(request.params["startDate"]) > 0:
+        if str(request.params["startDate"]) != "YYYY-mm-dd":
+          if request.params.has_key("startTime") and len(request.params["startTime"]) > 0:
+            req["FromDate"] = str(request.params["startDate"] + " " + request.params["startTime"])
+          else:
+            req["FromDate"] = str(request.params["startDate"])
+      if request.params.has_key("endDate") and len(request.params["endDate"]) > 0:
+        if str(request.params["endDate"]) != "YYYY-mm-dd":
+          if request.params.has_key("endTime") and len(request.params["endTime"]) > 0:
+            req["ToDate"] = str(request.params["endDate"] + " " + request.params["endTime"])
+          else:
+            req["ToDate"] = str(request.params["endDate"])
       if request.params.has_key("date") and len(request.params["date"]) > 0:
         if str(request.params["date"]) != "YYYY-mm-dd":
           req["LastUpdate"] = str(request.params["date"])
