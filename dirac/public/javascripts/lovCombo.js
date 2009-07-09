@@ -60,7 +60,16 @@ Ext.ux.form.LovCombo = Ext.extend(Ext.form.ComboBox, {
 		return c.join(this.separator);
 	} // eo function getCheckedValue
 	,onBeforeQuery:function(qe) {
-		qe.query = qe.query.replace(new RegExp(this.getCheckedDisplay() + '[ ' + this.separator + ']*'), '');
+                var re = this.getCheckedDisplay() + '[ ' + this.separator + ']*';
+                re = re.replace(/\(/g,'\\(');
+                re = re.replace(/\)/g,'\\)');
+                re = re.replace(/\{/g,'\\{');
+                re = re.replace(/\}/g,'\\}');
+                re = re.replace(/\[/g,'\\[');
+                re = re.replace(/\]/g,'\\]');
+                re = new RegExp(re);
+                qe.query = qe.query.replace(new RegExp(re), '');
+//		qe.query = qe.query.replace(new RegExp(this.getCheckedDisplay() + '[ ' + this.separator + ']*'), '');
 	} // eo function onBeforeQuery
 	,onRealBlur:function() {
 		if(this.list){
@@ -78,8 +87,8 @@ Ext.ux.form.LovCombo = Ext.extend(Ext.form.ComboBox, {
                         re = re.replace(/\)/g,'\\)');
                         re = re.replace(/\{/g,'\\{');
                         re = re.replace(/\}/g,'\\}');
-//                        re = re.replace(/\[/g,'\\[');
-//                        re = re.replace(/\]/g,'\\]');
+                        re = re.replace(/\[/g,'\\[');
+                        re = re.replace(/\]/g,'\\]');
 			re = new RegExp(re);
 			if(v.match(re)) {
 				re = r.get(this.displayField);
@@ -110,9 +119,6 @@ Ext.ux.form.LovCombo = Ext.extend(Ext.form.ComboBox, {
 					this.fireEvent('select', this, record, index);
 				}
 			}else{
-//				if(chkValues && shiftP){
-//					var test = 0;
-//				}
                 	        this.setValue(this.getCheckedValue());
             			this.fireEvent('select', this, record, index);
 			}
@@ -122,7 +128,6 @@ Ext.ux.form.LovCombo = Ext.extend(Ext.form.ComboBox, {
 		if(v) {
 			v = '' + v;
 			if(this.valueField) {
-//				this.store.clearFilter();
 				this.store.each(function(r) {
 					var checked = !(!v.match(
 						 '(^|' + this.separator + ')' + r.get(this.valueField) 
@@ -133,7 +138,6 @@ Ext.ux.form.LovCombo = Ext.extend(Ext.form.ComboBox, {
 				this.value = this.getCheckedValue();
                                	this.displayValue = this.getCheckedDisplay();
 				this.displayValue = this.displayValue.replace(/:::/g,',');
-//				this.displayValue = this.displayValue.replace(/All, /g,'');
 				this.setRawValue(this.displayValue);
 				if(this.hiddenField) {
 					this.hiddenField.value = this.getCheckedDisplay();
