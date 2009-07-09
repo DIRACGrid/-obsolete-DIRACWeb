@@ -57,19 +57,18 @@ function initRecord(){
 function initSidebar(){
   var siteSelect = selectSiteMenu(); // Initializing Site Menu
   var ownerSelect = selectOwnerMenu(); // Initializing Owner Menu
-//  var appSelect = selectAppMenu(); // Initializing Application status Menu
+  var appSelect = selectAppMenu(); // Initializing Application status Menu
   var statSelect = selectStatusMenu(); // Initializing JobStatus Menu
   var minSelect = selectMinorStatus(); // Initializing Minor Status Menu
   var prodSelect = selectProdMenu(); // Initializing JobGroup Menu
-//  var dateSelect = dateSelectMenu(); // Initializing date dialog
   var id = selectID(); // Initialize field for JobIDs
-  var dateSelect = dateTimeWidget();
+  var dateSelect = dateTimeWidget(); // Initializing date dialog
   var select = selectPanel(); // Initializing container for selection objects
   // Insert object to container BEFORE buttons:
   select.insert(0,siteSelect);
   select.insert(1,statSelect);
   select.insert(2,minSelect);
-//  select.insert(3,appSelect);
+  select.insert(3,appSelect);
   select.insert(4,ownerSelect);
   select.insert(5,prodSelect);
   select.insert(6,id);
