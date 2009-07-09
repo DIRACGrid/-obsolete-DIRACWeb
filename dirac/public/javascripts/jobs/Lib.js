@@ -1922,7 +1922,6 @@ function dateTimeWidget(pin){
     },
     cls:'x-form-item',
     disabledClass:Ext.emptyFn,
-//    disabledClass:'',
     bodyStyle:'padding: 5px',
     items:[
       {html:'Time Span:',colspan:2,bodyStyle:'border:0px'},
