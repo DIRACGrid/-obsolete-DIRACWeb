@@ -84,23 +84,41 @@ class ProductionmonitorController(BaseController):
     lhcbGroup = credentials.getSelectedGroup()
     lhcbUser = str(credentials.getUsername())
     global pageNumber
-    if request.params.has_key("productionID") and len(request.params["productionID"]) > 0:
-      pageNumber = 0
-      req["TransformationID"] = str(request.params["productionID"])
-    else:
-      global numberOfJobs
-      global globalSort
-      if request.params.has_key("limit") and len(request.params["limit"]) > 0:
-        if request.params.has_key("start") and len(request.params["start"]) > 0:
-          numberOfJobs = int(request.params["limit"])
-          startRecord = int(request.params["start"])
-          pageNumber = startRecord
-          if pageNumber <= 0:
-            pageNumber = 0
-        else:
-          pageNumber = 0
+    global numberOfJobs
+    global globalSort
+    if request.params.has_key("limit") and len(request.params["limit"]) > 0:
+      numberOfJobs = int(request.params["limit"])
+      if request.params.has_key("start") and len(request.params["start"]) > 0:
+        pageNumber = int(request.params["start"])
       else:
-        numberOfJobs = 25
+        pageNumber = 0
+    else:
+      numberOfJobs = 25
+    if request.params.has_key("productionID") and len(request.params["productionID"]) > 0:
+      testString = str(request.params["productionID"])
+      testString = testString.strip(';, ')
+      testString = testString.split(', ')
+      if len(testString) == 1:
+        testString = testString[0].split('; ')
+        if len(testString) == 1:
+          testString = testString[0].split(' ')
+          if len(testString) == 1:
+            testString = testString[0].split(',')
+            if len(testString) == 1:
+              testString = testString[0].split(';')
+              if len(testString) == 1:
+                req["TransformationID"] = testString[0]
+              else:
+                req["TransformationID"] = testString
+            else:
+              req["TransformationID"] = testString
+          else:
+            req["TransformationID"] = testString
+        else:
+          req["TransformationID"] = testString
+      else:
+        req["TransformationID"] = testString
+    else:
       if request.params.has_key("agentType") and len(request.params["agentType"]) > 0:
         if str(request.params["agentType"]) != "All":
           req["AgentType"] = str(request.params["agentType"]).split('::: ')
