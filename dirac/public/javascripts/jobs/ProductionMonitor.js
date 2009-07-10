@@ -44,7 +44,9 @@ function initRecord(){
     {name:'BkQueryID'},
     {name:'Bk_Files'},
     {name:'Bk_EventType'},
-    {name:'Bk_Jobs'}
+    {name:'Bk_Jobs'},
+    {name:'TransformationIDcheckBox',mapping:'TransformationID'},
+    {name:'StatusIcon',mapping:'Status'}
   ]);
   return record
 }
@@ -76,10 +78,10 @@ function initSidebar(){
 }
 function initData(store){
   var columns = [
-    {header:'',id:'checkBox',width:26,sortable:false,dataIndex:'TransformationID',renderer:chkBox,hideable:false},
-    {header:'ID',width:60,sortable:true,dataIndex:'TransformationID',align:'left'},
+    {header:'',id:'checkBox',width:26,sortable:false,dataIndex:'TransformationIDcheckBox',renderer:chkBox,hideable:false,fixed:true,menuDisabled:true},
+    {header:'ID',width:60,sortable:true,dataIndex:'TransformationID',align:'left',hideable:false},
     {header:'Type',sortable:true,dataIndex:'Type',align:'left',hidden:true},
-    {header:'',width:26,sortable:false,dataIndex:'Status',renderer:status,hideable:false},
+    {header:'',width:26,sortable:false,dataIndex:'StatusIcon',renderer:status,hideable:false,fixed:true,menuDisabled:true},
     {header:'Status',width:60,sortable:true,dataIndex:'Status',align:'left'},
     {header:'Name',sortable:true,dataIndex:'TransformationName',align:'left'},
     {header:'Files',sortable:true,dataIndex:'Files_Total',align:'left'},
