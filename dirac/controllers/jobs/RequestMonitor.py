@@ -56,6 +56,7 @@ class RequestmonitorController(BaseController):
       else:
         c.result = {"success":"false","result":"","error":"Data structure is corrupted"}
     else:
+      gLogger.info("RESULT ERROR: ", c.result)
       c.result = {"success":"false","error":result["Message"]}
     gLogger.info("\033[0;31mRESULT:\033[0m ")
     return c.result
@@ -63,15 +64,66 @@ class RequestmonitorController(BaseController):
   def __request(self):
     req = {}
     global pageNumber
-    if request.params.has_key("id") and len(request.params["id"]) > 0:
-      pageNumber = 0
-      req["JobID"] = str(request.params["id"])
-    elif request.params.has_key("reqId") and len(request.params["reqId"]) > 0:
-      pageNumber = 0
-      req["RequestID"] = str(request.params["reqId"])
+    global numberOfJobs
+    global globalSort
+    if request.params.has_key("limit") and len(request.params["limit"]) > 0:
+      numberOfJobs = int(request.params["limit"])
+      if request.params.has_key("start") and len(request.params["start"]) > 0:
+        pageNumber = int(request.params["start"])
+      else:
+        pageNumber = 0
     else:
-      global numberOfJobs
-      global globalSort
+      numberOfJobs = 25
+      pageNumber = 0
+    if request.params.has_key("id") and len(request.params["id"]) > 0:
+      testString = str(request.params["id"])
+      testString = testString.strip(';, ')
+      testString = testString.split(', ')
+      if len(testString) == 1:
+        testString = testString[0].split('; ')
+        if len(testString) == 1:
+          testString = testString[0].split(' ')
+          if len(testString) == 1:
+            testString = testString[0].split(',')
+            if len(testString) == 1:
+              testString = testString[0].split(';')
+              if len(testString) == 1:
+                req["JobID"] = testString[0]
+              else:
+                req["JobID"] = testString
+            else:
+              req["JobID"] = testString
+          else:
+            req["JobID"] = testString
+        else:
+          req["JobID"] = testString
+      else:
+        req["JobID"] = testString
+    elif request.params.has_key("reqId") and len(request.params["reqId"]) > 0:
+      testString = str(request.params["reqId"])
+      testString = testString.strip(';, ')
+      testString = testString.split(', ')
+      if len(testString) == 1:
+        testString = testString[0].split('; ')
+        if len(testString) == 1:
+          testString = testString[0].split(' ')
+          if len(testString) == 1:
+            testString = testString[0].split(',')
+            if len(testString) == 1:
+              testString = testString[0].split(';')
+              if len(testString) == 1:
+                req["RequestID"] = testString[0]
+              else:
+                req["RequestID"] = testString
+            else:
+              req["RequestID"] = testString
+          else:
+            req["RequestID"] = testString
+        else:
+          req["RequestID"] = testString
+      else:
+        req["RequestID"] = testString
+    else:
       if request.params.has_key("limit") and len(request.params["limit"]) > 0:
         numberOfJobs = int(request.params["limit"])
       else:
