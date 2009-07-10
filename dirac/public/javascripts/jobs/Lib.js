@@ -615,7 +615,11 @@ function sortGlobalPanel(){
       ['LastUpdate Ascending','LastUpdateTime ASC'],
       ['LastUpdate Descending','LastUpdateTime DESC'],
       ['Site Ascending','Site ASC'],
-      ['Site Descending','Site DESC']
+      ['Site Descending','Site DESC'],
+      ['Status Ascending','Status ASC'],
+      ['Status Descending','Status DESC'],
+      ['MinorStatus Ascending','MinorStatus ASC'],
+      ['MinorStatus Descending','MinorStatus DESC']
     ];
     var defaultSort = 'JobID DESC';
     if(dataSelect.extra){
@@ -886,6 +890,44 @@ function selectAppMenu(){
     }
   });
   return combo;
+}
+function genericID(name,fieldLabel,altRegexp,altRegexText){
+  var value = '';
+  try{
+    value = dataSelect.extra.id;
+    delete dataSelect.extra.id;
+  }catch(e){}
+  var regex = new RegExp( /^[0-9, ]+$/);
+  var regexText = 'Only digits separated by semicolons are allowed';
+  try{}catch(e){}
+  try{}catch(e){}
+  var textField = new Ext.form.TextField({
+    anchor:'90%',
+    allowBlank:true,
+    enableKeyEvents:true,
+    fieldLabel:fieldLabel,
+    id:name,
+    mode:'local',
+    name:name,
+    regex:regex,
+    regexText:regexText,
+    selectOnFocus:true,
+    value:value
+  });
+  textField.on({
+    'render':function(){
+      if(textField.value !== ''){
+        hideControls(textField);
+      }
+    },
+    'blur':function(){
+      hideControls(textField);
+    },
+    'keyup':function(){
+      hideControls(textField);
+    }
+  });
+  return textField;
 }
 function selectID(){
   var value = '';
