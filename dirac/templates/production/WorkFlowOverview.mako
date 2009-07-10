@@ -2,28 +2,28 @@
 <%inherit file="/base.mako" />
 <%def name="head_tags()">
   <!-- add some head tags here -->
-  ${ h.stylesheet_link( "/yui/fonts/fonts-min.css") }
-  ${ h.stylesheet_link( "/yui/treeview/assets/skins/sam/treeview.css") }
-  ${ h.stylesheet_link( "/yui/tabview/assets/skins/sam/tabview.css") }
-  ${ h.stylesheet_link( "/yui/container/assets/skins/sam/container.css") }
-  ${ h.stylesheet_link( "/yui/menu/assets/skins/sam/menu.css") }
-  ${ h.stylesheet_link( "/yui/button/assets/skins/sam/button.css") }
+  ${ h.stylesheet_link_tag( "/yui/fonts/fonts-min.css") }
+  ${ h.stylesheet_link_tag( "/yui/treeview/assets/skins/sam/treeview.css") }
+  ${ h.stylesheet_link_tag( "/yui/tabview/assets/skins/sam/tabview.css") }
+  ${ h.stylesheet_link_tag( "/yui/container/assets/skins/sam/container.css") }
+  ${ h.stylesheet_link_tag( "/yui/menu/assets/skins/sam/menu.css") }
+  ${ h.stylesheet_link_tag( "/yui/button/assets/skins/sam/button.css") }
 
-  ${ h.javascript_link( "/yui/yahoo/yahoo-min.js") }
-  ${ h.javascript_link( "/yui/event/event-min.js") }
-  ${ h.javascript_link( "/yui/treeview/treeview-min.js") }
+  ${ h.javascript_include_tag( "/yui/yahoo/yahoo-min.js") }
+  ${ h.javascript_include_tag( "/yui/event/event-min.js") }
+  ${ h.javascript_include_tag( "/yui/treeview/treeview-min.js") }
 
-  ${ h.javascript_link( "/yui/yahoo-dom-event/yahoo-dom-event.js" ) }
+  ${ h.javascript_include_tag( "/yui/yahoo-dom-event/yahoo-dom-event.js" ) }
   
-  ${ h.javascript_link( "/yui/element/element-beta-min.js") }
-  ${ h.javascript_link( "/yui/tabview/tabview-min.js") }
-  ${ h.javascript_link( "/yui/dragdrop/dragdrop-min.js") }
-  ${ h.javascript_link( "/yui/container/container-min.js") }
-  ${ h.javascript_link( "/yui/menu/menu-min.js") }
-  ${ h.javascript_link( "/yui/button/button-min.js") }
-  ${ h.javascript_link( "/yui/utilities/utilities.js") }
-  ${ h.javascript_link( "/yui/json/json-min.js") }
-  ${ h.javascript_link( "/yui/connection/connection-min.js") }
+  ${ h.javascript_include_tag( "/yui/element/element-beta-min.js") }
+  ${ h.javascript_include_tag( "/yui/tabview/tabview-min.js") }
+  ${ h.javascript_include_tag( "/yui/dragdrop/dragdrop-min.js") }
+  ${ h.javascript_include_tag( "/yui/container/container-min.js") }
+  ${ h.javascript_include_tag( "/yui/menu/menu-min.js") }
+  ${ h.javascript_include_tag( "/yui/button/button-min.js") }
+  ${ h.javascript_include_tag( "/yui/utilities/utilities.js") }
+  ${ h.javascript_include_tag( "/yui/json/json-min.js") }
+  ${ h.javascript_include_tag( "/yui/connection/connection-min.js") }
 
   <style>
   	body { margin:0; padding:0; text-align: left; }
@@ -44,7 +44,7 @@
   	
   </style>
 
-${ h.javascript_link( "/javascripts/production/WorkFlowTree.js") }
+${ h.javascript_include_tag( "/javascripts/production/WorkFlowTree.js") }
  
 <script type="text/javascript">
 
