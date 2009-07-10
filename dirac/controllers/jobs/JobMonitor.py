@@ -244,13 +244,14 @@ class JobmonitorController(BaseController):
     global numberOfJobs
     global globalSort
     if request.params.has_key("limit") and len(request.params["limit"]) > 0:
+      numberOfJobs = int(request.params["limit"])
       if request.params.has_key("start") and len(request.params["start"]) > 0:
-        numberOfJobs = int(request.params["limit"])
         pageNumber = int(request.params["start"])
       else:
         pageNumber = 0
     else:
       numberOfJobs = 25
+      pageNumber = 0
     if request.params.has_key("id") and len(request.params["id"]) > 0:
       testString = str(request.params["id"])
       testString = testString.strip(';, ')

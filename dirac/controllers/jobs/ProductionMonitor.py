@@ -94,6 +94,7 @@ class ProductionmonitorController(BaseController):
         pageNumber = 0
     else:
       numberOfJobs = 25
+      pageNumber = 0
     if request.params.has_key("productionID") and len(request.params["productionID"]) > 0:
       testString = str(request.params["productionID"])
       testString = testString.strip(';, ')
