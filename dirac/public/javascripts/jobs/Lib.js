@@ -298,12 +298,15 @@ function initStore(record,groupBy){
       dataSelect.extra = {};
     }
   }catch(e){
+    dataSelect = {};
     dataSelect.extra = {};
   }
   try{
     if(!dataSelect.extra.limit){
       dataSelect.extra.limit = 25;
     }else{
+      dataSelect = {};
+      dataSelect.extra = {};
       dataSelect.extra.limit = dataSelect.extra.limit/1;
     }
   }catch(e){
@@ -316,6 +319,8 @@ function initStore(record,groupBy){
       dataSelect.extra.start = dataSelect.extra.start/1;
     }
   }catch(e){
+    dataSelect = {};
+    dataSelect.extra = {};
     dataSelect.extra.start = 0;
   }
   var auto = {};
@@ -891,7 +896,7 @@ function selectAppMenu(){
   });
   return combo;
 }
-function genericID(name,fieldLabel,altRegexp,altRegexText){
+function genericID(name,fieldLabel,altRegex,altRegexText){
   var value = '';
   try{
     value = dataSelect.extra.id;
@@ -899,8 +904,16 @@ function genericID(name,fieldLabel,altRegexp,altRegexText){
   }catch(e){}
   var regex = new RegExp( /^[0-9, ]+$/);
   var regexText = 'Only digits separated by semicolons are allowed';
-  try{}catch(e){}
-  try{}catch(e){}
+  try{
+    if(altRegex){
+      regex = altRegex;
+    }
+  }catch(e){}
+  try{
+    if(altRegexText){
+      regexText = altRegexText;
+    }
+  }catch(e){}
   var textField = new Ext.form.TextField({
     anchor:'90%',
     allowBlank:true,
@@ -930,118 +943,13 @@ function genericID(name,fieldLabel,altRegexp,altRegexText){
   return textField;
 }
 function selectID(){
-  var value = '';
-  if(dataSelect){
-    if(dataSelect.extra){
-      if(dataSelect.extra.id){
-        value = dataSelect.extra.id;
-      }
-      delete dataSelect.extra.id;
-    }
-  }
-  var regex = new RegExp( /^[0-9, ]+$/);
-  var number = new Ext.form.TextField({
-    anchor:'90%',
-    allowBlank:true,
-    enableKeyEvents:true,
-    fieldLabel:'JobID',
-    id:'selectID',
-    mode:'local',
-    name:'id',
-    regex:regex,
-    regexText:'Only digits separated by semicolons are allowed',
-    selectOnFocus:true,
-    value:value
-  });
-  number.on({
-    'render':function(){
-      if(number.value !== ''){
-        hideControls(number);
-      }
-    },
-    'blur':function(){
-      hideControls(number);
-    },
-    'keyup':function(){
-      hideControls(number);
-    }
-  });
-  return number;
+  return genericID('id','JobID');
 }
 function selectProductionID(){
-  var value = '';
-  try{
-    if(dataSelect.extra.productionId){
-      value = dataSelect.extra.productionId;
-    }
-    delete dataSelect.extra.productionId;
-  }catch(e){}
-  var number = new Ext.form.NumberField({
-    anchor:'90%',
-    allowBlank:true,
-    allowDecimals:false,
-    allowNegative:false,
-    baseChars:'0123456789',
-    enableKeyEvents:true,
-    fieldLabel:'ProductionID',
-    id:'productionID',
-    mode:'local',
-    name:'productionID',
-    selectOnFocus:true,
-    value:value
-  });
-  number.on({
-    'render':function(){
-      if(number.value !== ''){
-        hideControls(number);
-      }
-    },
-    'blur':function(){
-      hideControls(number);
-    },
-    'keyup':function(){
-      hideControls(number);
-    }
-  });
-  return number;
-}
-function selectRequest(){
-  var number = new Ext.form.NumberField({
-    anchor:'90%',
-    allowBlank:true,
-    allowDecimals:false,
-    allowNegative:false,
-    fieldLabel:'RequestID',
-    mode:'local',
-    name:'RequestID',
-    selectOnFocus:true,
-    value:''
-  });
-  return number;
+  return genericID('productionID','ProductionID');
 }
 function selectRequestID(){
-  var number = new Ext.form.NumberField({
-    anchor:'90%',
-    allowBlank:true,
-    allowDecimals:false,
-    allowNegative:false,
-    baseChars:'0123456789',
-    enableKeyEvents:true,
-    fieldLabel:'RequestID',
-    mode:'local',
-    name:'reqId',
-    selectOnFocus:true,
-    value:''
-  });
-  number.on({
-    'blur':function(){
-      hideControls(number);
-    },
-    'keyup':function(){
-      hideControls(number);
-    }
-  });
-  return number;
+  return genericID('reqId','RequestID');
 }
 function createMenu(dataName,menuName,altValue){
   var data = [['']];
