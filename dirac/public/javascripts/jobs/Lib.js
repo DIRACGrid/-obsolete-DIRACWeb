@@ -665,7 +665,10 @@ function selectPanel(){
       selections.sort = dataSelect.globalSort;
       selections.limit = tableMngr.bbar.pageSize;
       selections.start = 0;
-    }catch(e){}
+    }catch(e){
+      sideBar.body.unmask();
+      alert('Error: Either selections.sort or selections.limit or selections.start are not defined');
+    }
     if(tableMngr){
       if(tableMngr.bbar){
         panel.form.submit({
@@ -685,7 +688,11 @@ function selectPanel(){
           },
           failure:function(form,action){
             sideBar.body.unmask();
-            alert('Error: ' + action.response.statusText);
+            try{
+              alert('Error: ' + action.response.statusText);
+            }catch(e){
+              alert('Error: Unknow error during sending request to service. panel.form.submit');
+            }
           }
         });
       }else{
@@ -1879,8 +1886,14 @@ function dateTimeWidget(pin){
         if(startDateValue == ''){
           startDate.setValue(currentTime);
         }
-        endTime.setValue(timeToSet);
-        endDate.setValue(currentTime);
+        var endTimeValue = endTime.getValue();
+        var endDateValue = endDate.getValue();
+        if(endTimeValue == ''){
+          endTime.setValue(timeToSet);
+        }
+        if(endDateValue == ''){
+          endDate.setValue(currentTime);
+        }
       }
       if(value == 'Manual selection'){
         panel.items.items[5].body.update('End:');
