@@ -4,31 +4,31 @@
 <head>
 <meta http-equiv="Content-Type" content="text/html; charset=UTF-8" />
 <title>WorkFlowEditor</title>
-  ${ h.stylesheet_link( "/yui/fonts/fonts-min.css") }
-  ${ h.stylesheet_link( "/yui/treeview/assets/skins/sam/treeview.css") }
-  ${ h.stylesheet_link( "/yui/tabview/assets/skins/sam/tabview.css") }
-  ${ h.stylesheet_link( "/yui/datatable/assets/skins/sam/datatable.css") }
-  ${ h.stylesheet_link( "/yui/container/assets/skins/sam/container.css") }
-  ${ h.stylesheet_link( "/yui/menu/assets/skins/sam/menu.css") }
-  ${ h.stylesheet_link( "/yui/button/assets/skins/sam/button.css") }
+  ${ h.stylesheet_link_tag( "/yui/fonts/fonts-min.css") }
+  ${ h.stylesheet_link_tag( "/yui/treeview/assets/skins/sam/treeview.css") }
+  ${ h.stylesheet_link_tag( "/yui/tabview/assets/skins/sam/tabview.css") }
+  ${ h.stylesheet_link_tag( "/yui/datatable/assets/skins/sam/datatable.css") }
+  ${ h.stylesheet_link_tag( "/yui/container/assets/skins/sam/container.css") }
+  ${ h.stylesheet_link_tag( "/yui/menu/assets/skins/sam/menu.css") }
+  ${ h.stylesheet_link_tag( "/yui/button/assets/skins/sam/button.css") }
 
-  ${ h.javascript_link( "/yui/yahoo/yahoo-min.js") }
-  ${ h.javascript_link( "/yui/event/event-min.js") }
-  ${ h.javascript_link( "/yui/treeview/treeview-min.js") }
+  ${ h.javascript_include_tag( "/yui/yahoo/yahoo-min.js") }
+  ${ h.javascript_include_tag( "/yui/event/event-min.js") }
+  ${ h.javascript_include_tag( "/yui/treeview/treeview-min.js") }
 
-  ${ h.javascript_link( "/yui/yahoo-dom-event/yahoo-dom-event.js" ) }
+  ${ h.javascript_include_tag( "/yui/yahoo-dom-event/yahoo-dom-event.js" ) }
   
-  ${ h.javascript_link( "/yui/element/element-beta-min.js") }
-  ${ h.javascript_link( "/yui/tabview/tabview-min.js") }
-  ${ h.javascript_link( "/yui/dragdrop/dragdrop-min.js") }
-  ${ h.javascript_link( "/yui/datasource/datasource-beta-min.js") }
-  ${ h.javascript_link( "/yui/datatable/datatable-beta-min.js") }
-  ${ h.javascript_link( "/yui/container/container-min.js") }
-  ${ h.javascript_link( "/yui/menu/menu-min.js") }
-  ${ h.javascript_link( "/yui/button/button-min.js") }
-  ${ h.javascript_link( "/yui/utilities/utilities.js") }
-  ${ h.javascript_link( "/yui/json/json-min.js") }
-  ${ h.javascript_link( "/yui/connection/connection-min.js") }
+  ${ h.javascript_include_tag( "/yui/element/element-beta-min.js") }
+  ${ h.javascript_include_tag( "/yui/tabview/tabview-min.js") }
+  ${ h.javascript_include_tag( "/yui/dragdrop/dragdrop-min.js") }
+  ${ h.javascript_include_tag( "/yui/datasource/datasource-beta-min.js") }
+  ${ h.javascript_include_tag( "/yui/datatable/datatable-beta-min.js") }
+  ${ h.javascript_include_tag( "/yui/container/container-min.js") }
+  ${ h.javascript_include_tag( "/yui/menu/menu-min.js") }
+  ${ h.javascript_include_tag( "/yui/button/button-min.js") }
+  ${ h.javascript_include_tag( "/yui/utilities/utilities.js") }
+  ${ h.javascript_include_tag( "/yui/json/json-min.js") }
+  ${ h.javascript_include_tag( "/yui/connection/connection-min.js") }
 
 <style type="text/css">
 body { margin:0; padding:0; }
@@ -56,9 +56,9 @@ h1 { text-align:center; }
 .yui-button#ModImp button { width: 7em;  }
 </style>
 
-${ h.javascript_link( "/javascripts/production/CEO.js") }
-${ h.javascript_link( "/javascripts/production/WorkFlowTree.js") }
-${ h.javascript_link( "/javascripts/production/WorkFlowEditor.js") }
+${ h.javascript_include_tag( "/javascripts/production/CEO.js") }
+${ h.javascript_include_tag( "/javascripts/production/WorkFlowTree.js") }
+${ h.javascript_include_tag( "/javascripts/production/WorkFlowEditor.js") }
 
 <script type="text/javascript">
 
@@ -290,7 +290,7 @@ YAHOO.util.Event.onDOMReady(WFE.Init,WFE,true);
 		</tr>
 		<tr id="ParCfgValueRow">
 			<td style="text-align: right;">Default value:</td>
-			<td> <input name="ParCfgValue" id="ParCfgValue" type="text" maxlength="256" size="64"></td>
+			<td> <input name="ParCfgValue" id="ParCfgValue" type="text" maxlength="1024" size="64"></td>
 		</tr>
 		<tr id="ParCfgInstanceTipRow">
 			<td style="text-align: right;">Tip:</td>
