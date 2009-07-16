@@ -2,6 +2,8 @@ import urllib
 import re
 import cPickle
 import os
+import subprocess
+import tempfile
 
 import logging
 
@@ -146,7 +148,10 @@ class RealRequestEngine:
                    'creationTime', 'lastUpdateTime' ]
 
   simcondFields = [ 'Generator', 'MagneticField', 'BeamEnergy',
-                    'Luminosity', 'DetectorCond', 'BeamCond' ]
+                    'Luminosity', 'DetectorCond', 'BeamCond',
+                    'configName', 'configVersion', 'condType',
+                    'inProPass', 'inFileType', 'inProductionID',
+                    'inDataQualityFlag' ]
 
   def getRequestFields(self):
     result = dict.fromkeys(self.localFields,None)
@@ -311,7 +316,16 @@ class RealRequestEngine:
     ret = RPC.getProductionTemplateList()
     if not ret['OK']:
       return ret
-    return { 'OK':True, 'total': len(ret['Value']), 'result': ret['Value'] }
+    dvalue = {} # Remove "_run.py" templates from the list
+    for x in ret['Value']:
+      dvalue[x['WFName']] = x
+    value = []
+    for x in dvalue:
+      master = x.replace('_run.py','')
+      if  master != x and master in dvalue:
+        continue
+      value.append(dvalue[x])
+    return { 'OK':True, 'total': len(value), 'result': value }
 
     #RPC = getRPCClient("ProductionManagement/ProductionManager")
     #result = RPC.getListWorkflows()
@@ -593,6 +607,264 @@ class ProductionrequestController(BaseController):
 
     return {'OK': False, 'Message': 'Not implemented'}
 
+  bkSimCondFields = [ 'simCondID', 'simDesc', 'BeamCond',
+                      'BeamEnergy', 'Generator',
+                      'MagneticField', 'DetectorCond',
+                      'Luminosity' ]
+  bkRunCondFields = [ 'simCondID', 'simDesc', 'BeamCond',
+                      'BeamEnergy', 'MagneticField',
+                      'detVELO', 'detIT', 'detTT', 'detOT',
+                      'detRICH1', 'detRICH2', 'detSPD_PRS',
+                      'detECAL', 'detHCAL', 'detMUON',
+                      'detL0','detHLT' ]
+
+  def __runDetectorCond(self,cond):
+    incl = []
+    not_incl = []
+    unknown = []
+    for x in self.bkRunCondFields[5:]:
+      if not x in cond:
+        unknown.append(x[3:])
+      elif cond[x] == 'INCLUDED':
+        incl.append(x[3:])
+      elif cond[x] == 'NOT INCLUDED':
+        not_incl.append(x[3:])
+      else:
+        unknown.append(x[3:])
+    if len(incl) > len(not_incl):
+      if not len(not_incl):
+        s = "all"
+        if len(unknown):
+          s += " except unknown %s" % ','.join(unknown)
+      else:
+        s = "without %s" % ','.join(not_incl)
+        if len(unknown):
+          s += " and unknown %s" % ','.join(unknown)
+    else:
+      if len(incl):
+        s = "only %s" % ','.join(incl)
+        if len(unknown):
+          s += " and unknown %s" % ','.join(unknown)
+      else:
+        s = "no"
+        if len(unknown):
+          s += " with unknown %s" % ','.join(unknown)
+    return s
+
+  def __findSimCond(self,RPC,configName,configVersion,condType,simCondID):
+    if simCondID == 'ALL':
+      if condType == 'Run':
+        d = dict.fromkeys(self.bkRunCondFields,'')
+        d['condType'] = 'Run'
+        d['Generator'] = ''
+        d['DetectorCond'] = ''
+        d['Luminosity'] = ''
+      else:
+        d = dict.fromkeys(self.bkSimCondFields,'')
+        d['condType'] = 'Simulation'
+      d['simCondID'] = '999999'
+      d['simDesc'] = 'ALL'
+      return S_OK(d)
+    if condType == 'Run':
+      result = RPC.getSimulationConditions(configName,configVersion,1)
+    else:
+      result = RPC.getSimulationConditions(configName,configVersion,0)
+    if not result['OK']:
+      return result
+    for cond in result['Value']:
+      if str(cond[0]) != str(simCondID):
+        continue
+      if condType == 'Run':
+        d = dict(zip(self.bkRunCondFields,cond))
+        d['DetectorCond'] = self.__runDetectorCond(d)
+      else:
+        d = dict(zip(self.bkSimCondFields,cond))
+      d['condType'] = condType
+      d['simCondID'] = simCondID
+      return S_OK(d)
+    return S_ERROR("Conditions %s is not found" % str(simCondID))
+
+  @jsonify
+  def bkk_input_prod(self):
+    configName    = str(request.params.get('configName', ''))
+    configVersion = str(request.params.get('configVersion', ''))
+    simCondID     = str(request.params.get('simCondID', ''))
+    inProPass     = str(request.params.get('inProPass', ''))
+    eventType        = str(request.params.get('eventType', ''))
+
+    if simCondID == '999999':
+      simCondID = 'ALL'
+
+    RPC = getRPCClient('Bookkeeping/BookkeepingManager')
+    result = RPC.getProductionsWithSimcond(configName,configVersion,
+                                           simCondID,inProPass,eventType)
+    if not result['OK']:
+      return result
+    value = []
+    if len(result['Value']):
+      value.append({'id':0,'text':'ALL'})
+    for x in result['Value']:
+      prod = x[0]
+      if prod < 0:
+        prod = -prod;
+      value.append({ 'id': prod, 'text': prod});
+    return { 'OK': True, 'total': len(value), 'result': value }
+
+  @jsonify
+  def bkk_dq_list(self):
+    RPC = getRPCClient('Bookkeeping/BookkeepingManager')
+    result = RPC.getAvailableDataQuality()
+    if not result['OK']:
+      return result
+    value = []
+    if len(result['Value']):
+      value.append({'v':'ALL'})
+    for x in result['Value']:
+      value.append({ 'v': x});
+    return { 'OK': True, 'total': len(value), 'result': value }
+
+  @jsonify
+  def bkk_input_tree(self):
+    configName    = str(request.params.get('configName', ''))
+    configVersion = str(request.params.get('configVersion', ''))
+    simCondID     = str(request.params.get('simCondID', ''))
+    condType      = str(request.params.get('condType', ''))
+    inProPass     = str(request.params.get('inProPass', ''))
+    evType        = str(request.params.get('evType', ''))
+
+    if simCondID == '999999':
+      simCondID = 'ALL'
+
+    RPC = getRPCClient('Bookkeeping/BookkeepingManager')
+    value = []
+    if not configName:
+      result = RPC.getAvailableConfigurations();
+      if not result['OK']:
+        return result
+      if not configName:
+        known = {}
+        for pair in result['Value']:
+          name = pair[0]
+          if not name in known:
+            value.append({
+              'id':         '/'+name,
+              'text':       name,
+              'configName': name
+              })
+            known[name] = True
+      return {'OK': True, 'Value': value}
+    if not configVersion:
+      result = RPC.getAvailableConfigurations();
+      if not result['OK']:
+        return result
+      for pair in result['Value']:
+        name = pair[0]
+        if name == configName:
+          version = pair[1]
+          value.append({
+            'id':     '/'+name+'/'+version,
+            'text':   version,
+            'configName': name,
+            'configVersion': version,
+            })
+      return {'OK': True, 'Value': value}
+    if not simCondID or not condType:
+      result = RPC.getSimulationConditions(configName,configVersion,0);
+      if len(result['Value']):
+        for cond in result['Value']:
+          d = { 'id':     '/'+configName+'/'+configVersion+'/'+str(cond[0]),
+                'text':   cond[1], 'leaf': False, 'condType': 'Simulation',
+                'configName': configName, 'configVersion': configVersion }
+          d.update(dict(zip(self.bkSimCondFields,cond)))
+          value.append(d)
+        if len(value):
+          d = { 'id':     '/'+configName+'/'+configVersion+'/ALL',
+                'text':   'ALL', 'leaf': False, 'condType': 'Simulation',
+                'configName': configName, 'configVersion': configVersion }
+          d.update(dict.fromkeys(self.bkSimCondFields,''))
+          d['simDesc']  ='ALL'
+          d['simCondID']='999999'
+          value.append(d)
+      else:
+        result = RPC.getSimulationConditions(configName,configVersion,1);
+        if not result['OK']:
+          return result
+        vdict = {}
+        for cond in result['Value']:
+          if cond[0] in vdict:
+            if cond != vdict[cond[0]]:
+              return S_ERROR("Mismatch for %s" % str(cond[0]))
+          else:
+            vdict[cond[0]] = cond
+        for cond in vdict.values():
+          d = { 'id':     '/'+configName+'/'+configVersion+'/'+str(cond[0]),
+                'text':   cond[1], 'leaf': False, 'condType': 'Run',
+                'configName': configName, 'configVersion': configVersion }
+          d.update(dict(zip(self.bkRunCondFields,cond)))
+          d['DetectorCond'] = self.__runDetectorCond(d)
+          value.append(d)
+        if len(value):
+          d = { 'id':     '/'+configName+'/'+configVersion+'/ALL',
+                'text':   'ALL', 'leaf': False, 'condType': 'Run',
+                'configName': configName, 'configVersion': configVersion }
+          d.update(dict.fromkeys(self.bkRunCondFields,''))
+          d['simCondID']='ALL'
+          value.append(d)
+      return {'OK': True, 'Value': value}
+    result = self.__findSimCond(RPC,configName,configVersion,condType,simCondID)
+    if not result['OK']:
+      return result
+    scd = result['Value']
+    if not inProPass:
+      result = RPC.getProPassWithSimCond(configName,configVersion,simCondID)
+      if not result['OK']:
+        return result
+      ppd = {}
+      for pp in result['Value']:
+        if not pp[0] in ppd:
+          ppd[pp[0]] = ''
+      for pp in ppd:
+        d = { 'id': '/'+configName+'/'+configVersion+'/'+simCondID+'/'+str(pp),
+              'text': pp, 'leaf': False,
+              'configName': configName, 'configVersion': configVersion,
+              'inProPass': pp }
+        d.update(scd)
+        value.append(d);
+      if len(value) and simCondID != 'ALL':
+        d = { 'id': '/'+configName+'/'+configVersion+'/'+simCondID+'/ALL',
+              'text': 'ALL', 'leaf': False,
+              'configName': configName, 'configVersion': configVersion,
+              'inProPass': 'ALL' }
+        d.update(scd)
+        value.append(d);
+        
+      return S_OK(value)
+    if not evType:
+      result = RPC.getEventTypeWithSimcond(configName,configVersion,simCondID,inProPass)
+      if not result['OK']:
+        return result
+      for evt in result['Value']:
+        d = { 'id': '/'+configName+'/'+configVersion+'/'+simCondID+'/'+inProPass+'/'+str(evt[0]),
+              'text': "%s (%s)" % (str(evt[0]),str(evt[1])), 'leaf': False,
+              'configName': configName, 'configVersion': configVersion,
+              'inProPass': inProPass, 'evType': evt[0] }
+        d.update(scd)
+        value.append(d);
+      return S_OK(value)
+    if True:
+      result = RPC.getFileTypesWithSimcond(configName,configVersion,simCondID,inProPass,evType,'ALL')
+      if not result['OK']:
+        return result
+      for ftype in result['Value']:
+        d = { 'id': '/'+configName+'/'+configVersion+'/'+simCondID+'/'+inProPass+'/'+evType+'/'+str(ftype[0]),
+              'text': str(ftype[0]), 'leaf': True,
+              'configName': configName, 'configVersion': configVersion,
+              'inProPass': inProPass, 'evType': evType, 'inFileType': ftype[0] }
+        d.update(scd)
+        value.append(d);
+      return S_OK(value)
+    return {'OK': False, 'Message': 'Not implemented'}
+
   @jsonify
   def bkk_simcond(self):
     RPC = getRPCClient('Bookkeeping/BookkeepingManager')
@@ -602,16 +874,7 @@ class ProductionrequestController(BaseController):
     rdict = result['Value']
     rows  = []
     for sc in result['Value']:
-      rows.append({
-        'simCondID': sc[0],
-        'simDesc': sc[1],
-        'BeamCond': sc[2],
-        'BeamEnergy': sc[3],
-        'Generator': sc[4],
-        'MagneticField': sc[5],
-        'DetectorCond': sc[6],
-        'Luminosity': sc[7]
-        })
+      rows.append(dict(zip(self.bkSimCondFields,sc)))
 #    !!! Sorting and selection must be moved to MySQL/Service side
     return SelectAndSort(rows,'simCondID')
 
@@ -750,6 +1013,8 @@ class ProductionrequestController(BaseController):
         return ret
       passAll,pl = ret['Value']
       if reqType=='Simulation' and len(pl[0])>2 and pl[0][2] != 'Gauss':
+        continue
+      if reqType=='Reconstruction' and len(pl[0])>2 and pl[0][2] != 'Brunel':
         continue
       row = { 'pID': pas[0], 'pDsc': pas[1], 'pAll': passAll }
       for i in range(0,7):
@@ -1012,7 +1277,11 @@ class ProductionrequestController(BaseController):
     result = self.__getTemplate(tpl_name)
     if not result['OK']:
       return result
-    tpl = PrTpl(result['Value'])
+    text = result['Value']
+    result = self.__getTemplate(tpl_name+'_run.py')
+    if result['OK']:
+      text += result['Value']
+    tpl = PrTpl(text)
     rqf = self.engine.getRequestFields()
     tpf = tpl.getParams()
     plist = []
@@ -1047,7 +1316,11 @@ class ProductionrequestController(BaseController):
     if not ret['OK']:
       return ret
     tpl = PrTpl(ret['Value'])
-
+    run_tpl = None
+    ret = self.__getTemplate(tpl_name+'_run.py')
+    if ret['OK']:
+      run_tpl = PrTpl(ret['Value'])
+      
     ret = self.engine.getProductionRequest([id])
     if not ret['OK']:
       return ret
@@ -1084,9 +1357,29 @@ class ProductionrequestController(BaseController):
           x[y] = ''
         else:
           x[y] = str(x[y])
-      success.append({ 'ID': x['ID'], 'Body': tpl.apply(x)})
-      continue # not working with WF DB for now
-    
+      if not run_tpl:
+        success.append({ 'ID': x['ID'], 'Body': tpl.apply(x)})
+      else:
+        # AZ: Time to execute...
+        try:
+          f = tempfile.mkstemp()
+          os.write(f[0],tpl.apply(x))
+          os.close(f[0])
+        except Exception,msg:
+          log.error(str(msg))
+          fail.append(str(x['ID']))
+          continue
+        try:
+          p = subprocess.Popen(['python','-',f[1]],stdin=subprocess.PIPE,\
+                               stdout=subprocess.PIPE,\
+                               stderr=subprocess.STDOUT)
+          success.append({ 'ID': x['ID'],
+                           'Body':  p.communicate(run_tpl.apply(x)) })
+        except Exception,msg:
+          log.error(str(msg))
+          fail.append(str(x['ID']))
+        os.remove(f[1])
+      continue # not working with WF DB for now    
       name = 'PRQ_%s' % x['ID']
       wf = fromXMLString(tpl.apply(x))
       wf.setName(name)
@@ -1102,8 +1395,8 @@ class ProductionrequestController(BaseController):
         success.append(str(x['ID']))
 
     if len(fail):
-      return S_ERROR("Couldn't create workflows for %s. Success with %s" \
-                     % (','.join(fail),','.join(success)))
+      return S_ERROR("Couldn't create workflows for %s." \
+                     % (','.join(fail)))
     else:
       # return S_OK("Success with %s" % ','.join(success))
       return S_OK(success)

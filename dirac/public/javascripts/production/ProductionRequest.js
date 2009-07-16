@@ -133,7 +133,7 @@ if(typeof Ext.decode('{"Value": "", "OK": true}').success == "undefined"){
  * Markup version
  */
 PR.RequestDetail = Ext.extend(Ext.Panel, {
-  tplMarkup: [
+  tplSimMarkup: [
     '<b>ID:</b> {ID}<br/>',
     '<b>Name:</b> {reqName}<br/>',
     '<b>Type:</b> {reqType}<br/>',
@@ -158,8 +158,34 @@ PR.RequestDetail = Ext.extend(Ext.Panel, {
     '<b>Comments</b><br/> {htmlReqComment}<br/>'
   ],
 
+  tplRunMarkup: [
+    '<b>ID:</b> {ID}<br/>',
+    '<b>Name:</b> {reqName}<br/>',
+    '<b>Type:</b> {reqType}<br/>',
+    '<b>State:</b> {reqState}<br/>',
+    '<b>Priority:</b> {reqPrio}<br/>',
+    '<b>Author:</b> {reqAuthor}<br/>',
+
+    '<b>Event type:</b> {eventType}<br/>',
+    '<b>Number of events:</b> {eventNumber}<br/><br>',
+
+    '<b>Configuration:</b> {configName} <b>version:</b> {configVersion}<br>',
+    '<b>Conditions:</b> {simDesc} <b>type:</b> {condType}<br/>',
+    '<b>Processing pass:</b> {inProPass}<br/>',
+    '<b>Input file type:</b> {inFileType}<br/>',
+    '<b>DQ flag:</b> {inDataQualityFlag}<br/>',
+    '<b>Input production:</b> {inProductionID}<br/><br/>',
+
+    '<b>Processing Pass:</b> {pDsc}<br/>',
+    '{p1Html}{p2Html}{p3Html}{p4Html}',
+    '{p5Html}{p6Html}{p7Html}<br/>',
+
+    '<b>Comments</b><br/> {htmlReqComment}<br/>'
+  ],
+
   initComponent: function() {
-    this.tpl = new Ext.Template(this.tplMarkup);
+    this.tplSim = new Ext.Template(this.tplSimMarkup);
+    this.tplRun = new Ext.Template(this.tplRunMarkup);
     PR.RequestDetail.superclass.initComponent.call(this);
   },
 
@@ -169,7 +195,10 @@ PR.RequestDetail = Ext.extend(Ext.Panel, {
     var lt = /</g;
     var gt = />/g;
     data.htmlReqComment = data.reqComment.replace(eol,'<br/>');
-    this.tpl.overwrite(this.body,data);
+    if(data.reqType == 'Simulation')
+      this.tplSim.overwrite(this.body,data);
+    else
+      this.tplRun.overwrite(this.body,data);
   },
 
   onDataChanged: function(store) {
@@ -442,6 +471,165 @@ PR.BkSimCondBrowser = Ext.extend(Ext.Window, {
   onListSelect: function(sm, row, rec) {
     this.detail.updateDetail(rec.data);
     Ext.getCmp('sim-cond-select').enable();
+  }
+});
+
+
+/**
+ * PR.InDataDetail
+ * @extends Ext.Panel
+ * Specialized Panel to show information about
+ * input data.
+ *
+ * Markup version
+ */
+PR.InDataDetail = Ext.extend(Ext.Panel, {
+  tplSimMarkup: [
+    '<b>Simulation conditions:</b> {simDesc}<br/>',
+    '<b>Beam:</b> {BeamCond}<br/>',
+    '<b>Beam energy:</b> {BeamEnergy}<br/>',
+    '<b>Generator:</b> {Generator}<br/>',
+    '<b>Magnetic field:</b> {MagneticField}<br/>',
+    '<b>Detector:</b> {DetectorCond}<br/>',
+    '<b>Luminosity:</b> {Luminosity}<br/>',
+    '<br/><b>Process Pass:</b> {inProPass}<br/>',
+    '<br/><b>Event type:</b> {evType}<br/>',
+    '<br/><b>File type:</b> {inFileType}<br/>'
+  ],
+
+  tplRunMarkup: [
+    '<b>Run conditions:</b> {simDesc}<br/>',
+    '<b>Beam:</b> {BeamCond}<br/>',
+    '<b>Beam energy:</b> {BeamEnergy}<br/>',
+    '<b>Magnetic field:</b> {MagneticField}<br/>',
+    '<b>Subdetectors:</b> {DetectorCond}<br/>',
+    '<br/><b>Process Pass:</b> {inProPass}<br/>',
+    '<br/><b>Event type:</b> {evType}<br/>',
+    '<br/><b>File type:</b> {inFileType}<br/>'
+  ],
+
+  initComponent: function() {
+    this.sim_tpl = new Ext.Template(this.tplSimMarkup);
+    this.run_tpl = new Ext.Template(this.tplRunMarkup);
+    this.data = {};
+    PR.InDataDetail.superclass.initComponent.call(this);
+  },
+
+  updateDetail: function(data) {
+    this.data = data;
+    if(data.condType == 'Run')
+      this.run_tpl.overwrite(this.body, this.data);
+    else
+      this.sim_tpl.overwrite(this.body, this.data);
+  }
+});
+
+/**
+ * PR.BkInDataLoader
+ * @extend PR.TreeLoader
+ * Load tree to select InputData from BK
+ */
+PR.BkInDataLoader = function(config) {
+  var config = config || {};
+  Ext.apply(config, {dataUrl:'bkk_input_tree'});
+  PR.BkInDataLoader.superclass.constructor.call(this,config);
+  this.on("beforeload", function(loader,node) {
+    if(node.attributes.configName)
+      this.baseParams.configName = node.attributes.configName;
+    else
+      delete this.baseParams.configName
+    if(node.attributes.configVersion)
+      this.baseParams.configVersion = node.attributes.configVersion;
+    else
+      delete this.baseParams.configVersion
+    if(node.attributes.simCondID)
+      this.baseParams.simCondID = node.attributes.simCondID;
+    else
+      delete this.baseParams.simCondID
+    if(node.attributes.condType)
+      this.baseParams.condType = node.attributes.condType;
+    else
+      delete this.baseParams.condType
+    if(node.attributes.inProPass)
+      this.baseParams.inProPass = node.attributes.inProPass;
+    else
+      delete this.baseParams.inProPass
+    if(node.attributes.evType)
+      this.baseParams.evType = node.attributes.evType;
+    else
+      delete this.baseParams.evType
+  }, this);
+  this.on("loadexception",loadBugger("InData Loader"));
+}
+Ext.extend(PR.BkInDataLoader,PR.TreeLoader);
+
+/**
+ * PR.BkInDataBrowser
+ * @extends Ext.Window
+ * Input data browser (from BK)
+ */
+PR.BkInDataBrowser = Ext.extend(Ext.Window, {
+  initComponent : function() {
+    var tree = new Ext.tree.TreePanel({
+      autoScroll:true,
+      title: "Input data",
+
+      animate:true,
+      rootVisible: false,
+
+      loader: new PR.BkInDataLoader(),
+
+      root: new Ext.tree.AsyncTreeNode({text: 'Bookkeeping', id: '/'})
+    });
+    new Ext.tree.TreeSorter(tree, {folderSort:true});
+    tree.on('click', this.onTreeClicked, this);
+
+    this.detail = new PR.InDataDetail({
+      region: 'east',
+      split: true,
+      width: 350,
+      minWidth: 200,
+      margins: '5 5 5 0',
+      
+      title: 'Details',
+      bodyStyle: 'padding-left:15px; padding-top:5px',
+
+      html: '<p>Plese select Input Data on the left side</p>',
+
+      buttonAlign: 'center',
+      buttons: [
+	{text: 'Select', id: 'in-data-select', disabled: true },
+	{text: 'Cancel', handler: this.close, scope: this }
+      ]
+    });
+
+    Ext.apply(this, {
+      title: 'Input data browser',
+      width: 750,
+      height: 350,
+      minWidth: 500,
+      minHeight: 300,
+      maximizable: true,
+      modal: true,
+      layout: 'border',
+      items: [{
+	xtype: 'tabpanel',
+	region: 'center',
+	split: true,
+	margins: '5 0 5 5',
+	minWidth: 300,
+	
+	activeTab: 0,
+	items: [ tree ] 
+      }, this.detail ]
+    });
+    PR.BkInDataBrowser.superclass.initComponent.call(this);
+  },
+  onTreeClicked: function(n) {
+    if(!n.leaf)
+      return;
+    this.detail.updateDetail(n.attributes);
+    Ext.getCmp('in-data-select').enable();
   }
 });
 
@@ -1183,6 +1371,45 @@ PR.PrWorkflow = Ext.extend(Ext.Window, {
 });
 
 /**
+ * PR.ReqType
+ * @extends Ext.Window
+ * Ask Request Type
+ */
+PR.ReqType = Ext.extend(Ext.Window, {
+  initComponent : function() {
+
+    this.typeCombo = new Ext.form.ComboBox(
+      { fieldLabel: 'Request Type', name: 'reqType',
+	store: ['Simulation','Reconstruction'],
+	forceSelection: true, mode: 'local',
+	triggerAction: 'all', selectOnFocus: true,
+	value: 'Simulation'
+      });
+    Ext.apply(this, {
+      title: 'Please select Request Type',
+      maximizable: false,
+      resizable: false,
+      modal: true,
+      items:  this.typeCombo,
+      buttonAlign: 'center',
+      buttons: [
+	{text: 'Create request', handler: this.onCreate, scope:this },
+	{text: 'Cancel', handler: this.close, scope: this }
+      ]
+    });
+    PR.ReqType.superclass.initComponent.call(this);
+  },
+  initEvents: function() {
+    PR.ReqType.superclass.initEvents.call(this);
+    this.addEvents( 'create' );
+  },
+  onCreate: function() {
+    this.fireEvent('create',this.typeCombo.getValue());
+    this.close();
+  }
+});
+
+/**
  * PR.PassDetail
  * @extends Ext.Panel
  * Specialized Panel to show information about
@@ -1441,7 +1668,7 @@ PR.RequestEditor = Ext.extend(Ext.FormPanel, {
 	  { layout: 'form', autoHeight: true, labelWidth: 89,
 	    items: {xtype: 'combo', fieldLabel: 'Application',
 		    name: 'p'+no+'App',
-		    store: ['&nbsp;','Gauss','Boole','Brunel','Davinci'],
+		    store: ['&nbsp;','Gauss','Boole','Brunel','Davinci','LHCb'],
 		    forceSelection: true, mode: 'local',
 		    triggerAction: 'all',emptyText: 'Select application',
 		    selectOnFocus: true, stepno: no,
@@ -1548,6 +1775,127 @@ PR.RequestEditor = Ext.extend(Ext.FormPanel, {
       items: sc_items
     });
 
+    this.inDataBtn = new Ext.Button({
+      xtype: 'button',text: 'Select from BK',
+      handler: this.onSelectInputFromBk, scope: this
+    });
+
+    var inProdStore = new Ext.data.Store({
+      proxy: new Ext.data.MemoryProxy(
+	{OK: true, total: 1, result: [ {id:'', text:''} ]}
+      ),
+      reader: new Ext.data.JsonReader({
+        totalProperty: 'total',
+	root:'result'
+      }, [{name: 'id'},{name: 'text'}]),
+      listeners : { 
+	'loadexception' : { 
+	  fn: storeBugger('list of input productions'), scope: this
+	}
+      }
+    });
+    inProdStore.load();
+
+    var dqStore = new Ext.data.Store({
+      proxy: new Ext.data.HttpProxy({
+	url: 'bkk_dq_list'}),
+      reader: new Ext.data.JsonReader({
+        totalProperty: 'total',
+	root:'result'
+      }, [{name: 'v'}]),
+      listeners : { 
+	'loadexception' : { 
+	  fn: storeBugger('list of DQ Flags'), scope: this
+	}
+      }
+    });
+    dqStore.load();
+
+
+    var id_items = [
+      {
+	xtype: 'panel',
+	layout: 'column',
+	items: [{
+	  width: 485,
+	  layout: 'form', 
+	  autoHeight: true, 
+	  items: [{
+	    xtype: 'textfield', fieldLabel: 'Conditions', name: 'simDesc',
+	    readOnly: true, cls: 'x-item-readonly', anchor: '100%'
+	  }]
+	},{
+	  width: 115,
+	  bodyStyle: 'padding-left: 5px;',
+	  items: this.inDataBtn
+	}]
+      },
+      {xtype: 'hidden',name: 'simCondID'},
+      {xtype: 'hidden',name: 'condType'},
+      {xtype: 'hidden',name: 'BeamCond'}, 
+      {xtype: 'hidden',name: 'MagneticField'},
+      {xtype: 'hidden',name: 'Generator'},
+      {xtype: 'hidden',name: 'Luminosity'},
+      {xtype: 'hidden',name: 'DetectorCond'},
+      {xtype: 'hidden',name: 'BeamEnergy'},
+      {
+	xtype: 'panel',
+	layout: 'column',
+	items: [{
+	  layout: 'form',
+	  autoHeight: true,
+	  defaultType: 'textfield',
+	  defaults: { width: 200 },
+	  items: [
+	    {fieldLabel: 'Config',        name: 'configName', 
+	     readOnly: true, cls: 'x-item-readonly' },
+	    {fieldLabel: 'Processing Pass',   name: 'inProPass',
+	     readOnly: true, cls: 'x-item-readonly' },
+	    { xtype: 'combo', fieldLabel: 'DQ flag', name: 'inDataQualityFlag',
+	      store: dqStore, valueField: 'v', displayField: 'v',
+	      forceSelection: true, mode: 'local',
+	      triggerAction: 'all', selectOnFocus: true,
+	      autoCreate: {
+		tag: "input", type: "text", size: "8", autocomplete: "off"
+	      }
+	    }
+	  ]
+	},{
+	  layout: 'form',
+	  autoHeight: 'true',
+	  bodyStyle: 'padding-left: 20px;',
+	  defaultType: 'textfield',
+	  items: [
+	    {fieldLabel: 'version',        name: 'configVersion', 
+	     readOnly: true, cls: 'x-item-readonly' },
+	    {fieldLabel: 'File type',  name: 'inFileType',
+	     readOnly: true, cls: 'x-item-readonly' },
+	    { xtype: 'combo', fieldLabel: 'Production', 
+	      hiddenName: 'inProductionID',
+	      store: inProdStore, displayField: 'text', valueField: 'id',
+	      forceSelection: true, mode: 'local',
+	      triggerAction: 'all', selectOnFocus: true, 
+	      autoCreate: {
+		tag: "input", type: "text", size: "12", autocomplete: "off"
+	      }
+	    }
+	  ]
+	}]
+      }     
+    ];
+
+    this.inData = new Ext.form.FieldSet({
+      title: 'Input data',
+      autoHeight: true, width: 622,
+      layout: 'form',
+      defaultType: 'textfield',
+      items: id_items
+    });
+
+    var condArea = this.simCond;
+    if(this.type != 'Simulation')
+      condArea = this.inData;
+
     this.addStepBtn = new Ext.Button({
       text: 'Add step', handler: this.onAddStepBtn, scope: this
     });
@@ -1616,6 +1964,9 @@ PR.RequestEditor = Ext.extend(Ext.FormPanel, {
 	  items: [
 	    {xtype: 'hidden',name: 'ID'},
 	    {xtype: 'hidden', name: '_parent'},
+	    {xtype: 'textfield', fieldLabel: 'Type', name: 'reqType',
+	     readOnly: true, cls: 'x-item-readonly' },
+	    /*
 	    { fieldLabel: 'Type', name: 'reqType',
 	      store: ['Simulation','Stripping','Reconstruction'],
 	      forceSelection: true, mode: 'local',
@@ -1626,7 +1977,7 @@ PR.RequestEditor = Ext.extend(Ext.FormPanel, {
 	      listeners : { 
 		'select' : { fn: this.onReqTypeSelect, scope: this }
 	      }
-	    },
+	    }, */
 	    { fieldLabel: 'Priority', name: 'reqPrio',
 	      store: ['1a','1b','2a','2b'],
 	      forceSelection: true, mode: 'local',
@@ -1671,7 +2022,14 @@ PR.RequestEditor = Ext.extend(Ext.FormPanel, {
       }
     });
     eventStore.load({callback: this.onEventTypesLoaded, scope: this});
-		
+    
+    var evNumberHint= '';
+    var evTypeHint= 'Select event type (if not subrequesting)';
+    if(this.type != 'Simulation'){
+      evNumberHint = '-1 to process all events';
+      evTypeHint = 'Defined by input data';
+    }
+
     this.Event = new Ext.form.FieldSet({
       title: 'Event',
       autoHeight: true, width: 622,
@@ -1683,7 +2041,7 @@ PR.RequestEditor = Ext.extend(Ext.FormPanel, {
 	  store: eventStore, displayField: 'text', valueField: 'id',
 	  forceSelection: true, mode: 'local',
 	  triggerAction: 'all', selectOnFocus: true, 
-	  emptyText: 'Select event type (if not subrequesting)',
+	  emptyText: evTypeHint,
 	  autoCreate: {
 	    tag: "input", type: "text", size: "60", autocomplete: "off"
 	  },
@@ -1691,14 +2049,16 @@ PR.RequestEditor = Ext.extend(Ext.FormPanel, {
 	    'select' : { fn: this.onEventTypeSelect, scope: this }
 	  }
 	},
-	{xtype: 'numberfield', fieldLabel: 'Number', name: 'eventNumber'},
+	{xtype: 'numberfield', fieldLabel: 'Number', name: 'eventNumber',
+	 emptyText: evNumberHint
+	},
       ]
     });
 
     var west = new Ext.Panel({
       autoScroll: true, autoHeigth: true,
       items: [ 
-	this.Request, this.simCond, this.proPass 
+	this.Request, condArea, this.proPass 
       ]
     });
 
@@ -1869,6 +2229,15 @@ PR.RequestEditor = Ext.extend(Ext.FormPanel, {
   onSubmit: function() {
     var toBK_Check = false;
     if(!this.fieldValue('simCondID')){
+      if(this.type != 'Simulation'){
+	Ext.MessageBox.show({
+	  title: 'Incomplete request',
+	  msg: "Please specify input data for processing. ",
+	  buttons: Ext.MessageBox.OK,
+	  icon: Ext.MessageBox.ERROR
+	});
+	return;
+      }
       toBK_Check = true;
       if(!this.fieldValue('simDesc') ||
 	 !this.fieldValue('Generator') ||
@@ -2026,6 +2395,16 @@ PR.RequestEditor = Ext.extend(Ext.FormPanel, {
       evCombo.setValue(eventType);
   },
 
+  onInProdLoaded: function(){
+    // Combobox bug fix...
+    var ipCombo = this.getForm().findField('inProductionID');
+    if(!ipCombo)
+      return;
+    var prod = ipCombo.hiddenField.value;
+    if(prod)
+      ipCombo.setValue(prod);
+  },
+
   loadRecord: function(rm,r) {
     var id = this.getForm().findField('ID');
 
@@ -2044,7 +2423,7 @@ PR.RequestEditor = Ext.extend(Ext.FormPanel, {
       */
       reqAuthor=gPageDescription.userData.username;
       this.getForm().setValues({
-	reqType: 'Simulation',
+	reqType: this.type,
 	reqState: 'New',
 	reqPrio:  '2b',
 	reqAuthor: reqAuthor
@@ -2059,11 +2438,14 @@ PR.RequestEditor = Ext.extend(Ext.FormPanel, {
     this.getForm().findField('currentState').setValue(this.state);
     this.setRequest(rm);
     this.setProPass(rm);
-    if(r) {
+    if(r){
       this.setSimCond(rm);
+      this.setInData(rm);
       this.setEventForm(rm);
+    } else {
+      this.setInData(null);
+      this.setEventForm({state: 'New', user: reqAuthor, author: reqAuthor});
     }
-
   },
 
   setEventForm : function(rm){
@@ -2071,7 +2453,10 @@ PR.RequestEditor = Ext.extend(Ext.FormPanel, {
     if(rm.state == 'New' && rm.user == rm.author)
       force = false;
     var evType = this.getForm().findField('eventType');
-    PR.setReadOnly(evType,force);
+    if(this.type != 'Simulation'){
+      PR.setReadOnly(evType,true);
+    }else
+      PR.setReadOnly(evType,force);
     PR.setReadOnly(this.getForm().findField('eventNumber'),force);
     var emptyText = '';
     if(rm.state != 'New')
@@ -2084,7 +2469,6 @@ PR.RequestEditor = Ext.extend(Ext.FormPanel, {
       evType.emptyText = emptyText;
       evType.applyEmptyText();
     }
-
   },
 
   onSelectFromBk: function() {
@@ -2099,7 +2483,15 @@ PR.RequestEditor = Ext.extend(Ext.FormPanel, {
     }
   },
 
+  onSelectInputFromBk: function() {
+    this.indb = new PR.BkInDataBrowser();
+    Ext.getCmp('in-data-select').on('click',this.onInDataSelected,this);
+    this.indb.show();
+  },
+
   setSimCond: function(rm){
+    if(this.type != 'Simulation')
+      return;
     var force = true;
     if(rm){
       if(rm.state == 'New' && rm.user == rm.author)
@@ -2126,10 +2518,74 @@ PR.RequestEditor = Ext.extend(Ext.FormPanel, {
       PR.setReadOnly(fields[i],force || id);
   },
 
+  setInData: function(rm){
+    if(this.type == 'Simulation')
+      return;
+    var force = true;
+    var id = '';
+    if(rm){
+      if(rm.state == 'New' && rm.user == rm.author)
+	force = false;
+    } else
+      force = false;
+    var id = this.getForm().findField('simCondID').getValue();
+    if(force)
+      this.inDataBtn.hide();
+    var prodCombo = this.getForm().findField('inProductionID');
+    var prod = prodCombo.getValue();
+    // prodCombo.reset();
+    if(force){
+      var text = prod;
+      if(text == '0')
+	text = 'ALL';
+      prodCombo.store.proxy = new Ext.data.MemoryProxy(
+	{OK: true, total: 1, result: [ {id:prod, text:text} ]}
+      );
+      prodCombo.store.load({callback: this.onInProdLoaded, scope: this});
+    } else {
+      if(!id){
+	prodCombo.store.proxy = new Ext.data.MemoryProxy(
+	  {OK: true, total: 1, result: [ {id:'', text:''} ]}
+	);
+      } else {
+	if(!prod)
+	  prodCombo.setValue('0');
+	var configName=this.getForm().findField('configName').getValue();
+	var configVersion=this.getForm().findField('configVersion').getValue();
+	var simCondID=this.getForm().findField('simCondID').getValue();
+	var inProPass=this.getForm().findField('inProPass').getValue();
+	var eventType=this.getForm().findField('eventType').getValue();
+	prodCombo.store.proxy = new Ext.data.HttpProxy({
+	  url: 'bkk_input_prod?configName='+configName+
+	    '&configVersion='+configVersion+
+	    '&simCondID='+simCondID+
+	    '&inProPass='+inProPass+
+	    '&eventType='+eventType});
+      }
+      prodCombo.store.load({callback: this.onInProdLoaded, scope: this});
+    }
+    PR.setReadOnly(prodCombo,force || !id);
+
+    var dqCombo = this.getForm().findField('inDataQualityFlag');
+    var dq = dqCombo.getValue();
+    if(!force && id && !dq)
+      dqCombo.setValue('ALL');
+    PR.setReadOnly(dqCombo,force || !id);
+  },
+
   onSimCondSelected: function() {
     this.getForm().setValues(this.scb.detail.data);
     this.scb.close();
     this.setSimCond(null);
+  },
+
+  onInDataSelected: function() {
+    this.getForm().setValues(this.indb.detail.data);
+    this.indb.close();
+    var evType = this.indb.detail.data.evType;
+    if(evType)
+      this.getForm().findField('eventType').setValue(evType);
+    this.setInData(null);
   },
 
   onPassSelectFromBk: function() {
@@ -2250,9 +2706,12 @@ PR.RequestEditor = Ext.extend(Ext.FormPanel, {
 
     PR.setReadOnly(PR.getField(this.proPass,'pDsc'),id || force);
 
-    if(!id && this.fieldValue('reqType') == 'Simulation'){
+    if(!id){
+      var app = 'Brunel';
+      if(this.fieldValue('reqType') == 'Simulation')
+	app = 'Gauss';
       var appCombo = this.getAppCombo(1);
-      appCombo.setValue('Gauss');
+      appCombo.setValue(app);
       if(this.pData)
 	pVer = this.pData['p1Ver'];
       else
@@ -2341,7 +2800,6 @@ PR.RequestEditor = Ext.extend(Ext.FormPanel, {
       force = false;
 
     PR.setReadOnly(this.getForm().findField('reqName'),force);
-    PR.setReadOnly(this.getForm().findField('reqType'),force);
     PR.setReadOnly(this.getForm().findField('reqPrio'),
 		   (this.state!='Submitted' && this.state!='Tech OK') ||
 		   rm.group != 'lhcb_ppg');
@@ -2855,6 +3313,14 @@ PR.RequestListStore = function(config) {
     {name:'Luminosity'},
     {name:'DetectorCond'},
     {name:'BeamCond'},
+    
+    {name: 'configName'}, 
+    {name: 'configVersion'},
+    {name: 'condType'},
+    {name: 'inProPass'}, 
+    {name: 'inFileType'},
+    {name: 'inProductionID'},
+    {name: 'inDataQualityFlag'},
 
     {name:'pID'},
     {name:'pDsc'},
@@ -2924,6 +3390,17 @@ PR.ExpanderTemplate = Ext.extend(Ext.Template,{
     if(!this.srTpl)
       this.srTpl = new Ext.Template('{subRequest}');
     this.srTpl.compile();
+    if(!this.runTpl)
+      this.runTpl = new Ext.Template(
+	'<b>Author:</b> {reqAuthor}<br/>',
+	'<b>Config:</b> {configName}/{configVersion} ',
+	'<b>Processing pass:</b> {inProPass} ',
+	'<b>File type:</b> {inFileType} ',
+	'<b>DQ:</b> {inDataQualityFlag} ',
+	'<b>Production:</b> {inProductionID}<br/>',
+	'<b>Steps:</b> {pAll} <br/>'
+      );
+    this.runTpl.compile()
     return PR.ExpanderTemplate.superclass.compile.call(this);
   },
   apply: function(values) {
@@ -2931,7 +3408,8 @@ PR.ExpanderTemplate = Ext.extend(Ext.Template,{
       if(values.eventType || values.eventNumber) 
 	return this.srTpl.apply({subRequest: 'Event type subrequest'});
       return this.srTpl.apply(values);
-    }
+    } else if(values.reqType != 'Simulation')
+      return this.runTpl.apply(values);
     return PR.ExpanderTemplate.superclass.apply.call(this,values);
   }
 });
@@ -2994,7 +3472,7 @@ PR.RequestGrid = Ext.extend(Ext.ux.maximgb.treegrid.GridPanel, {
 	{header:'State',      sortable:true, dataIndex:'reqState',width:30},
 	{header:'Priority',   sortable:true, dataIndex:'reqPrio',width:30},
 	{header:'Name', sortable:true, dataIndex:'reqName'},
-	{header:'Sim. conditions', sortable:true, dataIndex:'simDesc' },
+	{header:'Sim/Run conditions', sortable:true, dataIndex:'simDesc' },
 	{header:'Proc. pass', sortable:true, dataIndex:'pDsc' },
 	{header:'Event type', sortable:true, dataIndex:'eventType' },
 	{header:'Events requested', sortable:true, dataIndex:'EventNumberTotal' },
@@ -3054,7 +3532,7 @@ PR.RequestManager = Ext.extend(Ext.TabPanel, {
   initEvents: function() {
     PR.RequestManager.superclass.initEvents.call(this);
     this.grid.on('rowclick',this.onRowClick, this);
-    this.grid.on('newrequest', this.viewEditor, this);
+    this.grid.on('newrequest', this.newRequest, this);
   },
 
   // open menu on everything, EXCEPT some cells, so can't use CellClick
@@ -3111,7 +3589,7 @@ PR.RequestManager = Ext.extend(Ext.TabPanel, {
       this.menu.add(
 	{handler: function() {this.delRequest(r)}, scope: this, text: 'Delete'}
       );
-    if(rm.state=='New' && !r.data._master)
+    if(rm.state=='New' && !r.data._master && r.data.reqType == 'Simulation')
       this.menu.add(
 	'-',
 	{handler: function() {this.addSubRequests(r);}, 
@@ -3147,7 +3625,15 @@ PR.RequestManager = Ext.extend(Ext.TabPanel, {
     return m;
   },
 
-  viewEditor: function(r) {
+  newRequest: function() {
+    var tw = new PR.ReqType();
+    tw.on('create', function(type) {
+      this.viewEditor(null,type);
+    },this);
+    tw.show();
+  },
+
+  viewEditor: function(r,type) {
     if(r && r.data._master){
       this.editSubRequest(r);
       return;
@@ -3155,6 +3641,8 @@ PR.RequestManager = Ext.extend(Ext.TabPanel, {
     var title = 'New request';
     var state = 'New';
     var meta  = null;
+    if(r)
+      type = r.data.reqType;
     if(r && r.data.ID){
       title = 'Edit request '+r.data.ID;
       state = r.data.reqState;
@@ -3163,7 +3651,8 @@ PR.RequestManager = Ext.extend(Ext.TabPanel, {
     var editor = new PR.RequestEditor({
       title:    title,
       closable: true,
-      state: state
+      state: state,
+      type: type
     });
     editor.on('saved', function(){
       this.getStore().setActiveNode(null);
