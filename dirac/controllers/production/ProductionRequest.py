@@ -1374,7 +1374,7 @@ class ProductionrequestController(BaseController):
                                stdout=subprocess.PIPE,\
                                stderr=subprocess.STDOUT)
           success.append({ 'ID': x['ID'],
-                           'Body':  p.communicate(run_tpl.apply(x)) })
+                           'Body':  p.communicate(run_tpl.apply(x))[0] })
         except Exception,msg:
           log.error(str(msg))
           fail.append(str(x['ID']))
