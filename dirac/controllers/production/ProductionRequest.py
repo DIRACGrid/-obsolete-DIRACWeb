@@ -10,6 +10,7 @@ import logging
 from dirac.lib.base import *
 from dirac.lib.diset import getRPCClient
 import dirac.lib.credentials as credentials # getUserDN() getUsername()
+import DIRAC
 from DIRAC import S_ERROR,S_OK, gConfig
 from DIRAC.ConfigurationSystem.Client import PathFinder
 
@@ -159,6 +160,8 @@ class RealRequestEngine:
     for x in ['App','Ver','Opt','DDDb','CDb','EP']:
       for i in range(1,8):
         result['p%d%s' % (i,x)] = None
+    result['userName'] = credentials.getUsername()
+    result['userDN'] = credentials.getUserDN()
     return result
     
   def __2local(self,req):
@@ -1365,20 +1368,27 @@ class ProductionrequestController(BaseController):
           f = tempfile.mkstemp()
           os.write(f[0],tpl.apply(x))
           os.close(f[0])
+          fs= tempfile.mkstemp()
+          os.write(fs[0],run_tpl.apply(x))
+          os.close(fs[0])
         except Exception,msg:
-          log.error(str(msg))
+          log.error("In temporary files createion: "+str(msg))
           fail.append(str(x['ID']))
           continue
         try:
-          p = subprocess.Popen(['python','-',f[1]],stdin=subprocess.PIPE,\
-                               stdout=subprocess.PIPE,\
-                               stderr=subprocess.STDOUT)
-          success.append({ 'ID': x['ID'],
-                           'Body':  p.communicate(run_tpl.apply(x))[0] })
+          res = DIRAC.shellCall(1800,
+                                [ "/bin/bash -c 'source /opt/dirac/bashrc; python %s %s'" % (fs[1],f[1]) ])
+          if res['OK']:
+            success.append({ 'ID': x['ID'],
+                             'Body':  str(res['Value'][1])+str(res['Value'][2]) })
+          else:
+            log.error(str(res['Message']))
+            fail.append(str(x['ID']))
         except Exception,msg:
-          log.error(str(msg))
+          log.error("During execution: "+str(msg))
           fail.append(str(x['ID']))
         os.remove(f[1])
+        os.remove(fs[1])
       continue # not working with WF DB for now    
       name = 'PRQ_%s' % x['ID']
       wf = fromXMLString(tpl.apply(x))
