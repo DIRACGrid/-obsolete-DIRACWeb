@@ -1353,7 +1353,7 @@ class ProductionrequestController(BaseController):
         dictlist.append(d)
     success = []
     fail = []
-#    RPC = getRPCClient("ProductionManagement/ProductionManager")
+    RPC = getRPCClient("ProductionManagement/ProductionRequest")
     for x in dictlist:
       for y in x:
         if x[y] == None:
@@ -1363,32 +1363,11 @@ class ProductionrequestController(BaseController):
       if not run_tpl:
         success.append({ 'ID': x['ID'], 'Body': tpl.apply(x)})
       else:
-        # AZ: Time to execute...
-        try:
-          f = tempfile.mkstemp()
-          os.write(f[0],tpl.apply(x))
-          os.close(f[0])
-          fs= tempfile.mkstemp()
-          os.write(fs[0],run_tpl.apply(x))
-          os.close(fs[0])
-        except Exception,msg:
-          log.error("In temporary files createion: "+str(msg))
+        res = RPC.execProductionScript(run_tpl.apply(x),tpl.apply(x))
+        if res['OK']:
+          success.append({ 'ID': x['ID'], 'Body':  res['Value'] })
+        else:
           fail.append(str(x['ID']))
-          continue
-        try:
-          res = DIRAC.shellCall(1800,
-                                [ "/bin/bash -c 'source /opt/dirac/bashrc; python %s %s'" % (fs[1],f[1]) ])
-          if res['OK']:
-            success.append({ 'ID': x['ID'],
-                             'Body':  str(res['Value'][1])+str(res['Value'][2]) })
-          else:
-            log.error(str(res['Message']))
-            fail.append(str(x['ID']))
-        except Exception,msg:
-          log.error("During execution: "+str(msg))
-          fail.append(str(x['ID']))
-        os.remove(f[1])
-        os.remove(fs[1])
       continue # not working with WF DB for now    
       name = 'PRQ_%s' % x['ID']
       wf = fromXMLString(tpl.apply(x))
