@@ -3595,7 +3595,7 @@ PR.RequestManager = Ext.extend(Ext.TabPanel, {
 	{handler: function() {this.addSubRequests(r);}, 
 	 scope: this, text: 'Add subrequest'}
       );
-    if(rm.state=='Active' || rm.state=='Done')
+    if(rm.state=='Active' || rm.state=='Accepted' || rm.state=='Done')
       this.menu.add(
 	'-',
 	{handler: function() {this.manageProductions(r);},
