@@ -1019,6 +1019,8 @@ class ProductionrequestController(BaseController):
         continue
       if reqType=='Reconstruction' and len(pl[0])>2 and pl[0][2] != 'Brunel':
         continue
+      if reqType=='Stripping' and len(pl[0])>2 and pl[0][2] != 'DaVinci':
+        continue
       row = { 'pID': pas[0], 'pDsc': pas[1], 'pAll': passAll }
       for i in range(0,7):
         if not pl[i][0]:
