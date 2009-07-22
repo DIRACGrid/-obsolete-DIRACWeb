@@ -3080,6 +3080,9 @@ ajaxBugger = function(origin) {
  */
 PR.ProductionManager = Ext.extend(Ext.Window, {
   initComponent: function() {
+    this.readonly = true;
+    if(gPageDescription.userData.group == 'lhcb_prmgr')
+      this.readonly = false;
     this.menu = new Ext.menu.Menu();
     this.modyfied = false; // to trigger "save" event
 
@@ -3103,39 +3106,44 @@ PR.ProductionManager = Ext.extend(Ext.Window, {
     });
     this.store.load();
 
+    var grid = 	{ 
+      xtype:'grid', region: 'center', margins: '2 2 2 2',
+      store: this.store,
+      columns: [
+	{header:'Used', dataIndex:'Used', renderer: this.renderUse},
+	{header:'Production',   dataIndex:'ProductionID'},
+	{header:'Events in BK', dataIndex:'BkEvents'}
+      ],
+      sm:            new Ext.grid.RowSelectionModel({singleSelect: true}),
+      stripeRows:    true,
+      viewConfig:    {forceFit:true},
+    };
+    var form = 	{
+      xtype:'form', region: 'south', margins: '2 2 2 2',
+      autoHeight: true,
+      frame: true, items: {
+	layout: 'column',
+	items: [{ layout: 'form', items:{
+	  xtype: 'numberfield', allowDecimals: false, name: 'ProductionID',
+	  emptyText: 'Enter production ID', hideLabel: true
+	}},{
+	  layout: 'form', bodyStyle: 'padding-left: 5px;', items:{
+	    xtype: 'button', text: 'Add',
+	    handler: this.onAdd, scope: this
+	  }
+	}]
+      }
+    };
+    var items = [ grid,form ];
+    if(this.readonly)
+      items = grid;
+
     Ext.apply(this, {
       modal: true,
       width: 250,
       height: 200,
       layout: 'border',
-      items: [
-	{ xtype:'grid', region: 'center', margins: '2 2 2 2',
-	  store: this.store,
-	  columns: [
-	    {header:'Used', dataIndex:'Used', renderer: this.renderUse},
-	    {header:'Production',   dataIndex:'ProductionID'},
-	    {header:'Events in BK', dataIndex:'BkEvents'}
-	  ],
-	  sm:            new Ext.grid.RowSelectionModel({singleSelect: true}),
-	  stripeRows:    true,
-	  viewConfig:    {forceFit:true},
-	},
-	{ xtype:'form', region: 'south', margins: '2 2 2 2',
-	  autoHeight: true,
-	  frame: true, items: {
-	    layout: 'column',
-	    items: [{ layout: 'form', items:{
-	      xtype: 'numberfield', allowDecimals: false, name: 'ProductionID',
-	      emptyText: 'Enter production ID', hideLabel: true
-	    }},{
-	      layout: 'form', bodyStyle: 'padding-left: 5px;', items:{
-		xtype: 'button', text: 'Add',
-		handler: this.onAdd, scope: this
-	      }
-	    }]
-	  }
-	}
-      ]
+      items: items
     });
     PR.ProductionManager.superclass.initComponent.call(this);
   },
@@ -3197,7 +3205,8 @@ PR.ProductionManager = Ext.extend(Ext.Window, {
   initEvents: function() {
     PR.ProductionManager.superclass.initEvents.call(this);
     this.addEvents( 'saved' );
-    this.findByType('grid')[0].on('rowclick',this.onRowClick, this);
+    if(!this.readonly)
+      this.findByType('grid')[0].on('rowclick',this.onRowClick, this);
     this.on('close',function(win){
       if(win.modyfied)
 	win.fireEvent('saved',win)
@@ -3978,7 +3987,7 @@ PR.RequestManager = Ext.extend(Ext.TabPanel, {
 
   manageProductions: function(r){
     var win = new PR.ProductionManager({
-      title: "Manage productions for request "+r.data.ID,
+      title: "Productions for request "+r.data.ID,
       rID: r.data.ID
     });
     win.on('saved', function(){
