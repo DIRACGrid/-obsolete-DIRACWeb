@@ -141,7 +141,7 @@ PR.RequestDetail = Ext.extend(Ext.Panel, {
     '<b>Priority:</b> {reqPrio}<br/>',
     '<b>Author:</b> {reqAuthor}<br/>',
 
-    '<b>Event type:</b> {eventType}<br/>',
+    '<b>Event type:</b> {eventType} {eventText}<br/>',
     '<b>Number of events:</b> {eventNumber}<br/><br>',
 
     '<b>Simulation Conditions:</b> {simDesc}<br/>',
@@ -166,7 +166,7 @@ PR.RequestDetail = Ext.extend(Ext.Panel, {
     '<b>Priority:</b> {reqPrio}<br/>',
     '<b>Author:</b> {reqAuthor}<br/>',
 
-    '<b>Event type:</b> {eventType}<br/>',
+    '<b>Event type:</b> {eventType} {eventText}<br/>',
     '<b>Number of events:</b> {eventNumber}<br/><br>',
 
     '<b>Configuration:</b> {configName} <b>version:</b> {configVersion}<br>',
@@ -3338,6 +3338,7 @@ PR.RequestListStore = function(config) {
     {name:'pAll'},
     
     {name:'eventType'},
+    {name:'eventText'},
     {name:'eventNumber'},
 
     {name:'reqComment'},
@@ -3409,7 +3410,7 @@ PR.ExpanderTemplate = Ext.extend(Ext.Template,{
 	'<b>File type:</b> {inFileType} ',
 	'<b>DQ:</b> {inDataQualityFlag} ',
 	'<b>Production:</b> {inProductionID}<br/>',
-	'<b>Steps:</b> {pAll} <br/>'
+	'<b>EventType:</b> {eventText} <b>Steps:</b> {pAll} <br/>'
       );
     this.runTpl.compile()
     return PR.ExpanderTemplate.superclass.compile.call(this);
@@ -3447,7 +3448,7 @@ PR.RequestGrid = Ext.extend(Ext.ux.maximgb.treegrid.GridPanel, {
 	'<b>Generator:</b> {Generator} ',
 	'<b>Magnetic field:</b> {MagneticField} ',
 	'<b>Detector:</b> {DetectorCond} ',
-	'<b>Luminosity:</b> {Luminosity}<br/>',
+	'<b>Luminosity:</b> {Luminosity} <b>EventType:</b> {eventText} <br/>',
 	'<b>Steps:</b> {pAll} <br/>'
       )
     });
@@ -3491,7 +3492,8 @@ PR.RequestGrid = Ext.extend(Ext.ux.maximgb.treegrid.GridPanel, {
 	{header:'Progress (%)', dataIndex:'progress' },
 	{header:'Created at',   dataIndex:'creationTime', hidden: true },
 	{header:'Last state update', dataIndex:'lastUpdateTime', hidden:true },
-	{header:'Author', dataIndex:'reqAuthor', hidden:true }
+	{header:'Author', dataIndex:'reqAuthor', hidden:true },
+	{header:'Event type name', dataIndex:'eventText', hidden:true }
       ],
       autoHeight:    false,
       autoWidth:     true,
