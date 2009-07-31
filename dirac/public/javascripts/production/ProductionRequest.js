@@ -3600,14 +3600,16 @@ PR.RequestManager = Ext.extend(Ext.TabPanel, {
       this.menu.add(
 	{handler: function() {this.delRequest(r)}, scope: this, text: 'Delete'}
       );
-    if(rm.state=='New' && !r.data._master && r.data.reqType == 'Simulation')
+    if((rm.state=='New' && !r.data._master && r.data.reqType == 'Simulation')
+       && rm.author==rm.user)
       this.menu.add(
 	'-',
 	{handler: function() {this.addSubRequests(r);}, 
 	 scope: this, text: 'Add subrequest'}
       );
-    if(rm.state=='New' && !r.data._master && 
+    if((rm.state=='New' && !r.data._master && 
        !r.data._is_leaf && r.data.reqType == 'Simulation')
+       && rm.author==rm.user)
       this.menu.add(
 	{handler: function() {this.removeSubRequests(r);}, 
 	 scope: this, text: 'Remove subrequests'}
