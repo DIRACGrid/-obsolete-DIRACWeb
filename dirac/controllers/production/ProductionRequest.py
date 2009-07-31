@@ -233,6 +233,15 @@ class RealRequestEngine:
     if not result['OK']:
       return result
     rows = [self.__2local(x) for x in result['Value']['Rows']]
+    RPC = getRPCClient('Bookkeeping/BookkeepingManager')
+    aet = RPC.getAvailableEventTypes();
+    if aet['OK']:
+      etd = {}
+      for et in aet['Value']:
+        etd[str(et[0])] = str(et[1])
+      for x in rows:
+        if 'eventType' in x:
+          x['eventText'] = etd.get(str(x['eventType']),'')
     return { 'OK':True, 'result':rows, 'total': result['Value']['Total'] }
 
   def updateProductionRequest(self,id,rdict):
