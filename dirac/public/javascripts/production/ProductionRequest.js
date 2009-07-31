@@ -3606,6 +3606,12 @@ PR.RequestManager = Ext.extend(Ext.TabPanel, {
 	{handler: function() {this.addSubRequests(r);}, 
 	 scope: this, text: 'Add subrequest'}
       );
+    if(rm.state=='New' && !r.data._master && 
+       !r.data._is_leaf && r.data.reqType == 'Simulation')
+      this.menu.add(
+	{handler: function() {this.removeSubRequests(r);}, 
+	 scope: this, text: 'Remove subrequests'}
+      );
     if(rm.state=='Active' || rm.state=='Accepted' || 
        rm.state=='Done' || rm.state=='Cancelled')
       this.menu.add(
@@ -3813,6 +3819,51 @@ PR.RequestManager = Ext.extend(Ext.TabPanel, {
 			   function(btn){
 			     if(btn == 'yes')
 			       this.__realDelRequest(id)
+			   }, this);
+  },
+
+
+  __realRemoveSubRequests: function(id) {
+    var conn = new Ext.data.Connection();
+    conn.request({
+      url: 'list',
+      method: 'GET',
+      params: {'anode': id},
+      scope: this,
+      success: function(response){
+	if (response) { // check that it is really OK... AZ: !! ??
+	  var str = '';
+	  try {
+	    var result = Ext.decode(response.responseText);
+	    if ( !result.OK )
+              str = result.Message;
+	  } catch (e2) {
+	    str = "unparsable reply from the portal: "+e2.message;
+	  }
+	  if(str){
+	    Ext.MessageBox.show({
+	      title: 'Can not get subrequest list',
+	      msg: str,
+	      buttons: Ext.MessageBox.OK,
+	      icon: Ext.MessageBox.ERROR
+	    });
+	    return;
+	  }
+	}
+	for(var i=0;i<result.result.length;++i)
+	  this.__realDelRequest(result.result[i].ID);
+      },
+      failure: connectBugger('Subrequest list')
+    });
+  },
+
+  removeSubRequests: function(r) {
+    var id = r.data.ID;
+    Ext.MessageBox.confirm('Message', 
+			   'Do you really want to delete all Subrequests ?',
+			   function(btn){
+			     if(btn == 'yes')
+			       this.__realRemoveSubRequests(id)
 			   }, this);
   },
 
