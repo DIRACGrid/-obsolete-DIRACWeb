@@ -3436,6 +3436,15 @@ PR.ExpanderTemplate = Ext.extend(Ext.Template,{
  *  it just redo the last load, independent from anything else...
  */
 PR.RequestGrid = Ext.extend(Ext.ux.maximgb.treegrid.GridPanel, {
+  evtRender: function(val) {
+    if("" == val)
+      return val;
+    if(val>1000000)
+      return ""+parseInt(val/1000000)+" M";
+    if(val>1000)
+      return ""+parseInt(val/1000)+" K";
+  },
+
   // override
   initComponent: function() {
     var expander =  new Ext.grid.RowExpander({
@@ -3487,8 +3496,10 @@ PR.RequestGrid = Ext.extend(Ext.ux.maximgb.treegrid.GridPanel, {
 	{header:'Sim/Run conditions', sortable:true, dataIndex:'simDesc' },
 	{header:'Proc. pass', sortable:true, dataIndex:'pDsc' },
 	{header:'Event type', sortable:true, dataIndex:'eventType' },
-	{header:'Events requested', sortable:true, dataIndex:'EventNumberTotal' },
-	{header:'Events in BK', dataIndex:'eventBKTotal' },
+	{header:'Events requested', 
+	 dataIndex:'EventNumberTotal', renderer: this.evtRender },
+	{header:'Events in BK', dataIndex:'eventBKTotal', 
+	 renderer: this.evtRender },
 	{header:'Progress (%)', dataIndex:'progress' },
 	{header:'Created at',   dataIndex:'creationTime', hidden: true },
 	{header:'Last state update', dataIndex:'lastUpdateTime', hidden:true },
