@@ -3492,7 +3492,7 @@ PR.RequestGrid = Ext.extend(Ext.ux.maximgb.treegrid.GridPanel, {
 	{header:'Type',       sortable:true, dataIndex:'reqType'},
 	{header:'State',      sortable:true, dataIndex:'reqState'},
 	{header:'Priority',   sortable:true, dataIndex:'reqPrio', width: 50},
-	{header:'Name', sortable:true, dataIndex:'reqName'},
+	{header:'Name', sortable:true, dataIndex:'reqName', id: 'Name'},
 	{header:'Sim/Run conditions', sortable:true, dataIndex:'simDesc', width: 200 },
 	{header:'Proc. pass', sortable:true, dataIndex:'pDsc', width: 200 },
 	{header:'Event type', sortable:true, dataIndex:'eventType' },
@@ -3506,6 +3506,7 @@ PR.RequestGrid = Ext.extend(Ext.ux.maximgb.treegrid.GridPanel, {
 	{header:'Author', dataIndex:'reqAuthor', hidden:true },
 	{header:'Event type name', dataIndex:'eventText', hidden:true }
       ],
+      autoExpandColumn: 'Name',
       autoHeight:    false,
       autoWidth:     true,
       collapsible:   false,
