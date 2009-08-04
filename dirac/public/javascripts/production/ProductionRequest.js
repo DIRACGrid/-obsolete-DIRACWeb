@@ -3400,7 +3400,9 @@ Ext.extend(PR.RequestListStore,Ext.ux.maximgb.treegrid.AdjacencyListStore,{
 PR.ExpanderTemplate = Ext.extend(Ext.Template,{
   compile: function() {
     if(!this.srTpl)
-      this.srTpl = new Ext.Template('{subRequest}');
+      this.srTpl = new Ext.Template(
+	'<b>EventType:</b> {eventText}'
+      );
     this.srTpl.compile();
     if(!this.runTpl)
       this.runTpl = new Ext.Template(
@@ -3417,8 +3419,6 @@ PR.ExpanderTemplate = Ext.extend(Ext.Template,{
   },
   apply: function(values) {
     if(values._parent){
-      if(values.eventType || values.eventNumber) 
-	return this.srTpl.apply({subRequest: 'Event type subrequest'});
       return this.srTpl.apply(values);
     } else if(values.reqType != 'Simulation')
       return this.runTpl.apply(values);
