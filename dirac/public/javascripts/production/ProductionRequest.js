@@ -3437,12 +3437,12 @@ PR.ExpanderTemplate = Ext.extend(Ext.Template,{
  */
 PR.RequestGrid = Ext.extend(Ext.ux.maximgb.treegrid.GridPanel, {
   evtRender: function(val) {
-    if("" == val)
-      return val;
-    if(val>1000000)
-      return ""+parseInt(val/1000000)+" M";
-    if(val>1000)
-      return ""+parseInt(val/1000)+" K";
+    /* For Ext 3.x: return Ext.util.Format.number(val,"0,000,000"); */
+    s = val + '';
+    var rgx = /(\d+)(\d{3})/;
+    while (rgx.test(s))
+      s = s.replace(rgx, '$1' + ',' + '$2');
+    return s;
   },
 
   // override
@@ -3488,19 +3488,19 @@ PR.RequestGrid = Ext.extend(Ext.ux.maximgb.treegrid.GridPanel, {
       master_column_id: 'Id',
       columns: [
 	expander,
-	{id: 'Id', header:'Id', sortable:true, dataIndex:'ID', width:40},
-	{header:'Type',       sortable:true, dataIndex:'reqType',width:40},
-	{header:'State',      sortable:true, dataIndex:'reqState',width:30},
-	{header:'Priority',   sortable:true, dataIndex:'reqPrio',width:30},
+	{id: 'Id', header:'Id', sortable:true, dataIndex:'ID', width: 50},
+	{header:'Type',       sortable:true, dataIndex:'reqType'},
+	{header:'State',      sortable:true, dataIndex:'reqState'},
+	{header:'Priority',   sortable:true, dataIndex:'reqPrio', width: 50},
 	{header:'Name', sortable:true, dataIndex:'reqName'},
-	{header:'Sim/Run conditions', sortable:true, dataIndex:'simDesc' },
-	{header:'Proc. pass', sortable:true, dataIndex:'pDsc' },
+	{header:'Sim/Run conditions', sortable:true, dataIndex:'simDesc', width: 200 },
+	{header:'Proc. pass', sortable:true, dataIndex:'pDsc', width: 200 },
 	{header:'Event type', sortable:true, dataIndex:'eventType' },
-	{header:'Events requested', 
-	 dataIndex:'EventNumberTotal', renderer: this.evtRender },
+	{header:'Events requested', dataIndex:'EventNumberTotal', 
+	 renderer: this.evtRender, align: 'right' },
 	{header:'Events in BK', dataIndex:'eventBKTotal', 
-	 renderer: this.evtRender },
-	{header:'Progress (%)', dataIndex:'progress' },
+	 renderer: this.evtRender,align: 'right' },
+	{header:'Progress (%)', dataIndex:'progress', align: 'right' },
 	{header:'Created at',   dataIndex:'creationTime', hidden: true },
 	{header:'Last state update', dataIndex:'lastUpdateTime', hidden:true },
 	{header:'Author', dataIndex:'reqAuthor', hidden:true },
@@ -3519,7 +3519,10 @@ PR.RequestGrid = Ext.extend(Ext.ux.maximgb.treegrid.GridPanel, {
       title:         'Registered Production Requests',
       viewConfig:    {forceFit:true},
       plugins:       expander,
-      bbar:          this.pagingBar
+      bbar:          this.pagingBar,
+      viewConfig: {
+	forceFit: false
+      }
     });
     PR.RequestGrid.superclass.initComponent.call(this);
   },
