@@ -96,7 +96,14 @@ function initTopFrame( pageDescription ){
     new Ext.Toolbar.Button({
       text : "Help",
       handler : function(){
-        var url = gPageDescription.pagePath.replace(/ /g,'').split('>');
+//        var url = gPageDescription.pagePath.replace(/ /g,'').split('>');
+        var url = gPageDescription.pagePath.split(' ');
+	for(var i = 0; i < url.length; i++ ){
+          var j = url[i].substr(0,1);
+          url[i] = j.toUpperCase() + url[i].substr(1);
+        }
+        url = url.join().replace(/,/g,'');
+        url = url.split('>');
         url = 'https://twiki.cern.ch/twiki/bin/view/LHCb/DiracWebPortal' + url[url.length - 1] + '?cover=print';
         var html = '<iframe id="help_frame" src =' + url + '></iframe>';
         var panel = new Ext.Panel({border:0,autoScroll:false,html:html});
