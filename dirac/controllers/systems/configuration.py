@@ -1,5 +1,5 @@
-# $Header: /tmp/libdirac/tmp.stZoy15380/dirac/DIRAC3/DIRAC/Interfaces/Web/dirac/controllers/systems/configuration.py,v 1.20 2009/07/01 14:19:34 acasajus Exp $
-__RCSID__ = "$Id: configuration.py,v 1.20 2009/07/01 14:19:34 acasajus Exp $"
+# $Header: /tmp/libdirac/tmp.stZoy15380/dirac/DIRAC3/DIRAC/Interfaces/Web/dirac/controllers/systems/configuration.py,v 1.21 2009/08/14 14:51:32 acasajus Exp $
+__RCSID__ = "$Id: configuration.py,v 1.21 2009/08/14 14:51:32 acasajus Exp $"
 
 import types
 import logging
@@ -324,7 +324,9 @@ class ConfigurationController(BaseController):
       return S_ERROR( "Destination is not a section" )
     if not newParentDict:
       return S_ERROR( "Destination does not exist" )
-    if not newParentDict == oldParentDict and newParentDict['value'].existsKey( nodeDict['key'] ):
+    #Calculate the old parent path
+    oldParentPath = "/%s" % "/".join( List.fromChar( nodePath, "/" )[:-1] )
+    if not oldParentPath == destinationParentPath and newParentDict['value'].existsKey( nodeDict['key'] ):
       return S_ERROR( "Another entry with the same name already exists" )
 
     try:
@@ -335,7 +337,11 @@ class ConfigurationController(BaseController):
       else:
         print "last pos"
       oldParentDict[ 'value' ].deleteKey( nodeDict[ 'key' ] )
-      newParentDict[ 'value' ].addKey( **nodeDict )
+      addArgs = {}
+      for key in ( 'comment', 'beforeKey', 'value', 'key' ):
+        if key in nodeDict:
+          addArgs[ key ] = nodeDict[ key ]
+      newParentDict[ 'value' ].addKey( **addArgs )
     except Exception, e:
       return S_ERROR( "Can't move node: %s" % str( e ))
 
