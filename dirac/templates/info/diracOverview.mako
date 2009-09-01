@@ -3,7 +3,8 @@
 <%inherit file="/diracPage.mako" />
 
 <%def name="head_tags()">
-${ h.javascript_link( "/javascripts/htmlPage.js" ) }
+import dirac.lib.webBase as webBase
+${ webBase.jsTag(( "/javascripts/htmlPage.js" ) }
 <style type="text/css">
 <!--
 .tmp{
