@@ -206,7 +206,7 @@ def jsTag( uri ):
   if sN:
     if sN[0] == "/":
       sN = sN[1:]
-    uri = "/%s/%s" % uri
+    uri = "/%s/%s" % ( sN, uri )
   return '<script src="%s" type="text/javascript"></script>' % uri
 
 def cssTag( uri ):
