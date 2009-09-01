@@ -200,3 +200,16 @@ def diracURL( controller, action = None, id = None ):
                                     dsetup = request.environ[ 'pylons.routes_dict' ][ 'dsetup' ],
                                     dgroup = request.environ[ 'pylons.routes_dict' ][ 'dgroup' ] ),
                     urlArgs )
+  
+def jsTag( uri ):
+  sN = request.environ[ 'SCRIPT_NAME' ]
+  if sN:
+    uri = "/%s/%s" % uri
+  return '<script src="%s" type="text/javascript"></script>' % uri
+
+def cssTag( uri ):
+  sN = request.environ[ 'SCRIPT_NAME' ]
+  if sN:
+    uri = "/%s/%s" % uri
+  return '<link href="%s" media="screen" rel="stylesheet" type="text/css" />' % uri
+      
