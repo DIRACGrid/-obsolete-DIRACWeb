@@ -204,12 +204,16 @@ def diracURL( controller, action = None, id = None ):
 def jsTag( uri ):
   sN = request.environ[ 'SCRIPT_NAME' ]
   if sN:
+    if sN[0] == "/":
+      sN = sN[1:]
     uri = "/%s/%s" % uri
   return '<script src="%s" type="text/javascript"></script>' % uri
 
 def cssTag( uri ):
   sN = request.environ[ 'SCRIPT_NAME' ]
   if sN:
-    uri = "/%s/%s" % uri
+    if sN[0] == "/":
+      sN = sN[1:]
+    uri = "/%s/%s" % ( sN, uri )
   return '<link href="%s" media="screen" rel="stylesheet" type="text/css" />' % uri
       
