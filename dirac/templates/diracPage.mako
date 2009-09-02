@@ -16,14 +16,14 @@ pageTitle = "%s as %s@%s" % ( pageTitle, selectedGroup, selectedSetup )
  <head>
   <title>${pageTitle}</title>
   <link rel="SHORTCUT ICON" href='${ h.url_for( "/images/favicon.ico" )}'>
-  ${ webBase.jsTag( "/ext/adapter/ext/ext-base.js" ) }
-  ${ webBase.jsTag( "/ext/ext-all-debug.js" ) }
-  ${ webBase.jsTag( "/ext/Multiselect.js" ) }
-  ${ webBase.jsTag( "/ext/DDView.js" ) }
-  ${ webBase.jsTag( "/javascripts/diracPage.js" ) }
-  ${ webBase.cssTag( "/stylesheets/dirac.css" ) }
-  ${ webBase.cssTag( "/ext/resources/css/ext-all.css" ) }
-  ${ webBase.cssTag( "/ext/resources/css/Multiselect.css" ) }
+  ${ h.jsTag( "/ext/adapter/ext/ext-base.js" ) }
+  ${ h.jsTag( "/ext/ext-all-debug.js" ) }
+  ${ h.jsTag( "/ext/Multiselect.js" ) }
+  ${ h.jsTag( "/ext/DDView.js" ) }
+  ${ h.jsTag( "/javascripts/diracPage.js" ) }
+  ${ h.cssTag( "/stylesheets/dirac.css" ) }
+  ${ h.cssTag( "/ext/resources/css/ext-all.css" ) }
+  ${ h.cssTag( "/ext/resources/css/Multiselect.css" ) }
   ${self.head_tags()}
  </head>
  <body>

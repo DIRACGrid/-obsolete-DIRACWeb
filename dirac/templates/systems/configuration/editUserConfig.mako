@@ -3,10 +3,10 @@
 <%inherit file="/diracPage.mako" />
 
 <%def name="head_tags()">
-${ h.javascript_link( "/javascripts/json2.js" ) }
-${ h.javascript_link( "/javascripts/systems/configuration/configurationBase.js" ) }
-${ h.javascript_link( "/javascripts/systems/configuration/csTree.js" ) }
-${ h.javascript_link( "/javascripts/systems/configuration/editConfiguration.js" ) }
+${ h.jsTag( "/javascripts/json2.js" ) }
+${ h.jsTag( "/javascripts/systems/configuration/configurationBase.js" ) }
+${ h.jsTag( "/javascripts/systems/configuration/csTree.js" ) }
+${ h.jsTag( "/javascripts/systems/configuration/editConfiguration.js" ) }
 <style>
 #action-panel .x-panel {
 	margin-bottom:3px;

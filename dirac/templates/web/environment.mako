@@ -18,7 +18,7 @@ from pylons import request
 </%def>
 
 <%def name="head_tags()">
-  ${ h.javascript_link( "/javascripts/htmlPage.js" ) }
+  ${ h.jsTag( "/javascripts/htmlPage.js" ) }
   <!-- add some head tags here -->
   <style>
    table.envVars {

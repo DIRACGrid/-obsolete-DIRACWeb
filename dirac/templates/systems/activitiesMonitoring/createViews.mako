@@ -3,7 +3,7 @@
 <%inherit file="/diracPage.mako" />
 
 <%def name="head_tags()">
-${ h.javascript_link( "/javascripts/systems/activitiesMonitoring/viewCreator.js" ) }
+${ h.jsTag( "/javascripts/systems/activitiesMonitoring/viewCreator.js" ) }
 </%def>
 
 <%def name="body()">
