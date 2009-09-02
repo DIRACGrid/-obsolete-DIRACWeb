@@ -1,5 +1,5 @@
-# $Header: /tmp/libdirac/tmp.stZoy15380/dirac/DIRAC3/DIRAC/Interfaces/Web/dirac/controllers/systems/configuration.py,v 1.21 2009/08/14 14:51:32 acasajus Exp $
-__RCSID__ = "$Id: configuration.py,v 1.21 2009/08/14 14:51:32 acasajus Exp $"
+# $Header: /tmp/libdirac/tmp.stZoy15380/dirac/DIRAC3/DIRAC/Interfaces/Web/dirac/controllers/systems/configuration.py,v 1.22 2009/09/02 13:55:27 acasajus Exp $
+__RCSID__ = "$Id: configuration.py,v 1.22 2009/09/02 13:55:27 acasajus Exp $"
 
 import types
 import logging
@@ -39,7 +39,7 @@ class ConfigurationController(BaseController):
     retVal = modCfg.loadFromRemote()
     if retVal[ 'OK' ]:
       session[ 'cfgData' ] = str( modCfg )
-      session[ 'csName' ] = "LHCb Configuration"
+      session[ 'csName' ] = "%s Configuration" % ( modCfg.getValue( "/DIRAC/VirtualOrganization" ) )
       session.save()
       c.cfgData = modCfg.cfgData
       c.csName = session[ 'csName' ]
