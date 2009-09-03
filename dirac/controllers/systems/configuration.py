@@ -1,5 +1,5 @@
-# $Header: /tmp/libdirac/tmp.stZoy15380/dirac/DIRAC3/DIRAC/Interfaces/Web/dirac/controllers/systems/configuration.py,v 1.22 2009/09/02 13:55:27 acasajus Exp $
-__RCSID__ = "$Id: configuration.py,v 1.22 2009/09/02 13:55:27 acasajus Exp $"
+# $Header: /tmp/libdirac/tmp.stZoy15380/dirac/DIRAC3/DIRAC/Interfaces/Web/dirac/controllers/systems/configuration.py,v 1.23 2009/09/03 15:04:43 acasajus Exp $
+__RCSID__ = "$Id: configuration.py,v 1.23 2009/09/03 15:04:43 acasajus Exp $"
 
 import types
 import logging
@@ -26,7 +26,7 @@ class ConfigurationController(BaseController):
   maxFileSize = 1024*1024*10 #10MB
 
   def index(self):
-    return redirect_to( 'configuration/manageRemoteConfig' )
+    return redirect_to( 'manageRemoteConfig' )
 
   def __getModificator( self ):
     rpcClient = getRPCClient( gConfig.getValue( "/DIRAC/Configuration/MasterServer", "Configuration/Server" ) )
@@ -240,10 +240,13 @@ class ConfigurationController(BaseController):
 
   @jsonify
   def expandSection( self ):
+    try:
+      parentNodeId = str( request.params[ 'node' ] )
+      sectionPath = str( request.params[ 'nodePath' ] )
+    except Exception, e:
+      return S_ERROR( "Cannot expand section %s" % str(e) )
     cfgData = CFG()
     cfgData.loadFromBuffer( session[ 'cfgData' ] )
-    parentNodeId = str( request.params[ 'node' ] )
-    sectionPath = str( request.params[ 'nodePath' ] )
     gLogger.info( "Expanding section", "%s" % sectionPath )
     try:
       sectionCfg = cfgData

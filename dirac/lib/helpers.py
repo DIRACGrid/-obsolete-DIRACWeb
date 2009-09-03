@@ -17,8 +17,8 @@ def javascript_link( *urls, **attrs ):
     for url in urls:
       if url[0] == "/":
         url = "/%s%s" % ( sN, url )
-      nUrls.append( "/%s/%s" % ( sN, url ) )
-  return tags.javascript_link( *urls, **attrs )
+      nUrls.append( url )
+  return tags.javascript_link( *nUrls, **attrs )
 
 def stylesheet_link( *urls, **attrs ):
   sN = request.environ[ 'SCRIPT_NAME' ]
@@ -29,6 +29,6 @@ def stylesheet_link( *urls, **attrs ):
     for url in urls:
       if url[0] == "/":
         url = "/%s%s" % ( sN, url )
-      nUrls.append( "/%s/%s" % ( sN, url ) )
-  return tags.stylesheet_link( *urls, **attrs )
+      nUrls.append( url )
+  return tags.stylesheet_link( *nUrls, **attrs )
       

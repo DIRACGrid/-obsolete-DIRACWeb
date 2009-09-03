@@ -55,6 +55,8 @@ def sanitizePOSTVars( environ ):
   if contentType not in ('', 'application/x-www-form-urlencoded', 'multipart/form-data'):
     # Not an HTML form submission
     return
+  if 'webob._parsed_post_vars' not in environ:
+    return
   mD, bodyFile = environ[ 'webob._parsed_post_vars' ]
   for key in mD:
     untrustedList = mD.getall( key )
@@ -67,3 +69,4 @@ def sanitizePOSTVars( environ ):
 def sanitizeAllWebInputs( environ ):
   sanitizeGETVars( environ )
   sanitizePOSTVars( environ )
+  pass
