@@ -3,7 +3,7 @@
 <%inherit file="/diracPage.mako" />
 
 <%def name="head_tags()">
-${ h.jsTag( "/javascripts/systems/activitiesMonitoring/manageViews.js" ) }
+${ h.javascript_link( "/javascripts/systems/activitiesMonitoring/manageViews.js" ) }
 <style>
 #action-panel .x-panel {
 	margin-bottom:3px;

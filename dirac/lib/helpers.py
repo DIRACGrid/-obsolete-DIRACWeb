@@ -4,23 +4,30 @@ Consists of functions to typically be used within templates, but also
 available to Controllers. This module is available to both as 'h'.
 """
 from webhelpers import *
-from webhelpers.html.tags import *
 from routes import url_for
 from pylons import request
 
-def jsTag( uri ):
+def javascript_link( *urls, **attrs ):
   sN = request.environ[ 'SCRIPT_NAME' ]
   if sN:
     if sN[0] == "/":
       sN = sN[1:]
-    uri = "/%s/%s" % ( sN, uri )
-  return '<script src="%s" type="text/javascript"></script>' % uri
+    nUrls = []
+    for url in urls:
+      if url[0] == "/":
+        url = "/%s%s" % ( sN, url )
+      nUrls.append( "/%s/%s" % ( sN, url ) )
+  return html.tags.javascript_link( *urls, **attrs )
 
-def cssTag( uri ):
+def stylesheet_link( *urls, **attrs ):
   sN = request.environ[ 'SCRIPT_NAME' ]
   if sN:
     if sN[0] == "/":
       sN = sN[1:]
-    uri = "/%s/%s" % ( sN, uri )
-  return '<link href="%s" media="screen" rel="stylesheet" type="text/css" />' % uri
+    nUrls = []
+    for url in urls:
+      if url[0] == "/":
+        url = "/%s%s" % ( sN, url )
+      nUrls.append( "/%s/%s" % ( sN, url ) )
+  return html.tags.stylesheet_link( *urls, **attrs )
       

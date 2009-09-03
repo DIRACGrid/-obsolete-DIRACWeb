@@ -3,7 +3,7 @@
 <%inherit file="/diracPage.mako" />
 
 <%def name="head_tags()">
-${ h.jsTag( "/javascripts/systems/framework/manageProxies.js" ) }
+${ h.javascript_link( "/javascripts/systems/framework/manageProxies.js" ) }
 <style>
 #action-panel .x-panel {
 	margin-bottom:3px;

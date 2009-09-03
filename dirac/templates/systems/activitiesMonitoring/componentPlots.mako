@@ -3,8 +3,8 @@
 <%inherit file="/diracPage.mako" />
 
 <%def name="head_tags()">
-${ h.jsTag( "/javascripts/htmlPage.js" ) }
-${ h.jsTag( "/javascripts/systems/activitiesMonitoring/plotViewPanel.js" ) }
+${ h.javascript_link( "/javascripts/htmlPage.js" ) }
+${ h.javascript_link( "/javascripts/systems/activitiesMonitoring/plotViewPanel.js" ) }
 </%def>
 
 <%def name="body()">

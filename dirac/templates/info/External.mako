@@ -3,7 +3,7 @@
 <%inherit file="/diracPage.mako" />
 
 <%def name="head_tags()">
-${ h.jsTag( "/javascripts/web/External.js" ) }
+${ h.javascript_link( "/javascripts/web/External.js" ) }
 </%def>
 
 <%def name="body()">

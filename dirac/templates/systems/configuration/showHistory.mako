@@ -3,9 +3,9 @@
 <%inherit file="/diracPage.mako" />
 
 <%def name="head_tags()">
-${ h.jsTag( "/javascripts/json2.js" ) }
-${ h.jsTag( "/javascripts/systems/configuration/configurationBase.js" ) }
-${ h.jsTag( "/javascripts/systems/configuration/showHistory.js" ) }
+${ h.javascript_link( "/javascripts/json2.js" ) }
+${ h.javascript_link( "/javascripts/systems/configuration/configurationBase.js" ) }
+${ h.javascript_link( "/javascripts/systems/configuration/showHistory.js" ) }
 <style>
 #action-panel .x-panel {
 	margin-bottom:3px;

@@ -3,7 +3,7 @@
 <%inherit file="/diracPage.mako" />
 
 <%def name="head_tags()">
-${ h.jsTag( "/javascripts/htmlPage.js" ) }
+${ h.javascript_link( "/javascripts/htmlPage.js" ) }
 <style type="text/css">
 <!--
    table.imgTable td {
