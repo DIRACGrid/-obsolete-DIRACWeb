@@ -245,6 +245,9 @@ class ProductionmonitorController(BaseController):
     elif request.params.has_key("log") and len(request.params["log"]) > 0:
       id = str(request.params["log"])
       return self.__logProduction(id)
+    elif request.params.has_key("elog") and len(request.params["elog"]) > 0:
+      id = str(request.params["elog"])
+      return self.__elogProduction(id)
     else:
       c.result = {"success":"false","error":"DIRAC Job ID(s) is not defined"}
       return c.error
@@ -279,6 +282,26 @@ class ProductionmonitorController(BaseController):
     else:
       c.result = {"success":"false","error":result["Message"]}
     gLogger.info("PRODUCTION LOG:",id)
+    return c.result
+################################################################################
+  def __elogProduction(self,prodid):
+    id = int(prodid)
+    RPC = getRPCClient('ProductionManagement/ProductionManager')
+    result = RPC.getTransformation(id)
+    if result["OK"]:
+      result = result["Value"]
+      if result.has_key("Additional"):
+        result = result["Additional"]
+        if result.has_key("DetailedInfo"):
+          c.result = result["DetailedInfo"]
+          c.result = {"success":"true","result":c.result}
+        else:
+          c.result = {"success":"false","error":"Production does not have parameter 'DetailedInfo'"}
+      else:
+        c.result = {"success":"false","error":"Production does not have parameter 'Additional'"}
+    else:
+      c.result = {"success":"false","error":result["Message"]}
+    gLogger.info("#######",result)
     return c.result
 ################################################################################
   def __actProduction(self,prodid,cmd):
