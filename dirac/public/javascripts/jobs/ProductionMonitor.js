@@ -91,7 +91,7 @@ function initData(store){
     {header:'FileMask',sortable:true,dataIndex:'FileMask',align:'left',hidden:true},
     {header:'Plugin',sortable:true,dataIndex:'Plugin',align:'left',hidden:true},
     {header:'Created',sortable:true,dataIndex:'Jobs_Created',align:'left'},
-    {header:'Submited',sortable:true,dataIndex:'Jobs_Submitted',align:'left'},
+    {header:'Submitted',sortable:true,dataIndex:'Jobs_Submitted',align:'left'},
     {header:'Waiting',sortable:true,dataIndex:'Jobs_Waiting',align:'left'},
     {header:'Running',sortable:true,dataIndex:'Jobs_Running',align:'left'},
     {header:'Stalled',sortable:true,dataIndex:'Jobs_Stalled',align:'left'},
@@ -163,19 +163,20 @@ function setMenuItems(selections){
     dirac.menu.add(
       {handler:function(){jump('job',id,submited)},text:'Show Jobs'},
       {handler:function(){AJAXrequest('log',id)},text:'Show Logs'},
+      {handler:function(){AJAXrequest('elog',id)},text:'Show Details'},
       '-',
       {text:'Actions',menu:({items:subMenu})}
     );
   }
   if(status == 'Active'){
-    dirac.menu.items.items[3].menu.items.items[1].enable();
-    dirac.menu.items.items[3].menu.items.items[0].disable();
+    dirac.menu.items.items[4].menu.items.items[1].enable();
+    dirac.menu.items.items[4].menu.items.items[0].disable();
   }else if(status == 'New'){
-    dirac.menu.items.items[3].menu.items.items[1].disable();
-    dirac.menu.items.items[3].menu.items.items[0].enable();
+    dirac.menu.items.items[4].menu.items.items[1].disable();
+    dirac.menu.items.items[4].menu.items.items[0].enable();
   }else{
-    dirac.menu.items.items[3].menu.items.items[1].disable();
-    dirac.menu.items.items[3].menu.items.items[0].enable();
+    dirac.menu.items.items[4].menu.items.items[1].disable();
+    dirac.menu.items.items[4].menu.items.items[0].enable();
   }
 };
 function AJAXsuccess(value,id,response){
@@ -215,6 +216,9 @@ function AJAXsuccess(value,id,response){
     panel.addListener('cellclick',function(table,rowIndex,columnIndex){
       showMenu('nonMain',table,rowIndex,columnIndex);
     });
+  }else if(value == 'elog'){
+    var html = '<pre>' + result + '</pre>';
+    panel = new Ext.Panel({border:0,autoScroll:true,html:html,layout:'fit'})
   }
   displayWin(panel,id)
 }
