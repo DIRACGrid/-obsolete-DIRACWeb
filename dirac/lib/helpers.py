@@ -9,26 +9,23 @@ from routes import url_for
 from pylons import request
 
 def javascript_link( *urls, **attrs ):
-  sN = request.environ[ 'SCRIPT_NAME' ]
-  if sN:
-    if sN[0] == "/":
-      sN = sN[1:]
-    nUrls = []
-    for url in urls:
-      if url[0] == "/":
-        url = "/%s%s" % ( sN, url )
-      nUrls.append( url )
-  return tags.javascript_link( *nUrls, **attrs )
+  return _modTag( urls, attrs, tags.javascript_link )
 
 def stylesheet_link( *urls, **attrs ):
+  return _modTag( urls, attrs, tags.stylesheet_link )
+
+def _modTag( urls, attrs, functor ):
+  nUrls = urls
   sN = request.environ[ 'SCRIPT_NAME' ]
   if sN:
     if sN[0] == "/":
       sN = sN[1:]
     nUrls = []
     for url in urls:
-      if url[0] == "/":
-        url = "/%s%s" % ( sN, url )
-      nUrls.append( url )
-  return tags.stylesheet_link( *nUrls, **attrs )
-      
+      if url.find( "http" ) == 0:
+        nUrls.append( url )
+      else:
+        if url[0] == "/":
+          url = "/%s%s" % ( sN, url )
+        nUrls.append( url )
+  return functor( *nUrls, **attrs )
