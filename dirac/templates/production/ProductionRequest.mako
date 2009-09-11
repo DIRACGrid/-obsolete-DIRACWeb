@@ -3,11 +3,11 @@
 <%inherit file="/diracPage.mako" />
 
 <%def name="head_tags()">
-${ h.javascript_include_tag("/ext/examples/grid/RowExpander.js") }
-${ h.stylesheet_link_tag(   "/TreeGrid/css/TreeGrid.css") }
-${ h.javascript_include_tag("/TreeGrid/TreeGrid.js") }
-${ h.stylesheet_link_tag(   "/javascripts/production/ProductionRequest.css") }
-${ h.javascript_include_tag("/javascripts/production/ProductionRequest.js") }
+${ h.javascript_link("/ext/examples/grid/RowExpander.js") }
+${ h.stylesheet_link(   "/TreeGrid/css/TreeGrid.css") }
+${ h.javascript_link("/TreeGrid/TreeGrid.js") }
+${ h.stylesheet_link("/javascripts/production/ProductionRequest.css") }
+${ h.javascript_link("/javascripts/production/ProductionRequest.js") }
 </%def>
 
 <%def name="body()">
