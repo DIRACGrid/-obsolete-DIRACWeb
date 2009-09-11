@@ -329,6 +329,7 @@ function initProductionLookup(){
         var formValues = panel.form.getValues();
         table.store.baseParams = formValues;
         table.store.baseParams.byProd = 'true';
+        table.store.baseParams.limit = table.bottomToolbar.pageSize;
         table.store.load();
       }catch(e){
         alert('Error: ' + e.name + ': ' + e.message);
@@ -418,28 +419,6 @@ function createStateMatrix(msg){
     result[j] = [i,msg[i]]
     j++;
   }
-/*
-  var list = Ext.getCmp('statMenu');
-  if(list){
-    if(list.store){
-      if(list.store.totalLength > 0){
-        var len = list.store.totalLength;
-        for(var i = 1; i < len; i++ ){
-          var j = list.store.getAt(i).data.stat;
-          if(j){
-            if(msg[j] >= 0){
-              result[(i - 1)] = [j,msg[j]];
-            }else{
-              result[(i - 1)] = [j,"-"];
-            }
-          }
-        }
-      }
-    }
-  }else{
-    return;
-  }
-*/
   return result;
 }
 function initStore(record,groupBy){
@@ -528,7 +507,10 @@ function initStore(record,groupBy){
     try{
       store.baseParams = dataMngr.form.getForm().getValues();
       store.baseParams.sort = dataSelect.globalSort;
-    }catch(e){}
+    }catch(e){
+//      alert('+++')
+//      alert(e)
+    }
   });
   store.on('load',function(){
     if(store.reader){
@@ -575,12 +557,13 @@ function itemsNumber(){
     allowBlank:false,
     displayField:'number',
     editable:false,
+    id:'fileNumberPerPage',
     maxLength:4,
     maxLengthText:'The maximum value for this field is 1000',
     minLength:1,
     minLengthText:'The minimum value for this field is 1',
     mode:'local',
-    name:'number',
+    name:'fileNumberPerPage',
     selectOnFocus:true,
     store:store,
     triggerAction:'all',
@@ -603,6 +586,7 @@ function itemsNumber(){
                   sort = true;
                 }
               }
+              var bParams = '';
               if(sort){
                 dataMngr.store.load({params:{start:0,limit:tableMngr.bbar.pageSize,sort:sortGlobalPanel.globalSort}});
               }else{
@@ -894,14 +878,28 @@ function selectPanel(){
 }
 function statPanel(title,mode,id){
   var msg = [];
-  var reader = new Ext.data.ArrayReader({},[
-    {name:'Status'},
-    {name:'Number'}
-  ]);
+  if(mode == 'storage'){
+    var reader = new Ext.data.ArrayReader({},[[
+      {name:'SE'},
+      {name:'Files'},
+      {name:'Size'}
+    ]]);
+  }else{
+    var reader = new Ext.data.ArrayReader({},[
+      {name:'Status'},
+      {name:'Number'}
+    ]);
+  }
   if(mode == 'text'){
     var columns = [
       {header:'Status',sortable:true,dataIndex:'Status',align:'left'},
       {header:'Numbers',sortable:true,dataIndex:'Number',align:'left'}
+    ];
+  }else if(mode == 'storage'){
+    var columns = [
+      {header:'SE',sortable:true,dataIndex:'SE',align:'left'},
+      {header:'Replicas',width:50,sortable:true,dataIndex:'Files',align:'right'},
+      {header:'Size',width:50,sortable:true,dataIndex:'Size',align:'left'}
     ];
   }else{
     var columns = [
@@ -919,12 +917,21 @@ function statPanel(title,mode,id){
       }),
       reader:reader
     });
+  }else if(mode == 'storage'){
+    var store = new Ext.data.SimpleStore({
+      fields:['SE','Files','Size'],
+      data:msg
+    });
+    store.setDefaultSort('SE','ASC'); // Default sorting
   }else{
     var store = new Ext.data.SimpleStore({
       fields:['Status','Number'],
       data:msg
     });
   }
+//  store.on('load',function(){
+//    p.syncSize();
+//  });
   var p = new Ext.grid.GridPanel({
     border:false,
     columns:columns,
@@ -961,7 +968,55 @@ function statPanel(title,mode,id){
   }
   return panel;
 }
+function createID(dataName,menuName){
+  var value = '';
+  if(dataSelect){
+    if(dataSelect.extra){
+      if(dataSelect.extra.id){
+        value = dataSelect.extra.id;
+      }
+      delete dataSelect.extra.id;
+    }
+  }
+  var number = new Ext.form.TextField({
+    anchor:'90%',
+    allowBlank:true,
+    enableKeyEvents:true,
+    fieldLabel:menuName,
+    hiddenName:dataName,
+    id:dataName,
+    mode:'local',
+    selectOnFocus:true,
+    value:value
+  });
+  number.on({
+    'render':function(){
+      try{
+        var newValue = dataSelect.extra[dataName];
+        number.setValue(newValue);
+        delete dataSelect.extra[dataName];
+      }catch(e){}
+    }
+  });
+  return number;
+}
 // Input fields
+function selectProduction(){
+  var id = createID('prod','Production');
+  return id
+}
+function selectFileType(){
+  var id = createID('type','FileType');
+  return id
+}
+function selectDirectory(){
+  var id = createID('dir','Directory');
+  return id
+}
+function selectSEs(){
+  var menu = createMenu('se','SEs');
+  return menu
+}
 function selectDestinationsMenu(){
   var menu = createMenu('destination','Destination');
   return menu
@@ -1275,7 +1330,11 @@ function showMenu(mode,table,rowIndex,columnIndex){
     dirac.menu.removeAll();
     if(mode == 'main'){
       setMenuItems(selections);
-      dirac.menu.add('-',{handler:function(){Ext.Msg.minWidth = 360;Ext.Msg.alert('Cell value is:',value);},text:'Show value'});
+      if(dirac.menu.items.length > 0){
+        dirac.menu.add('-',{handler:function(){Ext.Msg.minWidth = 360;Ext.Msg.alert('Cell value is:',value);},text:'Show value'});
+      }else{
+        dirac.menu.add({handler:function(){Ext.Msg.minWidth = 360;Ext.Msg.alert('Cell value is:',value);},text:'Show value'});
+      }
     }else{
       dirac.menu.add({handler:function(){Ext.Msg.minWidth = 360;Ext.Msg.alert('Cell value is:',value);},text:'Show value'});
     }
@@ -1449,4 +1508,158 @@ function status(value){
   }else{
     return '<img src="'+gURLRoot+'/images/monitoring/unknown.gif">';
   }
+}
+function dateTimeWidget(pin){
+  function retDate(name,nameExtra,fieldLabel){
+    var date = new Ext.form.DateField({
+      anchor:'90%',
+      allowBlank:true,
+      emptyText:'YYYY-mm-dd',
+      fieldLabel:fieldLabel,
+      format:'Y-m-d',
+      name:name,
+      selectOnFocus:true,
+      startDay:1,
+      value:'',
+      width:98
+    });
+    date.on({
+      'render':function(){
+        try{
+          var sDate = dataSelect.extra[nameExtra];
+          sDate = sDate.substring(0,10); // First 10 digits
+          date.setValue(sDate);
+          delete dataSelect.extra[nameExtra];
+        }catch(e){}
+      }
+    });
+    return date
+  }
+  function retTime(name,nameExtra,fieldLabel){
+    var time = new Ext.form.TimeField({
+      emptyText:'00:00',
+      fieldLabel:fieldLabel,
+      forceSelection:true,
+      format:'H:i',
+      increment:30,
+      name:name,
+      width:60
+    });
+    time.on({
+      'render':function(){
+        try{
+          var sTime = dataSelect.extra[nameExtra];
+          sTime = sTime.substring(11,16); // First 5 digits
+          time.setValue(sTime);
+          delete dataSelect.extra[nameExtra];
+        }catch(e){}
+      }
+    });
+    return time
+  }
+  var startDate = retDate('startDate','startDate','Start Date');
+  var endDate = retDate('endDate','endDate','End Date');
+  var startTime = retTime('startTime','startTime','Start Time');
+  var endTime = retTime('endTime','endTime','End Time');
+  var store = new Ext.data.SimpleStore({
+    fields:['timeSpan'],
+    data:[['Last hour'],['Last day'],['Last week'],['Last month'],['Manual selection']]
+  });
+  var timeSpan = new Ext.form.ComboBox({
+    allowBlank:true,
+    displayField:'timeSpan',
+    colspan:2,
+    editable:false,
+    emptyText:'Select time span',
+    mode:'local',
+    name:'timeSpan',
+    selectOnFocus:true,
+    store:store,
+    triggerAction:'all',
+    typeAhead:true,
+  });
+  timeSpan.setWidth(158);
+  timeSpan.on({
+    'render':function(){
+      try{
+        var sTime = dataSelect.extra['timeSpan'];
+        timeSpan.setValue(sTime);
+        delete dataSelect.extra['timeSpan'];
+      }catch(e){}
+    },
+    'select':function(){
+      var currentTime = new Date();
+      var value = timeSpan.getValue();
+      if(value == 'Last hour'){
+        startTime.setValue(currentTime.add(Date.HOUR,-1));
+        startDate.setValue(currentTime);
+      }else if(value == 'Last day'){
+        startTime.setValue(currentTime);
+        startDate.setValue(currentTime.add(Date.DAY,-1));
+      }else if(value == 'Last week'){
+        startTime.setValue(currentTime);
+        startDate.setValue(currentTime.add(Date.DAY,-7));
+      }else if(value == 'Last month'){
+        startTime.setValue(currentTime);
+        startDate.setValue(currentTime.add(Date.MONTH,-1));
+      }else if(value == 'Manual selection'){
+        endTime.setValue(currentTime);
+        endDate.setValue(currentTime);
+      }else{
+        alert('Unknown value: ',value);
+      }
+      if(value == 'Manual selection'){
+        panel.items.items[5].body.update('End:');
+        endDate.enable();
+        endTime.enable();
+      }else{
+        panel.items.items[5].body.update('End: <b>Now</b>');
+        endDate.disable();
+        endTime.disable();
+      }
+      delete currentTime
+    },
+  });
+  startDate.menuListeners.select = function(menu, date) {
+    timeSpan.setValue('Manual selection');
+    timeSpan.validate();
+    startDate.setValue(date);
+  };
+  startDate.on({
+    'KeyUp':function(){
+      alert('XXX');
+    }
+  });
+  var datePin = {xtype:'checkbox',id:'datePin',fieldLabel:'',name:'datePin',boxLabel:'Pin the date'};
+  var panel = new Ext.Panel({
+    layout:'table',
+    id:'time-panel',
+    defaults: {
+      bodyStyle:'padding:5px',
+    },
+    layoutConfig: {
+      columns: 2
+    },
+    cls:'x-form-item',
+    bodyStyle:'padding: 5px',
+    items:[
+      {html:'Time Span:',colspan:2,bodyStyle:'border:0px'}
+      ,timeSpan
+      ,{html:'Start:',colspan:2,bodyStyle:'border:0px'}
+      ,startDate
+      ,startTime
+      ,{html:'End: <b>Now</b>',colspan:2,bodyStyle:'border:0px'}
+      ,endDate.disable()
+      ,endTime.disable()
+    ],
+    labelAlign:'top',
+    minWidth:'170',
+    width:'170'
+  });
+  try{
+    if(pin){
+      panel.insert(8,datePin);
+    }
+  }catch(e){}
+  return panel
 }
