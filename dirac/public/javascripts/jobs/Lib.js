@@ -203,7 +203,7 @@ function dateSelectMenu(){
   });
   return date;
 }
-function displayWin(panel,title){
+function displayWin(panel,title,modal){
   var window = new Ext.Window({
     iconCls:'icon-grid',
     closable:true,
@@ -214,6 +214,7 @@ function displayWin(panel,title){
     constrain:true,
     constrainHeader:true,
     maximizable:true,
+    modal:modal,
     layout:'fit',
     plain:true,
     shim:false,
@@ -899,8 +900,10 @@ function selectAppMenu(){
 function genericID(name,fieldLabel,altRegex,altRegexText){
   var value = '';
   try{
-    value = dataSelect.extra.id;
-    delete dataSelect.extra.id;
+    value = dataSelect.extra[name];
+    delete dataSelect.extra[name];
+//    value = dataSelect.extra.id;
+//    delete dataSelect.extra.id;
   }catch(e){}
   var regex = new RegExp( /^[0-9, ]+$/);
   var regexText = 'Only digits separated by semicolons are allowed';
@@ -1592,6 +1595,16 @@ function statPanel(title,mode,id){
       data:msg
     });
   }
+  try{
+    store.on('beforeload',function(){
+      var sideBar = Ext.getCmp('sideBar');
+      sideBar.body.mask('Loading...');
+    });
+    store.on(('loadexception','load'),function(){
+      var sideBar = Ext.getCmp('sideBar');
+      sideBar.body.unmask();
+    });
+  }catch(e){}
   var p = new Ext.grid.GridPanel({
     border:false,
     columns:columns,
