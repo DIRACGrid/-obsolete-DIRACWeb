@@ -29,7 +29,9 @@ class ProductionmonitorController(BaseController):
   def display(self):
     pagestart = time()
     c.select = self.__getSelectionData()
-    c.select["extra"] = {"prodStatus":"Active::: Stopped::: New"}
+    if not c.select.has_key("extra"):
+      c.select["extra"] = {"prodStatus":"Active::: Stopped::: New"}
+    gLogger.info(" !!!!!!!!!!!!!!!!!!!!!11 productionID - ",c.select)
     gLogger.info("\033[0;31mPRODUCTION INDEX REQUEST:\033[0m %s" % (time() - pagestart))
     return render("jobs/ProductionMonitor.mako")
 ################################################################################
@@ -96,6 +98,7 @@ class ProductionmonitorController(BaseController):
       numberOfJobs = 25
       pageNumber = 0
     if request.params.has_key("productionID") and len(request.params["productionID"]) > 0:
+      gLogger.info(" !!!!!!!!!!!!!!!!!!!!!11 productionID - ",request.params["productionID"])
       testString = str(request.params["productionID"])
       testString = testString.strip(';, ')
       testString = testString.split(', ')
@@ -149,6 +152,11 @@ class ProductionmonitorController(BaseController):
 ################################################################################
   def __getSelectionData(self):
     callback = {}
+    if len(request.params) > 0:
+      tmp = {}
+      for i in request.params:
+        tmp[i] = str(request.params[i])
+      callback["extra"] = tmp
     RPC = getRPCClient("ProductionManagement/ProductionManager")
     result = RPC.getProductionSummary()
     if result["OK"]:
