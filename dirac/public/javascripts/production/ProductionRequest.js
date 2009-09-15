@@ -2083,7 +2083,20 @@ PR.RequestEditor = Ext.extend(Ext.FormPanel, {
 	 scope: this},
 	{text: 'Cancel', handler: this.onCancel, scope: this}
       ];
-    } else if(this.state == "Submitted" || this.state == "Tech OK" || this.state == "PPG OK"){
+    } else if(this.state == "Submitted" || this.state == "Tech OK"){
+      buttons = [
+	{text: 'Sign the request', handler: this.onSign,   scope: this},
+	{text: 'Reject the request (better first comment why)', handler: this.onReject, scope: this},
+	{text: 'Cancel', handler: this.onCancel, scope: this}
+      ];
+    } else if(this.state == "PPG OK"){
+      buttons = [
+	{text: 'Sign the request', handler: this.onSign,   scope: this},
+	{text: 'Put on-hold', handler: this.onHold,   scope: this},
+	{text: 'Reject the request (better first comment why)', handler: this.onReject, scope: this},
+	{text: 'Cancel', handler: this.onCancel, scope: this}
+      ];
+    } else if(this.state == "On-hold"){
       buttons = [
 	{text: 'Sign the request', handler: this.onSign,   scope: this},
 	{text: 'Reject the request (better first comment why)', handler: this.onReject, scope: this},
@@ -2103,6 +2116,7 @@ PR.RequestEditor = Ext.extend(Ext.FormPanel, {
 	{text: 'Done', handler: this.onDone,   scope: this},
 	{text: 'Cancel request (better first comment why)', handler: this.onCancelReq, scope: this},
 	{text: 'Save changes', handler: this.onSave,   scope: this},
+	{text: 'Generate', handler: this.onWorkflow, scope: this},
 	{text: 'Cancel', handler: this.onCancel, scope: this}
       ];
     }
@@ -2343,6 +2357,13 @@ PR.RequestEditor = Ext.extend(Ext.FormPanel, {
     if(!this.checkProcessingPass())
       return;
     this.getForm().findField('reqState').setValue('Accepted');
+    this._submit();
+  },
+
+  onHold: function() {
+    if(!this.checkProcessingPass())
+      return;
+    this.getForm().findField('reqState').setValue('On-hold');
     this._submit();
   },
 
@@ -2648,6 +2669,8 @@ PR.RequestEditor = Ext.extend(Ext.FormPanel, {
       if(rm.state == 'Submitted' && rm.group == 'lhcb_tech')
 	force = false;
       if(rm.state == 'PPG OK' && rm.group == 'lhcb_tech')
+	force = false;
+      if(rm.state == 'On-hold' && rm.group == 'lhcb_tech')
 	force = false;
       if(rm.group == 'lhcb_prmgr')
 	force = false;
@@ -3488,7 +3511,7 @@ PR.RequestGrid = Ext.extend(Ext.ux.maximgb.treegrid.GridPanel, {
       master_column_id: 'Id',
       columns: [
 	expander,
-	{id: 'Id', header:'Id', sortable:true, dataIndex:'ID', width: 50},
+	{id: 'Id', header:'Id', sortable:true, dataIndex:'ID', width: 60},
 	{header:'Type',       sortable:true, dataIndex:'reqType'},
 	{header:'State',      sortable:true, dataIndex:'reqState'},
 	{header:'Priority',   sortable:true, dataIndex:'reqPrio', width: 50},
@@ -3588,6 +3611,7 @@ PR.RequestManager = Ext.extend(Ext.TabPanel, {
     } else if( (rm.state=="BK Check"  && rm.group=="lhcb_bk") ||
 	       (rm.state=="Submitted" && rm.group=="lhcb_ppg") ||
 	       (rm.state=="Submitted" && rm.group=="lhcb_tech") ||
+	       (rm.state=="On-hold"   && rm.group=="lhcb_tech") ||
 	       (rm.state=="Tech OK"   && rm.group=="lhcb_ppg") ||
 	       (rm.state=="PPG OK"    && rm.group=="lhcb_tech")) {
       this.menu.add( 
@@ -3636,7 +3660,9 @@ PR.RequestManager = Ext.extend(Ext.TabPanel, {
       this.menu.add(
 	'-',
 	{handler: function() {this.manageProductions(r);},
-	 scope: this, text: 'Productions'}
+	 scope: this, text: 'Productions'},
+	{handler: function() {this.monitorProductions(r);},
+	 scope: this, text: 'Production monitor'}
       );
     this.menu.showAt(Ext.EventObject.xy);
   },
@@ -4068,6 +4094,46 @@ PR.RequestManager = Ext.extend(Ext.TabPanel, {
 			    add: true});
     }, this.grid);
     win.show();
+  },
+
+  monitorProductions: function(r){
+    var conn = new Ext.data.Connection();
+    conn.request({
+      url: 'productions',
+      method: 'POST',
+      params: { RequestID: r.data.ID },
+      scope: this,
+      success: function(response){
+	if (response) { // check that it is really OK... AZ: !! ??
+	  var str = '';
+	  try {
+	    var result = Ext.decode(response.responseText);
+	    if ( !result.OK )
+              str = result.Message;
+	  } catch (e2) {
+	    str = "unparsable reply from the portal: "+e2.message;
+	  }
+	  if(str){
+	    Ext.MessageBox.show({
+	      title: 'Production list failed',
+	      msg: str,
+	      buttons: Ext.MessageBox.OK,
+	      icon: Ext.MessageBox.ERROR
+	    });
+	    return;
+	  }
+	  if(result.total){
+	    /* Ext.Msg.alert('Productions for this request',
+			 result.result); */
+	    window.open("../../jobs/ProductionMonitor/display?productionID="+
+			result.result,"js");
+	  }else
+	    Ext.Msg.alert('Productions for this request',
+			  'No productions associated with this request');
+	}
+      },
+      failure: connectBugger('Productions list')
+    });
   },
 
   viewHistory: function(r){
