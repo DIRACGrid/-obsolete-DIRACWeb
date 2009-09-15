@@ -238,7 +238,8 @@ function addMarker( siteName, siteData, icon )
 				title: siteName,
 				map : gMap,
 				tierLevel : siteData.tier,
-				icon : icon
+				icon : icon,
+				zIndex : 10 - siteData.tier
 		  	}
 		var marker = new google.maps.Marker( markerOps );
 		attachMouseOverWindow( marker, siteName );
