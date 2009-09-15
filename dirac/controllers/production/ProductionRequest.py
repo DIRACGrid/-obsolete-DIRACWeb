@@ -34,12 +34,18 @@ class PrTpl(object):
             (default to ParName) In case you use one parameter
             several times, you can specify the label only once.
   """
-  __par_re  = "\{\{(\W)?([^\}#]+)#?([^\}]*)\}\}"
+  __par_re  = "\{\{(\W)?([^\}#]+)#?([^\}#]*)#?([^\}#]*)\}\}"
   __par_sub = "\{\{(\W|)?%s[^\}]*\}\}"
   def __init__(self,tpl_xml):
     self.tpl = tpl_xml
     self.pdict = {}
+    self.ddict = {}
     for x in re.findall(self.__par_re,self.tpl):
+      if not x[1] in self.ddict or x[3]:
+        dvalue = x[3]
+        if not dvalue:
+          dvalue = ''
+        self.ddict[x[1]] = dvalue
       if x[1] in self.pdict and not x[2]:
         continue
       label = x[2]
@@ -50,6 +56,10 @@ class PrTpl(object):
   def getParams(self):
     """ Return the dictionary with parameters (value is label) """
     return self.pdict
+
+  def getDefaults(self):
+    """ Return the dictionary with parameters defaults """
+    return self.ddict
 
   def apply(self,pdict):
     """ Return template with substituted values from pdict """
@@ -278,6 +288,13 @@ class RealRequestEngine:
       return result
     return { 'OK':True, 'result':result['Value']['Rows'],
              'total': result['Value']['Total'] }
+
+  def getProductionList(self,requestID):
+    RPC = getRPCClient( "ProductionManagement/ProductionRequest" )
+    result = RPC.getProductionList(requestID)
+    if not result['OK']:
+      return result
+    return {'OK':True,'result':result['Value'],'total': len(result['Value'])}
 
   def addProduction(self,pdict):
     RPC = getRPCClient( "ProductionManagement/ProductionRequest" )
@@ -1221,6 +1238,15 @@ class ProductionrequestController(BaseController):
     return self.engine.getProductionProgressList(id);
 
   @jsonify
+  def productions(self):
+    id  = str(request.params.get('RequestID', ''))
+    try:
+      id = long(id);
+    except Exception, e:
+      return S_ERROR('Reqiest ID is not a number')
+    return self.engine.getProductionList(id);
+
+  @jsonify
   def add_production(self):
     rdict = dict(request.params)
     try:
@@ -1298,10 +1324,11 @@ class ProductionrequestController(BaseController):
     tpl = PrTpl(text)
     rqf = self.engine.getRequestFields()
     tpf = tpl.getParams()
+    tpd = tpl.getDefaults()
     plist = []
     for x in tpf:
       if not x in rqf:
-        plist.append({'par':x, 'label':tpf[x], 'value':""})
+        plist.append({'par':x, 'label':tpf[x], 'value':tpd[x]})
     return { 'OK':True, 'total': len(plist), 'result': plist }
 
   @jsonify
