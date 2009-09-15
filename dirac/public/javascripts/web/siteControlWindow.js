@@ -100,9 +100,8 @@ function getSiteDescriptionHTML( siteName, siteData, extended )
 	    	sd = "<table>";
 	    	for( attr in siteData.jobSummary )
 	    	{
-	    		if( ! siteData.jobSummary[attr] )
-	    			continue
-	    		sd += "<tr><td>"+attr+"</td><td>"+siteData.jobSummary[attr]+"</td></tr>";
+	    		if( siteData.jobSummary[attr] )
+	    			sd += "<tr><td>"+attr+"</td><td>"+siteData.jobSummary[attr]+"</td></tr>";
 	    	}
 	    	sd += "</table>"
 	    	desc += '<tr style="vertical-align:top"><td>Job Summary:</td><td>'+sd+'</td></tr>';
@@ -113,8 +112,7 @@ function getSiteDescriptionHTML( siteName, siteData, extended )
 	    	for( attr in siteData.pilotSummary )
 	    	{
 	    		if( ! siteData.pilotSummary[attr] )
-	    			continue
-	    		sd += "<tr><td>"+attr+"</td><td>"+siteData.jobSummary[attr]+"</td></tr>";
+	    			sd += "<tr><td>"+attr+"</td><td>"+siteData.pilotSummary[attr]+"</td></tr>";
 	    	}
 	    	sd += "</table>"
 	    	desc += '<tr style="vertical-align:top"><td>Pilot Summary:</td><td>'+sd+'</td></tr>';
@@ -127,8 +125,7 @@ function getSiteDescriptionHTML( siteName, siteData, extended )
 		    	for( attr in siteData.storageSummary.Files )
 		    	{
 		    		if( ! siteData.storageSummary.Files[attr] )
-		    			continue
-		    		sd += "<tr><td>"+attr+"</td><td>"+siteData.storageSummary.Files[attr]+"</td></tr>";
+		    			sd += "<tr><td>"+attr+"</td><td>"+siteData.storageSummary.Files[attr]+"</td></tr>";
 		    	}
 		    	sd += "</table>"
 		    	desc += '<tr style="vertical-align:top"><td>Files stored:</td><td>'+sd+'</td></tr>';
@@ -139,8 +136,7 @@ function getSiteDescriptionHTML( siteName, siteData, extended )
 		    	for( attr in siteData.storageSummary.Size )
 		    	{
 		    		if( ! siteData.storageSummary.Size[attr] )
-		    			continue
-		    		sd += "<tr><td>"+attr+"</td><td>"+parseInt(siteData.storageSummary.Size[attr]/(1024*1024*1024))+"</td></tr>";
+		    			sd += "<tr><td>"+attr+"</td><td>"+parseInt(siteData.storageSummary.Size[attr]/(1024*1024*1024))+"</td></tr>";
 		    	}
 		    	sd += "</table>"
 		    	desc += '<tr style="vertical-align:top"><td>Storage usage (GiB):</td><td>'+sd+'</td></tr>';
