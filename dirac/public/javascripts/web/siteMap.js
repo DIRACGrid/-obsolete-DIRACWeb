@@ -3,14 +3,16 @@ var gCurrentLatLong = false;
 var gMapPanel = false;
 var gMapToolbar = false;
 var gMap = false;
-var gTierLevelFilter = 0;
+var gSitesGridPanel = false;
+var gTierLevelFilter = -1;
 var gAutoLocationMarker = false;
 var gCurrentMarkers = [];
 var gSiteData = false;
 var gStatusBar = false;
+var gOverInfoWindow = false;
 var gIconCache = {};
 var gMarkers = {};
-var gShownSites = [];
+var gMarkedSites = [];
 
 function initSiteMap() 
 {
@@ -20,7 +22,7 @@ function initSiteMap()
 			                  handler : function(){ navigator.geolocation.getCurrentPosition( autoPosition ); },
 							 },
 							 'Loading..', '->', 
-							 'Display sites with Tier level <=', createTierFilterSelector(),
+							 'Tier filter: ', createTierFilterSelector(),
 							 "" ];
 		
 		var buttons = [ [ 'Site mask', 'siteMask' ],
@@ -51,12 +53,14 @@ function initSiteMap()
 									region : 'center', 
 									html : '<div id="map_canvas" style="height:100%" />'
 							    });
+		gSitesGridPanel = createSitesGridPanel();
 		gMapPanel = new Ext.Panel({
 									layout: 'border',
 									region : 'center',
-									items : [ gMapToolbar, divPanel ]
+									items : [ gMapToolbar, divPanel, gSitesGridPanel ]
 							 	});
 		renderInMainViewport( [ gMapPanel ] );
+		initPalettes();
 		initMap();
 		
 		//By default we set the siteMask state
@@ -73,6 +77,7 @@ function initMap()
 {
 	if( document.getElementById( 'map_canvas' ) )
 	{
+		gOverInfoWindow = new google.maps.InfoWindow({});
 		gCurrentLatLong = new google.maps.LatLng( 46.231739, 6.053864 );
 		var mapOptions = {
 			      zoom: 4,
@@ -90,7 +95,7 @@ function initMap()
 function createTierFilterSelector(){
 	var store = new Ext.data.SimpleStore({
 		fields:['number'],
-		data:[[1],[2],[3],['All',0]]
+		data:[[0],[1],[2],['All',-1]]
 	});
 	var combo = new Ext.form.ComboBox({
 		allowBlank:false,
@@ -113,17 +118,37 @@ function createTierFilterSelector(){
 		'collapse':function() {
 			var filter = combo.value;
 			if( filter == "All" )
-				filter = 0;
+				filter = -1;
 			if( gTierLevelFilter != filter )
 			{
 				gTierLevelFilter = filter;
 				applyTierFilter();
 			}
-			if( combo.value == 0 )
+			if( combo.value == -1 )
 				combo.value = 'All';
 		}
  	});
 	return combo;
+}
+
+function createSitesGridPanel()
+{
+	grid = new Ext.grid.GridPanel( {
+		store : new Ext.data.SimpleStore( {
+			fields : [ { name : 'name' } ],
+			idIndex : 0
+		}),
+		columns : [ { name : 'View', dataIndex : 'name', menuDisabled : true , header : 'Click on a site to center view on it' } ],
+		viewConfig : { forceFit: true, autoFill : true },
+		listeners : { cellclick : clickSiteInGridPanel },
+		region : 'west',
+		collapsible : true,
+		collapsed : true,
+		title : "Sites",
+		width : 300
+	});
+	
+	return grid;
 }
 
 function autoPosition( position )
@@ -172,7 +197,7 @@ function toggleMapMode( requestedMapMode )
 	switch( requestedMapMode )
 	{
 		case 'siteMask': 
-					setSiteMapMode();
+					setSiteMaskMode();
 					break;
 		case 'jobSummary':
 					setJobSummaryMapMode();
@@ -189,9 +214,7 @@ function toggleMapMode( requestedMapMode )
 		default:
 				alert( "Invalid map mode! ");
 	}
-	setStatusMessage( "Aplying filter...");
 	applyTierFilter();
-	setStatusMessage( "")
 }
 
 function cleanMarkers()
@@ -200,7 +223,7 @@ function cleanMarkers()
 	{
 		gMarkers[ siteName ].set_map( null );
 	}
-	gShownSites = [];
+	gMarkedSites = [];
 }
 
 function addMarker( siteName, siteData, icon )
@@ -217,7 +240,8 @@ function addMarker( siteName, siteData, icon )
 				tierLevel : siteData.tier,
 				icon : icon
 		  	}
-		var marker = new google.maps.Marker( markerOps );   
+		var marker = new google.maps.Marker( markerOps );
+		attachMouseOverWindow( marker, siteName );
 		attachInfoWindow( marker, siteName, siteData );
 		gMarkers[ siteName ] = marker;
 	}
@@ -226,25 +250,41 @@ function addMarker( siteName, siteData, icon )
 		gMarkers[ siteName ].set_icon( icon );
 		gMarkers[ siteName ].set_map( gMap );
 	}
-	gShownSites.push( siteName );
+	gMarkedSites.push( siteName );
 }
 
-function setSiteMapMode()
+function setSiteMaskMode()
 {
 	for( var siteName in gSiteData )
 	{
 		var siteData = gSiteData[ siteName ];
 		if( ! siteData.siteMaskStatus )
 			continue
+		var activity = 'static';
+		var extension = 'png';
 		if( siteData.tier < 2 )
-			var type = 'highlight';
+			var siteType = 'highlight';
 		else
-			var type = 'normal';
+			var siteType = 'normal';
 		if( siteData.siteMaskStatus == 'Allowed')
 			var status = 'green';
 		else
 			var status = 'red';
-		var icon = gURLRoot + "/images/siteMap/"+type+"_static_"+status+".png";
+		if( siteData.jobSummaryRamp )
+		{
+			var ramp = siteData.jobSummaryRamp;
+			if( ramp.Running > 10 )
+			{
+				var activity = 'up';
+				var extension = 'gif';
+			}
+			if( ramp.Running < - 10 )
+			{
+				var activity = 'down';
+				var extension = 'gif';
+			}
+		}
+		var icon = gURLRoot + "/images/siteMap/"+siteType+"_"+status+"_"+activity+"."+extension;
 		if( ! gIconCache[ icon ] )
 		{
 			gIconCache[ icon ] = new google.maps.MarkerImage( icon,
@@ -254,28 +294,86 @@ function setSiteMapMode()
 		}
 		addMarker( siteName, siteData, gIconCache[ icon ] );
 	}
+	setStatusMessage( "" ); 
+}
+
+function getSizeScale( attr, subAttr )
+{
+	var min = 10000;
+	var max = 0;
+	var scale = {};
+	var values = {};
+	for( var siteName in gSiteData )
+	{
+		if( ! gSiteData[ siteName ][ attr ] )
+		{
+			continue;
+		}
+		var attrVal = gSiteData[ siteName ][ attr ];
+		if( subAttr )
+		{
+			if( ! attrVal[ subAttr ] )
+			{
+				continue;
+			}
+			var val = attrVal[ subAttr ];
+		}
+		else
+		{
+			var val = 0;
+			for( var j in attrVal )
+			{
+				if ( attrVal[j] )
+					val += attrVal[j];
+			}
+		}
+		values[ siteName ] = val;
+		if( val < min )
+			min = val;
+		if( val > max )
+			max = val;
+	}
+	var range = max - min;
+	for( var siteName in gSiteData )
+	{
+		if( ! values[ siteName ] || ! range )
+			scale[ siteName ] = 1;
+		else
+			scale[ siteName ] = 1 + ( ( values[ siteName ] - min ) / range ) / 2;
+	}
+	return scale;
 }
 
 function setJobSummaryMapMode()
 {
+	var scale = getSizeScale( 'jobSummary', 'Running' );
 	for( var siteName in gSiteData )
 	{
 		var siteData = gSiteData[ siteName ];
-		var icon = generatePiePlot( 'jobSummary', siteName, siteData );
+		var extraArgs = {};
+		if( scale[ siteName ] )
+			extraArgs.scaleSize = scale[ siteName ];
+		var icon = generatePiePlot( 'jobSummary', siteName, siteData, extraArgs );
 		if( icon.indexOf( "http://") == 0 )
 			addMarker( siteName, siteData, icon );
 	}
+	setStatusMessage( getLegendForPalette( 'jobSummary' ) );
 }
 
 function setPilotSummaryMapMode()
 {
+	var scale = getSizeScale( 'pilotSummary' );
 	for( var siteName in gSiteData )
 	{
 		var siteData = gSiteData[ siteName ];
-		var icon = generatePiePlot( 'pilotSummary', siteName, siteData );
+		var extraArgs = {};
+		if( scale[ siteName ] )
+			extraArgs.scaleSize = scale[ siteName ];
+		var icon = generatePiePlot( 'pilotSummary', siteName, siteData, extraArgs );
 		if( icon.indexOf( "http://") == 0 )
 			addMarker( siteName, siteData, icon );
 	}
+	setStatusMessage( getLegendForPalette( 'pilotSummary' ) );
 }
 
 function setFilesSummaryMapMode()
@@ -287,6 +385,7 @@ function setFilesSummaryMapMode()
 		if( icon.indexOf( "http://") == 0 )
 			addMarker( siteName, siteData, icon );
 	}
+	setStatusMessage( getLegendForPalette( "filesDataSummary" ) );
 }
 
 function setStorageSummaryMapMode()
@@ -298,25 +397,53 @@ function setStorageSummaryMapMode()
 		if( icon.indexOf( "http://") == 0 )
 			addMarker( siteName, siteData, icon );
 	}
+	setStatusMessage( getLegendForPalette( "usageDataSummary" ) );
 }
 
 function applyTierFilter()
 {
+	var shownSites = {};
 	for( siteName in gMarkers )
 	{
-		var showSite = gShownSites.indexOf( siteName ) > -1;
-		var passFilter = ( gTierLevelFilter == 0 || gSiteData[ siteName ].tier <= gTierLevelFilter );
-		if( showSite && passFilter )  
+		var markedSite = gMarkedSites.indexOf( siteName ) > -1;
+		var passFilter = ( gTierLevelFilter == -1 || gSiteData[ siteName ].tier == gTierLevelFilter );
+		if( markedSite && passFilter )
+		{
 			gMarkers[ siteName ].set_map( gMap );
+			var tier = gSiteData[ siteName ].tier;
+			if( ! shownSites[ tier ] )
+				shownSites[ tier ] = [];
+			shownSites[ tier ].push( siteName )
+		}
 		else
 			gMarkers[ siteName ].set_map( null );
 	}
+	var ordered = [];
+	for( var tier in shownSites )
+	{
+		shownSites[ tier ].sort();
+		for( var i = 0; i< shownSites[ tier ].length; i++ )
+			ordered.push( [ shownSites[ tier ][ i ] ] );
+	}
+	gSitesGridPanel.store.loadData( ordered );
 }
 
-function attachInfoWindow( marker, site, siteData )
+function attachMouseOverWindow( marker, siteName )
+{
+	return;
+	google.maps.event.addListener( marker, 'mouseover', function() {
+		gOverInfoWindow.setContent( siteName );
+		gOverInfoWindow.setPosition( marker.getPosition() );
+		gOverInfoWindow.open( gMap );
+	});
+	
+}
+
+function attachInfoWindow( marker, siteName, siteData )
 {
 	marker.siteListener = google.maps.event.addListener( marker, 'click', function() {
-		showSiteStatusInfo( marker, site, siteData );
+		gOverInfoWindow.close();
+		showSiteStatusInfo( marker, siteName, siteData );
 	  });
 }
 
@@ -331,25 +458,16 @@ function showSiteStatusInfo( marker, site, siteData )
 	    '</div>';
 
 		siteData.infoWindow = new google.maps.InfoWindow({
-		    content: contentString
-		});
+									content : contentString
+								});
+
 	}
 	siteData.infoWindow.open( gMap, marker );
 }
 
-function rendereSiteMaskStatus(value)
+function clickSiteInGridPanel( gridPanel, row )
 {
-	switch( value )
-	{
-		case 'Active' :
-			return '<img src="'+gURLRoot+'/images/monitoring/done.gif">';
-			break;
-		case 'Banned' :
-			return '<img src="'+gURLRoot+'/images/monitoring/failed.gif">';
-			break;
-		default:
-			return '<img src="'+gURLRoot+'/images/monitoring/unknown.gif">';
-			break;
-	}
+	var siteName = gridPanel.getStore().data.items[row].data.name;
+	showSiteStatusInfo( gMarkers[ siteName ], siteName, gSiteData[ siteName ] )
 }
 

@@ -1,4 +1,39 @@
 
+var gSummaryPalette = false;
+var gPilotPalette = false;
+var gDataPalette = false;
+
+function initPalettes()
+{
+	gSummaryPalette = { 
+			Failed : 'EE0000', 
+			Stalled : 'AAAAAA', 
+			Waiting : 'FFC600', 
+			Done : '00DD00', 
+			Running : '7FBEFF' 
+			};
+	
+	gPilotPalette = { 
+			Scheduled : 'FFC600',  
+			Running : '7FBEFF', 
+			Done : '00DD00', 
+			Aborted : 'EE0000' 
+			};
+	
+	gDataPalette = { 
+			RAW       : '0000ff',
+			RDST      : '7fff7f',
+			'M-DST'   : '007f00',
+			DST       : '00ff00',
+			FAILOVER  : 'ffff00',
+			USER      : 'EEEEEE',
+			LOG       : 'ff7f00',
+			DISK      : 'ff0000',
+			TAPE      : '7f0000',
+			MC        : '7f007f' 
+			};
+}
+
 function showSiteControlWindow( siteName )
 {
 	var siteData = gSiteData[ siteName ];
@@ -128,6 +163,32 @@ function createInfoTab( siteName, siteData )
 	});
 }
 
+function getLegendForPalette( paletteName )
+{
+	var palette = false;
+	switch( paletteName )
+	{
+		case 'jobSummary':
+			palette = gSummaryPalette;
+			break;
+		case 'pilotSummary':
+			palette = gPilotPalette;
+			break;
+		case 'filesDataSummary':
+		case 'usageDataSummary':
+			palette = gDataPalette;
+			break;
+	}
+	if( ! palette )
+		return "";	
+	var legend = "";
+	for( var ent in palette )
+	{
+		legend += "&nbsp;&nbsp;&nbsp;"+ent+": <span style='border:1px solid;padding:3px;background-color:#"+palette[ent]+"'></span>";
+	}
+	return legend
+}
+
 function createSiteStatusPlots( siteName, siteData )
 {
 	var plotSpace = new Ext.Panel( { 
@@ -141,8 +202,11 @@ function createSiteStatusPlots( siteName, siteData )
 			pressed : true,
 			toggleGroup : siteName + 'plotButtons',
 			toggleHandler : function(){
-					var plotURL = generatePiePlot( "jobSummary", siteName, siteData, 
-													[ plotSpace.getInnerWidth(), plotSpace.getInnerHeight() ] );
+					var extraArgs = { 
+										size : [ plotSpace.getInnerWidth(), plotSpace.getInnerHeight() ],
+										bigTitle : true
+									};
+					var plotURL = generatePiePlot( "jobSummary", siteName, siteData, extraArgs );
 					if( plotURL.indexOf( 'http://' ) == 0 )
 						plotURL = "<img src='"+plotURL+"'/>"
 					plotSpace.body.dom.innerHTML = plotURL;
@@ -158,8 +222,11 @@ function createSiteStatusPlots( siteName, siteData )
 			enableToggle : true,
 			toggleGroup : siteName + 'plotButtons',
 			toggleHandler : function(){
-					var plotURL = generatePiePlot( "pilotSummary", siteName, siteData, 
-													[ plotSpace.getInnerWidth(), plotSpace.getInnerHeight() ] );
+					var extraArgs = { 
+										size : [ plotSpace.getInnerWidth(), plotSpace.getInnerHeight() ],
+										bigTitle : true
+									};
+					var plotURL = generatePiePlot( "pilotSummary", siteName, siteData, extraArgs );
 					if( plotURL.indexOf( 'http://' ) == 0 )
 						plotURL = "<img src='"+plotURL+"'/>"
 					plotSpace.body.dom.innerHTML = plotURL;
@@ -176,8 +243,11 @@ function createSiteStatusPlots( siteName, siteData )
 			enableToggle : true,
 			toggleGroup : siteName + 'plotButtons',
 			toggleHandler : function(){
-					var plotURL = generateBarPlot( "filesDataSummary", siteName, siteData, 
-									     			[ plotSpace.getInnerWidth(), plotSpace.getInnerHeight() ] );
+					var extraArgs = { 
+							size : [ plotSpace.getInnerWidth(), plotSpace.getInnerHeight() ],
+							bigTitle : true
+						};
+					var plotURL = generateBarPlot( "filesDataSummary", siteName, siteData, extraArgs );
 					if( plotURL.indexOf( 'http://' ) == 0 )
 						plotURL = "<img src='"+plotURL+"'/>"
 					plotSpace.body.dom.innerHTML = plotURL;
@@ -191,8 +261,11 @@ function createSiteStatusPlots( siteName, siteData )
 			enableToggle : true,
 			toggleGroup : siteName + 'plotButtons',
 			toggleHandler : function(){
-					var plotURL = generateBarPlot( "usageDataSummary", siteName, siteData, 
-													[ plotSpace.getInnerWidth(), plotSpace.getInnerHeight() ] );
+					var extraArgs = { 
+							size : [ plotSpace.getInnerWidth(), plotSpace.getInnerHeight() ],
+							bigTitle : true
+						};
+					var plotURL = generateBarPlot( "usageDataSummary", siteName, siteData, extraArgs );
 					if( plotURL.indexOf( 'http://' ) == 0 )
 						plotURL = "<img src='"+plotURL+"'/>"
 					plotSpace.body.dom.innerHTML = plotURL;
@@ -227,30 +300,17 @@ function createSiteStatusPlots( siteName, siteData )
 	return siteStatusTab;
 }
 
-function generatePiePlot( plotType, siteName, siteData, size )
+function generatePiePlot( plotType, siteName, siteData, extraArgs )
 {
-	var summaryPalette = { 
-			Failed : 'EE0000',
-			Stalled : 'AAAAAA',
-			Waiting : 'FFC600',
-			Done : '00DD00',
-			Running : '7FBEFF'
-	}
-	var pilotPalette = {
-			Scheduled : 'FFC600', 
-			Running : '7FBEFF',
-			Done : '00DD00',
-			Aborted : 'EE0000'
-	}
 	switch( plotType )
 	{
 		case 'jobSummary':
-			var palette = summaryPalette;
+			var palette = gSummaryPalette;
 			var requiredField = "jobSummary";
 			var title = "Job summary";
 			break;
 		case 'pilotSummary':
-			var palette = pilotPalette;
+			var palette = gPilotPalette;
 			var requiredField = "pilotSummary";
 			var title = "Pilot summary";
 			break;
@@ -268,11 +328,14 @@ function generatePiePlot( plotType, siteName, siteData, size )
 	var normData = {};
 	for( var status in dataField )
 		normData[ status ] = parseInt( parseFloat( dataField[ status ] ) * 100 / total )
-	var iconOps = []
-	if( size )
-		iconOps.push( "chtt=" + title + " for " + siteName );
-	else
-		iconOps.push( "chtt=" + siteName );
+	var iconOps = [];
+	if( extraArgs )
+	{
+		if( extraArgs.bigTitle )
+			iconOps.push( "chtt=" + title + " for " + siteName );
+		else if( extraArgs.title )
+			iconOps.push( "chtt=" + siteName );
+	}
 	iconOps.push( "cht=p");
 	iconOps.push( "chf=bg,s,00000000");
 	var data = [];
@@ -287,8 +350,9 @@ function generatePiePlot( plotType, siteName, siteData, size )
 		colors.push( palette[ status ] );
 		legend.push( status + " (" + dataField[ status ] + ")" );
 	}
-	if( size )
+	if( extraArgs && extraArgs.size )
 	{
+		var size = extraArgs.size;
 		iconOps.push( "chts=000000,20");
 		var area = size[0]*size[1];
 		if( area > 300000 )
@@ -304,7 +368,10 @@ function generatePiePlot( plotType, siteName, siteData, size )
 	else
 	{
 		iconOps.push( "chts=FFFFFF,9");
-		iconOps.push( "chs=80x60");
+		var size = 40;
+		if( extraArgs && extraArgs.scaleSize )
+			size = parseInt( size * extraArgs.scaleSize ); 
+		iconOps.push( "chs="+size+"x"+size );
 	}
 
 	iconOps.push( "chd=t:" + data.join( "," ) );
@@ -313,32 +380,20 @@ function generatePiePlot( plotType, siteName, siteData, size )
 }
 
 
-function generateBarPlot( plotType, siteName, siteData, size )
+function generateBarPlot( plotType, siteName, siteData, extraArgs )
 {
-	var dataPalette = {
-			RAW       : '0000ff',
-			RDST      : '7fff7f',
-			'M-DST'   : '007f00',
-			DST       : '00ff00',
-			FAILOVER  : 'ffff00',
-			USER      : 'EEEEEE',
-			LOG       : 'ff7f00',
-			DISK      : 'ff0000',
-			TAPE      : '7f0000',
-			MC        : '7f007f'
-	}
 
 	switch( plotType )
 	{
 		case 'filesDataSummary':
-			var palette = dataPalette;
+			var palette = gDataPalette;
 			var requiredField = "storageSummary";
 			var subField = 'Files';
 			var title = "Files stored";
 			var scale = 1;
 			break;
 		case 'usageDataSummary':
-			var palette = dataPalette;
+			var palette = gDataPalette;
 			var requiredField = "storageSummary";
 			var subField = 'Size';
 			var title = "Storage (GiB) usage";
@@ -365,11 +420,14 @@ function generateBarPlot( plotType, siteName, siteData, size )
 	var normData = {};
 	for( var status in dataField )
 		normData[ status ] = parseInt( parseFloat( dataField[ status ] ) * 100 / ( maxValue * scale ) );
-	var iconOps = []
-	if( size )
-		iconOps.push( "chtt=" + title + " for " + siteName );
-	else
-		iconOps.push( "chtt=" + siteName );
+	var iconOps = [];
+	if( extraArgs )
+	{
+		if( extraArgs.bigTitle )
+			iconOps.push( "chtt=" + title + " for " + siteName );
+		else if( extraArgs.title )
+			iconOps.push( "chtt=" + siteName );
+	}
 	iconOps.push( "cht=bvs");
 	iconOps.push( "chf=bg,s,00000000");
 	var data = [];
@@ -384,8 +442,9 @@ function generateBarPlot( plotType, siteName, siteData, size )
 		colors.push( palette[ status ] );
 		legend.push( status );
 	}
-	if( size )
+	if( extraArgs && extraArgs.size )
 	{
+		var size = extraArgs.size;
 		var area = size[0]*size[1];
 		if( area > 300000 )
 		{
@@ -422,7 +481,7 @@ function createSiteMaskLogTab( siteName )
 				url:'getSiteMaskLog'
 		}),
 		columns: [
-		          {header:'',width:10,sortable:false,dataIndex:'Status',renderer:rendereSiteMaskStatus,hideable:false},
+		          {header:'',width:10,sortable:false,dataIndex:'Status',renderer:rendererSiteMaskStatus,hideable:false},
 		          {header:'Status',sortable:true,dataIndex:'Status',align:'left'},
 		          {header:'Date [UTC]',sortable:true,renderer:Ext.util.Format.dateRenderer('Y-m-d H:i'),dataIndex:'Date'},
 		          {header:'Author',sortable:true,dataIndex:'Owner',align:'left'},
@@ -533,4 +592,20 @@ function createSiteMaskActionTab( siteName, siteMaskLogTab )
 	});	
 	
 	return siteMaskActionTab;
+}
+
+function rendererSiteMaskStatus(value)
+{
+	switch( value )
+	{
+		case 'Active' :
+			return '<img src="'+gURLRoot+'/images/monitoring/done.gif">';
+			break;
+		case 'Banned' :
+			return '<img src="'+gURLRoot+'/images/monitoring/failed.gif">';
+			break;
+		default:
+			return '<img src="'+gURLRoot+'/images/monitoring/unknown.gif">';
+			break;
+	}
 }
