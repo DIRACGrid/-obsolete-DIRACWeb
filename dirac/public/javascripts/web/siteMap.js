@@ -419,11 +419,18 @@ function applyTierFilter()
 			gMarkers[ siteName ].set_map( null );
 	}
 	var ordered = [];
+	var tiers = [];
 	for( var tier in shownSites )
 	{
+		tiers.push( tier );
+	}
+	tiers.sort();
+	for( var i = 0; i < tiers.length; i++ )
+	{
+		var tier = tiers[ i ]; 
 		shownSites[ tier ].sort();
-		for( var i = 0; i< shownSites[ tier ].length; i++ )
-			ordered.push( [ shownSites[ tier ][ i ] ] );
+		for( var j = 0; j< shownSites[ tier ].length; j++ )
+			ordered.push( [ shownSites[ tier ][ j ] ] );
 	}
 	gSitesGridPanel.store.loadData( ordered );
 }
