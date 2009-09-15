@@ -111,7 +111,7 @@ function getSiteDescriptionHTML( siteName, siteData, extended )
 	    	sd = "<table>";
 	    	for( attr in siteData.pilotSummary )
 	    	{
-	    		if( ! siteData.pilotSummary[attr] )
+	    		if( siteData.pilotSummary[attr] )
 	    			sd += "<tr><td>"+attr+"</td><td>"+siteData.pilotSummary[attr]+"</td></tr>";
 	    	}
 	    	sd += "</table>"
@@ -124,7 +124,7 @@ function getSiteDescriptionHTML( siteName, siteData, extended )
 		    	sd = "<table>";
 		    	for( attr in siteData.storageSummary.Files )
 		    	{
-		    		if( ! siteData.storageSummary.Files[attr] )
+		    		if( siteData.storageSummary.Files[attr] )
 		    			sd += "<tr><td>"+attr+"</td><td>"+siteData.storageSummary.Files[attr]+"</td></tr>";
 		    	}
 		    	sd += "</table>"
@@ -135,7 +135,7 @@ function getSiteDescriptionHTML( siteName, siteData, extended )
 		    	sd = "<table>";
 		    	for( attr in siteData.storageSummary.Size )
 		    	{
-		    		if( ! siteData.storageSummary.Size[attr] )
+		    		if( siteData.storageSummary.Size[attr] )
 		    			sd += "<tr><td>"+attr+"</td><td>"+parseInt(siteData.storageSummary.Size[attr]/(1024*1024*1024))+"</td></tr>";
 		    	}
 		    	sd += "</table>"
