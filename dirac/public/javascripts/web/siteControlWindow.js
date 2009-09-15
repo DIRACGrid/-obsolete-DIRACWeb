@@ -417,13 +417,10 @@ function generateBarPlot( plotType, siteName, siteData, extraArgs )
 	for( var status in dataField )
 		normData[ status ] = parseInt( parseFloat( dataField[ status ] ) * 100 / ( maxValue * scale ) );
 	var iconOps = [];
-	if( extraArgs )
-	{
-		if( extraArgs.bigTitle )
-			iconOps.push( "chtt=" + title + " for " + siteName );
-		else if( extraArgs.title )
-			iconOps.push( "chtt=" + siteName );
-	}
+	if( extraArgs && extraArgs.bigTitle )
+		iconOps.push( "chtt=" + title + " for " + siteName );
+	else 
+		iconOps.push( "chtt=" + siteName );
 	iconOps.push( "cht=bvs");
 	iconOps.push( "chf=bg,s,00000000");
 	var data = [];
