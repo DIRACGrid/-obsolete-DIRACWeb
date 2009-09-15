@@ -3,9 +3,9 @@
 <%inherit file="/diracPage.mako" />
 
 <%def name="head_tags()">
-${ h.javascript_include_tag( "/javascripts/lovCombo.js" ) }
-${ h.javascript_include_tag( "/javascripts/data/Lib.js" ) }
-${ h.javascript_include_tag( "/javascripts/data/DataLogging.js" ) }
+${ h.javascript_link( "/javascripts/lovCombo.js" ) }
+${ h.javascript_link( "/javascripts/data/Lib.js" ) }
+${ h.javascript_link( "/javascripts/data/DataLogging.js" ) }
 </%def>
 
 <%def name="body()">
