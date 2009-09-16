@@ -41,11 +41,12 @@ function showSiteControlWindow( siteName )
 	var statusPlotsTab = createSiteStatusPlots( siteName, siteData );
 	var siteMaskLogTab = createSiteMaskLogTab( siteName );
 	var siteMaskActionTab = createSiteMaskActionTab( siteName, siteMaskLogTab );
+	var accountingPlotsTab = createAccountingPlots( siteName );
 	
 	var tabPanel = new Ext.TabPanel({
 			activeTab:0,			
 			enableTabScroll:true,
-		    items:[ siteInfoTab, statusPlotsTab, siteMaskLogTab, siteMaskActionTab ],
+		    items:[ siteInfoTab, statusPlotsTab, accountingPlotsTab, siteMaskLogTab, siteMaskActionTab ],
 		    region:'center'
 		});
 	var extendedInfoWindow = new Ext.Window({
@@ -202,10 +203,12 @@ function createSiteStatusPlots( siteName, siteData )
 										size : [ plotSpace.getInnerWidth(), plotSpace.getInnerHeight() ],
 										bigTitle : true
 									};
-					var plotURL = generatePiePlot( "jobSummary", siteName, siteData, extraArgs );
-					if( plotURL.indexOf( 'http://' ) == 0 )
-						plotURL = "<img src='"+plotURL+"'/>"
-					plotSpace.body.dom.innerHTML = plotURL;
+					var result = generatePiePlot( "jobSummary", siteName, siteData, extraArgs );
+					if( result.ok )
+						plot = "<img src='"+result.plotURL+"'/>";
+					else
+						plot = result.message;
+					plotSpace.body.dom.innerHTML = plot;
 					plotSpace.userPlotButton = jobSummaryButton;
 				},
      });
@@ -222,10 +225,12 @@ function createSiteStatusPlots( siteName, siteData )
 										size : [ plotSpace.getInnerWidth(), plotSpace.getInnerHeight() ],
 										bigTitle : true
 									};
-					var plotURL = generatePiePlot( "pilotSummary", siteName, siteData, extraArgs );
-					if( plotURL.indexOf( 'http://' ) == 0 )
-						plotURL = "<img src='"+plotURL+"'/>"
-					plotSpace.body.dom.innerHTML = plotURL;
+					var result = generatePiePlot( "pilotSummary", siteName, siteData, extraArgs );
+					if( result.ok )
+						plot = "<img src='"+result.plotURL+"'/>";
+					else
+						plot = result.message;
+					plotSpace.body.dom.innerHTML = plot;
 					plotSpace.userPlotButton = pilotSummaryButton;
 				},
 		});
@@ -243,10 +248,12 @@ function createSiteStatusPlots( siteName, siteData )
 							size : [ plotSpace.getInnerWidth(), plotSpace.getInnerHeight() ],
 							bigTitle : true
 						};
-					var plotURL = generateBarPlot( "filesDataSummary", siteName, siteData, extraArgs );
-					if( plotURL.indexOf( 'http://' ) == 0 )
-						plotURL = "<img src='"+plotURL+"'/>"
-					plotSpace.body.dom.innerHTML = plotURL;
+					var result = generateBarPlot( "filesDataSummary", siteName, siteData, extraArgs );
+					if( result.ok )
+						plot = "<img src='"+result.plotURL+"'/>";
+					else
+						plot = result.message;
+					plotSpace.body.dom.innerHTML = plot;
 					plotSpace.userPlotButton = storageFilesButton;
 				},
 		});
@@ -261,10 +268,12 @@ function createSiteStatusPlots( siteName, siteData )
 							size : [ plotSpace.getInnerWidth(), plotSpace.getInnerHeight() ],
 							bigTitle : true
 						};
-					var plotURL = generateBarPlot( "usageDataSummary", siteName, siteData, extraArgs );
-					if( plotURL.indexOf( 'http://' ) == 0 )
-						plotURL = "<img src='"+plotURL+"'/>"
-					plotSpace.body.dom.innerHTML = plotURL;
+					var result = generateBarPlot( "usageDataSummary", siteName, siteData, extraArgs );
+					if( result.ok )
+						plot = "<img src='"+result.plotURL+"'/>";
+					else
+						plot = result.message;
+					plotSpace.body.dom.innerHTML = plot;
 					plotSpace.userPlotButton = storageUsageButton;
 				},
 		});
@@ -296,6 +305,113 @@ function createSiteStatusPlots( siteName, siteData )
 	return siteStatusTab;
 }
 
+function createAccountingPlots( siteName, siteData )
+{
+	var plotValues = [ [ 'Running jobs' ], [ 'CPU Used' ] ];
+	var timeSpanValues = [ [ 'Last day' ], [ 'Last week' ], [ 'Last month' ] ];
+	
+	var plotSpace = new Ext.Panel( { 
+			region : 'center',
+			acPlot : plotValues[0][0],
+			acTime : timeSpanValues[0][0],
+		});
+	
+	var plotCombo = new Ext.form.ComboBox({
+		store : new Ext.data.SimpleStore({
+		    	fields : [ 'plotName' ],
+		    	data : plotValues
+			}),
+		allowBlank:false,
+		editable:false,
+		mode : 'local',
+		displayField : 'plotName',
+		typeAhead:true,
+		selectOnFocus : true,
+		triggerAction : 'all',
+		typeAhead : true,
+		value : plotValues[0][0],
+	});
+	
+	var timeCombo = new Ext.form.ComboBox({
+		store : new Ext.data.SimpleStore({
+			    fields : [ 'timespan' ],
+				data : timeSpanValues
+			}),
+		allowBlank : false,
+		editable : false,
+		mode : 'local',
+		displayField : 'timespan',
+		typeAhead:true,
+		selectOnFocus : true,
+		triggerAction : 'all',
+		typeAhead : true,
+		value : timeSpanValues[0][0],
+	});
+	
+	var plotButton = new Ext.Toolbar.Button( { text : "Generate plot" } );
+	
+	var statusToolbar = new Ext.Toolbar({ 
+			region : 'north', 
+			items : [ 'Plot', plotCombo, "", "Time span", timeCombo, "->", plotButton ]
+  		});
+	var accountingStatusTab = new Ext.Panel({
+			autoScroll : true,
+		    margins : '2 0 2 2',
+		    cmargins : '2 2 2 2',
+		    items : [ statusToolbar, plotSpace ],
+		    title : 'Accounting plots',
+		    layout : 'border'
+	});
+	plotAccountingFunc = function(){ requestAccountingPlot( plotSpace, siteName ) }
+	plotCombo.on( 'change', function(){ plotSpace.acPlot = plotCombo.value; });
+	timeCombo.on( 'change', function(){ plotSpace.acTime = timeCombo.value; });
+	plotButton.on( 'click', plotAccountingFunc );
+	return accountingStatusTab;
+}
+
+function requestAccountingPlot( plotSpace, siteName )
+{
+	console.log( plotSpace );
+	plotSpace.body.dom.innerHTML = "<h1>Generating plot...</h1>";
+	Ext.Ajax.request( {
+		timeout : 60000,
+		url : 'generateAccountingPlot',
+		success : plotAccountingPlot,
+		failure: function() { 
+				window.alert( "Oops, request failure :P ");
+				plotSpace.body.dom.innerHTML = "";
+			},
+		plotSpace : plotSpace,
+		params : { 
+				site : siteName, 
+				plotName : plotSpace.acPlot, 
+				plotTime : plotSpace.acTime,
+				width : plotSpace.getInnerWidth(), 
+				height : plotSpace.getInnerHeight()
+		}
+	})
+}
+
+function plotAccountingPlot( ajaxResult, ajaxRequest )
+{
+	var result = Ext.util.JSON.decode( ajaxResult.responseText );
+	if( ! result[ 'OK'] )
+	{
+		window.alert( "Request failed: " + result[ 'Message'] )
+		return
+	}
+	var plotSpace = ajaxRequest.plotSpace;
+	plotSpace.body.dom.innerHTML = "<h1>Loading image...</h1>";
+	var img = new Image();
+	img.src = gURLRoot + "getAccountingPlotImg?file=" + result[ 'Value' ];
+	var dom = plotSpace.body.dom;
+	while( dom.hasChildNodes() )
+	{
+		dom.removeChild( dom.firstChild );
+	}
+	dom.appendChild( img );
+}
+
 function generatePiePlot( plotType, siteName, siteData, extraArgs )
 {
 	switch( plotType )
@@ -314,13 +430,13 @@ function generatePiePlot( plotType, siteName, siteData, extraArgs )
 			return "Oops, invalid!"
 	}
 	if( ! siteData[ requiredField ] )
-		return "Cannot display plot. There is no data";
+		return { ok : false, message : "Cannot display plot. There is no data" };
 	var dataField = siteData[ requiredField ];
 	var total = 0;
 	for( var status in dataField )
 		total += dataField[ status ];
 	if( ! total )
-		return "There are no jobs for this site at the moment";
+		return { ok : false, message : "There are no jobs for this site at the moment" };
 	var normData = {};
 	for( var status in dataField )
 		normData[ status ] = parseInt( parseFloat( dataField[ status ] ) * 100 / total )
@@ -368,11 +484,17 @@ function generatePiePlot( plotType, siteName, siteData, extraArgs )
 		if( extraArgs && extraArgs.scaleSize )
 			size = parseInt( size * extraArgs.scaleSize ); 
 		iconOps.push( "chs="+size+"x"+size );
+		size = [ size, size ];
 	}
 
 	iconOps.push( "chd=t:" + data.join( "," ) );
 	iconOps.push( "chco=" + colors.join( "," ) );
-	return "http://chart.apis.google.com/chart?" + iconOps.join( "&" )
+	
+	return { 
+		ok : true, 
+		plotURL : "http://chart.apis.google.com/chart?" + iconOps.join( "&" ),
+		size : size
+	};
 }
 
 
@@ -399,9 +521,9 @@ function generateBarPlot( plotType, siteName, siteData, extraArgs )
 			return "Oops, invalid!"
 	}
 	if( ! siteData[ requiredField ] )
-		return "Cannot display plot. There is no data";
+		return { ok : false, message :  "Cannot display plot. There is no data" };
 	if( subField && ! siteData[ requiredField ][ subField ] )
-		return "Cannot display plot. There is no data";
+		return { ok : false, message :  "Cannot display plot. There is no data" };
 	
 	var dataField = siteData[ requiredField ][ subField ];
 	var maxValue = 0;
@@ -412,7 +534,7 @@ function generateBarPlot( plotType, siteName, siteData, extraArgs )
 	}
 	maxValue /= scale;
 	if( ! maxValue )
-		return "There are no jobs for this site at the moment";
+		return { ok : false, message : "There are no jobs for this site at the moment" };
 	var normData = {};
 	for( var status in dataField )
 		normData[ status ] = parseInt( parseFloat( dataField[ status ] ) * 100 / ( maxValue * scale ) );
@@ -454,13 +576,18 @@ function generateBarPlot( plotType, siteName, siteData, extraArgs )
 	}
 	else
 	{
+		var size = [ 80, 60 ]
 		iconOps.push( "chts=FFFFFF,9");
-		iconOps.push( "chs=80x60");
+		iconOps.push( "chs="+size[0]+"x"+size[1]);
 	}
 	iconOps.push( "chbh=a" );
 	iconOps.push( "chd=t:" + data.join(",") );
 	iconOps.push( "chco=" + colors.join( "|" ) );
-	return "http://chart.apis.google.com/chart?" + iconOps.join( "&" )
+	return { 
+		ok : true,
+		plotURL : "http://chart.apis.google.com/chart?" + iconOps.join( "&" ),
+		size : size
+	}
 }
 
 function createSiteMaskLogTab( siteName )

@@ -186,7 +186,102 @@ function resultRefreshData( ajaxResult, ajaxRequest )
 		return
 	}
 	gSiteData = result[ 'Value' ];
+	generateAllIcons();
 	toggleMapMode( ajaxRequest.requestedMapMode );
+}
+
+function getSizeScale( attr, subAttr )
+{
+	var min = 10000;
+	var max = 0;
+	var scale = {};
+	var values = {};
+	for( var siteName in gSiteData )
+	{
+		if( ! gSiteData[ siteName ][ attr ] )
+		{
+			continue;
+		}
+		var attrVal = gSiteData[ siteName ][ attr ];
+		if( subAttr )
+		{
+			if( ! attrVal[ subAttr ] )
+			{
+				continue;
+			}
+			var val = attrVal[ subAttr ];
+		}
+		else
+		{
+			var val = 0;
+			for( var j in attrVal )
+			{
+				if ( attrVal[j] )
+					val += attrVal[j];
+			}
+		}
+		values[ siteName ] = val;
+		if( val < min )
+			min = val;
+		if( val > max )
+			max = val;
+	}
+	var range = max - min;
+	for( var siteName in gSiteData )
+	{
+		if( ! values[ siteName ] || ! range )
+			scale[ siteName ] = 1;
+		else
+			scale[ siteName ] = 1 + ( ( values[ siteName ] - min ) / range ) / 2;
+	}
+	return scale;
+}
+
+function generateAllIcons()
+{
+	gIconCache.jobSummary = {};
+	gIconCache.pilotSummary = {};
+	gIconCache.filesDataSummary = {};
+	gIconCache.usageDataSummary = {};
+	var zeroPoint = new google.maps.Point(0,0);
+	generateIcons( gIconCache.jobSummary, generatePiePlot, 
+				'jobSummary', getSizeScale( 'jobSummary', 'Running' ), 
+				zeroPoint );
+	generateIcons( gIconCache.pilotSummary, generatePiePlot, 
+				'pilotSummary', getSizeScale( 'pilotSummary' ), 
+				zeroPoint );
+	generateIcons( gIconCache.filesDataSummary, generateBarPlot, 
+				'filesDataSummary', {}, 
+				zeroPoint );
+	generateIcons( gIconCache.usageDataSummary, generateBarPlot, 
+			'usageDataSummary', {}, 
+			zeroPoint );			
+}
+	
+function generateIcons( cacheDict, plotFunc, plotName, scaling, zeroPoint )
+{
+	if( ! zeroPoint )
+		var zeroPoint = new google.maps.Point(0,0);
+
+	for( var siteName in gSiteData )
+	{
+		var siteData = gSiteData[ siteName ];
+		var extraArgs = {};
+		if( scaling[ siteName ] )
+			extraArgs.scaleSize = scaling[ siteName ];
+		var result = plotFunc( plotName, siteName, siteData, extraArgs );
+		if( result.ok )
+		{
+			var size = result.size;
+			var center = [ parseInt(size[0]/2), parseInt(size[1]/2) ]
+			var icon =  new google.maps.MarkerImage( result.plotURL,
+													 new google.maps.Size( size[0], size[1] ),
+													 zeroPoint,
+													 new google.maps.Point( center[0], center[1] ) );
+			cacheDict[ siteName ] = icon;
+		}
+	}
+
 }
 
 function toggleMapMode( requestedMapMode )
@@ -286,119 +381,54 @@ function setSiteMaskMode()
 			}
 		}
 		var icon = gURLRoot + "/images/siteMap/"+siteType+"_"+status+"_"+activity+"."+extension;
-		if( ! gIconCache[ icon ] )
+		if( ! gIconCache.siteStatus )
+			gIconCache.siteStatus = {};
+		if( ! gIconCache.siteStatus[ icon ] )
 		{
-			gIconCache[ icon ] = new google.maps.MarkerImage( icon,
+			gIconCache.siteStatus[ icon ] = new google.maps.MarkerImage( icon,
 									new google.maps.Size(22,22),
 									new google.maps.Point(0,0),
 									new google.maps.Point(11,11) );
 		}
-		addMarker( siteName, siteData, gIconCache[ icon ] );
+		addMarker( siteName, siteData, gIconCache.siteStatus[ icon ] );
 	}
 	setStatusMessage( "" ); 
 }
 
-function getSizeScale( attr, subAttr )
-{
-	var min = 10000;
-	var max = 0;
-	var scale = {};
-	var values = {};
-	for( var siteName in gSiteData )
-	{
-		if( ! gSiteData[ siteName ][ attr ] )
-		{
-			continue;
-		}
-		var attrVal = gSiteData[ siteName ][ attr ];
-		if( subAttr )
-		{
-			if( ! attrVal[ subAttr ] )
-			{
-				continue;
-			}
-			var val = attrVal[ subAttr ];
-		}
-		else
-		{
-			var val = 0;
-			for( var j in attrVal )
-			{
-				if ( attrVal[j] )
-					val += attrVal[j];
-			}
-		}
-		values[ siteName ] = val;
-		if( val < min )
-			min = val;
-		if( val > max )
-			max = val;
-	}
-	var range = max - min;
-	for( var siteName in gSiteData )
-	{
-		if( ! values[ siteName ] || ! range )
-			scale[ siteName ] = 1;
-		else
-			scale[ siteName ] = 1 + ( ( values[ siteName ] - min ) / range ) / 2;
-	}
-	return scale;
-}
-
 function setJobSummaryMapMode()
 {
-	var scale = getSizeScale( 'jobSummary', 'Running' );
-	for( var siteName in gSiteData )
+	for( var siteName in gIconCache.jobSummary )
 	{
-		var siteData = gSiteData[ siteName ];
-		var extraArgs = {};
-		if( scale[ siteName ] )
-			extraArgs.scaleSize = scale[ siteName ];
-		var icon = generatePiePlot( 'jobSummary', siteName, siteData, extraArgs );
-		if( icon.indexOf( "http://") == 0 )
-			addMarker( siteName, siteData, icon );
+		addMarker( siteName, gSiteData[ siteName ], gIconCache.jobSummary[ siteName ] );
 	}
 	setStatusMessage( getLegendForPalette( 'jobSummary' ) );
 }
 
 function setPilotSummaryMapMode()
 {
-	var scale = getSizeScale( 'pilotSummary' );
-	for( var siteName in gSiteData )
+	for( var siteName in gIconCache.pilotSummary )
 	{
-		var siteData = gSiteData[ siteName ];
-		var extraArgs = {};
-		if( scale[ siteName ] )
-			extraArgs.scaleSize = scale[ siteName ];
-		var icon = generatePiePlot( 'pilotSummary', siteName, siteData, extraArgs );
-		if( icon.indexOf( "http://") == 0 )
-			addMarker( siteName, siteData, icon );
+		addMarker( siteName, gSiteData[ siteName ], gIconCache.pilotSummary[ siteName ] );
 	}
 	setStatusMessage( getLegendForPalette( 'pilotSummary' ) );
 }
 
 function setFilesSummaryMapMode()
 {
-	for( var siteName in gSiteData )
+	for( var siteName in gIconCache.filesDataSummary )
 	{
-		var siteData = gSiteData[ siteName ];
-		var icon = generateBarPlot( 'filesDataSummary', siteName, siteData );
-		if( icon.indexOf( "http://") == 0 )
-			addMarker( siteName, siteData, icon );
+		addMarker( siteName, gSiteData[ siteName ], gIconCache.filesDataSummary[ siteName ] );
 	}
-	setStatusMessage( getLegendForPalette( "filesDataSummary" ) );
+	setStatusMessage( getLegendForPalette( 'filesDataSummary' ) );
 }
 
 function setStorageSummaryMapMode()
 {
-	for( var siteName in gSiteData )
+	for( var siteName in gIconCache.usageDataSummary )
 	{
-		var siteData = gSiteData[ siteName ];
-		var icon = generateBarPlot( 'usageDataSummary', siteName, siteData );
-		if( icon.indexOf( "http://") == 0 )
-			addMarker( siteName, siteData, icon );
+		addMarker( siteName, gSiteData[ siteName ], gIconCache.usageDataSummary[ siteName ] );
 	}
-	setStatusMessage( getLegendForPalette( "usageDataSummary" ) );
+	setStatusMessage( getLegendForPalette( 'usageDataSummary' ) );
 }
 
 function applyTierFilter()
@@ -476,6 +506,7 @@ function showSiteStatusInfo( marker, site, siteData )
 function clickSiteInGridPanel( gridPanel, row )
 {
 	var siteName = gridPanel.getStore().data.items[row].data.name;
-	showSiteStatusInfo( gMarkers[ siteName ], siteName, gSiteData[ siteName ] )
+	gMap.panTo( gMarkers[ siteName ].getPosition() );
+	showSiteStatusInfo( gMarkers[ siteName ], siteName, gSiteData[ siteName ] );
 }
 
