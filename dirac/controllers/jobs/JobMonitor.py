@@ -23,8 +23,8 @@ class JobmonitorController(BaseController):
   def display(self):
     pagestart = time()
     lhcbGroup = credentials.getSelectedGroup()
-#    if lhcbGroup == "visitor":
-#      return render("/login.mako")
+    if lhcbGroup == "visitor":
+      return render("/login.mako")
     c.select = self.__getSelectionData()
     if not c.select.has_key("extra"):
       if lhcbGroup == "lhcb":
@@ -41,22 +41,30 @@ class JobmonitorController(BaseController):
       valueList.append({"id":str(i[2]),"status":str(i[6]),"minorStatus":str(i[10]),"applicationStatus":str(i[11]),"site":str(i[26]),"jobname":str(i[22]),"lastUpdate":str(i[25]),"owner":str(i[31]),"submissionTime":str(i[12]),"signTime":str(i[3])})
     return valueList
 ################################################################################
-  def __getPlot(self,id):
-    rc = ReportsClient()
-    transferClient = getTransferClient('Accounting/ReportGenerator')
-    c.result = self.__imgCache.get(id)
-    if not c.result:
-      tmpFile = tempfile.TemporaryFile()
-      result = transferClient.receiveFile(tmpFile,id)
+  def getPlot(self):
+    if request.params.has_key("data") and len(request.params["data"]) > 0:
+      client = PlottingClient()
+      result = client.getPlot(data,title='',graph_size='normal')
       if result["OK"]:
-        tmpFile.seek(0)
-        c.result = tmpFile.read()
+        plots = result["Value"]
         response.headers['Content-type'] = 'image/png'
-        response.headers['Content-Disposition'] = 'attachment; filename="%s"' % id
-        response.headers['Content-Length'] = len(c.result)
+        response.headers['Content-Disposition'] = 'attachment; filename="%s"' % 'test.png'
+        response.headers['Content-Length'] = len(plots)
         response.headers['Content-Transfer-Encoding'] = 'Binary'
       else:
-        c.result = {"success":"false","error":result["Message"]}
+        return
+    else:
+      return
+################################################################################
+  def __getPlotSrc(self,data):
+    client = getRPCClient("Framework/Plotting")
+    result = client.getPlot(data,metadata,fname='test_service.png')
+    if result["OK"]:
+      plots = result["Value"]
+      c.result = {"success":"true","result":plots}
+    else:
+      c.result = {"success":"false","error":result["Message"]}
+    gLogger.info("getPlotSrc:",c.result)
     return c.result
 ################################################################################
   @jsonify
@@ -185,7 +193,7 @@ class JobmonitorController(BaseController):
         stat = [["Nothing to display"]]
     else:
       stat = [["Error during RPC call"]]
-    callback["stat"] = stat
+    callback["status"] = stat
 ###
     result = RPC.getMinorStates()
     if result["OK"]:
@@ -276,6 +284,13 @@ class JobmonitorController(BaseController):
           req["JobID"] = testString
       else:
         req["JobID"] = testString
+      for i in req["JobID"]:
+        testI = i.split('-')
+        if len(testI) == 2:
+          testI[0] = testI[0].strip(' ')
+          testI[1] = testI[1].strip(' ')
+          rangeID = range(testI[0],testI[1])
+          gLogger.info("RANGE:",rangeID)
     else:
       if request.params.has_key("prod") and len(request.params["prod"]) > 0:
         if str(request.params["prod"]) != "All":
@@ -283,9 +298,9 @@ class JobmonitorController(BaseController):
       if request.params.has_key("site") and len(request.params["site"]) > 0:
         if str(request.params["site"]) != "All":
           req["Site"] = str(request.params["site"]).split('::: ')
-      if request.params.has_key("stat") and len(request.params["stat"]) > 0:
-        if str(request.params["stat"]) != "All":
-          req["Status"] = str(request.params["stat"]).split('::: ')
+      if request.params.has_key("status") and len(request.params["status"]) > 0:
+        if str(request.params["status"]) != "All":
+          req["Status"] = str(request.params["status"]).split('::: ')
       if request.params.has_key("minorstat") and len(request.params["minorstat"]) > 0:
         if str(request.params["minorstat"]) != "All":
           req["MinorStatus"] = str(request.params["minorstat"]).split('::: ')
@@ -609,7 +624,7 @@ class JobmonitorController(BaseController):
         return back
 ################################################################################
   def __getSandBox(self,id):
-    return "Not ready yet"
+    return {"success":"false","error":"Not ready yet"}
 ################################################################################
   def __getPlotSrc(self,type,args,timeToSet,img):
     rc = ReportsClient()
