@@ -3625,7 +3625,7 @@ PR.RequestManager = Ext.extend(Ext.TabPanel, {
       this.menu.add( 
 	{handler: function() {this.resurrect(r)}, scope: this, text: 'Resurrect' }
       );
-    else if((rm.state=="Done"||r.state=="Cancelled") && rm.group == 'diracAdmin')
+    else if((rm.state=="Done"||rm.state=="Cancelled") && rm.group == 'diracAdmin')
       this.menu.add(
 	"-",
 	{handler: function() {this.reactivate(r)}, scope: this, text: 'Reactivate' }
