@@ -3625,6 +3625,11 @@ PR.RequestManager = Ext.extend(Ext.TabPanel, {
       this.menu.add( 
 	{handler: function() {this.resurrect(r)}, scope: this, text: 'Resurrect' }
       );
+    else if((rm.state=="Done"||r.state=="Cancelled") && rm.group == 'diracAdmin')
+      this.menu.add(
+	"-",
+	{handler: function() {this.reactivate(r)}, scope: this, text: 'Reactivate' }
+      );
     else if(rm.state=="BK OK" && rm.user==rm.author)
       this.menu.add( 
 	{handler: function() {this.viewEditor(r)}, scope: this, text: 'Confirm' }
@@ -3958,6 +3963,43 @@ PR.RequestManager = Ext.extend(Ext.TabPanel, {
 	this.grid.refresh();
       },
       failure: connectBugger('Resurrect Request')
+    });
+  },
+
+  reactivate: function(r) {
+    var conn = new Ext.data.Connection();
+    conn.request({
+      url: 'save',
+      method: 'POST',
+      params: { ID: r.data.ID, reqState: 'Active' },
+      scope: this,
+      success: function(response){
+	if (response) { // check that it is really OK... AZ: !! ??
+	  var str = '';
+	  try {
+	    var result = Ext.decode(response.responseText);
+	    if ( !result.OK )
+              str = result.Message;
+	  } catch (e2) {
+	    str = "unparsable reply from the portal: "+e2.message;
+	  }
+	  if(str){
+	    Ext.MessageBox.show({
+	      title: 'Reactivation has failed',
+	      msg: str,
+	      buttons: Ext.MessageBox.OK,
+	      icon: Ext.MessageBox.ERROR
+	    });
+	    return;
+	  }
+	}
+	this.grid.getStore().setActiveNode(null);
+	this.grid.getStore().load({
+	  params: {start:0, limit:this.grid.pagingBar.pageSize},
+	  add: true});
+	this.grid.refresh();
+      },
+      failure: connectBugger('Reactivate Request')
     });
   },
 
