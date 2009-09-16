@@ -40,9 +40,10 @@ function initSidebar(){
   var ownerGrp = selectOwnerGroupMenu();
   var ce = selectCEMenu();
   var pilotStatus = selectStatusMenu();
-  var select = selectPanel(); // Initializing container for selection objects
   var broker = selectBrokerMenu();
   var dateSelect = dateTimeWidget();
+  var select = selectPanel(); // Initializing container for selection objects
+  select.buttons[2].hide(); // Remove refresh button
 //  var gridType = selectGridTypeMenu(); Commentted for later usage
   // Insert object to container BEFORE buttons:
   select.insert(0,pilotStatus);
@@ -96,24 +97,6 @@ function renderData(store){
   dataMngr = {'form':leftBar.items.items[0],'store':store}
   addMenu();
 }
-/*
-function addMenu(){
-  var topBar = Ext.getCmp('diracTopBar');
-  if(topBar){
-    var button = new Ext.Toolbar.Button({
-      text:'Tools',
-      menu:[
-        {handler:function(){showURL()},text:'Full URL'},
-        {menu:{items:[
-          {handler:function(){showJobID(', ')},text:'Comma separated'},
-          {handler:function(){showJobID('; ')},text:'Semicolon separated'}
-        ]},text:'Show selected JobIDs'}
-      ]
-    });
-    topBar.insertButton(5,button);
-  }
-}
-*/
 function setMenuItems(selections){
   if(selections){
     var id = selections.PilotJobReference;

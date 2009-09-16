@@ -36,11 +36,12 @@ function initRecord(){
 // Initialisation of selection sidebar, all changes with selection items should goes here
 function initSidebar(){
   var siteSelect = selectSiteMenu(); // Initializing Site Menu
-  var statSelect = selectPilotStatusMenu(); // Initializing Owner Menu
+//  var statSelect = selectPilotStatusMenu(); // Initializing Owner Menu
   var select = selectPanel(); // Initializing container for selection objects
+  select.buttons[2].hide(); // Remove refresh button
   // Insert object to container BEFORE buttons:
   select.insert(0,siteSelect);
-  select.insert(1,statSelect);
+//  select.insert(1,statSelect);
   var stat = statPanel('Statistics','current','statGrid');
   var bar = sideBar();
   bar.insert(0,select);
