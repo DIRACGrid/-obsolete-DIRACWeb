@@ -121,7 +121,8 @@ function AJAXsuccess(value,id,response){
   }catch(e){}
 }
 function jump(type,id){
-  var url = document.location.protocol + '//' + document.location.hostname + gURLRoot + '/' + gPageDescription.selectedSetup + '/jobs/JobMonitor/display';
+  var url = document.location.protocol + '//' + document.location.hostname + gURLRoot + '/' + gPageDescription.selectedSetup;
+  url = url + '/' + gPageDescription.userData.group + '/jobs/JobMonitor/display';
   var post_req = '<form id="redirform" action="' + url + '" method="POST" >';
   post_req = post_req + '<input type="hidden" name="' + type + '" value="' + id + '">';
   post_req = post_req + '</form>';
