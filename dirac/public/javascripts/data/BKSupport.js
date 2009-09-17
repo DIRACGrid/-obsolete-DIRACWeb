@@ -94,6 +94,7 @@ function saveFile(panel){
       Ext.EventManager.removeListener(frame, 'load', callback, this);
       setTimeout(function() {document.body.removeChild(form);}, 100);
       setTimeout(function() {document.body.removeChild(frame);}, 110);
+      gMainLayout.container.unmask();
     };
     Ext.EventManager.on(frame, 'load', callback, this);
     form.submit();
@@ -143,6 +144,7 @@ function saveFile(panel){
     return
   }
   params = params + '&type=' + type + '&start=' + start + '&limit=' + end;
+//  gMainLayout.container.mask('Please wait');
   Ext.util.FileOps.downloadFile('download?' + params);
 }
 function bkSaveDialog(){
@@ -182,6 +184,8 @@ function bkSaveDialog(){
       cls:"x-btn-text-icon",
       handler:function(){
         saveFile(panel);
+        var parent = panel.findParentByType('window');
+        parent.close();
       },
       icon:gURLRoot+'/images/iface/save.gif',
       minWidth:'150',
