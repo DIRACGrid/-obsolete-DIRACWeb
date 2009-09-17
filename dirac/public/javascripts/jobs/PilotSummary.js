@@ -123,6 +123,7 @@ function renderData(store){
 }
 function AJAXsuccess(value,id,response){
 }
+/*
 function addMenu(){
   var topBar = Ext.getCmp('diracTopBar');
   if(topBar){
@@ -139,6 +140,7 @@ function addMenu(){
     topBar.insertButton(5,button);
   }
 }
+*/
 function setMenuItems(selections){
   if(selections){
     var id = selections.JobID;
