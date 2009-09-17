@@ -155,13 +155,13 @@ function createStateMatrix(msg){
   if((msg == null) || (msg == '')){
     return;
   }
-  var list = Ext.getCmp('statMenu');
+  var list = Ext.getCmp('Status');
   if(list){
     if(list.store){
       if(list.store.totalLength > 0){
         var len = list.store.totalLength;
         for(var i = 1; i < len; i++ ){
-          var j = list.store.getAt(i).data.stat;
+          var j = list.store.getAt(i).data.status;
           if(j){
             if(msg[j] >= 0){
               result[(i - 1)] = [j,msg[j]];
