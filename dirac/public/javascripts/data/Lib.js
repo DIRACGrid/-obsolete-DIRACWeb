@@ -1411,6 +1411,30 @@ function table(tableMngr){
   try{
     pageSize = dataSelect.extra.limit/1; // Will be deleted in table function
   }catch(e){}
+// Temp trik just to remove items per page in bk table
+  var bk = false;
+  try{
+    if(tableMngr.bk == true){
+      bk = true;
+    }
+  }catch(e){}
+  if(bk == true){
+    tableMngr.bbar = new Ext.PagingToolbar({
+      displayInfo:true,
+      pageSize:pageSize,
+      refreshText:'Click to refresh current page',
+      store:store
+    });
+  }else{
+    tableMngr.bbar = new Ext.PagingToolbar({
+      displayInfo:true,
+      items:['-','Items displaying per page: ',iNumber,],
+      pageSize:pageSize,
+      refreshText:'Click to refresh current page',
+      store:store
+    });
+  }
+/*
   tableMngr.bbar = new Ext.PagingToolbar({
     displayInfo:true,
     items:['-','Items displaying per page: ',iNumber,],
@@ -1418,6 +1442,7 @@ function table(tableMngr){
     refreshText:'Click to refresh current page',
     store:store
   });
+*/
   var tbar = new Ext.Toolbar({items:[]});
   if(tableMngr.tbar){
     tbar = new Ext.Toolbar({items:tableMngr.tbar});
