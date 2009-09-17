@@ -402,13 +402,27 @@ function plotAccountingPlot( ajaxResult, ajaxRequest )
 	var plotSpace = ajaxRequest.plotSpace;
 	plotSpace.body.dom.innerHTML = "<h1>Loading image...</h1>";
 	var img = new Image();
-	img.src = gURLRoot + "getAccountingPlotImg?file=" + result[ 'Value' ];
-	var dom = plotSpace.body.dom;
-	while( dom.hasChildNodes() )
+	var extImg = new Ext.Element( img );
+        extImg.plotSpace = plotSpace;
+	extImg.on( "load", setAccountingImage, extImg );
+        extImg.on( "error", setAccountingImage, extImg );
+	img.src = "getAccountingPlotImg?file=" + result[ 'Value' ];
+}
+
+function setAccountingImage( eventType, imgElement, scope, extra )
+{
+	var plotSpace = this.plotSpace;
+	if( eventType.type == "error" )
 	{
-		dom.removeChild( dom.firstChild );
+		plotSpace.body.dom.innerHTML = "<h2>Cannot load the '"+imgElement.src+"' image</h2>"; 
+	} 
+	else if( eventType.type == "load" )
+	{
+		var dom = plotSpace.body.dom;
+		while( dom.hasChildNodes() )
+			dom.removeChild( dom.firstChild );
+		dom.appendChild( imgElement );
 	}
-	dom.appendChild( img );
 }
 
 function generatePiePlot( plotType, siteName, siteData, extraArgs )
