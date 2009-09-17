@@ -16,8 +16,8 @@ class BkController(BaseController):
 ################################################################################
   def display(self):
     lhcbGroup = credentials.getSelectedGroup()
-    if lhcbGroup == "visitor":
-      return render("/login.mako")
+#    if lhcbGroup == "visitor":
+#      return render("/login.mako")
     return render("data/BK.mako")
 ################################################################################
   def download(self):
@@ -49,7 +49,7 @@ class BkController(BaseController):
     tmp = cl.writePythonOrJobOptions(startItem,maxItems,req,fileType)
     fileName = "lfn_list." + fileType
     gLogger.info("\033[0;31m - \033[0m",fileName)
-    response.headers['Content-type'] = 'application/x-octet-stream'
+    response.headers['Content-type'] = 'application/x-unknown'
     response.headers["Content-Disposition"] = "attachment; filename=%s" % fileName
     return tmp
 ################################################################################
@@ -212,6 +212,7 @@ class BkController(BaseController):
 ################################################################################
   @jsonify
   def action(self):
+    gLogger.info("\033[0;31m R E Q U E S T \033[0m",request.params)
     if request.params.has_key("byProd"):
       if request.params.has_key("restrictFiles"):
         type = str(request.params["restrictFiles"])
@@ -235,6 +236,28 @@ class BkController(BaseController):
       if request.params.has_key("lfn"):
         id = request.params["lfn"]
       return self.__file(id)
+    elif request.params.has_key("level") and len(request.params["level"]) > 0:
+      req = ()
+      if request.params.has_key("root") and len(request.params["root"]) > 0:
+        req = str(request.params["root"])
+      else:
+        req = "/"
+      level = str(request.params["level"])
+      if level == "showFiles":
+        sortDict = {}
+        if request.params.has_key("start") and len(request.params["start"]) > 0:
+          StartItem = request.params["start"]
+        else:
+          StartItem = 0
+        if request.params.has_key("limit") and len(request.params["limit"]) > 0:
+          MaxItems = request.params["limit"]
+        else:
+          MaxItems = 25
+        MaxItems = int(StartItem) + int(MaxItems)
+        sortDict = ['total','now']
+        return self.__showFiles(req,sortDict,StartItem,MaxItems)
+      else:
+        return self.__showDir(req)
     elif request.params.has_key("getLogInfoLFN"):
       lfn = str(request.params["getLogInfoLFN"])
       return self.__logLFN(lfn)
@@ -422,18 +445,17 @@ class BkController(BaseController):
       c.result = result["Message"]
     return c.result
 ################################################################################
-#  @jsonify
   def __logLFN(self,lfn):
     RPC = getRPCClient("DataManagement/DataLogging")
     result = RPC.getFileLoggingInfo(lfn)
-    gLogger.info("\033[0;31m logLFN: \033[0m",result)
     if result["OK"]:
       result = result["Value"]
       c.result = []
       for i in result:
-        c.result.append({"Status":i[0],"MinorStatus":i[1],"StatusTime":i[2],"Source":i[3]})
+        c.result.append([i[0],i[1],i[2],i[3]])
       c.result = {"success":"true","result":c.result}
     else:
       c.result = {"success":"false","error":result["Message"]}
-    gLogger.info("\033[0;31m logLFN: \033[0m",c.result)
+    gLogger.info("\033[0;31m logLFN: \033[0m",lfn)
     return c.result
+################################################################################
