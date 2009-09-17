@@ -30,7 +30,7 @@ class RequestmonitorController(BaseController):
     gLogger.info("Page:",pageNumber)
     gLogger.info("NOJ:",numberOfJobs)
     result = RPC.getRequestSummaryWeb(result,globalSort,pageNumber,numberOfJobs)
-    gLogger.info("- REQUEST:",result)
+    gLogger.info(" - RESULT: ",result)
     if result["OK"]:
       result = result["Value"]
       gLogger.info("RESULT: ", result)
@@ -44,10 +44,13 @@ class RequestmonitorController(BaseController):
             for i in jobs:
               tmp = {}
               for j in range(0,headLength):
+                if j == 2:
+                  if i[j] == "None":
+                    i[j] = "-"
                 tmp[head[j]] = i[j]
               c.result.append(tmp)
-            gLogger.info("---",len(c.result))
             total = result["TotalRecords"]
+            gLogger.info(" c.result ",c.result)
             c.result = {"success":"true","result":c.result,"total":total}
           else:
             c.result = {"success":"false","result":"","error":"There are no data to display"}
