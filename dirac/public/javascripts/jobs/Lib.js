@@ -1086,121 +1086,9 @@ function selectMinorStatus(){
   return combo;
 }
 function selectOwnerMenu(){
-  var data = [['']];
-  if(dataSelect.owner){
-    data = dataSelect.owner;
-  }
-  var disabled = true;
-  if(data == 'Nothing to display'){
-    data = [[0,'Nothing to display']];
-  }else{
-    for (var i = 0; i < data.length; i++) {
-      data[i] = [i ,data[i][0]];
-    }
-    disabled = false;
-  }
-  var store = new Ext.data.SimpleStore({
-    id:0,
-    fields:[{name:'id',type:'int'},'owner'],
-    data:data
-  });
-  var combo = new Ext.ux.form.LovCombo({
-    anchor:'90%',
-    disabled:disabled,
-    displayField:'owner',
-    emptyText:data[0][1],
-    fieldLabel:'Owner',
-    hiddenName:'owner',
-    hideOnSelect:false,
-    id:'ownerMenu',
-    mode:'local',
-    resizable:true,
-    store:store,
-    triggerAction:'all',
-    typeAhead:true,
-    valueField:'id'
-  });
-  combo.on({
-    'render':function(){
-      if(dataSelect.extra){
-        if(dataSelect.extra.owner){
-          var ownerList = dataSelect.extra.owner.split('::: ');
-          var newValue = '';
-          for(var j = 0; j < ownerList.length; j++){
-            for(var i = 0; i < store.totalLength; i++){
-              if(store.data.items[i].data.owner == ownerList[j]){
-                if(newValue.length === 0){
-                  newValue = i;
-                }else{
-                  newValue = newValue + ':::' + i;
-                }
-              }
-            }
-          }
-          combo.setValue(newValue);
-        }
-        delete dataSelect.extra.owner;
-      }
-    }
-  });
-  return combo;
+  var menu = createMenu('owner','Owner');
+  return menu
 }
-function selectPilotStatusMenu(){
-  var data = [
-    [0,'All'],
-    [1,'Bad'],
-    [2,'Fair'],
-    [3,'Good'],
-    [4,'Idle'],
-    [5,'Poor']
-  ];
-  var disabled = false;
-  var store = new Ext.data.SimpleStore({
-    id:0,
-    fields:[{name:'id',type:'int'},'status'],
-    data:data
-  });
-  var combo = new Ext.ux.form.LovCombo({
-    anchor:'90%',
-    disabled:disabled,
-    displayField:'status',
-    emptyText:data[0][1],
-    fieldLabel:'Status',
-    hiddenName:'stat',
-    hideOnSelect:false,
-    id:'pilotStatusMenu',
-    mode:'local',
-    resizable:true,
-    store:store,
-    triggerAction:'all',
-    typeAhead:true,
-    valueField:'id'
-  });
-  combo.on({
-    'render':function(){
-      if(dataSelect.extra){
-        if(dataSelect.extra.pilotStatus){
-          var pilotStatus = dataSelect.extra.pilotStatus.split('::: ');
-          var newValue = '';
-          for(var j = 0; j < pilotStatus.length; j++){
-            for(var i = 0; i < store.totalLength; i++){
-              if(store.data.items[i].data.status == pilotStatus[j]){
-                if(newValue.length === 0){
-                  newValue = i;
-                }else{
-                  newValue = newValue + ':::' + i;
-                }
-              }
-            }
-          }
-          combo.setValue(newValue);
-        }
-        delete dataSelect.extra.pilotStatus;
-      }
-    }
-  });
-  return combo;
-};
 function selectProdMenu(){
   var menu = createMenu('prod','JobGroup');
   return menu
@@ -1250,11 +1138,19 @@ function selectOwnerGroupMenu(){
   return menu
 }
 function selectCEMenu(){
-  var menu = createMenu('ce','CE');
+  var menu = createMenu('ce','ComputingElement');
   return menu
 }
-function selectPilotStatusMenu(){
-  var menu = createMenu('pilotStatus','Status');
+function selectStatusMenu(){
+  var menu = createMenu('status','Status');
+  return menu
+}
+function selectBrokerMenu(){
+  var menu = createMenu('broker','Broker');
+  return menu
+}
+function selectGridSiteMenu(){
+  var menu = createMenu('site','Site');
   return menu
 }
 function selectSiteMenu(){
@@ -1281,7 +1177,7 @@ function selectSiteMenu(){
     disabled:disabled,
     displayField:'site',
     emptyText:data[0][1],
-    fieldLabel:'DIRAC Site',
+    fieldLabel:'Site',
     hiddenName:'site',
     hideOnSelect:false,
     id:'siteMenu',
@@ -1314,68 +1210,6 @@ function selectSiteMenu(){
           }
         }
         delete dataSelect.extra.site;
-      }
-    }
-  });
-  return combo;
-}
-function selectStatusMenu(){
-  var data = [['']];
-  if(dataSelect.stat){
-    data = dataSelect.stat;
-  }
-  var disabled = true;
-  if(data == 'Nothing to display'){
-    data = [[0,'Nothing to display']];
-  }else{
-    for (var i = 0; i < data.length; i++) {
-      data[i] = [i ,data[i][0]];
-    }
-    disabled = false;
-  }
-  var store = new Ext.data.SimpleStore({
-    id:0,
-    fields:[{name:'id',type:'int'},'stat'],
-    data:data
-  });
-  var combo = new Ext.ux.form.LovCombo({
-    anchor:'90%',
-    disabled:disabled,
-    displayField:'stat',
-    emptyText:data[0][1],
-    fieldLabel:'Status',
-    hiddenName:'stat',
-    hideOnSelect:false,
-    id:'statMenu',
-    mode:'local',
-    resizable:true,
-    store:store,
-    triggerAction:'all',
-    typeAhead:true,
-    valueField:'id'
-  });
-  combo.on({
-    'render':function(){
-      if(dataSelect.extra){
-        if(dataSelect.extra.stat){
-          var statList = dataSelect.extra.stat.split('::: ');
-          if(store){
-            var newValue = '';
-            for(var j = 0; j < statList.length; j++){
-              for(var i = 0; i < store.totalLength; i++){
-                if(store.data.items[i].data.stat == statList[j]){
-                  if(newValue.length === 0){
-                    newValue = i;
-                  }else{
-                    newValue = newValue + ':::' + i;
-                  }
-                }
-              }
-            }
-            combo.setValue(newValue);
-          }
-        }
-        delete dataSelect.extra.stat;
       }
     }
   });
@@ -1595,6 +1429,7 @@ function statPanel(title,mode,id){
       data:msg
     });
   }
+/*
   try{
     store.on('beforeload',function(){
       var sideBar = Ext.getCmp('sideBar');
@@ -1605,6 +1440,7 @@ function statPanel(title,mode,id){
       sideBar.body.unmask();
     });
   }catch(e){}
+*/
   var p = new Ext.grid.GridPanel({
     border:false,
     columns:columns,
