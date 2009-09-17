@@ -1,57 +1,11 @@
+var dataMngr = [];
+var tableMngr = [];
 // Main routine
 function initBK(){
   Ext.onReady(function(){
     renderData();
   });
 }
-//Ext.tree.ColumnNodeUI = Ext.extend(Ext.tree.TreeNodeUI,{
-var ColumnNodeUI = Ext.extend(Ext.tree.TreeNodeUI,{
-  focus: Ext.emptyFn, // prevent odd scrolling behavior
-  renderElements : function(n, a, targetNode, bulkRender){
-    this.indentMarkup = n.parentNode ? n.parentNode.ui.getChildIndent() : '';
-    var t = n.getOwnerTree();
-    var cols = t.columns;
-    var bw = t.borderWidth;
-    var c = cols[0];
-    var buf = [
-      '<li class="x-tree-node"><div ext:tree-node-id="',n.id,'" class="x-tree-node-el x-tree-node-leaf ', a.cls,'">',
-      '<div class="x-tree-col" style="width:',c.width-bw,'px;">',
-      '<span class="x-tree-node-indent">',this.indentMarkup,"</span>",
-      '<img src="', this.emptyIcon, '" class="x-tree-ec-icon x-tree-elbow">',
-      '<img src="', a.icon || this.emptyIcon, '" class="x-tree-node-icon',(a.icon ? " x-tree-node-inline-icon" : ""),(a.iconCls ? " "+a.iconCls : ""),'" unselectable="on">',
-      '<a hidefocus="on" class="x-tree-node-anchor" href="',a.href ? a.href : "#",'" tabIndex="1" ', a.hrefTarget ? ' target="'+a.hrefTarget+'"' : "", '>',
-      '<span unselectable="on">', n.text || (c.renderer ? c.renderer(a[c.dataIndex], n, a) : a[c.dataIndex]),"</span></a>",
-      "</div>"
-    ];
-    for(var i = 1, len = cols.length; i < len; i++){
-      c = cols[i];
-      buf.push(
-        '<div class="x-tree-col ',(c.cls?c.cls:''),'" style="width:',c.width-bw,'px;">',
-        '<div class="x-tree-col-text">',(c.renderer ? c.renderer(a[c.dataIndex], n, a) : a[c.dataIndex]),"</div>",
-        "</div>"
-      );
-    }
-    buf.push(
-      '<div class="x-clear"></div></div>',
-      '<ul class="x-tree-node-ct" style="display:none;"></ul>',
-      "</li>"
-    );
-    if(bulkRender !== true && n.nextSibling && n.nextSibling.ui.getEl()){
-      this.wrap = Ext.DomHelper.insertHtml("beforeBegin",
-      n.nextSibling.ui.getEl(), buf.join(""));
-    }else{
-      this.wrap = Ext.DomHelper.insertHtml("beforeEnd", targetNode, buf.join(""));
-    }
-    this.elNode = this.wrap.childNodes[0];
-    this.ctNode = this.wrap.childNodes[1];
-    var cs = this.elNode.firstChild.childNodes;
-    this.indentNode = cs[0];
-    this.ecNode = cs[1];
-    this.iconNode = cs[2];
-    this.anchor = cs[3];
-    this.textNode = cs[3].firstChild;
-  }
-});
 // Initialisation of selection sidebar, all changes with selection items should goes here
 function initTree(){
   var root = new Ext.tree.AsyncTreeNode({
@@ -63,10 +17,7 @@ function initTree(){
   });
   var loader = new Ext.tree.TreeLoader({
     dataUrl:'submit',
-    requestMethod:'POST',
-    uiProviders:{
-      'col':ColumnNodeUI
-    }
+    requestMethod:'POST'
   });
   loader.on("beforeload", function(treeLoader, node){
     try{
@@ -95,8 +46,11 @@ function initTree(){
       var table = Ext.getCmp('DataMonitoringTable');
       if(table){
         try{
+          delete table.store.baseParams;
+          table.store.baseParams = new Object();
           table.store.baseParams.root = node.attributes.extra;
           table.store.baseParams.level = node.attributes.qtip;
+          table.store.baseParams.limit = table.bottomToolbar.pageSize;
           table.store.load();
         }catch(e){
           alert('Error: ' + e.name + ': ' + e.message);
@@ -150,8 +104,9 @@ function bkTable(){
     {header:'Event Type Id',sortable:true,dataIndex:'EvtTypeId',align:'left',hidden:true}
   ];
   var store = initStore(record);
+  dataMngr['store'] = store;
   var title = '';
-  var tableMngr = {'store':store,'columns':columns,'title':title,'tbar':''};
+  tableMngr = {'store':store,'columns':columns,'title':title,'tbar':'','bk':true};
   var dataTable = table(tableMngr);
   dataTable.addListener('cellclick',function(table,rowIndex,columnIndex){
     showMenu('main',table,rowIndex,columnIndex);
@@ -175,6 +130,7 @@ function renderData(){
   var rightBar = bkRight();
   var mainContent = bkTable();
   renderInMainViewport([ leftBar, mainContent, rightBar ]);
+  dataMngr['form'] = leftBar.items;
 }
 function afterDataLoad(){
   var table = Ext.getCmp('DataMonitoringTable');
@@ -283,12 +239,13 @@ function afterDataLoad(){
   }catch(e){}
 }
 function AJAXsuccess(value,id,response){
+  gMainLayout.container.unmask();
   var jsonData = Ext.util.JSON.decode(response);
   if(jsonData['success'] == 'false'){
     alert('Error: ' + jsonData['error']);
     return
   }
-  var result = jsonData.result;
+  var result = jsonData['result'];
   var panel = {};
   if(value == 'getLogInfoLFN'){
     var reader = {};
@@ -321,5 +278,5 @@ function AJAXsuccess(value,id,response){
     });
   }
   id = setTitle(value,id);
-  displayWin(panel,id)
+  displayWin(panel,id);
 }
