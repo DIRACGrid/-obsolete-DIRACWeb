@@ -371,7 +371,6 @@ function createAccountingPlots( siteName, siteData )
 
 function requestAccountingPlot( plotSpace, siteName )
 {
-	console.log( plotSpace );
 	plotSpace.body.dom.innerHTML = "<h1>Generating plot...</h1>";
 	Ext.Ajax.request( {
 		timeout : 60000,
