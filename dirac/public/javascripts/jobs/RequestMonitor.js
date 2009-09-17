@@ -3,7 +3,7 @@ var dataMngr = ''; // Required to connect form and table. Object.
 var tableMngr = ''; // Required to handle configuration data for table. Object.
 // Main routine
 function initJobMonitor(reponseSelect){
-  dataSelect = reponseSelect;
+//  dataSelect = reponseSelect;
   var record = initRecord();
   var store = initStore(record);
   Ext.onReady(function(){
@@ -15,7 +15,7 @@ function initRecord(){
   var record = new Ext.data.Record.create([
     {name:'RequestID', type: 'float'},
     {name:'RequestName'},
-    {name:'JobID', type: 'float'},
+    {name:'JobID'},
     {name:'RequestType'},
     {name:'Status'},
     {name:'OwnerDN'},
@@ -101,15 +101,18 @@ function renderData(store){
 }
 function setMenuItems(selections){
   if(selections){
-    var id = selections.JobID;
+    var jobID = selections.JobID;
     var status = selections.Status;
   }else{
     return
   }
   if(dirac.menu){
     dirac.menu.add(
-      {handler:function(){jump('id',id)},text:'Show Job'}
+      {handler:function(){jump('id',jobID)},text:'Show Job'}
     );
+  }
+  if(jobID == '-'){
+    dirac.menu.items.items[0].disable();
   }
 };
 function AJAXsuccess(value,id,response){
