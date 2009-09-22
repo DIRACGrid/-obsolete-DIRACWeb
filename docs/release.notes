@@ -1,0 +1,10 @@
+$Id: release.notes,v 1.1 2009/09/22 18:15:04 acasajus Exp $
+
+22.09.2009 webd20090922r01 AC,AZ,MS
+====================================
+First independent release of the DIRAC web portal
+
+ - Site summary pages
+ - Production requests
+ - New site map 
+ - Accounting plots now show more info when processing the plots
