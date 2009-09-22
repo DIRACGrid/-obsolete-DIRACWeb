@@ -188,75 +188,42 @@ function serverGeneratedPlots( panel, ajaxEvent, submitButton )
 	//Set the anchor
 	parent.location.hash = ajaxEvent.options.sDEParams;
 	//Trigger fist update of the tab
-	activeTab.getUpdater().update({ url : gHTMLPlottingURL, params : ajaxParams, text : 'Generating plot...' });
-
+	cbPlotRefreshHandler( refreshButton, false );
+}
+	
+function plotAccountingPlot( ajaxResult, ajaxRequest )
+{
+	var result = Ext.util.JSON.decode( ajaxResult.responseText );
+	console.log(result)
+	if( ! result.success )
+	{
+		window.alert( "Request failed: " + result[ 'Message'] )
+		return
+	}
+	var plotSpace = ajaxRequest.tabToPlotInto;
+	plotSpace.body.dom.innerHTML = "<h3>Loading image...</h3>";
+	var img = new Image();
+	var extImg = new Ext.Element( img );
+        extImg.plotSpace = plotSpace;
+	extImg.on( "load", setAccountingImage, extImg );
+        extImg.on( "error", setAccountingImage, extImg );
+	img.src = "getPlotImg?file=" + result.data;
 }
 
-function OLDserverGeneratedPlots( panel, ajaxEvent, submitButton )
+function setAccountingImage( eventType, imgElement, scope, extra )
 {
-	var imgFile = ajaxEvent.result.data;
-
-	var ajaxParams = ajaxEvent.options.params;
-	if( ajaxParams._timeSelector == '86400' )
-		var timeSpan = " for last day";
-	else if ( ajaxParams._timeSelector == '604800' )
-		var timeSpan = " for last week";
-	else if ( ajaxParams._timeSelector == '2592000' )
-		var timeSpan = " for last month";
-	else var timeSpan = " since " + ajaxParams._startTime + " until " + ajaxParams._endTime;
-
-	var tabTitle = ajaxParams._plotName + " by " + ajaxParams._grouping + timeSpan;
-
-	var refreshButton = new Ext.Toolbar.Button({
-    	text : "Refresh",
-    	plotParams : ajaxParams,
-    	handler : cbPlotRefreshHandler,
-  		});
-  	var autoRefreshMenu = new Ext.menu.Menu( {
-  			items : [ { text : 'Disabled', value : 0 },
-  					  { text : 'Each 15m', value : 900 },
-  					  { text : 'Each hour', value : 3600 },
-  					  { text : 'Each day', value : 86400 }
-  				    ],
-  			listeners : { itemclick : cbPlotAutoRefreshHandler },
-  			plotParams : ajaxParams,
-  			} );
-  	var autoRefreshButton = new Ext.Toolbar.Button({
-  		text : "Auto refresh :  Disabled",
-  		menu : autoRefreshMenu ,
-  		});
-  	autoRefreshMenu.parentButton = autoRefreshButton;
-  	urlParams = []
-  	for( a in ajaxEvent.options.params )
-  		urlParams.push( a+"="+escape(ajaxEvent.options.params[a]).replace('+', '%2B').replace('%20', '+').replace('*', '%2A').replace('/', '%2F').replace('@', '%40') );
-
-   var refreshBar = new Ext.Toolbar({
-    	items : [ refreshButton,
-    				 "<a target='_blank' href='getPlotData?"+urlParams.join("&")+"'>CSV data</a>",
-    				 "->",
-    				 autoRefreshButton ],
-   		margins: '0 0 0 0'
-  		});
-	var tab = gMainPanel.add( {
-		title : tabTitle,
-		uDETabDef : ajaxEvent.options.sDEParams,
-		uPlotRequest : ajaxParams,
-		closable : true,
-		iconCls: 'tabs',
-		html : "",
-		// Plots are generated on the fly now
-		//"<img src='getPlotImg?file="+imgFile+"' style='margin:5px'/>",
-		tbar : refreshBar,
-		listeners : { close : cbTabDeactivate, deactivate : cbTabDeactivate },
-		uAutoRefreshButton : autoRefreshButton,
-		} );
-	tab.show();
-	refreshButton.plotTab = tab;
-	autoRefreshMenu.plotTab = tab;
-	//Set the hash anchor
-	parent.location.hash = ajaxEvent.options.sDEParams;
-	//Trigger fist update of the tab
-	tab.getUpdater().update({ url : gHTMLPlottingURL, params : ajaxParams, text : 'Generating plot...' });
+	var plotSpace = this.plotSpace;
+	if( eventType.type == "error" )
+	{
+		plotSpace.body.dom.innerHTML = "<h3>Cannot load image</h3>"+imgElement.src+""; 
+	} 
+	else if( eventType.type == "load" )
+	{
+		var dom = plotSpace.body.dom;
+		while( dom.hasChildNodes() )
+			dom.removeChild( dom.firstChild );
+		dom.appendChild( imgElement );
+	}
 }
 
 function cbPlotAutoRefreshHandler( menuItem, clickEvent )
@@ -276,13 +243,20 @@ function cbPlotAutoRefreshHandler( menuItem, clickEvent )
 
 function cbPlotRefreshHandler( submitButton, clickEvent )
 {
-  var plotTab = submitButton.plotTab;
-  var updateMgr = plotTab.getUpdater();
-  updateMgr.update ({
-  	url : gHTMLPlottingURL,
-  	params : submitButton.plotParams,
-    text : "Regenerating plot...",
-    } );
+	var plotTab = submitButton.plotTab
+	plotTab.body.dom.innerHTML = "<h3>Generating plot...</h3>";
+	Ext.Ajax.request( {
+		timeout : 60000,
+		url : 'generatePlot',
+		success : plotAccountingPlot,
+		failure: function() { 
+				window.alert( "Oops, request failure :P ");
+				activeTab.body.dom.innerHTML = "";
+			},
+		tabToPlotInto : plotTab,
+		params : submitButton.plotParams
+		}
+	);
 }
 
 function cbTabDeactivate( tabPanel )
