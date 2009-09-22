@@ -194,7 +194,6 @@ function serverGeneratedPlots( panel, ajaxEvent, submitButton )
 function plotAccountingPlot( ajaxResult, ajaxRequest )
 {
 	var result = Ext.util.JSON.decode( ajaxResult.responseText );
-	console.log(result)
 	if( ! result.success )
 	{
 		window.alert( "Request failed: " + result[ 'Message'] )
