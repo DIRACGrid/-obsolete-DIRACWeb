@@ -1,7 +1,10 @@
-$Id: release.notes,v 1.4 2009/09/28 11:28:32 msapunov Exp $
+$Id: release.notes,v 1.5 2009/09/28 13:11:58 acasajus Exp $
 
 Web Next release
 ================
+
+28.09.2009 webd20090928r01 AC,MS
+====================================
 
 AC - Messages will only appear once to any user.
 AC - Bugfix: Pilot and SRMSpaceToken templates had still jsTag instead of javascript_link
