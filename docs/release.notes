@@ -1,4 +1,10 @@
-$Id: release.notes,v 1.1 2009/09/22 18:15:04 acasajus Exp $
+$Id: release.notes,v 1.2 2009/09/28 10:19:45 acasajus Exp $
+
+Web Next release
+================
+
+AC - Bugfix: Pilot and SRMSpaceToken templates had still jsTag instead of javascript_link
+
 
 22.09.2009 webd20090922r01 AC,AZ,MS
 ====================================
