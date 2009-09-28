@@ -1,7 +1,11 @@
-$Id: release.notes,v 1.6 2009/09/28 16:19:36 azhelezo Exp $
+$Id: release.notes,v 1.7 2009/09/28 16:35:40 acasajus Exp $
 
 Web Next release
 ================
+
+28.09.2009 webd20090928r02 AZ
+====================================
+
 AZ - Production requests:
   CHANGE: diracAdmin can reactivate requests
   CHANGE: track also unused productions for requests in "Active" state
