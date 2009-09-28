@@ -1,11 +1,12 @@
-$Id: release.notes,v 1.3 2009/09/28 10:48:11 acasajus Exp $
+$Id: release.notes,v 1.4 2009/09/28 11:28:32 msapunov Exp $
 
 Web Next release
 ================
 
 AC - Messages will only appear once to any user.
 AC - Bugfix: Pilot and SRMSpaceToken templates had still jsTag instead of javascript_link
-
+MS - The BK template hs been added
+MS - web.cfg has been changed, External pages represented as the full URLs
 
 22.09.2009 webd20090922r01 AC,AZ,MS
 ====================================
