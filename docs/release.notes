@@ -1,7 +1,16 @@
-$Id: release.notes,v 1.5 2009/09/28 13:11:58 acasajus Exp $
+$Id: release.notes,v 1.6 2009/09/28 16:19:36 azhelezo Exp $
 
 Web Next release
 ================
+AZ - Production requests:
+  CHANGE: diracAdmin can reactivate requests
+  CHANGE: track also unused productions for requests in "Active" state
+  CHANGE: production generation is allowed in the "Active" state
+  NEW: link to production monitor page
+  NEW: prefixing comments change with the author name and date
+  NEW: 'On-hold' state
+  NEW: default values for parameters in templates
+
 
 28.09.2009 webd20090928r01 AC,MS
 ====================================
