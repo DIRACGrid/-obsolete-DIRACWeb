@@ -613,7 +613,8 @@ class JobmonitorController(BaseController):
 ################################################################################
   def __globalStat(self):
     RPC = getRPCClient("WorkloadManagement/JobMonitoring")
-    result = RPC.getJobPageSummaryWeb({},globalSort,0,1)
+    result = RPC.getJobPageSummaryWeb({},globalSort,0,1,False)
+    gLogger.info(" - result - :",result)
     if result["OK"]:
       result = result["Value"]
       if result.has_key("Extras"):
