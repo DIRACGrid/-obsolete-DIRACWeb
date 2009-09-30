@@ -14,7 +14,7 @@ log = logging.getLogger(__name__)
 global numberOfJobs
 global pageNumber
 global globalSort
-numberOfJobs = 25
+numberOfJobs = 2500
 pageNumber = 0
 globalSort = []
 
@@ -37,6 +37,7 @@ class PilotsummaryController(BaseController):
       return c.result
     RPC = getRPCClient("WorkloadManagement/WMSAdministrator")
     result = self.__request()
+    gLogger.info("\033[0;31m VAL: \033[0m\n result: %s\nglobalSort: %s\npageNumber: %s\nnumberOfJobs: %s" % (result,globalSort,pageNumber,numberOfJobs))
     result = RPC.getPilotSummaryWeb(result,globalSort,pageNumber,numberOfJobs)
     if result["OK"]:
       result = result["Value"]
