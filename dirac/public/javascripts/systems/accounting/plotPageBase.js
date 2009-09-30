@@ -200,7 +200,7 @@ function plotAccountingPlot( ajaxResult, ajaxRequest )
 		return
 	}
 	var plotSpace = ajaxRequest.tabToPlotInto;
-	plotSpace.body.dom.innerHTML = "<h3>Loading image...</h3>";
+	plotSpace.body.dom.innerHTML = "<h3>Generating plot...</h3><h4>(this can take a while)</h4>";
 	var img = new Image();
 	var extImg = new Ext.Element( img );
         extImg.plotSpace = plotSpace;
@@ -243,7 +243,7 @@ function cbPlotAutoRefreshHandler( menuItem, clickEvent )
 function cbPlotRefreshHandler( submitButton, clickEvent )
 {
 	var plotTab = submitButton.plotTab
-	plotTab.body.dom.innerHTML = "<h3>Generating plot...</h3>";
+	plotTab.body.dom.innerHTML = "<h3>Requesting image...</h3>";
 	Ext.Ajax.request( {
 		timeout : 60000,
 		url : 'generatePlot',

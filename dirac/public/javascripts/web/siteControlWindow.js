@@ -371,7 +371,7 @@ function createAccountingPlots( siteName, siteData )
 
 function requestAccountingPlot( plotSpace, siteName )
 {
-	plotSpace.body.dom.innerHTML = "<h1>Generating plot...</h1>";
+	plotSpace.body.dom.innerHTML = "<h1>Requesting plot...</h1>";
 	Ext.Ajax.request( {
 		timeout : 60000,
 		url : 'generateAccountingPlot',
@@ -400,7 +400,7 @@ function plotAccountingPlot( ajaxResult, ajaxRequest )
 		return
 	}
 	var plotSpace = ajaxRequest.plotSpace;
-	plotSpace.body.dom.innerHTML = "<h1>Loading image...</h1>";
+	plotSpace.body.dom.innerHTML = "<h1>Generating plot...</h1><h2>(this can take a while)</h2>";
 	var img = new Image();
 	var extImg = new Ext.Element( img );
         extImg.plotSpace = plotSpace;
