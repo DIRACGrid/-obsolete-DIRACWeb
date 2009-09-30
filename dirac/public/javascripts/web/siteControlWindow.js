@@ -647,32 +647,6 @@ function createSiteMaskLogTab( siteName )
 
 function createSiteMaskActionTab( siteName, siteMaskLogTab )
 {
-	function siteMaskModificationAction( action )
-	{
-		if( ! action )
-		{
-			alert( 'Error: action value is missing or empty' );
-			return
-		}
-		var comment = siteMaskActionTab.getForm().getValues().comment; 
-		if( ! comment )
-		{
-			alert('Error: Comments field is empty');
-			return
-		}
-		tabPanel.body.mask( 'Sending data...' );
-		siteMaskActionTab.form.submit({
-				params : 'action=' + action + '&siteName=' + siteName,
-				success:function( form, action ) {
-					tabPanel.body.unmask();
-					tabPanel.setActiveTab( siteMaskLogTab );
-				},
-				failure:function( form, action ) {
-					tabPanel.body.unmask();
-					alert('Error: ' + action.response.statusText);
-				}
-		});
-	}
 	var siteMaskActionComment = new Ext.form.TextArea({
 			xtype:'textarea',
 			id:'comment',
@@ -682,9 +656,6 @@ function createSiteMaskActionTab( siteName, siteMaskLogTab )
 		})
 	var siteMaskBanButton = new Ext.Button({
 			cls:"x-btn-text-icon",
-			handler:function(){
-				siteMaskModificationAction( 'ban' );
-			},
 			icon:gURLRoot+'/images/iface/ban.gif',
 			minWidth:'70',
 			tooltip:'Click to ban the site',
@@ -692,9 +663,6 @@ function createSiteMaskActionTab( siteName, siteMaskLogTab )
 		});
 	var siteMaskAllowButton = new Ext.Button({
 			cls:"x-btn-text-icon",
-			handler:function(){
-				siteMaskModificationAction( 'unban' );
-			},
 			icon:gURLRoot+'/images/iface/unban.gif',
 			minWidth:'70',
 			tooltip:'Click to unban the site',
@@ -723,7 +691,35 @@ function createSiteMaskActionTab( siteName, siteMaskLogTab )
 		var h = siteMaskActionTab.getInnerHeight() - 50;
 		siteMaskActionComment.setHeight(h);
 	});	
-	
+	function siteMaskModificationAction( action )
+	{
+		if( ! action )
+		{
+			alert( 'Error: action value is missing or empty' );
+			return
+		}
+		var comment = siteMaskActionTab.getForm().getValues().comment; 
+		if( ! comment )
+		{
+			alert('Error: Comments field is empty');
+			return
+		}
+		siteMaskActionTab.body.mask( 'Sending data...' );
+		siteMaskActionTab.form.submit({
+				params : 'action=' + action + '&siteName=' + siteName,
+				success:function( form, action ) {
+					siteMaskActionTab.body.unmask();
+					var parentTabPanel = siteMaskActionTab.findParentBy( function( a, b ){ return a.setActiveTab; } );
+					parentTabPanel.setActiveTab( siteMaskLogTab );
+				},
+				failure:function( form, action ) {
+					siteMaskActionTab.body.unmask();
+					alert('Error: ' + action.response.statusText);
+				}
+		});
+	}
+	siteMaskBanButton.on( 'click', function() { siteMaskModificationAction( 'ban' ); } );
+	siteMaskAllowButton.on( 'click', function() { siteMaskModificationAction( 'unban' ); } );
 	return siteMaskActionTab;
 }
 
