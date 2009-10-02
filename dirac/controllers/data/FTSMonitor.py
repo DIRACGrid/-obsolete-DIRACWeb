@@ -3,168 +3,187 @@ from time import time, gmtime, strftime
 
 from dirac.lib.base import *
 from dirac.lib.diset import getRPCClient
-from dirac.lib.credentials import authorizeAction
 from dirac.lib.sessionManager import *
 
 log = logging.getLogger(__name__)
 
+numberOfJobs = 25
+pageNumber = 0
+globalSort = []
+globalSort = [["SubmitTime","DESC"]]
+
 class FtsmonitorController(BaseController):
 ################################################################################
-  def __getJobSummary(self,jobs):
-    valueList = []
-    for i in jobs:
-      s = jobs[i]
-      valueList.append([s["FTSReqID"],s["Status"],s["SubmitTime"],s["LastMonitor"],s["PercentageComplete"],s["NumberOfFiles"],s["TotalSize"],s["SourceSite"],s["DestinationSite"]])
-    return valueList
-################################################################################
-  def __parseRequest(self):
-    req = {}
-    save_time = 0
-    save_source = 0
-    save_destination = 0
-    if request.params.has_key("jobid") and len(request.params["jobid"]) > 0:
-      req["JobID"] = str(request.params["jobid"])
-    else:
-      global numberOfJobs
-      global pageNumber
-      global globalSort
-      if request.params.has_key("counter") and len(request.params["counter"]) > 0:
-        numberOfJobs = int(request.params["counter"])
-      else:
-        numberOfJobs = 25
-      if request.params.has_key("prod") and len(request.params["prod"]) > 0:
-        req["JobGroup"] = str(request.params["prod"])
-        save_prod = str(request.params["prod"])
-      if request.params.has_key("sour_site") and len(request.params["sour_site"]) > 0:
-        req["SourceSites"] = str(request.params["sour_site"])
-        save_source = str(request.params["sour_site"])
-      if request.params.has_key("dest_site") and len(request.params["dest_site"]) > 0:
-        req["DestinationSites"] = str(request.params["dest_site"])
-        save_destination = str(request.params["dest_site"])
-      if request.params.has_key("job_up") and len(request.params["job_up"]) > 0:
-        req["LastUpdate"] = str(request.params["job_up"])
-        save_time = str(request.params["job_up"])
-      if request.params.has_key("sort") and len(request.params["sort"]) > 0:
-        globalSort = str(request.params["sort"])
-      else:
-        globalSort = "jobID"
-      if request.params.has_key("page") and len(request.params["page"]) > 0:
-        pageNumber = int(request.params["page"]) - 1
-        if pageNumber <= 0:
-          pageNumber = 0
-      else:
-        pageNumber = 0
-    print "REQ:",req
-    return req
-################################################################################
-  def __drawFilters(self):
-    RPC = getRPCClient("DataManagement/TransferDBMonitoring")
-    result = RPC.getSites()
-    c.destination = []
-    c.source = []
-    if result["OK"]:
-      result = result["Value"]
-      if result.has_key("DestinationSites") and len(result["DestinationSites"]) > 0:
-        for i in result["DestinationSites"]:
-          c.destination.append(i)
-      else:
-        c.destination.append("No elements to display")
-      if result.has_key("SourceSites") and len(result["SourceSites"]) > 0:
-        for i in result["SourceSites"]:
-          c.source.append(i)
-      else:
-        c.source.append("No elements to display")
-    else:
-      c.source.append("Error during RPC call")
-      c.destination.append("Error during RPC call")
-    return
-################################################################################
   def display(self):
-#    RPC = getRPCClient("dips://volhcb03.cern.ch:9191/DataManagement/TransferDBMonitoring")
-    RPC = getRPCClient("DataManagement/TransferDBMonitoring")
-    pagestart = time()
-    result = self.__parseRequest()
-    self.__drawFilters()
-    result = RPC.getReqPageSummary({},"SubmitTime",0,25)
-    if result["OK"]:
-      result = result["Value"]
-      if result.has_key("SummaryDict") and len(result["SummaryDict"]) > 0:
-        ftsSummary = result["SummaryDict"]
-        c.listResult = self.__getJobSummary(ftsSummary)
-        c.listResult.append([result["TotalFTSReq"]])
-        c.listResult.append([1])
-        gLogger.info("\033[0;31mINDEX PAGE PROCESSING:\033[0m %s" % ( time() - pagestart ) )
-        return render("/data/FTSMonitor.mako")
-      else:
-        return "There is no information about request"
-    else:
-      return result["Message"]
+    c.select = self.__getSelectionData()
+    gLogger.info("SELECTION RESULTS:",c.select)
+    return render("data/FTSMonitor.mako")
 ################################################################################
   @jsonify
   def submit(self):
-#    RPC = getRPCClient("dips://volhcb03.cern.ch:9191/DataManagement/TransferDBMonitoring")
     RPC = getRPCClient("DataManagement/TransferDBMonitoring")
-    pagestart = time()
-    result = self.__parseRequest()
-    self.__drawFilters()
-    print "FTS:",result,globalSort,pageNumber,numberOfJobs
+    result = self.__request()
+    result = {}
     result = RPC.getReqPageSummary(result,globalSort,pageNumber,numberOfJobs)
-    print "::RESULT::",result
+    gLogger.info("\033[0;31m R E S U L T \033[0m",result)
     if result["OK"]:
       result = result["Value"]
-      if result.has_key("SummaryDict") and len(result["SummaryDict"]) > 0:
-        ftsSummary = result["SummaryDict"]
-        print "-",ftsSummary
-        listResult = self.__getJobSummary(ftsSummary)
-        listResult.append([result["TotalFTSReq"]])
-        listResult.append([pageNumber + 1])
-        print "\033[0;31mSUBMIT PAGE PROCESSING:\033[0m",time() - pagestart
-        return listResult
+      if result.has_key("TotalRecords") and  result["TotalRecords"] > 0:
+        if result.has_key("ParameterNames") and result.has_key("Records"):
+          if len(result["ParameterNames"]) > 0:
+            if len(result["Records"]) > 0:
+              c.result = []
+              jobs = result["Records"]
+              head = result["ParameterNames"]
+              headLength = len(head)
+              for i in jobs:
+                tmp = {}
+                for j in range(0,headLength):
+                  tmp[head[j]] = i[j]
+                c.result.append(tmp)
+              total = result["TotalRecords"]
+              if result.has_key("Extras"):
+                extra = result["Extras"]
+                c.result = {"success":"true","result":c.result,"total":total,"extra":extra}
+              else:
+                c.result = {"success":"true","result":c.result,"total":total}
+            else:
+              c.result = {"success":"false","result":"","error":"There are no data to display"}
+          else:
+            c.result = {"success":"false","result":"","error":"ParameterNames field is undefined"}
+        else:
+          c.result = {"success":"false","result":"","error":"Data structure is corrupted"}
       else:
-        return "There is no summary for the job(s)"
+        c.result = {"success":"false","result":"","error":"There were no data matching your selection"}
     else:
-      return result["Message"]
+      c.result = {"success":"false","error":result["Message"]}
+    return c.result
+################################################################################
+  def __getSelectionData(self):
+    callback = {}
+    if len(request.params) > 0:
+      tmp = {}
+      for i in request.params:
+        tmp[i] = str(request.params[i])
+      callback["extra"] = tmp
+    RPC = getRPCClient("DataManagement/TransferDBMonitoring")
+    result = RPC.getSites()
+    if result["OK"]:
+      result = result["Value"]
+      dest = []
+      if result.has_key("DestinationSites") and len(result["DestinationSites"]) > 0:
+        dest.append([str("All")])
+        for i in result["DestinationSites"]:
+          dest.append([str(i)])
+      else:
+        dest.append("Nothing to display")
+      callback["destination"] = dest
+      source = []
+      if result.has_key("SourceSites") and len(result["SourceSites"]) > 0:
+        source.append([str("All")])
+        for i in result["SourceSites"]:
+          source.append([str(i)])
+      else:
+        source.append("No elements to display")
+    else:
+      source = str(result["Message"])
+      dest = str(result["Message"])
+    callback["destination"] = dest
+    callback["source"] = source
+    return callback
+################################################################################
+  def __request(self):
+    req = {}
+    global pageNumber
+    global numberOfJobs
+    global globalSort
+    if request.params.has_key("limit") and len(request.params["limit"]) > 0:
+      numberOfJobs = int(request.params["limit"])
+      if request.params.has_key("start") and len(request.params["start"]) > 0:
+        pageNumber = int(request.params["start"])
+      else:
+        pageNumber = 0
+    else:
+      numberOfJobs = 25
+      pageNumber = 0
+    if request.params.has_key("id") and len(request.params["id"]) > 0:
+      testString = str(request.params["id"])
+      testString = testString.strip(';, ')
+      testString = testString.split(', ')
+      if len(testString) == 1:
+        testString = testString[0].split('; ')
+        if len(testString) == 1:
+          testString = testString[0].split(' ')
+          if len(testString) == 1:
+            testString = testString[0].split(',')
+            if len(testString) == 1:
+              testString = testString[0].split(';')
+              if len(testString) == 1:
+                req["FTSID"] = testString[0]
+              else:
+                req["FTSID"] = testString
+            else:
+              req["FTSID"] = testString
+          else:
+            req["FTSID"] = testString
+        else:
+          req["FTSID"] = testString
+      else:
+        req["FTSID"] = testString
+      for i in req["FTSID"]:
+        testI = i.split('-')
+        if len(testI) == 2:
+          testI[0] = testI[0].strip(' ')
+          testI[1] = testI[1].strip(' ')
+          rangeID = range(testI[0],testI[1])
+          gLogger.info("RANGE:",rangeID)
+    else:
+      if request.params.has_key("destination") and len(request.params["destination"]) > 0:
+        if str(request.params["destination"]) != "All":
+          req["DestinationSites"] = str(request.params["destination"]).split('::: ')
+      if request.params.has_key("source") and len(request.params["source"]) > 0:
+        if str(request.params["source"]) != "All":
+          req["SourceSites"] = str(request.params["source"]).split('::: ')
+      if request.params.has_key("startDate") and len(request.params["startDate"]) > 0:
+        if str(request.params["startDate"]) != "YYYY-mm-dd":
+          if request.params.has_key("startTime") and len(request.params["startTime"]) > 0:
+            req["FromDate"] = str(request.params["startDate"] + " " + request.params["startTime"])
+          else:
+            req["FromDate"] = str(request.params["startDate"])
+      if request.params.has_key("endDate") and len(request.params["endDate"]) > 0:
+        if str(request.params["endDate"]) != "YYYY-mm-dd":
+          if request.params.has_key("endTime") and len(request.params["endTime"]) > 0:
+            req["ToDate"] = str(request.params["endDate"] + " " + request.params["endTime"])
+          else:
+            req["ToDate"] = str(request.params["endDate"])
+      if request.params.has_key("date") and len(request.params["date"]) > 0:
+        if str(request.params["date"]) != "YYYY-mm-dd":
+          req["LastUpdate"] = str(request.params["date"])
+      if request.params.has_key("sort") and len(request.params["sort"]) > 0:
+        globalSort = str(request.params["sort"])
+        key,value = globalSort.split(" ")
+        globalSort = [[str(key),str(value)]]
+      else:
+        globalSort = [["SubmitTime","DESC"]]
+    gLogger.info("REQUEST:",req)
+    return req
 ################################################################################
   @jsonify
   def action(self):
-    pagestart = time()
     if request.params.has_key("getFTSInfo") and len(request.params["getFTSInfo"]) > 0:
       id = int(request.params["getFTSInfo"])
       return self.__getFTSInfo(id)
-    elif request.params.has_key("getStandardOutput") and len(request.params["getStandardOutput"]) > 0:
-      id = int(request.params["getStandardOutput"])
-      return self.__getStandardOutput(id)
-    elif request.params.has_key("pilotStdErr") and len(request.params["pilotStdErr"]) > 0:
-      id = request.params["pilotStdErr"]
-      return self.__pilotGetOutput("err",int(id))
     else:
-      c.error = "Failed to get parameters"
-      print "+++ E:",c.error
+      c.result = {"success":"false","error":"DIRAC Job ID(s) is not defined"}
       return c.error
-################################################################################
+#################################################################################
   def __getFTSInfo(self,id):
-#    RPC = getRPCClient("dips://volhcb03.cern.ch:9191/DataManagement/TransferDBMonitoring")
     RPC = getRPCClient("DataManagement/TransferDBMonitoring")
-    print "FTS:",id
     result = RPC.getFTSInfo(id)
     if result["OK"]:
-      fts = result["Value"]
-      if not len(fts) > 0 :
-        return "false"
-      else:
-        ftsResult = []
-        for i in fts:
-          tmp = []
-          tmp.append(i[0])
-          tmp.append(i[1])
-          tmp.append(int(i[2]))
-          tmp.append(i[3])
-          tmp.append(int(i[4]))
-          tmp.append(int(i[5]))
-          ftsResult.append(tmp)
-        print ftsResult
-        return ftsResult
+      c.result = result["Value"]
+      c.result = {"success":"true","result":c.result}
     else:
-      c.error = result["Message"]
-      print "+++ E:",c.error
-      return c.error
+      c.result = {"success":"false","error":result["Message"]}
+    gLogger.info("FTSInfo:",id)
+    return c.result
