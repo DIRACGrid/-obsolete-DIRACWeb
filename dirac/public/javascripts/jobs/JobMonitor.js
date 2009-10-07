@@ -47,6 +47,7 @@ function initRecord(){
     {name:'Owner'},
     {name:'DeletedFlag'},
     {name:'TaskQueueID'},
+    {name:'JobType'},
     {name:'JobIDcheckBox',mapping:'JobID'},
     {name:'StatusIcon',mapping:'Status'},
     {name:'OwnerGroup'}
@@ -73,6 +74,45 @@ function initSidebar(){
   select.insert(5,prodSelect);
   select.insert(6,id);
   select.insert(7,dateSelect);
+
+  var jobSubmit = selectPanel('jobSubmit');
+  jobSubmit.setTitle('Submit a Job');
+  jobSubmit.form.url = 'jobSubmit';
+  function quickField(label,name,value){
+    var textField = new Ext.form.TextField({
+      anchor:'90%',
+      allowBlank:true,
+      enableKeyEvents:true,
+      fieldLabel:label,
+      id:name,
+      mode:'local',
+      name:name,
+      selectOnFocus:true,
+      value:value
+    });
+    return textField
+  }
+  var exec = quickField('Executable','exec','ls');
+  var args = quickField('Arguments','args','-lA');
+  var outS = quickField('Output sandbox','sndb','std.out,std.err');
+//  jobSubmit.insert(1,exec);
+//  jobSubmit.insert(2,args);
+//  jobSubmit.insert(3,outS);
+  var value = 'Executable: ls\nArguments: -lA\nOutput sandbox:{std.out,std.err}'
+  var jdl = new Ext.form.TextArea({
+    anchor:'90%',
+    allowBlank:false,
+    enableKeyEvents:true,
+    fieldLabel:'JDL',
+    id:'jdl',
+    mode:'local',
+    name:'jdl',
+    selectOnFocus:true,
+    value:value
+  });
+  jobSubmit.insert(1,jdl);
+
+
   var sortGlobal = sortGlobalPanel(); // Initializing the global sort panel
   var stat = statPanel('Current Statistics','current','statGrid');
   var glStat = statPanel('Global Statistics','global','glStatGrid');
@@ -81,6 +121,9 @@ function initSidebar(){
   bar.insert(1,sortGlobal);
   bar.insert(2,stat);
   bar.insert(3,glStat);
+
+  bar.insert(4,jobSubmit);
+
   bar.setTitle('JobMonitoring');
   return bar
 }
@@ -102,6 +145,7 @@ function initData(store){
     {header:'CPUTime',sortable:true,dataIndex:'CPUTime',align:'left',hidden:true},
     {header:'OwnerDN',sortable:true,dataIndex:'OwnerDN',align:'left',hidden:true},
     {header:'JobGroup',sortable:true,dataIndex:'JobGroup',align:'left',hidden:true},
+    {header:'JobType',sortable:true,dataIndex:'JobType',align:'left',hidden:true},
     {header:'AccountedFlag',sortable:true,dataIndex:'AccountedFlag',align:'left',hidden:true},
     {header:'OSandboxReadyFlag',sortable:true,dataIndex:'OSandboxReadyFlag',align:'left',hidden:true},
     {header:'Owner',sortable:true,dataIndex:'Owner',align:'left'},
@@ -152,7 +196,30 @@ function initData(store){
   var t = table(tableMngr);
   t.addListener('cellclick',function(table,rowIndex,columnIndex){
       showMenu('main',table,rowIndex,columnIndex);
-  })
+  });
+  var arrayID = new Array();
+  t.on('headerclick',function(){
+    arrayID = [];
+    var inputs = document.getElementsByTagName('input');
+    if(inputs.length > 0){
+      for (var i = 0; i < inputs.length; i++) {
+        if (inputs[i].type && inputs[i].type == 'checkbox'){
+          if(inputs[i].checked){
+            arrayID.push(inputs[i].id);
+          }
+        }
+      }
+    }
+  });
+  t.on('sortchange',function(){
+    if(arrayID.length > 0){
+      var length = arrayID.length;
+      for(var i = 0; i < length; i++){
+        var j = arrayID.shift();
+        document.getElementById(j).checked = true;
+      }
+    }
+  });
   return t
 }
 function renderData(store){
@@ -175,7 +242,7 @@ function addMenu(){
         ]},text:'Show selected JobIDs'}
       ]
     });
-    topBar.insertButton(5,button);
+    topBar.insertButton(6,button);
   }
 }
 function setMenuItems(selections){
@@ -333,12 +400,4 @@ function afterDataLoad(){
     msg = createStateMatrix(msg);
     statPanel.store.loadData(msg);
   }
-/*
-  try{
-    delete dataSelect.extra.limit;
-  }catch(e){}
-  try{
-    delete dataSelect.extra.start;
-  }catch(e){}
-*/
 }

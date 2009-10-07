@@ -288,7 +288,7 @@ function initStore(record,groupBy){
   var limit = 25;
   var start = 0;
   try{
-    if(dataSelect == ""){
+    if((!dataSelect)||(dataSelect == "")){
       dataSelect = {};
     }
   }catch(e){
@@ -299,15 +299,12 @@ function initStore(record,groupBy){
       dataSelect.extra = {};
     }
   }catch(e){
-    dataSelect = {};
     dataSelect.extra = {};
   }
   try{
     if(!dataSelect.extra.limit){
       dataSelect.extra.limit = 25;
     }else{
-      dataSelect = {};
-      dataSelect.extra = {};
       dataSelect.extra.limit = dataSelect.extra.limit/1;
     }
   }catch(e){
@@ -320,8 +317,6 @@ function initStore(record,groupBy){
       dataSelect.extra.start = dataSelect.extra.start/1;
     }
   }catch(e){
-    dataSelect = {};
-    dataSelect.extra = {};
     dataSelect.extra.start = 0;
   }
   var auto = {};
