@@ -666,7 +666,13 @@ function sortGlobalPanel(){
   });
   return panel;
 }
-function selectPanel(){
+function selectPanel(newID){
+  var id = 'selectPanel';
+  try{
+    if(newID){
+      id = newID;
+    }
+  }catch(e){}
   function submitForm(){
     var selections = {};
     var sideBar = Ext.getCmp('sideBar');
@@ -753,7 +759,8 @@ function selectPanel(){
     buttonAlign:'center',
     buttons:[submit,reset,refresh],
     collapsible:true,
-    id:'selectPanel',
+//    id:'selectPanel',
+    id:id,
     labelAlign:'top',
     method:'POST',
     minWidth:'200',
@@ -1240,7 +1247,12 @@ function showJobID(separator){
       }
     }
   }
-  return Ext.Msg.alert('Show JobIDs:',url);
+  if(items.length > 100){
+    panel = new Ext.Panel({border:0,autoScroll:true,html:url,layout:'fit'});
+    displayWin(panel,'Show JobIDs:');
+  }else{
+    return Ext.Msg.alert('Show JobIDs:',url);
+  }
 }
 function showMenu(mode,table,rowIndex,columnIndex){
   var record = table.getStore().getAt(rowIndex); // Get the Record for the row
@@ -1447,6 +1459,7 @@ function statPanel(title,mode,id){
     id:id,
     header:false,
     layout:'fit',
+    loadMask:true,
     store:store,
     stripeRows:true,
     viewConfig:{forceFit:true}
