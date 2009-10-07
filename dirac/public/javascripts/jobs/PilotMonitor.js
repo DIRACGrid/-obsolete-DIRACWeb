@@ -46,8 +46,8 @@ function initSidebar(){
   select.buttons[2].hide(); // Remove refresh button
 //  var gridType = selectGridTypeMenu(); Commentted for later usage
   // Insert object to container BEFORE buttons:
-  select.insert(0,pilotStatus);
-  select.insert(1,siteSelect);
+  select.insert(0,siteSelect);
+  select.insert(1,pilotStatus);
   select.insert(2,ce);
   select.insert(3,owner);
   select.insert(4,ownerGrp);
