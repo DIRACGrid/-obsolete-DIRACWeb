@@ -1,8 +1,15 @@
-$Id: release.notes,v 1.8 2009/09/30 12:58:20 msapunov Exp $
+$Id: release.notes,v 1.9 2009/10/07 13:09:22 acasajus Exp $
 
-Web Next release MS
+Web Next release 
 ===================
-MS - Bugfix: PilotSummary monitor, total number of sites is more then 25
+
+28.09.2009 webd20091007r01 AZ AC MS
+====================================
+
+AZ - BUGFIX: unescape values (compatible with new pylons now)
+	 CHANGE: diracAdmin can modify any request
+AC - CHANGE: Accounting pages will show more comprehensive text when generating the plots
+MS - BUGFIX: PilotSummary monitor, total number of sites is more then 25
 
 28.09.2009 webd20090928r02 AZ
 ====================================
