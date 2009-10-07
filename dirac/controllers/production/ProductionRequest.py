@@ -535,9 +535,18 @@ class ProductionrequestController(BaseController):
       return S_ERROR('anode is not a number')
     return self.engine.getProductionRequestList(anode);
 
+  def __unescape(self,d):
+    """ Unescape HTML code in parameters """
+    for x in d:
+      for i in range(4):
+        d[x] = d[x].replace("&amp;","&")
+      d[x] = d[x].replace("&lt;","<")
+      d[x] = d[x].replace("&gt;",">")
+
   @jsonify
   def save(self):
     rdict = dict(request.params)
+    self.__unescape(rdict)
     if 'ID' in rdict:
       try:
         id = long(rdict['ID']);
