@@ -3604,7 +3604,7 @@ PR.RequestManager = Ext.extend(Ext.TabPanel, {
        scope: this, text: 'Windowed view' },
       {handler: function() {this.viewHistory(r)},scope: this, text: 'History'}
     );
-    if(rm.state=='New' && rm.author==rm.user){
+    if((rm.state=='New' && rm.author==rm.user) || rm.group=="diracAdmin"){
       this.menu.add( 
 	{handler: function() {this.viewEditor(r)}, scope: this, text: 'Edit' }
       );
