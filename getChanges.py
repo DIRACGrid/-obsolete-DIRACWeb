@@ -8,7 +8,7 @@ import pprint
 
 #passwd = getpass.getpass( "Your CVS password" )
 
-versionTag = "webd\d\d\d\d\d\d\d\dr\d\d"
+versionTag = "webd\d\d\d\d\d\d\d\dr\d\d|webnextrelease"
 tagRE = re.compile( "(%s): (\d+.\d+)" % versionTag )
 
 filenameRE = re.compile( "Working file: ([a-zA-Z0-9_./]*)" )
