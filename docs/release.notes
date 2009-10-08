@@ -1,4 +1,4 @@
-$Id: release.notes,v 1.10 2009/10/08 14:02:49 acasajus Exp $
+$Id: release.notes,v 1.11 2009/10/08 15:58:57 acasajus Exp $
 
 Web Next release 
 ===================
@@ -8,6 +8,7 @@ Web Next release
 
 AZ - CHANGE: x_tag -> link in templates
 MS - BUGFIX: Fix of the global statistics refresh button
+     BUGFIX: fix of loosing-selection-after-sorting bug
 
 07.10.2009 webd20091007r01 AZ AC MS
 ====================================
