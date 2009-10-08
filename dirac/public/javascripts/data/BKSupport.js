@@ -1,4 +1,3 @@
-
 function bkRight(){
   function createField(id,label){
     var txtField = new Ext.form.TextField({
@@ -144,8 +143,39 @@ function saveFile(panel){
     return
   }
   params = params + '&type=' + type + '&start=' + start + '&limit=' + end;
-//  gMainLayout.container.mask('Please wait');
+  saveMask();
   Ext.util.FileOps.downloadFile('download?' + params);
+}
+function saveMask(){
+  var msg = '<table><tr><td><h1 style="font-size:16px;white-space:nowrap;">';
+  msg = msg + 'Server response may take time. Please be patient';
+  msg = msg + '</h1></td></tr><tr><td><p style="font-size:12px">';
+  msg = msg + 'This window will close automatically in <span id="closeCount" style="color:#009900;font-weight:bold;">10</span> seconds';
+  msg = msg + '</p></td></tr></table>';
+  var window = Ext.Msg.show({
+    animEl: 'elId',
+    buttons: Ext.Msg.OK,
+    icon: Ext.MessageBox.INFO,
+    minWidth:300,
+    msg:msg,
+    title:'Please, wait'
+  });
+  var runner = new Ext.util.TaskRunner();
+  var task = {
+    run:countdown,
+    interval:1000 //1 second
+  }
+  var c = 10;
+  function countdown(){
+    c = c - 1;
+    if(c <= 0){
+      runner.stop(task);
+      window.hide();
+    }else{
+      document.getElementById('closeCount').innerHTML = c;
+    }
+  }
+  runner.start(task);
 }
 function bkSaveDialog(){
   try{
