@@ -1,13 +1,19 @@
-$Id: release.notes,v 1.9 2009/10/07 13:09:22 acasajus Exp $
+$Id: release.notes,v 1.10 2009/10/08 14:02:49 acasajus Exp $
 
 Web Next release 
 ===================
 
-28.09.2009 webd20091007r01 AZ AC MS
+08.10.2009 webd20091008r01 AZ MS
+====================================
+
+AZ - CHANGE: x_tag -> link in templates
+MS - BUGFIX: Fix of the global statistics refresh button
+
+07.10.2009 webd20091007r01 AZ AC MS
 ====================================
 
 AZ - BUGFIX: unescape values (compatible with new pylons now)
-	 CHANGE: diracAdmin can modify any request
+     CHANGE: diracAdmin can modify any request
 AC - CHANGE: Accounting pages will show more comprehensive text when generating the plots
 MS - BUGFIX: PilotSummary monitor, total number of sites is more then 25
 
