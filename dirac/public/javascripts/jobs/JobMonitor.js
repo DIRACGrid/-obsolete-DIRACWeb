@@ -74,45 +74,6 @@ function initSidebar(){
   select.insert(5,prodSelect);
   select.insert(6,id);
   select.insert(7,dateSelect);
-
-  var jobSubmit = selectPanel('jobSubmit');
-  jobSubmit.setTitle('Submit a Job');
-  jobSubmit.form.url = 'jobSubmit';
-  function quickField(label,name,value){
-    var textField = new Ext.form.TextField({
-      anchor:'90%',
-      allowBlank:true,
-      enableKeyEvents:true,
-      fieldLabel:label,
-      id:name,
-      mode:'local',
-      name:name,
-      selectOnFocus:true,
-      value:value
-    });
-    return textField
-  }
-  var exec = quickField('Executable','exec','ls');
-  var args = quickField('Arguments','args','-lA');
-  var outS = quickField('Output sandbox','sndb','std.out,std.err');
-//  jobSubmit.insert(1,exec);
-//  jobSubmit.insert(2,args);
-//  jobSubmit.insert(3,outS);
-  var value = 'Executable: ls\nArguments: -lA\nOutput sandbox:{std.out,std.err}'
-  var jdl = new Ext.form.TextArea({
-    anchor:'90%',
-    allowBlank:false,
-    enableKeyEvents:true,
-    fieldLabel:'JDL',
-    id:'jdl',
-    mode:'local',
-    name:'jdl',
-    selectOnFocus:true,
-    value:value
-  });
-  jobSubmit.insert(1,jdl);
-
-
   var sortGlobal = sortGlobalPanel(); // Initializing the global sort panel
   var stat = statPanel('Current Statistics','current','statGrid');
   var glStat = statPanel('Global Statistics','global','glStatGrid');
@@ -121,9 +82,6 @@ function initSidebar(){
   bar.insert(1,sortGlobal);
   bar.insert(2,stat);
   bar.insert(3,glStat);
-
-  bar.insert(4,jobSubmit);
-
   bar.setTitle('JobMonitoring');
   return bar
 }
