@@ -9,6 +9,7 @@ from DIRAC.Core.Utilities.List import sortList
 from DIRAC.AccountingSystem.Client.ReportsClient import ReportsClient
 from DIRAC.Core.Utilities.DictCache import DictCache
 import dirac.lib.credentials as credentials
+from DIRAC.Interfaces.API.Dirac import Dirac
 
 log = logging.getLogger(__name__)
 
@@ -693,4 +694,19 @@ class JobmonitorController(BaseController):
       else:
         c.result = {"success":"true","result":result}
     gLogger.info("getPlotSrc:",c.result)
+    return c.result
+################################################################################
+  @jsonify
+  def jobSubmit(self):
+    if request.params.has_key("jdl") and len(request.params["jdl"]) > 0:
+      jdl = str(request.params["jdl"])
+    else:
+      c.result = {"success":"false","error":"JDL is absent"}
+    jdl = jdl.replace("\/n"," ")
+    jobManager = getRPCClient('WorkloadManagement/JobManager')
+    result = jobManager.submitJob(jdl)
+    if result["OK"]:
+      c.result = {"success":"true","result":result["Value"]}
+    else:
+      c.result = {"success":"false","error":result["Message"]}
     return c.result
