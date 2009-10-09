@@ -120,9 +120,41 @@ class RawintegritymonitorController(BaseController):
     pagestart = time()
     if request.params.has_key("globalStat") and len(request.params["globalStat"]) > 0:
       return self.__globalStat()
+    elif request.params.has_key("getLoggingInfo") and len(request.params["getLoggingInfo"]) > 0:
+      lfn = str(request.params["getLoggingInfo"])
+      if request.params.has_key("limit") and len(request.params["limit"]) > 0:
+        pageLimit = str(request.params["limit"])
+      else:
+        pageLimit = 100
+      if request.params.has_key("start") and len(request.params["start"]) > 0:
+        pageStart = str(request.params["start"])
+      else:
+        pageStart = 0
+      return self.__loggingInfo(lfn,pageLimit,pageStart)
     else:
       c.result = {"success":"false","error":"Proposed action not available"}   
       return c.result
+
+  def __loggingInfo(self,lfn,pageLimit,pageStart):
+    try:
+      lfn = str(lfn)
+      start = int(pageStart)
+      limit = int(pageLimit)
+    except Exception, x:
+      #c.result = {"success":"false","error":"Wrong data type, numerical expected"}
+      c.result = {"success":"false","error":str(x)}
+      return c.result
+    RPC = getRPCClient("DataManagement/DataLogging")
+    result = RPC.getFileLoggingInfo(lfn)
+    if not result["OK"]:
+      return {"success":"false","error":result["Message"]}
+    result = result["Value"]
+    if not result:
+      return {"success":"false","result":"","error":"No logging information found for LFN"}
+    c.result = []
+    for i in result:
+      c.result.append({"Status":i[0],"MinorStatus":i[1],"StatusTime":i[2],"Source":i[3]})
+    return {"success":"true","result":c.result}
 
   def __globalStat(self):
     RPC = getRPCClient("DataManagement/RAWIntegrity")
@@ -183,3 +215,4 @@ class RawintegritymonitorController(BaseController):
       c.result = {"success":"false","error":result["Message"]}
     gLogger.info("\033[0;31mJOB SUBMIT REQUEST:\033[0m %s" % (time() - pagestart))
     return c.result
+
