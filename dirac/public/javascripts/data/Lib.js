@@ -707,7 +707,17 @@ function selectAll(selection){
     }
   }
 }
-function sortGlobalPanel(){
+function sortGlobalPanel(initButtonsArray,defaultSort,id,title){
+  if((initButtonsArray == null) || (initButtonsArray == '')){
+    alert('Error: Failed to initialize global sorting panel, buttons array is empty');
+    return
+  }
+  if((id == null) || (id == '')){
+    id = 'sortGlobalPanel';
+  }
+  if((title == null) || (title == '')){
+    title = 'Global Sort';
+  }
   function sortGlobal(value){
     dataSelect.globalSort = value;
     if(tableMngr){
@@ -744,15 +754,7 @@ function sortGlobalPanel(){
     return button;
   }
   function buttons(type){
-    var value = [
-      ['JobID Ascending','JobID ASC'],
-      ['JobID Descending','JobID DESC'],
-      ['LastUpdate Ascending','LastUpdateTime ASC'],
-      ['LastUpdate Descending','LastUpdateTime DESC'],
-      ['Site Ascending','Site ASC'],
-      ['Site Descending','Site DESC']
-    ];
-    var defaultSort = 'JobID DESC';
+    var value = initButtonsArray;
     if(dataSelect.extra){
       if(dataSelect.extra.sort){
         for(var i = 0; i < value.length; i++){
@@ -783,11 +785,11 @@ function sortGlobalPanel(){
   var panel = new Ext.Panel({
     autoScroll:true,
     border:false,
-    id:'sortGlobalPanel',
+    id:id,
     items:[p],
     labelAlign:'top',
     layout:'column',
-    title:'Global Sort'
+    title:title
   });
   return panel;
 }
@@ -906,7 +908,7 @@ function statPanel(title,mode,id){
       {header:'Replicas',width:50,sortable:true,dataIndex:'Files',align:'right'},
       {header:'Size',width:50,sortable:true,dataIndex:'Size',align:'left'}
     ];
-  }else if(mode == 'fileStatus'){
+  }else if((mode == 'fileStatus') || (mode == 'globalFile')){
     var columns = [
       {header:'',width:26,sortable:false,dataIndex:'Status',renderer:fileStatus,hideable:false} 
       {header:'Status',width:60,sortable:true,dataIndex:'Status',align:'left'},
@@ -919,7 +921,7 @@ function statPanel(title,mode,id){
       {header:'Numbers',sortable:true,dataIndex:'Number',align:'left'}
     ];
   }
-  if(mode == 'global'){
+  if((mode == 'global') || (mode == 'globalFile')){
     var store = new Ext.data.Store({
       autoLoad:{params:{globalStat:'true'}},
       proxy: new Ext.data.HttpProxy({
@@ -965,7 +967,7 @@ function statPanel(title,mode,id){
     minWidth: 200,
     title:title
   });
-  if(mode == 'global'){
+  if((mode == 'global') || (mode == 'globalFile')){
     panel.addButton({
       cls:"x-btn-text-icon",
       handler:function(){
@@ -984,8 +986,6 @@ function genericID(name,fieldLabel,altRegex,altRegexText){
   try{
     value = dataSelect.extra[name];
     delete dataSelect.extra[name];
-//    value = dataSelect.extra.id;
-//    delete dataSelect.extra.id;
   }catch(e){}
   var regex = new RegExp( /^[0-9, ]+$/);
   var regexText = 'Only digits separated by semicolons are allowed';
@@ -1086,7 +1086,7 @@ function selectDestSite(){
 }
 var regexLFN = new RegExp( /^[A-Za-z0-9, ]+$/);
 function selectLFN(){
-  var id = genericID('lfn','LFN',regexLFN,'Slashes, digits and latters are allowed');
+  var id = genericID('lfn','LFN',regexLFN,'Slashes, digits and letters are allowed');
   return id
 }
 function selectStorageElementMenu(){
