@@ -208,7 +208,7 @@ function dateEndSelectMenu(){
   });
   return date
 }
-function displayWin(panel,title,modal,closeOnly){
+function displayWin(panel,title,modal,closeOnly,resize){
   if((modal == null) || (modal == '')){
     var modal = false;
   }else{
@@ -219,6 +219,10 @@ function displayWin(panel,title,modal,closeOnly){
   if(closeOnly == true){
     maximizable = false;
     collapsible = false;
+  }
+  var resizable = true;
+  if(resize == false){
+    resizable = false;
   }
   var window = new Ext.Window({
     iconCls:'icon-grid',
@@ -233,6 +237,7 @@ function displayWin(panel,title,modal,closeOnly){
     modal:modal,
     layout:'fit',
     plain:true,
+    resizable:resizable,
     shim:false,
     title:title,
     items:[panel]
@@ -901,6 +906,12 @@ function statPanel(title,mode,id){
       {header:'Replicas',width:50,sortable:true,dataIndex:'Files',align:'right'},
       {header:'Size',width:50,sortable:true,dataIndex:'Size',align:'left'}
     ];
+  }else if(mode == 'fileStatus'){
+    var columns = [
+      {header:'',width:26,sortable:false,dataIndex:'Status',renderer:fileStatus,hideable:false} 
+      {header:'Status',width:60,sortable:true,dataIndex:'Status',align:'left'},
+      {header:'Numbers',sortable:true,dataIndex:'Number',align:'left'}
+    ];
   }else{
     var columns = [
       {header:'',width:26,sortable:false,dataIndex:'Status',renderer:status,hideable:false},
@@ -968,50 +979,66 @@ function statPanel(title,mode,id){
   }
   return panel;
 }
-function createID(dataName,menuName){
+function genericID(name,fieldLabel,altRegex,altRegexText){
   var value = '';
-  if(dataSelect){
-    if(dataSelect.extra){
-      if(dataSelect.extra.id){
-        value = dataSelect.extra.id;
-      }
-      delete dataSelect.extra.id;
+  try{
+    value = dataSelect.extra[name];
+    delete dataSelect.extra[name];
+//    value = dataSelect.extra.id;
+//    delete dataSelect.extra.id;
+  }catch(e){}
+  var regex = new RegExp( /^[0-9, ]+$/);
+  var regexText = 'Only digits separated by semicolons are allowed';
+  try{
+    if(altRegex){
+      regex = altRegex;
     }
-  }
-  var number = new Ext.form.TextField({
+  }catch(e){}
+  try{
+    if(altRegexText){
+      regexText = altRegexText;
+    }
+  }catch(e){}
+  var textField = new Ext.form.TextField({
     anchor:'90%',
     allowBlank:true,
     enableKeyEvents:true,
-    fieldLabel:menuName,
-    hiddenName:dataName,
-    id:dataName,
+    fieldLabel:fieldLabel,
+    id:name,
     mode:'local',
+    name:name,
+    regex:regex,
+    regexText:regexText,
     selectOnFocus:true,
     value:value
   });
-  number.on({
+  textField.on({
     'render':function(){
-      try{
-        var newValue = dataSelect.extra[dataName];
-        number.setValue(newValue);
-        delete dataSelect.extra[dataName];
-      }catch(e){}
+      if(textField.value !== ''){
+        hideControls(textField);
+      }
+    },
+    'blur':function(){
+      hideControls(textField);
+    },
+    'keyup':function(){
+      hideControls(textField);
     }
   });
-  return number;
+  return textField;
 }
 // Input fields
+function selectFTSID(){
+  return genericID('ftsid','ID');
+}
 function selectProduction(){
-  var id = createID('prod','Production');
-  return id
+  return genericID('prod','Production');
 }
 function selectFileType(){
-  var id = createID('type','FileType');
-  return id
+  return genericID('type','FileType');
 }
 function selectDirectory(){
-  var id = createID('dir','Directory');
-  return id
+  return genericID('dir','Directory');
 }
 function selectSEs(){
   var menu = createMenu('se','SEs');
@@ -1047,6 +1074,27 @@ function selectStartLumiMenu(){
 }
 function selectBeamEnergyMenu(){
   var menu = createMenu('beamenergy','BeamEnergy');
+  return menu
+}
+function selectSourceSite(){
+  var menu = createMenu('source','Source');
+  return menu
+}
+function selectDestSite(){
+  var menu = createMenu('destination','Destination');
+  return menu
+}
+var regexLFN = new RegExp( /^[A-Za-z0-9, ]+$/);
+function selectLFN(){
+  var id = genericID('lfn','LFN',regexLFN,'Slashes, digits and latters are allowed');
+  return id
+}
+function selectStorageElementMenu(){
+  var menu = createMenu('storageelement','Storage Element');
+  return menu
+}
+function selectRAWStatusMenu(){
+  var menu = createMenu('status','Status');
   return menu
 }
 function selectID(){
@@ -1514,6 +1562,15 @@ function columnTreeee(){
     })
   });
   return tree
+}
+function fileStatus(value){
+  if((value == 'Done')||(value == 'Completed')){
+    return '<img src="'+gURLRoot+'/images/monitoring/done.gif">';
+  }else if((value == 'Failed')){
+    return '<img src="'+gURLRoot+'/images/monitoring/failed.gif">';
+  }else if((value == 'Active')){
+    return '<img src="'+gURLRoot+'/images/monitoring/running.gif">';
+  }
 }
 function status(value){
   if((value == 'Done')||(value == 'Completed')||(value == 'Good')||(value == 'Active')||(value == 'IN BKK')||(value == 'ENDED')){
