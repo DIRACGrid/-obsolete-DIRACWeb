@@ -981,7 +981,7 @@ function statPanel(title,mode,id){
   }
   return panel;
 }
-function genericID(name,fieldLabel,altRegex,altRegexText){
+function basicID(name,fieldLabel,altRegex,altRegexText){
   var value = '';
   try{
     value = dataSelect.extra[name];
@@ -1012,6 +1012,10 @@ function genericID(name,fieldLabel,altRegex,altRegexText){
     selectOnFocus:true,
     value:value
   });
+  return textField;
+}
+function genericID(name,fieldLabel,altRegex,altRegexText){
+  textField = basicID(name,fieldLabel,altRegex,altRegexText); 
   textField.on({
     'render':function(){
       if(textField.value !== ''){
@@ -1086,7 +1090,7 @@ function selectDestSite(){
 }
 var regexLFN = new RegExp( /^[A-Za-z0-9, ]+$/);
 function selectLFN(){
-  var id = genericID('lfn','LFN',regexLFN,'Slashes, digits and letters are allowed');
+  var id = basicID('lfn','LFN',regexLFN,'Slashes, digits and letters are allowed');
   return id
 }
 function selectStorageElementMenu(){
