@@ -25,10 +25,6 @@ function initSidebar(){
   select.insert(3,lfn);
   var bar = sideBar();
   bar.insert(0,select);
-  var stat = statPanel('Current Statistics','fileStatus','statGrid');
-  bar.insert(1,stat);
-  var glStat = statPanel('Global Statistics','globalFile','glStatGrid');
-  bar.insert(2,glStat);
   var buttons = [
       ['Submit Time Ascending','SubmitTime ASC'],
       ['Submit Time Descending','SubmitTime DESC'],
@@ -40,7 +36,11 @@ function initSidebar(){
       ['LFN Descending','LFN DESC']
     ];
   var sortGlobal = sortGlobalPanel(buttons,'SubmitTime DESC');
-  bar.insert(3,sortGlobal);
+  bar.insert(1,sortGlobal);
+  var stat = statPanel('Current Statistics','fileStatus','statGrid');
+  bar.insert(2,stat);
+  var glStat = statPanel('Global Statistics','globalFile','glStatGrid');
+  bar.insert(3,glStat);
   bar.setTitle('RAW Integrity DB Monitor');
   return bar
 }
