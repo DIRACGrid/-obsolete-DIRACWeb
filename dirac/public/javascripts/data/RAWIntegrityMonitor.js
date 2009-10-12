@@ -29,8 +29,18 @@ function initSidebar(){
   bar.insert(1,stat);
   var glStat = statPanel('Global Statistics','globalFile','glStatGrid');
   bar.insert(2,glStat);
-  //var sortGlobal = sortGlobalPanel(); // Initializing the global sort panel
-  //bar.insert(2,sortGlobal);
+  var buttons = [
+      ['Submit Time Ascending','SubmitTime ASC'],
+      ['Submit Time Descending','SubmitTime DESC'],
+      ['Status Ascending','Status ASC'],
+      ['Status Descending','Status DESC'],
+      ['StorageElement Ascending','StorageElement ASC'],
+      ['StorageElement Descending','StorageElement DESC'],
+      ['LFN Ascending','LFN ASC'],
+      ['LFN Descending','LFN DESC']
+    ];
+  var sortGlobal = sortGlobalPanel(buttons,'SubmitTime DESC');
+  bar.insert(3,sortGlobal);
   bar.setTitle('RAW Integrity DB Monitor');
   return bar
 }
