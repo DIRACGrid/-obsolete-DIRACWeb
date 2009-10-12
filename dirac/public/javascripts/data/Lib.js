@@ -1088,9 +1088,9 @@ function selectDestSite(){
   var menu = createMenu('destination','Destination');
   return menu
 }
-var regexLFN = new RegExp( /^[A-Za-z0-9, ]+$/);
+var regexLFN = new RegExp( /[^\0]+/);
 function selectLFN(){
-  var id = basicID('lfn','LFN',regexLFN,'Slashes, digits and letters are allowed');
+  var id = genericID('lfn','LFN',regexLFN,'Any non-NULL character');
   return id
 }
 function selectStorageElementMenu(){
