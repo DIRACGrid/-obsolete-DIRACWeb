@@ -71,10 +71,14 @@ class BkController(BaseController):
       fileType = request.params["type"]
     else:
       fileType = "txt"
+    if request.params.has_key("fname") and len(request.params["fname"]) > 0:
+      fileName = request.params["fname"]
+    else:
+      fileName = "default_name"
     files = self.__showFiles(req,{},startItem,maxItems)
     files = files["result"]
     tmp = cl.writePythonOrJobOptions(startItem,maxItems,req,fileType)
-    fileName = "lfn_list." + fileType
+    fileName = fileName + "." + fileType
     gLogger.info("\033[0;31m - \033[0m",fileName)
     response.headers['Content-type'] = 'application/x-unknown'
     response.headers["Content-Disposition"] = "attachment; filename=%s" % fileName
@@ -187,6 +191,9 @@ class BkController(BaseController):
                     for l in extra[k]:
                       m = l.replace(" ","")
                       toSend[k][m] = extra[k][l]
+                  toSend["SaveAs"] = toSend["Selection"]["ConfigurationVersion"].replace(" ","_")+"_"+toSend["Selection"]["SimulationCondition"].replace(" ","_")
+                  toSend["SaveAs"] = toSend["SaveAs"]+"_"+toSend["Selection"]["ProcessingPass"].replace(" ","_")+"_"+toSend["Selection"]["Eventtype"].replace(" ","_")
+                  toSend["SaveAs"] = toSend["SaveAs"]+"_"+toSend["Selection"]["FileType"].replace(" ","_")
                   c.result = {"success":"true","result":c.result,"total":total,"extra":toSend}
                 else:
                   c.result = {"success":"true","result":c.result,"total":total}
@@ -406,11 +413,6 @@ class BkController(BaseController):
           c.result = {"success":"false","result":"","error":"Data structure is corrupted, there is no 'TotalRecords' key"}
       else:
         c.result = {"success":"false","error":result["Message"]}
-#      if result["OK"]:
-#        c.result = result["Value"]
-#        c.result = {"success":"true","result":c.result}
-#      else:
-#        c.result = {"success":"false","error":result["Message"]}
     gLogger.info("Bookkeeping/BookkeepingManager getFileMetadata: ",lfn)
     return c.result
 ################################################################################
