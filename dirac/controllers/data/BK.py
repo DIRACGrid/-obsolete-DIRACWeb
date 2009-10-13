@@ -15,10 +15,37 @@ log = logging.getLogger(__name__)
 class BkController(BaseController):
 ################################################################################
   def display(self):
-    lhcbGroup = credentials.getSelectedGroup()
-#    if lhcbGroup == "visitor":
-#      return render("/login.mako")
+    c.select = self.__getSelectionData()
+    gLogger.info("SELECTION RESULTS:",c.select)
     return render("data/BK.mako")
+################################################################################
+  def __getSelectionData(self):
+    callback = {}
+    if len(request.params) > 0:
+      tmp = {}
+      for i in request.params:
+        tmp[i] = str(request.params[i])
+      callback["extra"] = tmp
+###
+    RPC = LHCB_BKKDBClient(getRPCClient('Bookkeeping/BookkeepingManager'))
+    result = RPC.getAvailableProductions()
+    gLogger.info("SELECTION RESULTS:",result)
+    if result["OK"]:
+      stat = []
+      if len(result["Value"])>0:
+        stat.append([str("All")])
+        for i in result["Value"]:
+          i = str(i)
+          i = i.replace(",","")
+          i = i.replace("(","")
+          i = i.replace(")","")
+          stat.append([i])
+      else:
+        stat = [["Nothing to display"]]
+    else:
+      stat = [["Error during RPC call"]]
+    callback["production"] = stat
+    return callback
 ################################################################################
   def download(self):
     lhcbGroup = credentials.getSelectedGroup()
@@ -87,7 +114,6 @@ class BkController(BaseController):
       c.result = {"success":"false","error":"You are not authorised"}
     else:
       result = cl.list(request)
-      gLogger.info("\033[0;31m R: \033[0m",result)
       if len(result) > 0:
         tempDict = {}
         for i in result:
@@ -109,6 +135,8 @@ class BkController(BaseController):
                 returnD["cls"] = "x-tree-node-collapsed"
               else:
                 returnD["qtip"] = level
+              if level == "Event types":
+                returnD["text"] = returnD["text"] + " ( " + i["Description"] + " )"
           except:
             gLogger.info("Some error happens here: ",j)
             pass
@@ -125,10 +153,6 @@ class BkController(BaseController):
       c.result = {"success":"false","error":"You are not authorised"}
     else:
       request = {'fullpath':request}
-      gLogger.info("\033[0;31m - \033[0m",request)
-      gLogger.info("\033[0;31m - \033[0m",sortDict)
-      gLogger.info("\033[0;31m - \033[0m",StartItem)
-      gLogger.info("\033[0;31m - \033[0m",MaxItems)
       result = cl.getLimitedFiles(request,sortDict,StartItem,MaxItems)
       gLogger.info("\033[0;31m RESULT \033[0m",result)
       if result.has_key("TotalRecords"):
@@ -183,14 +207,10 @@ class BkController(BaseController):
     strList = list(str(number))
     newList = [ strList[max(0,i-3):i] for i in range( len( strList ), 0, -3 ) ]
     newList.reverse()
-    gLogger.info("\033[0;31m newList: \033[0m",newList)
     finalList = []
     for i in newList:
       finalList.append(str(''.join(i)))
-    gLogger.info("\033[0;31m newList \033[0m",newList)
-    gLogger.info("\033[0;31m finalList \033[0m",finalList)
     finalList = " ".join( map(str,finalList) )
-    gLogger.info("\033[0;31m finalList \033[0m",finalList)
     return finalList
 ################################################################################
   def __bytestr(self,size,precision=1):
@@ -263,6 +283,8 @@ class BkController(BaseController):
       return self.__logLFN(lfn)
     elif request.params.has_key("fileTypes"):
       return self.__getFileTypes()
+    elif request.params.has_key("productionMenu"):
+      return self.__getSelectionData()
 ################################################################################
   def __production(self,prodID,type,start=0,limit=25):
     pagestart = time()
@@ -324,7 +346,6 @@ class BkController(BaseController):
           c.result = {"success":"false","result":"","error":"Data structure is corrupted, there is no 'TotalRecords' key"}
       else:
         c.result = {"success":"false","error":result["Message"]}
-#      gLogger.info(result)
     gLogger.info("\033[0;31m * * * Bookkeeping REQUEST: \033[0m %s" % (time() - pagestart))
     gLogger.info("Bookkeeping/BookkeepingManager getProductionFiles: ",prodID)
     return c.result
