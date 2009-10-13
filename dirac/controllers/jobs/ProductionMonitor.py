@@ -13,6 +13,7 @@ from time import time, gmtime, strftime
 
 from dirac.lib.base import *
 from dirac.lib.diset import getRPCClient
+from DIRAC.Core.Utilities.List import sortList
 from DIRAC import gConfig, gLogger
 import DIRAC.Core.Utilities.Time as Time
 import dirac.lib.credentials as credentials
@@ -256,6 +257,8 @@ class ProductionmonitorController(BaseController):
     elif request.params.has_key("elog") and len(request.params["elog"]) > 0:
       id = str(request.params["elog"])
       return self.__elogProduction(id)
+    elif request.params.has_key("globalStat"):
+      return self.__globalStat()
     else:
       c.result = {"success":"false","error":"DIRAC Job ID(s) is not defined"}
       return c.error
@@ -335,3 +338,13 @@ class ProductionmonitorController(BaseController):
     c.result = {"success":"true","showResult":c.result}
     gLogger.info(cmd,prodid)
     return c.result
+################################################################################
+  def __globalStat(self):
+    RPC = getRPCClient("ProductionManagement/ProductionManager")
+    result = RPC.getTransformationStatusCounters()
+    if result["OK"]:
+      result = result["Value"]
+      back = []
+      for i in sortList(result.keys()):
+        back.append([i,result[i]])
+      return back

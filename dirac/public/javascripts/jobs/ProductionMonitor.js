@@ -69,10 +69,12 @@ function initSidebar(){
   select.insert(4,plugin);
   select.insert(5,dateSelect);
   select.insert(6,id);
-  var stat = statPanel('Statistics','current','statGrid');
+  var stat = statPanel('Current Statistics','current','statGrid');
+  var glStat = statPanel('Global Statistics','global','glStatGrid');
   var bar = sideBar();
   bar.insert(0,select);
   bar.insert(1,stat);
+  bar.insert(2,glStat);
   bar.setTitle('ProductionMonitor');
   return bar
 }
