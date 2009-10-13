@@ -74,7 +74,7 @@ class BkController(BaseController):
     if request.params.has_key("fname") and len(request.params["fname"]) > 0:
       fileName = request.params["fname"]
     else:
-      fileName = "default_name"
+      fileName = "BK_default_name"
     files = self.__showFiles(req,{},startItem,maxItems)
     files = files["result"]
     tmp = cl.writePythonOrJobOptions(startItem,maxItems,req,fileType)
@@ -191,7 +191,7 @@ class BkController(BaseController):
                     for l in extra[k]:
                       m = l.replace(" ","")
                       toSend[k][m] = extra[k][l]
-                  toSend["SaveAs"] = toSend["Selection"]["ConfigurationVersion"].replace(" ","_")+"_"+toSend["Selection"]["SimulationCondition"].replace(" ","_")
+                  toSend["SaveAs"] = "BK_"+toSend["Selection"]["ConfigurationVersion"].replace(" ","_")+"_"+toSend["Selection"]["SimulationCondition"].replace(" ","_")
                   toSend["SaveAs"] = toSend["SaveAs"]+"_"+toSend["Selection"]["ProcessingPass"].replace(" ","_")+"_"+toSend["Selection"]["Eventtype"].replace(" ","_")
                   toSend["SaveAs"] = toSend["SaveAs"]+"_"+toSend["Selection"]["FileType"].replace(" ","_")
                   c.result = {"success":"true","result":c.result,"total":total,"extra":toSend}

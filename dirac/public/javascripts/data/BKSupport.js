@@ -189,7 +189,7 @@ function bkSaveDialog(){
     alert('Error: There are no records in the table');
     return
   }
-  var name = 'default_name';
+  var name = 'BK_default_name';
   try{
     name = table.store.extra_msg.SaveAs;
   }catch(e){}
