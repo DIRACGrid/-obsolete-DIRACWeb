@@ -1,7 +1,8 @@
 var dataMngr = [];
 var tableMngr = [];
 // Main routine
-function initBK(){
+
+function initBK(reponseSelect){
   Ext.onReady(function(){
     renderData();
   });

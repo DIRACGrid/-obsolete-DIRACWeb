@@ -138,11 +138,12 @@ function saveFile(panel){
         return
       }
     }
+    var fname =document.saveHTML.savefield.value;
   }catch(e){
     alert('Error: Can not get values from the form');
     return
   }
-  params = params + '&type=' + type + '&start=' + start + '&limit=' + end;
+  params = params + '&type=' + type + '&start=' + start + '&limit=' + end + '&fname=' + fname;
   saveMask();
   Ext.util.FileOps.downloadFile('download?' + params);
 }
@@ -188,6 +189,10 @@ function bkSaveDialog(){
     alert('Error: There are no records in the table');
     return
   }
+  var name = 'default_name';
+  try{
+    name = table.store.extra_msg.SaveAs;
+  }catch(e){}
   var filetypeHTML = '<form id="filetypeHTML" name="filetypeHTML" method="post" action="">';
   filetypeHTML = filetypeHTML + '<table width="350" border="0" cellspacing="5" cellpadding="0">';
   filetypeHTML = filetypeHTML + '<tr><td width="20"><label valign="middle">';
@@ -206,6 +211,10 @@ function bkSaveDialog(){
   recordsHTML = recordsHTML + '</td><td align="right">To:</td><td><label>';
   recordsHTML = recordsHTML + '<input id="textF2" name="textfield2" type="text" size="10" disabled="disabled" /></label>';
   recordsHTML = recordsHTML + '</td></tr></table></form>';
+  var saveHTML = '<form id="saveHTML" name="saveHTML" method="post" action="">';
+  var saveHTML = saveHTML + '<table width="350" border="0" cellspacing="5" cellpadding="0"><tr><td>';
+  var saveHTML = saveHTML + '<label><input id="saveF" name="savefield" type="text" size="50" value="' + name + '" /></label>';
+  var saveHTML = saveHTML + '</td></tr></table></form>';
   var panel = new Ext.Panel({
     labelAlign: 'top',
     bodyStyle:'padding:5px',
@@ -252,10 +261,16 @@ function bkSaveDialog(){
       html:recordsHTML,
       title:'Records',
       xtype:'fieldset'
+    },{
+      autoHeight:true,
+      html:saveHTML,
+      title:'Save as',
+      xtype:'fieldset'
     }]
   });
   var window = displayWin(panel,'Save dialog','true',true);
-  window.setSize(400,265);
+//  window.setSize(400,265);
+  window.setSize(400,330);
 }
 function getBKInfo(first,last){
   var table = Ext.getCmp('DataMonitoringTable');
