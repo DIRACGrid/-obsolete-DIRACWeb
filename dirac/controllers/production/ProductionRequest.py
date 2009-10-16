@@ -146,7 +146,7 @@ class RealRequestEngine:
                     'RequestPriority', 'RequestAuthor', 'RequestPDG',
                     'SimCondition', 'SimCondID',
                     'ProPath', 'ProID',
-                    'EventType', 'NumberOfEvents', 'Comments', 'Description',
+                    'EventType', 'NumberOfEvents', 'Comments', 'Description', 'Inform',
                     'bk','bkTotal','rqTotal','crTime','upTime' ]
   
   localFields  = [ 'ID', '_is_leaf', '_parent', '_master',
@@ -154,7 +154,7 @@ class RealRequestEngine:
                    'reqPrio', 'reqAuthor', 'reqPDG',
                    'simDesc', 'simCondID',
                    'pDsc', 'pID',
-                   'eventType', 'eventNumber', 'reqComment', 'reqDesc',
+                   'eventType', 'eventNumber', 'reqComment', 'reqDesc', 'reqInform',
                    'eventBK','eventBKTotal','EventNumberTotal',
                    'creationTime', 'lastUpdateTime' ]
 
@@ -277,6 +277,10 @@ class RealRequestEngine:
   def duplicateProductionRequest(self,id):
     RPC = getRPCClient( "ProductionManagement/ProductionRequest" )
     return RPC.duplicateProductionRequest(id)
+
+  def splitProductionRequest(self,id,slist):
+    RPC = getRPCClient( "ProductionManagement/ProductionRequest" )
+    return RPC.splitProductionRequest(id,slist)
 
   def reset(self):
     return S_ERROR('You must be joking...')
@@ -497,7 +501,10 @@ class FakeRequestEngine:
 
   def duplicateProductionRequest(self,id):
     return S_ERROR('Not implemented')
-  
+
+  def splitProductionRequest(self,id,slist):
+    return S_ERROR('Not implemented')
+    
   def getProductionProgressList(self,requestID):
     return S_ERROR('Not implemented')
 
@@ -573,6 +580,20 @@ class ProductionrequestController(BaseController):
     except Exception, e:
       return S_ERROR('Reqiest ID is not a number')
     return self.engine.duplicateProductionRequest(id);
+
+  @jsonify
+  def split(self):
+    rdict = dict(request.params)
+    try:
+      id       = long(rdict['ID'])
+      sstr  = str(request.params['Subrequests'])
+      if sstr:
+        slist = [long(x) for x in sstr.split(',')]
+      else:
+        slist = []
+    except Exception, e:
+      return S_ERROR('Wrong parameters (%s)' % str(e))
+    return self.engine.splitProductionRequest(id,slist)
 
   @jsonify
   def reset(self):

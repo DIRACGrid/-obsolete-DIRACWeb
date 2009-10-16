@@ -155,6 +155,7 @@ PR.RequestDetail = Ext.extend(Ext.Panel, {
     '{p1Html}{p2Html}{p3Html}{p4Html}',
     '{p5Html}{p6Html}{p7Html}<br/>',
 
+    '<b>Inform also:</b> {reqInform}<br/><br/>',
     '<b>Comments</b><br/> {htmlReqComment}<br/>'
   ],
 
@@ -180,6 +181,7 @@ PR.RequestDetail = Ext.extend(Ext.Panel, {
     '{p1Html}{p2Html}{p3Html}{p4Html}',
     '{p5Html}{p6Html}{p7Html}<br/>',
 
+    '<b>Inform also:</b> {reqInform}<br/><br/>',
     '<b>Comments</b><br/> {htmlReqComment}<br/>'
   ],
 
@@ -866,6 +868,160 @@ PR.SubRequestAdder = Ext.extend(Ext.Window, {
 
 
 /**
+ * PR.SimpleSubrequestList
+ * @extends Ext.grid.GridPanel
+ * This is a custom grid to display the list of subrequests
+ */
+PR.SimpleSubrequestList = Ext.extend(Ext.grid.GridPanel, {
+  // override
+  initComponent: function() {
+    store = new PR.SubrequestStore();
+    sm = new Ext.grid.CheckboxSelectionModel();
+    Ext.apply(this, {
+      columns: [
+	sm,
+	{id: 'Id', header:'Id', sortable:true, dataIndex:'ID', width:40},
+	{header:'Event type', sortable:true, dataIndex:'eventType' },
+	{header:'', dataIndex:'eventText' },
+	{header:'Events requested', sortable:true,dataIndex:'eventNumber' }
+      ],
+      autoHeight:    false,
+      autoWidth:     true,
+      loadMask:      true,
+
+      store:         store,
+      sm:            sm,          
+      stripeRows:    true,
+      viewConfig:    {forceFit:true},
+    });
+    store.setDefaultSort('ID', 'ASC');
+    PR.SimpleSubrequestList.superclass.initComponent.call(this);
+  }
+});
+
+/**
+ * PR.RequestSpliter
+ * @extends Ext.Window
+ * Split production request
+ */
+PR.RequestSpliter = Ext.extend(Ext.Window, {
+  initComponent : function() {
+    this.master = new PR.RequestDetail({ID: this.data.ID, 
+					minWidth: 200, region: 'center', frame:true,
+					title: 'Request', autoScroll:true});
+    this.master.on('render',function() { this.master.updateDetail(this.data); }, this);
+
+    this.subrq = new PR.SimpleSubrequestList({
+      title: 'Select subrequest(s) to separate',
+      viewConfig:    {forceFit:true}
+    });
+    if(!this.data._is_leaf){
+      this.subrq.store.load({params: {anode:this.data.ID}});
+    }
+    this.subrq.getSelectionModel().on('selectionchange', 
+				      this.onSubrequestSelection, this);
+
+    this.east = new Ext.Panel({
+      region: 'east',
+      split: true,
+      width: 500,
+      minWidth: 500,
+      border: false,
+
+      layout: 'fit',
+      items: this.subrq,
+
+      buttonAlign: 'center',
+      buttons: [
+	{text: 'Split', disabled: true, id: 'rs-split-btn', 
+	 handler: this.onSplit, scope: this },
+	{text: 'Cancel', handler: this.close, scope: this }
+      ]
+    });
+
+    this.form = new Ext.FormPanel({
+      border: false,
+      items: {
+	xtype:  'panel',
+	layout: 'border',
+	frame: true,
+	border: false,
+	anchor: '100% 100%',
+	items: [ this.master, this.east ]
+      }
+    });
+
+    Ext.apply(this, {
+      width: 950,
+      height: 350,
+      minWidth: 500,
+      minHeight: 300,
+      maximizable: true,
+      modal: true,
+      layout: 'fit',
+      items: this.form
+    });
+    PR.RequestSpliter.superclass.initComponent.call(this);
+  },
+  initEvents: function() {
+    PR.RequestSpliter.superclass.initEvents.call(this);
+    this.addEvents( 'saved' );
+  },
+  onSubrequestSelection: function(sm) {
+    var sel = sm.getSelections();
+    if(!sel.length || sel.length==this.subrq.store.getCount())
+      Ext.getCmp('rs-split-btn').disable();
+    else
+      Ext.getCmp('rs-split-btn').enable();
+  },
+  onSplit: function() {
+    var subr = this.subrq.getSelectionModel().getSelections();
+    var slist = [];
+    for(var i=0;i<subr.length;++i)
+      slist = slist.concat([subr[i].data.ID])
+    pdict = {'ID':this.data.ID, 'Subrequests':slist.join(',')};
+
+    var conn = new Ext.data.Connection();
+    conn.request({
+      url: 'split',
+      method: 'POST',
+      params: pdict,
+      scope: this,
+      success: function(response){
+	if (response) { // check that it is really OK... AZ: !! ??
+	  var str = '';
+	  try {
+	    var result = Ext.decode(response.responseText);
+	    if ( !result.OK )
+              str = result.Message;
+	  } catch (e2) {
+	    str = "unparsable reply from the portal: "+e2.message;
+	  }
+	  if(str){
+	    Ext.MessageBox.show({
+	      title: 'Split request fail',
+	      msg: str,
+	      buttons: Ext.MessageBox.OK,
+	      icon: Ext.MessageBox.ERROR
+	    });
+	    return;
+	  }
+	  Ext.MessageBox.show({
+	    title: 'Split was successful',
+	    msg: 'New request ID is '+result.Value,
+	    buttons: Ext.MessageBox.OK,
+	    icon: Ext.MessageBox.INFO
+	  });
+	}
+	this.fireEvent('saved',this);
+	this.close();
+      },
+      failure: connectBugger('Split request')
+    });
+  }
+});
+
+/**
  * PR.TemplateStore
  * @extends Ext.data.JsonStore
  * That is a specialized Store for Production Templates
@@ -979,6 +1135,7 @@ PR.SubrequestStore = function(config) {
       {name:'eventNumber'},
       {name:'eventBK'},
       {name:'progress'},
+      {name:'eventText'}
     ],
     listeners : { 
       'loadexception' : { 
@@ -2005,7 +2162,10 @@ PR.RequestEditor = Ext.extend(Ext.FormPanel, {
 	      fieldLabel: 'Author', name: 'reqAuthor' }
 	  ]
 	}]
-      }]
+	},
+	{xtype: 'textfield', fieldLabel: 'Inform also', 
+	 name: 'reqInform',  anchor: '98%', emptyText: 'List of DIRAC users and/or mail addresses'
+	}]
     });
 
     var eventStore = new Ext.data.Store({
@@ -2063,6 +2223,12 @@ PR.RequestEditor = Ext.extend(Ext.FormPanel, {
     });
 
     var buttons;
+    if(gPageDescription.userData.group == "diracAdmin"){
+      buttons = [
+        {text: 'Save', handler: this.onSave,   scope: this},
+        {text: 'Cancel', handler: this.onCancel, scope: this}
+      ];
+    } else
     if(this.state == "New"){
       buttons = [
 	{text: 'Save without submission', handler: this.onSave,   scope: this},
@@ -2892,6 +3058,7 @@ PR.SubRequestEditor = Ext.extend(Ext.FormPanel, {
 	{xtype: 'hidden', name: 'simDesc'},
 	{xtype: 'hidden', name: 'pDsc'},
 	{xtype: 'hidden', name: 'pAll'},
+	{xtype: 'hidden', name: 'reqInform'}
       ]
     });
 
@@ -3366,6 +3533,7 @@ PR.RequestListStore = function(config) {
 
     {name:'reqComment'},
     {name:'reqDesc'},
+    {name:'reqInform'},
 
     {name:'eventBK'},
     {name:'EventNumberTotal'},
@@ -3652,6 +3820,15 @@ PR.RequestManager = Ext.extend(Ext.TabPanel, {
 	'-',
 	{handler: function() {this.addSubRequests(r);}, 
 	 scope: this, text: 'Add subrequest'}
+      );
+    if(!r.data._master && !r.data._is_leaf &&
+       (rm.group=='diracAdmin' ||
+	((rm.state=='Submitted' ||  rm.state=='PPG OK' || rm.state=='On-hold') && rm.group=='lhcb_tech') ||
+	((rm.state=='Accepted' || rm.state=='Active') && rm.group=='lhcb_prmgr')))
+      this.menu.add(
+	'-',
+	{handler: function() {this.splitRequest(r);}, 
+	 scope: this, text: 'Split'}
       );
     if((rm.state=='New' && !r.data._master && 
        !r.data._is_leaf && r.data.reqType == 'Simulation')
@@ -4058,6 +4235,19 @@ PR.RequestManager = Ext.extend(Ext.TabPanel, {
 			    add: true});
     }, this.grid);
     adder.show();
+  },
+
+  splitRequest : function(r) {
+    var spliter = new PR.RequestSpliter({
+      title: 'Split request '+r.data.ID,
+      data: r.data
+    });
+    spliter.on('saved', function(){
+      this.getStore().setActiveNode(null);
+      this.getStore().load({params: {start:0, limit:this.pagingBar.pageSize},
+			    add: true});
+    }, this.grid);
+    spliter.show();
   },
 
   addSubRequest : function(r) {
