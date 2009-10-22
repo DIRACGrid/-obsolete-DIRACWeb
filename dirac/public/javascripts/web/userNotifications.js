@@ -303,7 +303,13 @@ function cbNotificationsReceived( store, records, options )
 			params : { notifsIds : Ext.util.JSON.encode( newNotifs ) },
 			url : getURL( 'markNotificationsRead' ),
 		});
-		setCookie( 'lastReadNotId', maxId );
+		var expiration = new Date();
+		var nH = ( expiration.getHours() + 1 ) % 24;
+		if( nH )
+			expiration.setHours( nH )
+		else:
+			expiration.setDate( expiration.getDate() + 1 );
+		setCookie( 'lastReadNotId', maxId, expiration );
 	}
 	gRefreshNotificationsFunction();
 }
@@ -318,14 +324,13 @@ function cbMessagesMarkedRead( ajaxResult, ajaxRequest )
 }
 
 
-function setCookie( cookieName, value, exp_y, exp_m, exp_d, path, domain, secure )
+function setCookie( cookieName, value, expirationDate, path, domain, secure )
 {
   var cookie_string = cookieName + "=" + escape ( value );
 
-  if ( exp_y )
+  if ( expirationDate )
   {
-    var expires = new Date ( exp_y, exp_m, exp_d );
-    cookie_string += "; expires=" + expires.toGMTString();
+    cookie_string += "; expires=" + expirationDate.toGMTString();
   }
 
   if ( path )
@@ -336,7 +341,7 @@ function setCookie( cookieName, value, exp_y, exp_m, exp_d, path, domain, secure
   
   if ( secure )
         cookie_string += "; secure";
-  
+ 
   document.cookie = cookie_string;
 }
 
@@ -344,7 +349,6 @@ function setCookie( cookieName, value, exp_y, exp_m, exp_d, path, domain, secure
 function getCookie( cookieName )
 {
   var matchResults = document.cookie.match ( '(^|;) ?' + cookieName + '=([^;]*)(;|$)' );
-  
   if ( matchResults )
     return ( unescape ( matchResults[2] ) );
   else
