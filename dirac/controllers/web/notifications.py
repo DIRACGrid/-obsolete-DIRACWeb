@@ -33,6 +33,7 @@ class NotificationsCache:
     userName = credentials.getUsername()
     if userName == 'anonymous':
       return { 'totalNots' : 0 }
+    gLogger.info( "Connecting to retrieve notification stats for user %s" % userName )
     if not forceRefresh and  userName in self.__userTimestamp:
       if time.time() - self.__userTimestamp[ userName ] > self.__cacheTime:
         return self.__stats[ userName ]
@@ -62,6 +63,7 @@ class NotificationsCache:
           new.append( record[ 'id' ] )
       new.sort()
     stats = { 'totalNots' : total, 'newNots' : new }
+    gLogger.info( "user %s has %s/%s notifications" % ( userName, total, len( new )  ) )
     self.__stats[ userName ] = stats
     self.__userTimestamp[ userName ] = time.time()
     self.__notifications[ userName ] = records
@@ -75,6 +77,8 @@ class NotificationsCache:
   
   def markNotificationsAsSeen( self, seen, notifsIds ):
     userName = credentials.getUsername()
+    if userName == 'anonymous':
+      return S_OK()
     ntfCli = self.getNtfClient()
     if seen:
       result = ntfCli.markNotificationsAsRead( userName, notifsIds )
@@ -87,6 +91,8 @@ class NotificationsCache:
   
   def deleteNotifications( self, notifsIds ):
     userName = credentials.getUsername()
+    if userName == 'anonymous':
+      return S_OK()
     ntfCli = self.getNtfClient()
     result = ntfCli.removeNotificationsForUser( userName, notifsIds )
     if not result[ 'OK' ]:
