@@ -70,11 +70,16 @@ class NotificationsCache:
     return stats
   
   def getNotificationsForUser( self ):
+    self.getStatsForUser();
     userName = credentials.getUsername()
+    gLogger.info( "Retrieving notifications for user %s" % userName )
+    gLogger.info( str( self.__notifications ) )
     if userName in self.__notifications:
+      gLogger.info( "User %s nas notifications" % userName )
       return self.__notifications[ userName ]
+    gLogger.info( "User %s does not have notifications" % userName )
     return {}
-  
+
   def markNotificationsAsSeen( self, seen, notifsIds ):
     userName = credentials.getUsername()
     if userName == 'anonymous':
