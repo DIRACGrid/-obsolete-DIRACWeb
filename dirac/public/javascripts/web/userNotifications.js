@@ -307,7 +307,7 @@ function cbNotificationsReceived( store, records, options )
 		var nH = ( expiration.getHours() + 1 ) % 24;
 		if( nH )
 			expiration.setHours( nH )
-		else:
+		else
 			expiration.setDate( expiration.getDate() + 1 );
 		setCookie( 'lastReadNotId', maxId, expiration );
 	}
