@@ -11,7 +11,7 @@ function initDiracPage( urlRoot, pageDescription )
   gPageDescription = pageDescription;
   Ext.QuickTips.init();
   Ext.namespace('dirac');
-  initMessageChecker();
+  initNotificationsChecker();
 }
 
 function renderInMainViewport( componentsList )
@@ -116,7 +116,7 @@ function initTopFrame( pageDescription ){
 }
 
 function initBottomFrame( pageDescription ){
-  var navItems = [ pageDescription['pagePath'], '->' ];
+  var navItems = [ pageDescription['pagePath'], '->', { 'id' : 'mainNotificationStats', 'text' : '' }, "-" ];
   var userObject = pageDescription[ 'userData' ];
   if( userObject.group )
   {
@@ -134,6 +134,7 @@ function initBottomFrame( pageDescription ){
   navItems.push( "("+userObject.DN+")" );
   var bottomBar = new Ext.Toolbar({
     region:'south',
+    id:'diracBottomBar',
     items : navItems
   });
   return bottomBar;
@@ -142,95 +143,4 @@ function initBottomFrame( pageDescription ){
 function mainPageRedirectHandler( item )
 {
   window.location = item.url;
-}
-
-
-function initMessageChecker()
-{
-	var messageURL = document.location.protocol + '//' + document.location.host + gURLRoot;
-	if( gPageDescription )
-	{
-		if( gPageDescription.selectedSetup )
-			messageURL += "/" + gPageDescription.selectedSetup;
-		if( gPageDescription.userData && gPageDescription.userData.group )
-			messageURL += "/" + gPageDescription.userData.group;
-	}
-	messageURL += '/systems/message/retrieve';
-	deliveryOKURL = messageURL + '/systems/message/delivered';
-	var msgHeartbeat = {
-			run:function(){
-					Ext.Ajax.request({
-							method : 'POST',
-							success : cbMSGReceived,
-							failure : cbMSGError,
-							url : messageURL,
-							deliveryOKURL : deliveryOKURL
-						});
-    			},
-    		interval:300000 // 5min
-		};
-	Ext.TaskMgr.start( msgHeartbeat );
-}
-
-function cbMSGError( ajaxResult, ajaxRequest )
-{
-	//Error? server did not connect?
-}
-
-function cbMSGReceived( ajaxResult, ajaxRequest )
-{
-	if( ajaxResult.status != 200 )
-		return;
-	var result = Ext.util.JSON.decode( ajaxResult.responseText );
-	if( ! result.OK )
-		return;
-	var message = result.Value;
-	if( ! message )
-		return;
-	if( message.id == null || ! message.content )
-		return;
-	//A REAL MESSAGE!
-	var lastId = getCookie( "lastMessageId" )
-	if( lastId != null && lastId >= message.id )
-		return;
-	alert( message.content );
-	Ext.Ajax.request({
-		method : 'POST',
-		url : ajaxRequest.deliveryOKURL,
-		params : { id : message.id },
-		success : function (){ setCookie( "lastMessageId", message.id ) }
-	});
-}
-
-function setCookie( cookieName, value, exp_y, exp_m, exp_d, path, domain, secure )
-{
-  var cookie_string = cookieName + "=" + escape ( value );
-
-  if ( exp_y )
-  {
-    var expires = new Date ( exp_y, exp_m, exp_d );
-    cookie_string += "; expires=" + expires.toGMTString();
-  }
-
-  if ( path )
-        cookie_string += "; path=" + escape ( path );
-
-  if ( domain )
-        cookie_string += "; domain=" + escape ( domain );
-  
-  if ( secure )
-        cookie_string += "; secure";
-  
-  document.cookie = cookie_string;
-}
-
-
-function getCookie( cookieName )
-{
-  var results = document.cookie.match ( '(^|;) ?' + cookieName + '=([^;]*)(;|$)' );
-
-  if ( results )
-    return ( unescape ( results[2] ) );
-  else
-    return null;
 }
