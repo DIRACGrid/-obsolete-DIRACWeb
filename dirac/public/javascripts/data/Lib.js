@@ -362,6 +362,31 @@ function initProductionLookup(){
     tooltip:'Send request to the server',
     text:'Submit'
   });
+/*
+  var storePRD = new Ext.data.JsonStore({
+    autoLoad:true,
+    baseParams:{productionMenu:'true'},
+    fields:['production'],
+    method:'POST',
+    root:'result',
+    url:'action'
+  });
+  var prod = new Ext.form.ComboBox({
+    anchor:'90%',
+    allowBlank:false,
+    displayField:'production',
+    fieldLabel:'Production',
+    forceSelection:true,
+    hiddenName:'prodID',
+    mode:'local',
+    name:'prodID',
+    selectOnFocus:true,
+    store:storePRD,
+    triggerAction:'all',
+    typeAhead:true,
+    value:'ALL'
+  });
+*/
   var prod = new Ext.form.NumberField({
     anchor:'90%',
     allowBlank:false,
@@ -372,7 +397,7 @@ function initProductionLookup(){
     name:'prodID',
     selectOnFocus:true,
     value:0
-  });
+  })
   var store = new Ext.data.JsonStore({
     autoLoad:true,
     baseParams:{fileTypes:'true'},
@@ -881,6 +906,34 @@ function selectPanel(){
     url:'submit',
     waitMsgTarget:true
   });
+  return panel;
+}
+function statPanelNew(title,id,columns,store,button){
+  var p = new Ext.grid.GridPanel({
+    border:false,
+    columns:columns,
+    id:id,
+    header:false,
+    layout:'fit',
+    store:store,
+    stripeRows:true,
+    viewConfig:{forceFit:true}
+  });
+  var panel = new Ext.Panel({
+    autoScroll:true,
+    border:false,
+    buttonAlign:'center',
+    id:id + 'Panel',
+    items:[p],
+    labelAlign:'top',
+    collapsible:true,
+    width: 200,
+    minWidth: 200,
+    title:title
+  });
+  if((button != null) || (button != '')){
+    panel.addButton(button);
+  }
   return panel;
 }
 function statPanel(title,mode,id){
