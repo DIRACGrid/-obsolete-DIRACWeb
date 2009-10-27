@@ -32,7 +32,6 @@ class ProductionmonitorController(BaseController):
     c.select = self.__getSelectionData()
     if not c.select.has_key("extra"):
       c.select["extra"] = {"prodStatus":"Active::: Stopped::: New"}
-    gLogger.info(" !!!!!!!!!!!!!!!!!!!!!11 productionID - ",c.select)
     gLogger.info("\033[0;31mPRODUCTION INDEX REQUEST:\033[0m %s" % (time() - pagestart))
     return render("jobs/ProductionMonitor.mako")
 ################################################################################
@@ -186,17 +185,17 @@ class ProductionmonitorController(BaseController):
       plugin = "Error during RPC call"
     callback["plugin"] = plugin
 ####
-    result = RPC.getDistinctAttributeValues("Status",{})
-    if result["OK"]:
-      status = []
-      if len(result["Value"])>0:
-        status.append([str("All")])
-        for i in result["Value"]:
-          status.append([str(i)])
-      else:
-        status = "Nothing to display"
-    else:
-      status = "Error during RPC call"
+#    result = RPC.getDistinctAttributeValues("Status",{})
+#    if result["OK"]:
+    status = [["New"],["Active"],["ValidatingInput"],["ValidatingOuptut"],["WaitingIntegrity"],["ValidatedOutputs"],["RemovingFiles"],["RemovedFiles"],["Completed"],["Archived"],["Cleaning"],["Stopped"]]
+#      if len(result["Value"])>0:
+#        status.append([str("All")])
+#        for i in result["Value"]:
+#          status.append([str(i)])
+#      else:
+#        status = "Nothing to display"
+#    else:
+#      status = "Error during RPC call"
     callback["prodStatus"] = status
 ####
     result = RPC.getDistinctAttributeValues("TransformationGroup",{})
