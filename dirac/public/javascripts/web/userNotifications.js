@@ -274,7 +274,7 @@ function createNotificationsGrid()
 		
 	});
 	notGrid.store.on( 'load', cbNotificationsReceived );
-	notGrid.store.keepUnread = true;
+	notGrid.store.keepUnread = false;
 	notGrid.store.load();
 	return notGrid;
 }
