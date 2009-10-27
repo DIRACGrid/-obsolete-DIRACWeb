@@ -29,19 +29,17 @@ class NotificationsCache:
   def getNtfClient( self ):
     return NotificationClient( getRPCClient )
     
-  def getStatsForUser( self, forceRefresh = False ):
+  def __refresh( self, forceRefresh = False ):
     userName = credentials.getUsername()
-    if userName == 'anonymous':
-      return { 'totalNots' : 0 }
-    gLogger.info( "Connecting to retrieve notification stats for user %s" % userName )
     if not forceRefresh and  userName in self.__userTimestamp:
       if time.time() - self.__userTimestamp[ userName ] > self.__cacheTime:
-        return self.__stats[ userName ]
+        return
+    gLogger.info( "Connecting to retrieve notification stats for user %s" % userName )
     ntf = self.getNtfClient()
     result = ntf.getNotifications( {}, [], 0, 0 )
     if not result[ 'OK' ]:
       gLogger.error( "Could not retrieve notifications", "for user %s: %s" % ( userName, result[ 'Message' ] ) )
-      return { 'totalNots' : 0 }
+      return
     nots = result[ 'Value' ]
     self.__notifications[ userName ] = nots
     total = len( nots[ 'Records' ] )
@@ -67,11 +65,19 @@ class NotificationsCache:
     self.__stats[ userName ] = stats
     self.__userTimestamp[ userName ] = time.time()
     self.__notifications[ userName ] = records
-    return stats
+    
+  def getStatsForUser( self, forceRefresh = False ):
+    userName = credentials.getUsername()
+    if userName == 'anonymous':
+      return { 'totalNots' : 0 }
+    self.__refresh( forceRefresh )
+    if userName not in self.__stats:
+      return { 'totalNots' : 0 }
+    return self.__stats[ userName ]
   
   def getNotificationsForUser( self ):
-    self.getStatsForUser();
     userName = credentials.getUsername()
+    self.__refresh( forceRefresh = True );
     gLogger.info( "Retrieving notifications for user %s" % userName )
     gLogger.info( str( self.__notifications ) )
     if userName in self.__notifications:
@@ -91,7 +97,7 @@ class NotificationsCache:
       result = ntfCli.markNotificationsAsNotRead( userName, notifsIds )
     if not result[ 'OK' ]:
       return S_ERROR( result[ 'Message' ] )
-    self.getStatsForUser( forceRefresh = True )
+    self.__refresh( forceRefresh = True )
     return S_OK()
   
   def deleteNotifications( self, notifsIds ):
@@ -102,7 +108,7 @@ class NotificationsCache:
     result = ntfCli.removeNotificationsForUser( userName, notifsIds )
     if not result[ 'OK' ]:
       return S_ERROR( result[ 'Message' ] )
-    self.getStatsForUser( forceRefresh = True )
+    self.__refresh( forceRefresh = True )
     return S_OK()
     
 gNotCache = NotificationsCache()
