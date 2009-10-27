@@ -11,7 +11,6 @@ function initDiracPage( urlRoot, pageDescription )
   gPageDescription = pageDescription;
   Ext.QuickTips.init();
   Ext.namespace('dirac');
-  initNotificationsChecker();
 }
 
 function renderInMainViewport( componentsList )
@@ -30,6 +29,7 @@ function renderInMainViewport( componentsList )
       items : viewportItems
     }
   );
+  initNotificationsChecker();
 }
 
 function initTopFrame( pageDescription ){
