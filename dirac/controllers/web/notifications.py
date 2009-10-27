@@ -31,7 +31,7 @@ class NotificationsCache:
     
   def __refresh( self, forceRefresh = False ):
     userName = credentials.getUsername()
-    if not forceRefresh and  userName in self.__userTimestamp:
+    if not forceRefresh and userName in self.__userTimestamp:
       if time.time() - self.__userTimestamp[ userName ] > self.__cacheTime:
         return
     gLogger.info( "Connecting to retrieve notification stats for user %s" % userName )
