@@ -15,37 +15,37 @@ log = logging.getLogger(__name__)
 class BkController(BaseController):
 ################################################################################
   def display(self):
-    c.select = self.__getSelectionData()
-    gLogger.info("SELECTION RESULTS:",c.select)
+#    c.select = self.__getSelectionData()
+#    gLogger.info("SELECTION RESULTS:",c.select)
     return render("data/BK.mako")
 ################################################################################
-  def __getSelectionData(self):
-    callback = {}
-    if len(request.params) > 0:
-      tmp = {}
-      for i in request.params:
-        tmp[i] = str(request.params[i])
-      callback["extra"] = tmp
-###
-    RPC = LHCB_BKKDBClient(getRPCClient('Bookkeeping/BookkeepingManager'))
-    result = RPC.getAvailableProductions()
-    gLogger.info("SELECTION RESULTS:",result)
-    if result["OK"]:
-      stat = []
-      if len(result["Value"])>0:
-        stat.append([str("All")])
-        for i in result["Value"]:
-          i = str(i)
-          i = i.replace(",","")
-          i = i.replace("(","")
-          i = i.replace(")","")
-          stat.append([i])
-      else:
-        stat = [["Nothing to display"]]
-    else:
-      stat = [["Error during RPC call"]]
-    callback["production"] = stat
-    return callback
+#  def __getSelectionData(self):
+#    callback = {}
+#    if len(request.params) > 0:
+#      tmp = {}
+#      for i in request.params:
+#        tmp[i] = str(request.params[i])
+#      callback["extra"] = tmp
+####
+#    RPC = LHCB_BKKDBClient(getRPCClient('Bookkeeping/BookkeepingManager'))
+#    result = RPC.getAvailableProductions()
+#    gLogger.info("SELECTION RESULTS:",result)
+#    if result["OK"]:
+#      stat = []
+#      if len(result["Value"])>0:
+#        stat.append([str("All")])
+#        for i in result["Value"]:
+#          i = str(i)
+#          i = i.replace(",","")
+#          i = i.replace("(","")
+#          i = i.replace(")","")
+#          stat.append([i])
+#      else:
+#        stat = [["Nothing to display"]]
+#    else:
+#      stat = [["Error during RPC call"]]
+#    callback["production"] = stat
+#    return callback
 ################################################################################
   def download(self):
     lhcbGroup = credentials.getSelectedGroup()
