@@ -39,6 +39,9 @@ class NotificationsCache:
     result = ntf.getNotifications( {}, [], 0, 0 )
     if not result[ 'OK' ]:
       gLogger.error( "Could not retrieve notifications", "for user %s: %s" % ( userName, result[ 'Message' ] ) )
+      self.__stats[ userName ] = { 'totalNots' : 0 }
+      self.__userTimestamp[ userName ] = time.time()
+      self.__notifications[ userName ] = []
       return
     nots = result[ 'Value' ]
     self.__notifications[ userName ] = nots
