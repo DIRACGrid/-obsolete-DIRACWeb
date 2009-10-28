@@ -1,9 +1,15 @@
-$Id: release.notes,v 1.12 2009/10/23 10:00:03 acasajus Exp $
+$Id: release.notes,v 1.13 2009/10/28 20:07:15 acasajus Exp $
 
 Web Next release 
 ===================
 
-08.10.2009 webd20091023r01 AC MS
+28.10.2009 webd20091028r01 AZ
+====================================
+AZ - NEW: users/mails to inform about the request progress
+     BUGFIX: diracAdmin can not change request state during editing in the interface
+     NEW: request splitting
+
+23.10.2009 webd20091023r01 AC MS
 ====================================
 
 AC - NEW: Added new notifications
