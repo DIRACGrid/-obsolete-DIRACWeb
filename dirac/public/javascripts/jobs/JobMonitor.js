@@ -124,15 +124,21 @@ function initData(store){
       text:'Select None',
       tooltip:'Click to uncheck selected row(s)'
     },'->',{
+      cls:"x-btn-text-icon",
       handler:function(){action('job','reschedule')},
+      icon:gURLRoot+'/images/iface/reschedule.gif',
       text:'Reschedule',
       tooltip:'Click to reschedule selected job(s)'
     },{
+      cls:"x-btn-text-icon",
       handler:function(){action('job','kill')},
+      icon:gURLRoot+'/images/iface/close.gif',
       text:'Kill',
       tooltip:'Click to kill selected job(s)'
     },{
+      cls:"x-btn-text-icon",
       handler:function(){action('job','delete')},
+      icon:gURLRoot+'/images/iface/delete.gif',
       text:'Delete',
       tooltip:'Click to delete selected job(s)'
     }
@@ -193,6 +199,8 @@ function addMenu(){
     var button = new Ext.Toolbar.Button({
       text:'Tools',
       menu:[
+//        {handler:function(){submitJobNew()},text:'Job Launchpad'},
+//        {handler:function(){launchJob()},text:'Launchpad in progress'},
         {handler:function(){showURL()},text:'Full URL'},
         {menu:{items:[
           {handler:function(){showJobID(', ')},text:'Comma separated'},
@@ -259,7 +267,7 @@ function AJAXsuccess(value,id,response){
     result = result.replace(/"/g,"");
     result = result.replace(/\\/g,"");
     var html = '<iframe id="www_frame" src =' + result + '></iframe>';
-    panel = new Ext.Panel({border:0,autoScroll:false,html:html})
+    panel = new Ext.Panel({border:0,autoScroll:false,html:html});
     panel.on('resize',function(){
       var wwwFrame = document.getElementById('www_frame');
       wwwFrame.height = panel.getInnerHeight() - 4;
@@ -342,7 +350,7 @@ function AJAXsuccess(value,id,response){
     });
   }
   id = setTitle(value,id);
-  displayWin(panel,id)
+  displayWin(panel,id);
 }
 function afterDataLoad(){
   var msg = [];
