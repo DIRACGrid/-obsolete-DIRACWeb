@@ -698,15 +698,74 @@ class JobmonitorController(BaseController):
 ################################################################################
   @jsonify
   def jobSubmit(self):
-    if request.params.has_key("jdl") and len(request.params["jdl"]) > 0:
-      jdl = str(request.params["jdl"])
+
+#    from DIRAC.Interfaces.API.Dirac import Dirac
+#    from DIRAC.LHCbSystem.Client.LHCbJob import LHCbJob
+#    jobbb = LHCbJob(getRPCClient("WorkloadManagement/JobManager"),getRPCClient("WorkloadManagement/SandboxStore"),getTransferClient("WorkloadManagement/SandboxStore"))
+#    gLogger.info(" - J O B :  ",jobb)
+    response.headers['Content-type'] = "text/html" # Otherwise the browser would offer you to download a JobSubmit file
+    jdl = ""
+    if request.params.has_key("exec") and len(request.params["exec"]) > 0:
+      jdl = jdl + "Executable = \"" + str(request.params["exec"]) + "\";"
     else:
-      c.result = {"success":"false","error":"JDL is absent"}
-    jdl = jdl.replace("\/n"," ")
-    jobManager = getRPCClient('WorkloadManagement/JobManager')
-    result = jobManager.submitJob(jdl)
-    if result["OK"]:
-      c.result = {"success":"true","result":result["Value"]}
+      return {"success":"false","error":"Executable is absent"}
+    if request.params.has_key("outputSandbox") and len(request.params["outputSandbox"]) > 0:
+      jdl = jdl + "OutputSandbox = {" + str(request.params["outputSandbox"]) + "};"
     else:
-      c.result = {"success":"false","error":result["Message"]}
+      return {"success":"false","error":"OutputSandbox is absent"}
+    if request.params.has_key("params") and len(request.params["params"]) > 0:
+      jdl = jdl + "Arguments = \"" + str(request.params["params"]) + "\";"
+    if request.params.has_key("jobname") and len(request.params["jobname"]) > 0:
+      jdl = jdl + "JobName = \"" + str(request.params["jobname"]) + "\";"
+    if request.params.has_key("systemConfig") and len(request.params["systemConfig"]) > 0:
+      jdl = jdl + "SystemConfig = \"" + str(request.params["systemConfig"]) + "\";"
+    if request.params.has_key("CPUTime") and len(request.params["CPUTime"]) > 0:
+      jdl = jdl + "CPUTime = \"" + str(request.params["CPUTime"]) + "\";"
+    store = []
+    for key in request.params.keys():
+      try:
+        if request.params[key].filename:
+          store.append(request.params[key])
+      except:
+        pass
+    clearFS = False # Clear directory flag
+    if len(store) > 0: # If there is a file(s) in sandbox
+      fileNameList = []
+      clearFS = True
+      import shutil
+      import os
+      storePath = tempfile.mkdtemp(prefix='DIRAC_')
+      exception_counter = 0
+      try:
+        for file in store:
+          name = os.path.join( storePath , file.filename.lstrip(os.sep) )
+          tFile = open( name , 'w' )
+          shutil.copyfileobj(file.file, tFile)
+          file.file.close()
+          tFile.close()
+          fileNameList.append(name)
+      except:
+        exception_counter = 1
+        c.result = {"success":"false","error":"An EXCEPTION happens during saving your sandbox file(s)"}
+    if len(fileNameList) > 0 and exception_counter == 0:
+      sndBox = "InputSandbox = {\"" + "\",\"".join(fileNameList) + "\"};"
+    else:
+      sndBox = ""
+    if exception_counter == 0:
+      jdl = jdl + sndBox
+      from DIRAC.WorkloadManagementSystem.Client.WMSClient import WMSClient
+      jobManager = WMSClient(getRPCClient("WorkloadManagement/JobManager"),getRPCClient("WorkloadManagement/SandboxStore"),getTransferClient("WorkloadManagement/SandboxStore"))
+      jdl = str(jdl)
+      gLogger.info("J D L : ",jdl)
+      try:
+        result = jobManager.submitJob(jdl)
+        if result["OK"]:
+          c.result = {"success":"true","result":result["Value"]}
+        else:
+          c.result = {"success":"false","error":result["Message"]}
+      except:
+        c.result = {"success":"false","error":"An EXCEPTION happens during job submittion"}
+    if clearFS:
+      shutil.rmtree(storePath)
     return c.result
+################################################################################
