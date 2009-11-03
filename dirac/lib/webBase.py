@@ -109,32 +109,22 @@ def checkPropertiesWithUser( properties ):
       return True
   return False
 
-def getAreaContents( area, section ):
+def getSchemaContents( section = "" ):
   subContents = []
   for subSection in gWebConfig.getSchemaSections( section ):
     subSectionPath = "%s/%s" % ( section, subSection )
-    subJSTxt = getAreaContents( area, subSectionPath )
+    subJSTxt = getSchemaContents( subSectionPath )
     if len( subJSTxt ) > 0:
-      subContents.append( "{ text: '%s', menu : %s }" % ( subSection, subJSTxt ) )
+      subContents.append( "{ text: '%s', menu : %s }" % ( subSection.capitalize(), subJSTxt ) )
   for page in gWebConfig.getSchemaPages( section ):
     pageData = gWebConfig.getSchemaPageData( "%s/%s" % ( section, page ) )
     if len( pageData ) < 3 or checkPropertiesWithUser( pageData[2:] ):
       if pageData[0].find( "http" ) == 0:
         pagePath = pageData[0]
       else:
-        pagePath = diracURL( "/%s/%s" % ( area, pageData[0] ) )
+        pagePath = diracURL( "/%s" % ( pageData[0] ) )
       subContents.append( "{ text : '%s', url : '%s', handler : %s }" % ( page, pagePath, mainPageHandler ) )
   return "[%s]" % ",".join( subContents )
-
-def getSchemaAreas( areasList = False ):
-  actualWebPath = currentPath()
-  dirList = [ dir.strip() for dir in actualWebPath.split( "/" ) if not dir.strip() == "" ]
-  jsTxt = ""
-  if not areasList:
-    areasList = gWebConfig.getSchemaSections( "" )
-  for area in areasList:
-    jsTxt += "{ text :'%s', menu : %s }," % ( area.capitalize(), getAreaContents( area, area ) )
-  return "[%s]" % jsTxt
 
 def getSetups():
   availableSetups = [ "{ text : '%s', url : '%s', handler : %s }" % ( setupName,
@@ -176,7 +166,7 @@ def getUserData():
 
 def getJSPageData():
   pageData = []
-  pageData.append( "navMenu : %s" % getSchemaAreas() )
+  pageData.append( "navMenu : %s" % getSchemaContents() )
   pageData.append( "setupMenu : %s" % getSetups() )
   pageData.append( "selectedSetup : '%s'" % credentials.getSelectedSetup() )
   pageData.append( "pagePath : %s" % pagePath() )
