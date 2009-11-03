@@ -102,6 +102,7 @@ def authorizeAction( routeDict = False, userCred = False ):
   if not userCred:
     userCred = request.environ[ 'DIRAC.userCredentials' ]
   userRep = "%s@%s" % ( userCred[ 'username' ], userCred[ 'group' ] )
+  gLogger.info( "Testing %s for %s action" % ( userRep, actionPath ) )
   if gAuthManager.authQuery( actionPath, userCred, defaultProperties = 'all' ):
     gLogger.info( "Authorized %s for %s" % ( actionPath, userRep ) )
     return True
