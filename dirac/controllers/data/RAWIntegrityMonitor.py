@@ -45,7 +45,7 @@ class RawintegritymonitorController(BaseController):
       callback["extra"] = tmp
     #####################################################################
     # This is the part that optains the selections from the integrity db.
-    RPC = getRPCClient("dips://lhcb-dms-dirac.cern.ch:9190/DataManagement/RAWIntegrity")
+    RPC = getRPCClient("DataManagement/RAWIntegrity")
     result = RPC.getFileSelections()
     if result["OK"]:
       if len(result["Value"])>0:
@@ -175,7 +175,7 @@ class RawintegritymonitorController(BaseController):
   def submit(self):
     gLogger.info(" -- SUBMIT --")
     pagestart = time()
-    RPC = getRPCClient("dips://lhcb-dms-dirac.cern.ch:9190/DataManagement/RAWIntegrity")
+    RPC = getRPCClient("DataManagement/RAWIntegrity")
     result = self.__request()
     result = RPC.getFilesSummaryWeb(result,globalSort,pageNumber,numberOfFiles)
     if result["OK"]:
