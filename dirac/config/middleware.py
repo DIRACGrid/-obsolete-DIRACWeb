@@ -1,4 +1,6 @@
 """Pylons middleware initialization"""
+
+import types 
 from beaker.middleware import CacheMiddleware, SessionMiddleware
 from routes.middleware import RoutesMiddleware
 
@@ -57,6 +59,13 @@ def make_app(global_conf, full_stack=True, **app_conf):
 
     # Static files
     javascripts_app = StaticJavascripts()
-    static_app = StaticURLParser(config['pylons.paths']['static_files'])
-    app = Cascade([static_app, javascripts_app, app])
+    staticFiles = config['pylons.paths']['static_files']
+    cascadeApps = []
+    if type( staticFiles ) in ( types.ListType, types.TupleType ):
+      for staticFile in staticFiles:
+        cascadeApps.append( StaticURLParser( staticFile ) )
+    else:
+      cascadeApps.append( StaticURLParser( staticFiles ) )
+    cascadeApps.extend( [ javascripts_app, app ] )
+    app = Cascade( cascadeApps )
     return app
