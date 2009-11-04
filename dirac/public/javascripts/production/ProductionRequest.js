@@ -1537,7 +1537,7 @@ PR.ReqType = Ext.extend(Ext.Window, {
 
     this.typeCombo = new Ext.form.ComboBox(
       { fieldLabel: 'Request Type', name: 'reqType',
-	store: ['Simulation','Reconstruction','Stripping'],
+	store: ['Simulation','Reconstruction','Stripping','Stripping (Moore)'],
 	forceSelection: true, mode: 'local',
 	triggerAction: 'all', selectOnFocus: true,
 	value: 'Simulation'
@@ -2901,6 +2901,8 @@ PR.RequestEditor = Ext.extend(Ext.FormPanel, {
 	app = 'Gauss';
       if(this.fieldValue('reqType') == 'Stripping')
 	app = 'DaVinci';
+      if(this.fieldValue('reqType') == 'Stripping (Moore)')
+	app = 'Moore';
       var appCombo = this.getAppCombo(1);
       appCombo.setValue(app);
       if(this.pData)
