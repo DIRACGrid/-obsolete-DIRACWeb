@@ -1,5 +1,5 @@
-# $Header: /tmp/libdirac/tmp.stZoy15380/dirac/DIRAC3/DIRAC/Interfaces/Web/dirac/controllers/systems/configuration.py,v 1.23 2009/09/03 15:04:43 acasajus Exp $
-__RCSID__ = "$Id: configuration.py,v 1.23 2009/09/03 15:04:43 acasajus Exp $"
+# $HeadURL$
+__RCSID__ = "$Id$"
 
 import types
 import logging
