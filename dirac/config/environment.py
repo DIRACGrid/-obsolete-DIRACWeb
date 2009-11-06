@@ -37,11 +37,11 @@ def initDIRAC( config, root ):
     # CONFIGURATION OPTIONS HERE (note: all config options will override
     # any Pylons config options)
     config['dirac.webroot'] = root
-    diracRootPath = os.path.realpath( "%s/../../../../" % root )
+    diracRootPath = os.path.realpath( os.path.dirname( root ) )
     config['dirac.root'] = diracRootPath
     if diracRootPath not in sys.path:
       sys.path.append( diracRootPath )
-    from DIRAC.LoggingSystem.Client.Logger import gLogger
+    from DIRAC.FrameworkSystem.Client.Logger import gLogger
     gLogger.registerBackends( [ 'stderr' ] )
     from DIRAC.Core.Base import Script
     Script.registerSwitch( "r", "reload", "Reload for pylons" )
