@@ -14,7 +14,7 @@ def load_environment(global_conf, app_conf):
     """
     # Pylons paths
     root = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-    diracConfig = initDIRAC( root )
+    diracConfig = initDIRAC( root, global_conf[ 'debug' ] )
     paths = dict( root = root,
                   controllers = diracConfig[ 'controllers' ],
                   static_files = diracConfig[ 'public' ],
@@ -36,12 +36,12 @@ def load_environment(global_conf, app_conf):
     tmpl_options = config['buffet.template_options']
 
 
-def initDIRAC( root ):
+def initDIRAC( rootPath, enableDebug = False ):
     # CONFIGURATION OPTIONS HERE (note: all config options will override
     # any Pylons config options)
     configDict = { 'webConfig' : {} }
-    configDict[ 'webConfig' ]['dirac.webroot'] = root
-    diracRootPath = os.path.realpath( os.path.dirname( os.path.dirname( root ) ) )
+    configDict[ 'webConfig' ]['dirac.webroot'] = rootPath
+    diracRootPath = os.path.realpath( os.path.dirname( os.path.dirname( rootPath ) ) )
     configDict[ 'webConfig' ]['dirac.root'] = diracRootPath
     if diracRootPath not in sys.path:
       sys.path.append( diracRootPath )
@@ -49,7 +49,7 @@ def initDIRAC( root ):
     gLogger.registerBackends( [ 'stderr' ] )
     from DIRAC.Core.Base import Script
     Script.registerSwitch( "r", "reload", "Reload for pylons" )
-    Script.localCfg.addCFGFile( "%s/web.cfg" % root )
+    Script.localCfg.addCFGFile( os.path.join( rootPath, "web.cfg" ) )
     Script.localCfg.addDefaultEntry( "/DIRAC/Security/UseServerCertificate", "yes" )
     Script.parseCommandLine( script = "Website", ignoreErrors = True, initializeMonitor = False )
     gLogger._systemName = "Framework"
@@ -78,7 +78,14 @@ def initDIRAC( root ):
           gLogger.info( "Adding %s path for module %s" % ( type, extModule ) )
           configDict[ type ].append( typePath )
       #End of extensions
-      configDict[ type ].append( os.path.join(root,  type ) )
+      configDict[ type ].append( os.path.join(rootPath,  type ) )
+    
+    #Load debug.cfg?
+    if enableDebug:
+      debugCFGPath = os.path.join( rootPath, "debug.cfg" )
+      if os.path.isfile( debugCFGPath ):
+        gLogger.info( "Loading debug cfg file at %s" % debugCFGPath )
+        gConfig.loadFile( debugCFGPath )
       
     gLogger.info( "Extension modules loaded" )
     
