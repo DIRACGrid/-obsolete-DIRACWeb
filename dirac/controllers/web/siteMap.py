@@ -7,7 +7,7 @@ from dirac.lib.diset import getRPCClient, getTransferClient
 from dirac.lib.credentials import authorizeAction
 from dirac.lib.sessionManager import *
 from DIRAC.AccountingSystem.Client.ReportsClient import ReportsClient
-from DIRAC.MonitoringSystem.Client.SiteMapClient import SiteMapClient
+from DIRAC.FrameworkSystem.Client.SiteMapClient import SiteMapClient
 from DIRAC import gLogger
 from DIRAC import S_ERROR, S_OK
 #from DIRAC.Core.Utilities.DictCache import DictCache
