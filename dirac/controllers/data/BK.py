@@ -3,7 +3,7 @@ from time import time, gmtime, strftime
 
 from dirac.lib.diset import getRPCClient
 from dirac.lib.base import *
-from DIRAC.BookkeepingSystem.Client.LHCB_BKKDBClient  import LHCB_BKKDBClient
+from LHCbDIRAC.BookkeepingSystem.Client.LHCB_BKKDBClient  import LHCB_BKKDBClient
 from DIRAC.Core.Utilities.List import sortList
 from DIRAC import gLogger
 import dirac.lib.credentials as credentials
