@@ -45,7 +45,7 @@ class ProductionmonitorController(BaseController):
     RPC = getRPCClient("ProductionManagement/ProductionManager")
     result = self.__request()
     gLogger.info("\033[0;31m result: \033[0m %s" % result)
-    result = RPC.getProductionSummaryWeb(result,globalSort,pageNumber,numberOfJobs)
+    result = RPC.getTransformationSummaryWeb(result,globalSort,pageNumber,numberOfJobs)
     gLogger.info("\033[0;31m VAL: \033[0m globalSort: %s, pageNumber: %s, numberOfJobs: %s" % (globalSort,pageNumber,numberOfJobs))
     if result["OK"]:
       result = result["Value"]
@@ -158,7 +158,7 @@ class ProductionmonitorController(BaseController):
         tmp[i] = str(request.params[i])
       callback["extra"] = tmp
     RPC = getRPCClient("ProductionManagement/ProductionManager")
-    result = RPC.getProductionSummary()
+    result = RPC.getTransformationSummary()
     if result["OK"]:
       prod = []
       prods = result["Value"]
