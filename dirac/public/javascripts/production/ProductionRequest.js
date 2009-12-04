@@ -12,6 +12,8 @@
 
 Ext.ns('PR');
 
+PR.filterOptions = {};
+
 /*
  * Add working show/hide to Ext.form.Field.
  * Based on: http://extjs.com/forum/showthread.php?t=17396 (webpaul)
@@ -1043,7 +1045,8 @@ PR.TemplateStore = function(config) {
       "WFName",
       "AuthorDN",
       "WFParent",
-      "Description"
+      "Description",
+      "Type"
     ],
     listeners : { 
       'loadexception' : { 
@@ -1321,14 +1324,31 @@ PR.PrWorkflow = Ext.extend(Ext.Window, {
 	 id: 'prw-next-btn', disabled: true },
 	{text: 'Generate', handler: this.onGenerate, scope:this,
 	 id: 'prw-finish-btn', disabled: true },
+	{text: 'Preview', handler: this.onPreview, scope:this,
+	 id: 'prw-preview-btn', disabled: true },
+	{text: 'ScriptPreview', handler: this.onScriptPreview, scope:this,
+	 id: 'prw-spreview-btn', disabled: true },
 	{text: 'Cancel', handler: this.close, scope: this }
       ]
     });
     PR.PrWorkflow.superclass.initComponent.call(this);
   },
+  finishEnable: function() {
+    if(this.detail.data.Type != 'Simple'){
+      Ext.getCmp('prw-finish-btn').enable();
+      Ext.getCmp('prw-spreview-btn').enable();
+    }
+    if(this.detail.data.Type != 'Script')
+      Ext.getCmp('prw-preview-btn').enable();
+  },
+  finishDisable: function() {
+    Ext.getCmp('prw-finish-btn').disable();
+    Ext.getCmp('prw-preview-btn').disable();
+    Ext.getCmp('prw-spreview-btn').disable();
+  },
   onTemplateSelect: function(sm, row, rec) {
     Ext.getCmp('prw-next-btn').disable();
-    Ext.getCmp('prw-finish-btn').disable();
+    this.finishDisable();
     this.detail.updateDetail(rec.data);
     this.parlist.getStore().load({ params:{tpl:rec.data.WFName} })
   },
@@ -1336,14 +1356,14 @@ PR.PrWorkflow = Ext.extend(Ext.Window, {
     if(st.getTotalCount() != 0 || !this.pData._is_leaf)
       Ext.getCmp('prw-next-btn').enable();
     else
-      Ext.getCmp('prw-finish-btn').enable();
+      this.finishEnable();
   },
   onSubrequestSelection: function(sm) {
     var sel = sm.getSelections();
     if(!sel.length)
-      Ext.getCmp('prw-finish-btn').disable();
+      this.finishDisable();
     else
-      Ext.getCmp('prw-finish-btn').enable();
+      this.finishEnable();
   },
   onNext: function() {
     sll = this.sublist.getSelectionModel().getSelections().length;
@@ -1351,18 +1371,18 @@ PR.PrWorkflow = Ext.extend(Ext.Window, {
       if(this.parlist.getStore().getTotalCount() == 0){
 	Ext.getCmp('prw-next-btn').disable();
 	if(sll)
-	  Ext.getCmp('prw-finish-btn').enable();
+	  this.finishEnable();
 	else
-	  Ext.getCmp('prw-finish-btn').disable();
+	  this.finishDisable();
 	Ext.getCmp('prw-prev-btn').enable();
 	this.layout.setActiveItem('prw-subrequest-card');
       } else {
 	if(this.pData._is_leaf){
 	  Ext.getCmp('prw-next-btn').disable();
-	  Ext.getCmp('prw-finish-btn').enable();
+	  this.finishEnable();
 	} else {
 	  Ext.getCmp('prw-next-btn').enable();
-	  Ext.getCmp('prw-finish-btn').disable();
+	  this.finishDisable();
 	}
 	Ext.getCmp('prw-prev-btn').enable();
 	this.layout.setActiveItem('prw-parlist-card');
@@ -1370,9 +1390,9 @@ PR.PrWorkflow = Ext.extend(Ext.Window, {
     } else if(this.layout.activeItem.id == 'prw-parlist-card'){
       Ext.getCmp('prw-next-btn').disable();
       if(sll)
-	Ext.getCmp('prw-finish-btn').enable();
+	this.finishEnable();
       else
-	Ext.getCmp('prw-finish-btn').disable();
+	this.finishDisable();
       this.layout.setActiveItem('prw-subrequest-card');
     }
   },
@@ -1380,34 +1400,34 @@ PR.PrWorkflow = Ext.extend(Ext.Window, {
     if(this.layout.activeItem.id == 'prw-subrequest-card'){
       if(this.parlist.getStore().getTotalCount() == 0){
 	Ext.getCmp('prw-next-btn').enable();
-	Ext.getCmp('prw-finish-btn').disable();
+	this.finishDisable();
 	Ext.getCmp('prw-prev-btn').disable();
 	this.layout.setActiveItem('prw-template-card');
       } else {
 	Ext.getCmp('prw-next-btn').enable();
-	Ext.getCmp('prw-finish-btn').disable();
+	this.finishDisable();
 	this.layout.setActiveItem('prw-parlist-card');
       }
     } else if(this.layout.activeItem.id == 'prw-parlist-card'){
       Ext.getCmp('prw-next-btn').enable();
-      Ext.getCmp('prw-finish-btn').disable();
+      this.finishDisable();
       Ext.getCmp('prw-prev-btn').disable();
       this.layout.setActiveItem('prw-template-card');
     } else if(this.layout.activeItem.id == 'prw-scripts-card'){
       if(!this.pData._is_leaf){
 	Ext.getCmp('prw-next-btn').disable();
-	Ext.getCmp('prw-finish-btn').enable();
+	this.finishDisable();
 	this.layout.setActiveItem('prw-subrequest-card');
       } else {
 	if(this.parlist.getStore().getTotalCount() == 0){
 	  Ext.getCmp('prw-next-btn').disable();
 	  Ext.getCmp('prw-prev-btn').disable();
-	  Ext.getCmp('prw-finish-btn').enable();
+	  this.finishEnable();
 	  this.layout.setActiveItem('prw-template-card');
 	} else {
 	  Ext.getCmp('prw-next-btn').disable();
 	  Ext.getCmp('prw-prev-btn').enable();
-	  Ext.getCmp('prw-finish-btn').enable();
+	  this.finishEnable();
 	  this.layout.setActiveItem('prw-parlist-card');
 	}
       }
@@ -1458,7 +1478,16 @@ PR.PrWorkflow = Ext.extend(Ext.Window, {
       failure: connectBugger('Create Workflow')
     });
   },
+  onPreview: function() {
+    this.doGenerate('Preview');
+  },
+  onScriptPreview: function() {
+    this.doGenerate('ScriptPreview');
+  },
   onGenerate: function() {
+    this.doGenerate('Generate');
+  },
+  doGenerate: function(operation) {
     var pdict = {};
     pdict['RequestID'] = this.pData.ID;
     pdict['Template']  = this.detail.data.WFName;
@@ -1471,6 +1500,7 @@ PR.PrWorkflow = Ext.extend(Ext.Window, {
     for(var i=0;i<subr.length;++i)
       slist = slist.concat([subr[i].data.ID]);
     pdict['Subrequests'] = slist.join(',');
+    pdict['Operation'] = operation;
 
     var conn = new Ext.data.Connection();
     conn.request({
@@ -2743,11 +2773,15 @@ PR.RequestEditor = Ext.extend(Ext.FormPanel, {
 	var inProPass=this.getForm().findField('inProPass').getValue();
 	var eventType=this.getForm().findField('eventType').getValue();
 	prodCombo.store.proxy = new Ext.data.HttpProxy({
-	  url: 'bkk_input_prod?configName='+configName+
-	    '&configVersion='+configVersion+
-	    '&simCondID='+simCondID+
-	    '&inProPass='+inProPass+
-	    '&eventType='+eventType});
+	  method: 'POST',
+	  url: 'bkk_input_prod'});
+	prodCombo.store.baseParams = { 
+	  'configName':configName,
+          'configVersion':configVersion,
+          'simCondID': simCondID,
+          'inProPass': inProPass,
+          'eventType': eventType 
+	};
       }
       prodCombo.store.load({callback: this.onInProdLoaded, scope: this});
     }
@@ -3572,6 +3606,10 @@ PR.RequestListStore = function(config) {
       'loadexception' : { 
 	fn: storeBugger('list of Requests'), 
 	scope: this 
+      },
+      'load' : {
+	fn : this.onLoad,
+	scope: this
       }
     }
   });
@@ -3581,6 +3619,16 @@ Ext.extend(PR.RequestListStore,Ext.ux.maximgb.treegrid.AdjacencyListStore,{
   initEvents: function() {
     PR.RequestListStore.superclass.initEvents.call(this);
     this.addEvents( 'delete' );
+  },
+  onLoad : function(store,records,options) {
+    var params = options.params;
+    if(params.anode != null)
+      return;
+    var opts = PR.getURLParams();
+    PR.updateDict(opts,"limit",params.limit,25);
+    PR.updateDict(opts,"sort",params.sort,'ID');
+    PR.updateDict(opts,"dir",params.dir,'DESC');
+    PR.setURLParams(opts);
   }
 });
 
@@ -3619,6 +3667,151 @@ PR.ExpanderTemplate = Ext.extend(Ext.Template,{
   }
 });
 
+PR.getURLParams = function() {
+  var opts=parent.location.hash;
+  if(!opts)
+    return {};
+  opts = DEncode.decode( opts.substr(1) );
+  if(!opts)
+    return {};
+  return opts
+}
+
+PR.setURLParams = function(opts) {
+  var hash = DEncode.encode( opts );
+  if(!hash || hash == "de")
+    hash = "#";
+  if(parent.location.hash == hash)
+    return false;
+  parent.location.hash = hash;
+  return true;
+};
+	   
+PR.updateDict = function(dict,param,value,defval) {
+  value = value+"";
+  defval = defval+"";
+  if(value ==  defval) {
+    if(param in dict)
+      delete dict[param];
+  } else
+    dict[param] = value;
+}   
+
+/**
+ * PR.Filter
+ * @extends Ext.FormPanel
+ * Present posibility to filter PR.RequestGrid
+ *
+ */
+PR.Filter = Ext.extend(Ext.FormPanel, {
+  _fields : [ "typeF", "stateF", "authorF","idF" ],
+
+  initComponent: function() {
+    Ext.apply(this, {
+      labelAlign : 'top',
+      split : true,
+      region : 'west',
+      collapsible : true,
+      collapsed : true,
+      width : 200,
+	minWidth : 200,
+      margins: '2 0 2 2',
+      cmargins : '2 2 2 2',
+      layoutConfig : { border : true, animate : true },
+      bodyStyle : 'padding: 5px',
+      title : 'Filter',
+      waitMsgTarget : true,
+      autoScroll : true,
+      url : 'xxx',
+      method : 'POST',
+      items : [
+	this._makeMultiselect("typeF","Type",PR.filterOptions.Type),
+	this._makeMultiselect("stateF","State",PR.filterOptions.State),
+	this._makeMultiselect("authorF","Author",PR.filterOptions.Author),
+	{
+	  xtype: 'textfield',
+	  anchor : '%90%',
+	  allowBalnk : true,
+	  emptyText : 'Comma separated IDs',
+	  fieldLabel : 'Request ID(s)',
+	  name : 'idF',
+	  selectOnFocus : true,
+	  mode : 'local'
+	},
+	{ layout : 'form',
+	  border : false,
+	  buttonAlign : 'center',
+	  buttons : [
+	    { text: 'Apply', handler : this.onApply, scope: this },
+	    { text: 'Reset', handler : this.onReset, scope: this }
+	  ] } ]
+    });
+    this.initialConfig.collapsible = true; // AZ: Bug ?
+    PR.Filter.superclass.initComponent.call(this);
+  },
+  initEvents: function() {
+    PR.Filter.superclass.initEvents.call(this);
+  },
+  setFromURL: function() {
+    // AZ: Due to bug in Multiselect, this method
+    // can not work till the widget is inserted into the document
+    var opts=PR.getURLParams()
+    if(!opts)
+      return;
+    for(var i=0;i<this._fields.length;++i){
+      var field = this._fields[i];
+      if(field in opts)
+	PR.getField(this,field).setValue(opts[field]);
+    }
+  },
+  onReset: function() {
+    this.form.reset();
+    this.onApply();
+  },
+  onApply: function() {
+    var opts = PR.getURLParams();
+    for(var i=0;i<this._fields.length;++i){
+      var field = this._fields[i];
+      var value = PR.getField(this,field).getValue();
+      if(value+"" != "")
+	opts[field] = value;
+      else if(field in opts)
+	delete opts[field];
+    }
+    if(PR.setURLParams(opts))
+      this.mgr.reload();
+  },
+  _makeMultiselect : function(name,label,data) {
+    var height = data.length * 23;
+    if(height > 100)
+      height = 100;
+    if(height < 50)
+      height = 50;
+    var adata = []
+    for(var i=0; i<data.length; ++i)
+      adata.push([data[i],data[i]]);
+
+    var ms = new Ext.ux.Multiselect ( {
+      anchor : '90%',
+      allowBlank : true,
+      emptyText : "",
+      fieldLabel : label,
+      mode : 'local',
+      name : name,
+      selectOnFocus : true,
+      autoWidth : true,
+      data : adata,
+      width: '90%',
+      height: height,
+      dataFields :  ['id', 'desc'], 
+      valueField :  'id',
+      displayField : 'desc',
+
+    });
+    return ms;
+  }
+});
+Ext.reg('prfilter', PR.Filter);
 
 /**
  * PR.RequestGrid
@@ -3655,26 +3848,56 @@ PR.RequestGrid = Ext.extend(Ext.ux.maximgb.treegrid.GridPanel, {
       )
     });
 
+    var opts = PR.getURLParams();
+    var pageSize = 25;
+    var sortColumn = 'ID';
+    var sortDir = 'DESC';
+
+    if('limit' in opts)
+      pageSize = opts.limit;
+    if('sort' in opts)
+      sortColumn = opts.sort;
+    if('dir' in opts)
+      sortDir = opts.dir;
+
     var store = new PR.RequestListStore();
 
+    var sizer = new Ext.form.ComboBox({
+      allowBlank:false,
+      editable:false,
+      mode:'local',
+      store: [25,50,100,200,500,1000],
+      triggerAction:'all',
+      value: pageSize,
+      width:50,
+      pageSize:0,
+      listeners: {
+	'select': {
+	  fn: this.onPageSizeChange, scope: this
+	}
+      }
+    });
+
     var pbOpts = {
-      pageSize:    25,
+      pageSize:    pageSize,
       store:       store,
       displayInfo: true,
       displayMsg:  'Displaying requests {0} - {1} of {2}',
       emptyMsg:    'No requests are registered'
     };
+    pbOpts.items = [ '-', sizer ];
     if(gPageDescription.userData.group == 'lhcb_user' ||
        gPageDescription.userData.group == 'user' ||
-       gPageDescription.userData.group == 'lhcb')
-      pbOpts.items = [ '-',
+       gPageDescription.userData.group == 'lhcb'){
+      pbOpts.items.push('-');
+      pbOpts.items.push(
 		       {text: 'New request', cls: 'x-btn-text', scope: this,
 			handler: function() { this.fireEvent('newrequest'); } }
-		     ]
+      );
+    }
     this.pagingBar = new Ext.ux.maximgb.treegrid.PagingToolbar(pbOpts);
 
-    store.setDefaultSort('ID', 'DESC');
-    store.load({params: {start:0, limit:this.pagingBar.pageSize}});
+    store.setDefaultSort(sortColumn, sortDir);
 
     Ext.apply(this, {
       root_title: 'Requests',
@@ -3696,7 +3919,7 @@ PR.RequestGrid = Ext.extend(Ext.ux.maximgb.treegrid.GridPanel, {
 	{header:'Progress (%)', dataIndex:'progress', align: 'right' },
 	{header:'Created at',   dataIndex:'creationTime', hidden: true },
 	{header:'Last state update', dataIndex:'lastUpdateTime', hidden:true },
-	{header:'Author', dataIndex:'reqAuthor', hidden:true },
+	{header:'Author', dataIndex:'reqAuthor', hidden:true, sortable:true },
 	{header:'Event type name', dataIndex:'eventText', hidden:true }
       ],
       autoExpandColumn: 'Name',
@@ -3719,6 +3942,8 @@ PR.RequestGrid = Ext.extend(Ext.ux.maximgb.treegrid.GridPanel, {
       }
     });
     PR.RequestGrid.superclass.initComponent.call(this);
+    this.reload();
+    //store.load({params: {start:0, limit:this.pagingBar.pageSize}});
   },
   initEvents: function() {
     PR.RequestGrid.superclass.initEvents.call(this);
@@ -3726,6 +3951,22 @@ PR.RequestGrid = Ext.extend(Ext.ux.maximgb.treegrid.GridPanel, {
   },
   refresh: function() {
     this.getStore().reload();
+  },
+  reload: function() {
+    var params = PR.getURLParams();
+    params.start = 0;
+    if(! 'limit' in params)
+      params.limit = this.pagingBar.pageSize;
+
+    this.getStore().setActiveNode(null);
+    this.getStore().load({params: params, add: true});
+  },
+  onPageSizeChange: function(combo) {
+    this.pagingBar.pageSize = combo.getValue();
+    var opts = PR.getURLParams();
+    PR.updateDict(opts,"limit",combo.getValue(),25);
+    if(PR.setURLParams(opts))
+      this.reload();
   }
 });
 Ext.reg('prlist', PR.RequestGrid);
@@ -3851,6 +4092,10 @@ PR.RequestManager = Ext.extend(Ext.TabPanel, {
     this.menu.showAt(Ext.EventObject.xy);
   },
 
+  reload: function() {
+    this.grid.reload();
+  },
+
   viewBkkBrowser: function(r) {
     var browser = new PR.BkSimCondBrowser();
     browser.show();
@@ -3901,11 +4146,7 @@ PR.RequestManager = Ext.extend(Ext.TabPanel, {
       state: state,
       type: type
     });
-    editor.on('saved', function(){
-      this.getStore().setActiveNode(null);
-      this.getStore().load({params: {start:0, limit:this.pagingBar.pageSize},
-			    add: true});
-    }, this.grid);
+    editor.on('saved', this.reload, this);
     if(r && r.data.ID){
       editor.rID = r.data.ID
       this.grid.getStore().on('delete', function(id) {
@@ -3974,7 +4215,9 @@ PR.RequestManager = Ext.extend(Ext.TabPanel, {
     var win = new Ext.Window({
       title:    title+r.data.ID,      
       items: detail,
-      rID: r.data.ID
+      rID: r.data.ID,
+      x: Ext.EventObject.getPageX(),
+      y: Ext.EventObject.getPageY()
     });
     win.show();
     if(r.data._master){
@@ -4030,10 +4273,7 @@ PR.RequestManager = Ext.extend(Ext.TabPanel, {
 	    return;
 	  }
 	}
-	this.grid.getStore().setActiveNode(null);
-	this.grid.getStore().load({
-	  params: {start:0, limit:this.grid.pagingBar.pageSize},
-	  add: true});
+	this.reload();
 	this.grid.refresh();
 	this.grid.getStore().fireEvent('delete',id);
       },
@@ -4050,7 +4290,6 @@ PR.RequestManager = Ext.extend(Ext.TabPanel, {
 			       this.__realDelRequest(id)
 			   }, this);
   },
-
 
   __realRemoveSubRequests: function(id) {
     var conn = new Ext.data.Connection();
@@ -4135,10 +4374,7 @@ PR.RequestManager = Ext.extend(Ext.TabPanel, {
 	    return;
 	  }
 	}
-	this.grid.getStore().setActiveNode(null);
-	this.grid.getStore().load({
-	  params: {start:0, limit:this.grid.pagingBar.pageSize},
-	  add: true});
+	this.reload();
 	this.grid.refresh();
       },
       failure: connectBugger('Resurrect Request')
@@ -4173,9 +4409,7 @@ PR.RequestManager = Ext.extend(Ext.TabPanel, {
 	  }
 	}
 	this.grid.getStore().setActiveNode(null);
-	this.grid.getStore().load({
-	  params: {start:0, limit:this.grid.pagingBar.pageSize},
-	  add: true});
+	this.reload();
 	this.grid.refresh();
       },
       failure: connectBugger('Reactivate Request')
@@ -4183,11 +4417,32 @@ PR.RequestManager = Ext.extend(Ext.TabPanel, {
   },
 
   duplicate: function(r) {
+    var id = r.data.ID;
+    if(r.data._master){
+      this.__realDuplicate(r,false);
+      return;
+    }
+    Ext.Msg.show({
+      title:'Question',
+      msg: 'Clear the processing pass in the copy?',
+      buttons: Ext.Msg.YESNOCANCEL,
+      fn: function(btn){
+	if(btn == 'yes')
+	  this.__realDuplicate(r,true)
+	if(btn == 'no')
+	  this.__realDuplicate(r,false)
+      },
+      scope: this,
+      icon: Ext.MessageBox.QUESTION
+    });
+  },
+
+  __realDuplicate: function(r,clearpp) {
     var conn = new Ext.data.Connection();
     conn.request({
       url: 'duplicate',
       method: 'GET',
-      params: { ID: r.data.ID },
+      params: { ID: r.data.ID, ClearPP: clearpp },
       scope: this,
       success: function(response){
 	if (response) { // check that it is really OK... AZ: !! ??
@@ -4216,10 +4471,7 @@ PR.RequestManager = Ext.extend(Ext.TabPanel, {
 	  icon: Ext.MessageBox.INFO
 	});
 
-	this.grid.getStore().setActiveNode(null);
-	this.grid.getStore().load({
-	  params: {start:0, limit:this.grid.pagingBar.pageSize},
-	  add: true});
+	this.reload();
 	this.grid.refresh();
       },
       failure: connectBugger('Duplicate Request')
@@ -4231,11 +4483,7 @@ PR.RequestManager = Ext.extend(Ext.TabPanel, {
       title: 'Add subrequests to '+r.data.ID,
       data: r.data
     });
-    adder.on('saved', function(){
-      this.getStore().setActiveNode(null);
-      this.getStore().load({params: {start:0, limit:this.pagingBar.pageSize},
-			    add: true});
-    }, this.grid);
+    adder.on('saved', this.reload, this);
     adder.show();
   },
 
@@ -4244,11 +4492,7 @@ PR.RequestManager = Ext.extend(Ext.TabPanel, {
       title: 'Split request '+r.data.ID,
       data: r.data
     });
-    spliter.on('saved', function(){
-      this.getStore().setActiveNode(null);
-      this.getStore().load({params: {start:0, limit:this.pagingBar.pageSize},
-			    add: true});
-    }, this.grid);
+    spliter.on('saved', this.reload, this);
     spliter.show();
   },
 
@@ -4263,11 +4507,7 @@ PR.RequestManager = Ext.extend(Ext.TabPanel, {
 			    editor.Original.onDataChanged, 
 			    editor.Original);
 
-    editor.on('saved', function(){
-      this.getStore().setActiveNode(null);
-      this.getStore().load({params: {start:0, limit:this.pagingBar.pageSize},
-			    add: true});
-    }, this.grid);
+    editor.on('saved', this.reload, this);
     editor.parentPath = path;
     this.grid.getStore().on('delete', function(id) {
       for(var i=0;i<this.parentPath.length;++i)
@@ -4295,11 +4535,7 @@ PR.RequestManager = Ext.extend(Ext.TabPanel, {
 			    editor.Original.onDataChanged, 
 			    editor.Original);
 
-    editor.on('saved', function(){
-      this.getStore().setActiveNode(null);
-      this.getStore().load({params: {start:0, limit:this.pagingBar.pageSize},
-			    add: true});
-    }, this.grid);
+    editor.on('saved', this.reload, this);
     editor.parentPath = path;
     this.grid.getStore().on('delete', function(id) {
       for(var i=0;i<this.parentPath.length;++i)
@@ -4322,11 +4558,7 @@ PR.RequestManager = Ext.extend(Ext.TabPanel, {
       title: "Productions for request "+r.data.ID,
       rID: r.data.ID
     });
-    win.on('saved', function(){
-      this.getStore().setActiveNode(null);
-      this.getStore().load({params: {start:0, limit:this.pagingBar.pageSize},
-			    add: true});
-    }, this.grid);
+    win.on('saved', this.reload, this);
     win.show();
   },
 

@@ -3,10 +3,11 @@
 <%inherit file="/diracPage.mako" />
 
 <%def name="head_tags()">
+${ h.javascript_link( "/javascripts/dencodelight.js" ) }
 ${ h.javascript_link("/ext/examples/grid/RowExpander.js") }
 ${ h.stylesheet_link(   "/TreeGrid/css/TreeGrid.css") }
 ${ h.javascript_link("/TreeGrid/TreeGrid.js") }
-${ h.stylesheet_link("/javascripts/production/ProductionRequest.css") }
+${ h.stylesheet_link(   "/javascripts/production/ProductionRequest.css") }
 ${ h.javascript_link("/javascripts/production/ProductionRequest.js") }
 </%def>
 
@@ -14,8 +15,12 @@ ${ h.javascript_link("/javascripts/production/ProductionRequest.js") }
 <script type="text/javascript">
 
 Ext.onReady(function() {
+  PR.filterOptions = ${c.filterOptions};
+
   mgr = Ext.ComponentMgr.create({xtype: 'prmanager'});
-  renderInMainViewport( [mgr] );
+  filter = Ext.ComponentMgr.create({xtype: 'prfilter', mgr: mgr});
+  renderInMainViewport( [filter,mgr] );
+  filter.setFromURL();
 }); 
 </script>
 </%def>

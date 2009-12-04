@@ -7,6 +7,8 @@ import tempfile
 
 import logging
 
+import simplejson
+
 from dirac.lib.base import *
 from dirac.lib.diset import getRPCClient
 import dirac.lib.credentials as credentials # getUserDN() getUsername()
@@ -235,11 +237,17 @@ class RealRequestEngine:
       sortBy    = str(request.params.get('sort', 'ID'))
       sortBy    = self.serviceFields[self.localFields.index(sortBy)]
       sortOrder = str(request.params.get('dir', 'ASC'))
+      filterOpts = {}
+      for x,y in [('typeF','RequestType'),('stateF','RequestState'),
+                  ('authorF','RequestAuthor'),('idF','RequestID')]:
+        val = str(request.params.get(x,''))
+        if val != '':
+          filterOpts[y] = val
     except Exception, e:
       return S_ERROR('Badly formatted list request: '+str(e))
     RPC = getRPCClient( "ProductionManagement/ProductionRequest" )
-    result = RPC.getProductionRequestList(parent,sortBy,sortOrder,
-                                          offset,limit);
+    result = RPC.getProductionRequestList_v2(parent,sortBy,sortOrder,
+                                             offset,limit,filterOpts);
     if not result['OK']:
       return result
     rows = [self.__2local(x) for x in result['Value']['Rows']]
@@ -274,9 +282,9 @@ class RealRequestEngine:
     result = RPC.deleteProductionRequest(id)
     return result
 
-  def duplicateProductionRequest(self,id):
+  def duplicateProductionRequest(self,id,clearpp):
     RPC = getRPCClient( "ProductionManagement/ProductionRequest" )
-    return RPC.duplicateProductionRequest(id)
+    return RPC.duplicateProductionRequest_v2(id,clearpp)
 
   def splitProductionRequest(self,id,slist):
     RPC = getRPCClient( "ProductionManagement/ProductionRequest" )
@@ -349,14 +357,18 @@ class RealRequestEngine:
     ret = RPC.getProductionTemplateList()
     if not ret['OK']:
       return ret
-    dvalue = {} # Remove "_run.py" templates from the list
+    dvalue = {} # Remove "_run.py" templates from the list and set type
     for x in ret['Value']:
+      x['Type'] = 'Simple'
       dvalue[x['WFName']] = x
     value = []
     for x in dvalue:
-      master = x.replace('_run.py','')
-      if  master != x and master in dvalue:
-        continue
+      if '_run.py' in x:
+        master = x.replace('_run.py','')
+        if  master in dvalue:
+          dvalue[master]['Type'] = 'Combi'
+          continue
+        dvalue[x]['Type'] = 'Script'
       value.append(dvalue[x])
     return { 'OK':True, 'total': len(value), 'result': value }
 
@@ -371,6 +383,9 @@ class RealRequestEngine:
     #    templates.append(x)
     #return { 'OK':True, 'total': len(wflist), 'result': templates }
 
+  def getFilterOptions(self):
+    RPC = getRPCClient( "ProductionManagement/ProductionRequest" )
+    return RPC.getFilterOptions()
 
 # Session based
 class FakeRequestEngine:
@@ -519,7 +534,10 @@ class FakeRequestEngine:
 
   def getRequestHistory(self,requestID):
     return S_ERROR('Not implemented')
-    
+
+  def getFilterOptions(self):
+    return S_ERROR('Not implemented')
+
 class ProductionrequestController(BaseController):
 
   def __init__(self):
@@ -531,6 +549,11 @@ class ProductionrequestController(BaseController):
     return redirect_to(action='display')
     
   def display(self):
+    ret = self.engine.getFilterOptions()
+    if not ret['OK']:
+      c.error = ret['Message'];
+      return render ("/error.mako")
+    c.filterOptions = simplejson.dumps( ret['Value'] )
     return render("production/ProductionRequest.mako")
 
   @jsonify
@@ -575,11 +598,16 @@ class ProductionrequestController(BaseController):
   @jsonify
   def duplicate(self):
     id  = str(request.params.get('ID', ''))
+    clearpp = str(request.params.get('ClearPP', 'false'))
     try:
       id = long(id);
+      if clearpp != 'true':
+        clearpp = False
+      else:
+        clearpp = True
     except Exception, e:
       return S_ERROR('Reqiest ID is not a number')
-    return self.engine.duplicateProductionRequest(id);
+    return self.engine.duplicateProductionRequest(id,clearpp);
 
   @jsonify
   def split(self):
@@ -1077,8 +1105,6 @@ class ProductionrequestController(BaseController):
         continue
       if reqType=='Stripping' and len(pl[0])>2 and pl[0][2] != 'DaVinci':
         continue
-      if reqType=='Stripping (Moore)' and len(pl[0])>2 and pl[0][2] != 'Moore':
-        continue
       row = { 'pID': pas[0], 'pDsc': pas[1], 'pAll': passAll }
       for i in range(0,7):
         if not pl[i][0]:
@@ -1373,6 +1399,7 @@ class ProductionrequestController(BaseController):
     try:
       id       = long(rdict['RequestID'])
       tpl_name = str(request.params['Template'])
+      operation = str(request.params.get('Operation','Simple'))
       sstr  = str(request.params['Subrequests'])
       if sstr:
         slist = [long(x) for x in sstr.split(',')]
@@ -1382,6 +1409,8 @@ class ProductionrequestController(BaseController):
       del rdict['RequestID']
       del rdict['Template']
       del rdict['Subrequests']
+      if 'Operation' in rdict:
+        del rdict['Operation']
     except Exception, e:
       return S_ERROR('Wrong parameters (%s)' % str(e))
 
@@ -1430,10 +1459,18 @@ class ProductionrequestController(BaseController):
           x[y] = ''
         else:
           x[y] = str(x[y])
-      if not run_tpl:
+      if not run_tpl and not '_run.py' in tpl_name:
         success.append({ 'ID': x['ID'], 'Body': tpl.apply(x)})
+      elif operation != 'Generate':
+        if operation == 'ScriptPreview' and run_tpl:
+          success.append({ 'ID': x['ID'], 'Body': run_tpl.apply(x)})
+        else:
+          success.append({ 'ID': x['ID'], 'Body': tpl.apply(x)})
       else:
-        res = RPC.execProductionScript(run_tpl.apply(x),tpl.apply(x))
+        if not run_tpl:
+          res = RPC.execProductionScript(tpl.apply(x),"")
+        else:
+          res = RPC.execProductionScript(run_tpl.apply(x),tpl.apply(x))
         if res['OK']:
           success.append({ 'ID': x['ID'], 'Body':  res['Value'] })
         else:
