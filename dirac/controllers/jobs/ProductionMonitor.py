@@ -247,9 +247,9 @@ class ProductionmonitorController(BaseController):
     elif request.params.has_key("stop") and len(request.params["stop"]) > 0:
       id = str(request.params["stop"])
       return self.__actProduction(id,"stop")
-    elif request.params.has_key("deleted") and len(request.params["delete"]) > 0:
-      id = str(request.params["delete"])
-      return self.__actProduction(id,"delet")
+    elif request.params.has_key("clean") and len(request.params["clean"]) > 0:
+      id = str(request.params["clean"])
+      return self.__actProduction(id,"clean")
     elif request.params.has_key("log") and len(request.params["log"]) > 0:
       id = str(request.params["log"])
       return self.__logProduction(id)
@@ -338,26 +338,30 @@ class ProductionmonitorController(BaseController):
   def __actProduction(self,prodid,cmd):
     prodid = prodid.split(",")
     RPC = getRPCClient("ProductionManagement/ProductionManager")
+    if cmd == 'clean':
+      status = 'Cleaning'
+    elif cmd == 'start':
+      status = 'Active'
+    elif cmd == 'stop':
+      status = 'Stopped'
+    else:
+      return {"success":"false","error": "Unknown action"}
     c.result = []
     for i in prodid:
       try:
         id = int(i)
-        if cmd == "delet":
-          result = RPC.deleteTransformation(id)
-        elif cmd == "start":
-          result = RPC.setTransformationStatus(id,"Active")
-        elif cmd == "stop":
-          result = RPC.setTransformationStatus(id,"Stopped")
+        result = RPC.setTransformationStatus(id,status)
+        if result["OK"]:
+          resString = "ProdID: %s set to %s successfully" % (i,cmd)
+        else:
+          resString = "ProdID: %s failed due the reason: %s" % (i,result["Message"])
       except:
-        result["Message"] = "Unable to convert given ID %s to production ID" % i
-      if result["OK"]:
-        result = "ProdID: %s %sed successful" % (i,cmd)
-      else:
-        result = "ProdID: %s failed due the reason: %s" % (i,result["Message"])
-      c.result.append(result)
+        resString = "Unable to convert given ID %s to transformation ID" % i
+      c.result.append(resString)
     c.result = {"success":"true","showResult":c.result}
     gLogger.info(cmd,prodid)
     return c.result
+
 ################################################################################
   def __globalStat(self):
     RPC = getRPCClient("ProductionManagement/ProductionManager")
