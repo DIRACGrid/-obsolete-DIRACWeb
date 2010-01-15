@@ -286,7 +286,7 @@ class ProductionmonitorController(BaseController):
           if dndb.has_key(DN):
             i["AuthorDN"] = dndb[DN]
           else:
-            i["AuthorDN"] = "Owner Unknown"
+            i["AuthorDN"] = DN#"Owner Unknown"
           date = Time.toString(i["MessageDate"])
           c.result.append([i["Message"],i["AuthorDN"],date])
         c.result = {"success":"true","result":c.result}
