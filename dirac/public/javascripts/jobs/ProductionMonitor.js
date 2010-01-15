@@ -181,8 +181,9 @@ function setMenuItems(selections){
   if(dirac.menu){
     dirac.menu.add(
       {handler:function(){jump('job',id,submited)},text:'Show Jobs'},
-      {handler:function(){AJAXrequest('log',id)},text:'Show Logs'},
-      {handler:function(){AJAXrequest('elog',id)},text:'Show Details'},
+      {handler:function(){AJAXrequest('log',id)},text:'Logging Info'},
+      {handler:function(){AJAXrequest('fileStat',id)},text:'File Status'},
+      //{handler:function(){AJAXrequest('elog',id)},text:'Show Details'}, //TODO WORK OUT WHY UNCOMMENTING THIS BREAKS IT
       '-',
       {text:'Actions',menu:({items:subMenu})}
     );
@@ -225,6 +226,32 @@ function AJAXsuccess(value,id,response){
     var store = new Ext.data.Store({
       data:result,
       reader:reader
+    }),
+    panel = new Ext.grid.GridPanel({
+      columns:columns,
+      store:store,
+      stripeRows:true,
+      viewConfig:{forceFit:true}
+    });
+    panel.addListener('cellclick',function(table,rowIndex,columnIndex){
+      showMenu('nonMain',table,rowIndex,columnIndex);
+    });
+  }else if(value == 'fileStat'){
+    var reader = {};
+    var columns = [];
+    reader = new Ext.data.ArrayReader({},[
+      {name:'status'},
+      {name:'count'},
+      {name:'percent'}
+    ]);
+    columns = [
+        {header:'Status',sortable:true,dataIndex:'status',align:'left'},
+        {header:'Count',sortable:true,dataIndex:'count',align:'left'},
+        {header:'Percentage',sortable:true,dataIndex:'percent',align:'left'}
+    ];
+    var store = new Ext.data.Store({
+      data:result,
+      reader:reader 
     }),
     panel = new Ext.grid.GridPanel({
       columns:columns,
