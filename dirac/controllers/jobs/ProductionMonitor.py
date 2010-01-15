@@ -256,6 +256,9 @@ class ProductionmonitorController(BaseController):
     elif request.params.has_key("elog") and len(request.params["elog"]) > 0:
       id = str(request.params["elog"])
       return self.__elogProduction(id)
+    elif request.params.has_key("fileStat") and len(request.params["fileStat"]) > 0:
+      id = str(request.params["fileStat"])
+      return self.__transformationFileStatus(id)
     elif request.params.has_key("globalStat"):
       return self.__globalStat()
     else:
@@ -293,25 +296,43 @@ class ProductionmonitorController(BaseController):
       c.result = {"success":"false","error":result["Message"]}
     gLogger.info("PRODUCTION LOG:",id)
     return c.result
+
+################################################################################
+  def __transformationFileStatus(self,prodid):
+    id = int(prodid)
+    RPC = getRPCClient('ProductionManagement/ProductionManager')
+    res = RPC.getTransformationStats(prodid)
+    if not res['OK']:
+      c.result = {"success":"false","error":res["Message"]}
+    else:
+      resList = []
+      total = res['Value'].pop('Total')
+      if total == 0:
+        c.result = {"success":"false","error":"No files found"} 
+      else:
+        for status in sortList(res['Value'].keys()):
+          count = res['Value'][status]
+          percent = "%.1f" % ((count*100.0)/total)
+          resList.append((status,str(count),percent))
+        resList.append(('Total',total,'-'))
+        c.result = {"success":"true","result":resList}
+    gLogger.info("#######",res)
+    return c.result
+
 ################################################################################
   def __elogProduction(self,prodid):
     id = int(prodid)
     RPC = getRPCClient('ProductionManagement/ProductionManager')
-    result = RPC.getTransformation(id)
-    if result["OK"]:
-      result = result["Value"]
-      if result.has_key("Additional"):
-        result = result["Additional"]
-        if result.has_key("DetailedInfo"):
-          c.result = result["DetailedInfo"]
-          c.result = {"success":"true","result":c.result}
-        else:
-          c.result = {"success":"false","error":"Production does not have parameter 'DetailedInfo'"}
-      else:
-        c.result = {"success":"false","error":"Production does not have parameter 'Additional'"}
+    res = RPC.getTransformationParameters(id,['DetailedInfo'])
+    if not res["OK"]:
+      c.result = {"success":"false","error":res["Message"]}
     else:
-      c.result = {"success":"false","error":result["Message"]}
-    gLogger.info("#######",result)
+      c.result = res['Value']
+      if c.result:
+        c.result = {"success":"true","result":res['Value']}
+      else:
+        c.result = {"success":"false","error":"Production does not have parameter 'DetailedInfo'"}
+    gLogger.info("#######",res)
     return c.result
 ################################################################################
   def __actProduction(self,prodid,cmd):
