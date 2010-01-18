@@ -250,6 +250,10 @@ class ProductionmonitorController(BaseController):
     elif request.params.has_key("clean") and len(request.params["clean"]) > 0:
       id = str(request.params["clean"])
       return self.__actProduction(id,"clean")
+    elif (request.params.has_key("extend") and len(request.params["extend"]) > 0) and (request.params.has_key("tasks") and len(request.params["tasks"]) > 0):
+      id = str(request.params["extend"])
+      tasks = str(request.params["tasks"])
+      return self.__extendTransformation(id,tasks)
     elif request.params.has_key("log") and len(request.params["log"]) > 0:
       id = str(request.params["log"])
       return self.__logProduction(id)
@@ -262,8 +266,9 @@ class ProductionmonitorController(BaseController):
     elif request.params.has_key("globalStat"):
       return self.__globalStat()
     else:
-      c.result = {"success":"false","error":"DIRAC Job ID(s) is not defined"}
+      c.result = {"success":"false","error":"Transformation ID(s) is not defined"}
       return c.error
+
 ################################################################################
   def __logProduction(self,prodid):
     id = int(prodid)
@@ -320,6 +325,20 @@ class ProductionmonitorController(BaseController):
     return c.result
 
 ################################################################################
+  def __extendTransformation(self,id,tasks):
+    tasks = int(tasks)
+    id = int(id)
+    RPC = getRPCClient('ProductionManagement/ProductionManager')
+    res = RPC.extendTransformation(id,tasks)
+    if res["OK"]:
+      resString = "%s extended by %s successfully" % (id,tasks)
+    else:
+      resString = "%s failed to extend: %s" % (id,result["Message"])
+    c.result = {"success":"true","showResult":[resString],"result":resString}
+    gLogger.info("#######",res)
+    return c.result
+
+################################################################################
   def __elogProduction(self,prodid):
     id = int(prodid)
     RPC = getRPCClient('ProductionManagement/ProductionManager')
@@ -334,6 +353,7 @@ class ProductionmonitorController(BaseController):
         c.result = {"success":"false","error":"Production does not have parameter 'DetailedInfo'"}
     gLogger.info("#######",res)
     return c.result
+
 ################################################################################
   def __actProduction(self,prodid,cmd):
     prodid = prodid.split(",")
