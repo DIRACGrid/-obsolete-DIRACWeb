@@ -148,7 +148,7 @@ function initData(store){
     '->',
     {handler:function(){action('production','start')},text:'Start',tooltip:'Click to start selected production(s)'},
     {handler:function(){action('production','stop')},text:'Stop',tooltip:'Click to kill selected production(s)'},
-    {handler:function(){action('production','delete')},text:'Delete',tooltip:'Click to delete selected production(s)'}
+    {handler:function(){action('production','clean')},text:'Clean',tooltip:'Click to clean selected production(s)'}
   ];
   store.setDefaultSort('TransformationID','DESC'); // Default sorting
   tableMngr = {'store':store,'columns':columns,'tbar':tbar};
@@ -164,6 +164,54 @@ function renderData(store){
   renderInMainViewport([ leftBar, mainContent ]);
   dataMngr = {'form':leftBar.items.items[0],'store':store}
 }
+
+function extendTransformation(id){
+  Ext.Msg.prompt('Extend transformation','Please enter the number of tasks',function(btn,tasks){
+    if( btn == 'ok'){
+      if (tasks){
+        Ext.Ajax.request({
+          success:function(response){
+            var jsonData = Ext.util.JSON.decode(response.responseText);
+            if(jsonData['success'] == 'false'){
+              alert('Error: ' + jsonData['error']);
+              return;
+            }else{
+              if(jsonData.showResult){
+                var html = '';
+                for(var i = 0; i < jsonData.showResult.length; i++){
+                  html = html + jsonData.showResult[i] + '<br>';
+                }
+                Ext.Msg.alert('Result:',html);
+              }
+              if(dataMngr){
+                if(dataMngr.store){
+                  if(dataMngr.store.autoLoad){
+                    if(dataMngr.store.autoLoad.params){
+                      if(dataMngr.store.autoLoad.params.limit){
+                        dataMngr.store.load({params:{start:0,limit:dataMngr.store.autoLoad.params.limit}});
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          failure:function(response){
+            AJAXerror(response.responseText)
+          },
+          method:'POST',
+          params:{'extend':id,'tasks':tasks},
+          url:'action'
+        })
+      }else{
+        this.hide();
+      }
+    }else{
+      this.hide();
+    }
+  });   
+}  
+
 function setMenuItems(selections){
   if(selections){
     var id = selections.TransformationID;
@@ -175,7 +223,8 @@ function setMenuItems(selections){
   var subMenu = [
     {handler:function(){action('production','start',id)},text:'Start'},
     {handler:function(){action('production','stop',id)},text:'Stop'},
-    {handler:function(){action('production','delete',id)},text:'Delete'},
+    {handler:function(){extendTransformation(id)},text:'Extend'},
+    {handler:function(){action('production','clean',id)},text:'Clean'},
     '-'
   ];
   if(dirac.menu){
@@ -183,22 +232,23 @@ function setMenuItems(selections){
       {handler:function(){jump('job',id,submited)},text:'Show Jobs'},
       {handler:function(){AJAXrequest('log',id)},text:'Logging Info'},
       {handler:function(){AJAXrequest('fileStat',id)},text:'File Status'},
-      //{handler:function(){AJAXrequest('elog',id)},text:'Show Details'}, //TODO WORK OUT WHY UNCOMMENTING THIS BREAKS IT
+      {handler:function(){AJAXrequest('elog',id)},text:'Show Details'},
       '-',
       {text:'Actions',menu:({items:subMenu})}
     );
   }
   if(status == 'Active'){
-    dirac.menu.items.items[4].menu.items.items[1].enable();
-    dirac.menu.items.items[4].menu.items.items[0].disable();
+    dirac.menu.items.items[5].menu.items.items[1].enable();
+    dirac.menu.items.items[5].menu.items.items[0].disable();
   }else if(status == 'New'){
-    dirac.menu.items.items[4].menu.items.items[1].disable();
-    dirac.menu.items.items[4].menu.items.items[0].enable();
+    dirac.menu.items.items[5].menu.items.items[1].disable();
+    dirac.menu.items.items[5].menu.items.items[0].enable();
   }else{
-    dirac.menu.items.items[4].menu.items.items[1].disable();
-    dirac.menu.items.items[4].menu.items.items[0].enable();
+    dirac.menu.items.items[5].menu.items.items[1].disable();
+    dirac.menu.items.items[5].menu.items.items[0].enable();
   }
 };
+
 function AJAXsuccess(value,id,response){
   try{
     gMainLayout.container.unmask();
