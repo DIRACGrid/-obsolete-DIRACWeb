@@ -247,6 +247,9 @@ class ProductionmonitorController(BaseController):
     elif request.params.has_key("stop") and len(request.params["stop"]) > 0:
       id = str(request.params["stop"])
       return self.__actProduction(id,"stop")
+    elif request.params.has_key("flush") and len(request.params["flush"]) > 0:
+      id = str(request.params["flush"])
+      return self.__actProduction(id,"flush")
     elif request.params.has_key("clean") and len(request.params["clean"]) > 0:
       id = str(request.params["clean"])
       return self.__actProduction(id,"clean")
@@ -364,6 +367,8 @@ class ProductionmonitorController(BaseController):
       status = 'Active'
     elif cmd == 'stop':
       status = 'Stopped'
+    elif cmd == 'flush':
+      status = 'Flush'
     else:
       return {"success":"false","error": "Unknown action"}
     c.result = []

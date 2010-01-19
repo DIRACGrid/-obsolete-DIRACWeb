@@ -148,6 +148,7 @@ function initData(store){
     '->',
     {handler:function(){action('production','start')},text:'Start',tooltip:'Click to start selected production(s)'},
     {handler:function(){action('production','stop')},text:'Stop',tooltip:'Click to kill selected production(s)'},
+    {handler:function(){action('production','flush')},text:'Flush',tooltip:'Click to flush selected production(s)'},
     {handler:function(){action('production','clean')},text:'Clean',tooltip:'Click to clean selected production(s)'}
   ];
   store.setDefaultSort('TransformationID','DESC'); // Default sorting
@@ -224,6 +225,7 @@ function setMenuItems(selections){
     {handler:function(){action('production','start',id)},text:'Start'},
     {handler:function(){action('production','stop',id)},text:'Stop'},
     {handler:function(){extendTransformation(id)},text:'Extend'},
+    {handler:function(){action('production','flush',id)},text:'Flush'},
     {handler:function(){action('production','clean',id)},text:'Clean'},
     '-'
   ];
