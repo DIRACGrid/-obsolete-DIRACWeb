@@ -8,7 +8,7 @@ log = logging.getLogger(__name__)
 class GeneralController(BaseController):
 
   def index(self):
-    return render( "/info/diracOverview.mako" )
+    return redirect_to( controller="info/general", action ="diracOverview" ) 
 
   def diracOverview(self):
     return render( "/info/diracOverview.mako" )
