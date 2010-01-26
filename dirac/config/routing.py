@@ -53,6 +53,7 @@ def make_map():
     import dirac.lib.credentials as credentials
     condDict = dict(function=credentials.checkURL)
 
+    map.connect('', controller = 'info/general' )
     map.connect(':dsetup/:dgroup/:controller/:action/:id', conditions=condDict )
     map.connect(':dsetup/:controller/:action/:id',         dgroup='unknown', conditions=condDict )
     map.connect(':controller/:action/:id',                 dsetup='unknown', dgroup='unknown', conditions=condDict )

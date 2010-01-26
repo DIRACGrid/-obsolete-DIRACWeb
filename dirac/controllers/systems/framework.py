@@ -16,7 +16,7 @@ class FrameworkController(BaseController):
     # Return a rendered template
     #   return render('/some/template.mako')
     # or, Return a response
-    return redirect_to( url_for( controller="info/general", action ="diracOverview" ) )
+    return redirect_to( h.url_for( controller="info/general", action ="diracOverview" ) )
 
   def manageProxies(self):
     return render(  "/systems/framework/manageProxies.mako" )
