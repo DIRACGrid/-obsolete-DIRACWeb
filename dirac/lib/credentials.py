@@ -8,7 +8,7 @@ from dirac.lib.sanitizeInputs import sanitizeAllWebInputs
 
 from DIRAC import gLogger
 from DIRAC.Core.DISET.AuthManager import AuthManager
-from DIRAC.Core.Security import CS
+from DIRAC.Core.Security import CS, X509Certificate
 
 gAuthManager = AuthManager( "%s/Authorization" % gWebConfig.getWebSection() )
 
@@ -46,8 +46,16 @@ def __checkDN( environ ):
   if 'HTTPS' in environ and environ[ 'HTTPS' ] == 'on':
     if 'SSL_CLIENT_S_DN' in environ:
       userDN = environ[ 'SSL_CLIENT_S_DN' ]
+    elif 'SSL_CLIENT_CERT' in environ:
+      userCert = X509Certificate.X509Certificate()
+      result = userCert.loadFromString( environ[ 'SSL_CLIENT_CERT' ] )
+      if not result[ 'OK' ]:
+        gLogger.error( "Could not load SSL_CLIENT_CERT: %s" % result[ 'Message' ] )
+        userName = "anonymous"
+      else:
+        userDN = userCert.getSubjectDN()[ 'Value' ]
     else:
-      gLogger.error( "Apache is not properly configured to get SSL_CLIENT_S_DN in env" )
+      gLogger.error( "Web server is not properly configured to get SSL_CLIENT_S_DN or SSL_CLIENT_CERT in env" )
   if not userDN:
     userName = "anonymous"
   else:
