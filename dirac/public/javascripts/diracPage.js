@@ -1,6 +1,7 @@
-var gURLRoot = ''; // Required to set-up the proper path to the pictures. String.
+var gURLRoot = ''; // Required to set-up the proper path to the pictures.
+                    // String.
 var gMainLayout = false; // Main Layout object
-var gPageDescription = {}; //Main object describing the page layout
+var gPageDescription = {}; // Main object describing the page layout
 var portalVersion = '1.1.0'; // version counter
 
 function initDiracPage( urlRoot, pageDescription )
@@ -11,6 +12,19 @@ function initDiracPage( urlRoot, pageDescription )
   gPageDescription = pageDescription;
   Ext.QuickTips.init();
   Ext.namespace('dirac');
+  //Check for lastLocationHash
+  var lastHash = getCookie( "lastLocationHash" );
+  if( lastHash )
+  {
+    document.location.hash = lastHash;
+    var expiration = new Date();
+    var nH = ( expiration.getHours() + 1 ) % 24;
+    if( nH )
+      expiration.setHours( nH )
+    else
+      expiration.setDate( expiration.getDate() + 1 );
+    setCookie( 'lastLocationHash', "", expiration, gURLRoot || "/" )
+  }
 }
 
 function renderInMainViewport( componentsList )
@@ -32,33 +46,48 @@ function renderInMainViewport( componentsList )
   initNotificationsChecker();
 }
 
+function __addClickHandlerToMenuSubEntries( menuEntry )
+{
+  var hndlMenu = [];
+  for( var i = 0; i < menuEntry.length; i++ )
+  {
+    if( menuEntry[i].menu )
+    {
+      menuEntry[i].menu = __addClickHandlerToMenuSubEntries( menuEntry[i].menu );
+    }
+    if( menuEntry[i].url )
+    {
+      menuEntry[i].handler = mainPageRedirectHandler;
+    }
+    hndlMenu.push( menuEntry[i] );
+  }
+  return hndlMenu;
+}
+
 function initTopFrame( pageDescription ){
   var navItems = [];
   for( var i in pageDescription[ 'navMenu' ] )
   {
   	areaObject = pageDescription[ 'navMenu' ][i];
-        if(areaObject.text){
-		if(areaObject.text == 'Info'){
-                        var jobMenu = new Ext.Toolbar.Button({
-				cls : 'x-btn-icon',
-				icon : gURLRoot+'/images/iface/dlogo.gif',
-				minWidth : '16',
-                                menu : areaObject.menu
-                        });
-		}else{
-		  	var jobMenu = new Ext.Toolbar.Button({
-	  			text : areaObject.text,
-	  			menu : areaObject.menu
-  			});
-		}
-	}
-	navItems.push( jobMenu );
+    if(areaObject.text)
+    {
+      var handleredMenu = __addClickHandlerToMenuSubEntries( areaObject.menu );
+      var cnfObj = { text : areaObject.text, menu : handleredMenu };
+      if(areaObject.text == 'Info')
+      {
+        cnfObj.cls = 'x-btn-icon';
+        cnfObj.icon = gURLRoot+'/images/iface/dlogo.gif';
+        cnfObj.minWidth = '16';
+      }
+	  	var menuEntry = new Ext.Toolbar.Button( cnfObj );
+    }
+    navItems.push( menuEntry );
   }
   navItems.push( 
     new Ext.Toolbar.Button({
       text : "Help",
       handler : function(){
-//        var url = gPageDescription.pagePath.replace(/ /g,'').split('>');
+// var url = gPageDescription.pagePath.replace(/ /g,'').split('>');
         var url = gPageDescription.pagePath.split(' ');
 	for(var i = 0; i < url.length; i++ ){
           var j = url[i].substr(0,1);
@@ -98,6 +127,11 @@ function initTopFrame( pageDescription ){
   );
   navItems.push( "->" );
   navItems.push( "Selected setup:" );
+  // Set the handler
+  for( var i = 0; i< pageDescription[ 'setupMenu' ].length; i++ )
+  {
+	  pageDescription[ 'setupMenu' ][i].handler = redirectWithHashHandler;
+  }
   var setupButton = new Ext.Toolbar.Button({
     text : pageDescription[ 'selectedSetup' ],
     menu : pageDescription[ 'setupMenu' ]
@@ -115,17 +149,23 @@ function initTopFrame( pageDescription ){
   return topBar
 }
 
-function initBottomFrame( pageDescription ){
+function initBottomFrame( pageDescription )
+{
   var navItems = [ pageDescription['pagePath'], '->', { 'id' : 'mainNotificationStats', 'text' : '' }, "-" ];
   var userObject = pageDescription[ 'userData' ];
   if( userObject.group )
   {
   	navItems.push( userObject[ 'username' ]+"@" );
-	var userGroupMenu = new Ext.Toolbar.Button({
-	    text : userObject.group,
-	    menu : userObject.groupMenu
-	  });
-	navItems.push( userGroupMenu );
+  	// Set the handler
+  	for( var i = 0; i< userObject.groupMenu.length; i++ )
+  	{
+  		userObject.groupMenu[i].handler = redirectWithHashHandler;
+  	}
+    var userGroupMenu = new Ext.Toolbar.Button({
+      text : userObject.group,
+      menu : userObject.groupMenu
+      });
+    navItems.push( userGroupMenu );
   }
   else
   {
@@ -140,7 +180,60 @@ function initBottomFrame( pageDescription ){
   return bottomBar;
 }
 
-function mainPageRedirectHandler( item )
+function mainPageRedirectHandler( item, a, b )
 {
   window.location = item.url;
+}
+
+function redirectWithHashHandler( item )
+{
+	var newLocation = item.url;
+	var queryString = window.location.search.substring(1);
+	if( queryString )
+		newLocation += "?" + queryString;
+	if( document.location.hash )
+	{
+	  var expiration = new Date();
+    var nH = ( expiration.getHours() + 1 ) % 24;
+    if( nH )
+      expiration.setHours( nH )
+    else
+      expiration.setDate( expiration.getDate() + 1 );
+		setCookie( "lastLocationHash", document.location.hash, expiration, gURLRoot || "/" );
+	}
+	
+	window.location = newLocation;
+}
+
+
+// Cookie utilities
+function setCookie( cookieName, value, expirationDate, path, domain, secure )
+{
+  var cookie_string = cookieName + "=" + escape ( value );
+
+  if ( expirationDate )
+  {
+    cookie_string += "; expires=" + expirationDate.toGMTString();
+  }
+
+  if ( path )
+        cookie_string += "; path=" + escape ( path );
+
+  if ( domain )
+        cookie_string += "; domain=" + escape ( domain );
+  
+  if ( secure )
+        cookie_string += "; secure";
+ 
+  document.cookie = cookie_string;
+}
+
+
+function getCookie( cookieName )
+{
+  var matchResults = document.cookie.match ( '(^|;) ?' + cookieName + '=([^;]*)(;|$)' );
+  if ( matchResults )
+    return ( unescape ( matchResults[2] ) );
+  else
+    return null;
 }
