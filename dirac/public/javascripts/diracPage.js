@@ -23,7 +23,7 @@ function initDiracPage( urlRoot, pageDescription )
       expiration.setHours( nH )
     else
       expiration.setDate( expiration.getDate() + 1 );
-    setCookie( 'lastLocationHash', "", expiration, gURLRoot || "/" )
+    deleteCooke( 'lastLocationHash' );
   }
 }
 
@@ -236,4 +236,9 @@ function getCookie( cookieName )
     return ( unescape ( matchResults[2] ) );
   else
     return null;
+}
+
+function deleteCooke( cookieName )
+{
+  document.cookie = cookieName + '=;expires=Thu, 01-Jan-1970 00:00:01 GMT';
 }
