@@ -30,8 +30,8 @@ def htmlUserInfo():
     htmlData = "Anonymous"
   else:
     selectedGroup = credentials.getSelectedGroup()
-    availableGroups = [ ( groupName, diracURL( controller='web/userdata', action='changeGroup', id=groupName ) ) for groupName in credentials.getAvailableGroups() ]
-    htmlData = "%s@%s" % ( username, yuiWidgets.dropDownMenu( "UserGroupPos", selectedGroup, availableGroups  ) )
+    availableGroups = [ ( groupName, diracURL( controller = 'web/userdata', action = 'changeGroup', id = groupName ) ) for groupName in credentials.getAvailableGroups() ]
+    htmlData = "%s@%s" % ( username, yuiWidgets.dropDownMenu( "UserGroupPos", selectedGroup, availableGroups ) )
   dn = credentials.getUserDN()
   if dn:
     htmlData += " (%s)" % dn
@@ -45,7 +45,7 @@ def htmlUserInfo():
 
 def htmlSetups():
   selectedSetup = "<strong>%s</strong>" % credentials.getSelectedSetup()
-  availableSetups = [ ( setupName, diracURL( controller='web/userdata', action='changeSetup', id=setupName ) ) for setupName in gWebConfig.getSetups() ]
+  availableSetups = [ ( setupName, diracURL( controller = 'web/userdata', action = 'changeSetup', id = setupName ) ) for setupName in gWebConfig.getSetups() ]
   return yuiWidgets.dropDownMenu( "UserSetupPos", selectedSetup, availableSetups )
 
 def htmlPageTitle():
@@ -74,7 +74,7 @@ def jsSchemaSection( area, section ):
   jsTxt += "]"
   return jsTxt
 
-def htmlSchemaAreas( areasList = False):
+def htmlSchemaAreas( areasList = False ):
   actualWebPath = currentPath()
   dirList = [ dir.strip() for dir in actualWebPath.split( "/" ) if not dir.strip() == "" ]
   htmlData = ""
@@ -123,15 +123,14 @@ def getSchemaContents( section = "" ):
         pagePath = pageData[0]
       else:
         pagePath = diracURL( "/%s" % ( pageData[0] ) )
-      subContents.append( "{ text : '%s', url : '%s', handler : %s }" % ( page, pagePath, mainPageHandler ) )
+      subContents.append( "{ text : '%s', url : '%s' }" % ( page, pagePath ) )
   return "[%s]" % ",".join( subContents )
 
 def getSetups():
-  availableSetups = [ "{ text : '%s', url : '%s', handler : %s }" % ( setupName,
-                                                      diracURL( controller='web/userdata',
-                                                                action='changeSetup',
-                                                                id=setupName ),
-                                                      mainPageHandler ) for setupName in gWebConfig.getSetups() ]
+  availableSetups = [ "{ text : '%s', url : '%s' }" % ( setupName,
+                                                      diracURL( controller = 'web/userdata',
+                                                                action = 'changeSetup',
+                                                                id = setupName ) ) for setupName in gWebConfig.getSetups() ]
   return "[%s]" % ",".join( availableSetups )
 
 def pagePath():
@@ -148,11 +147,11 @@ def getUserData():
   else:
     userData.append( "username : '%s'" % username )
     userData.append( "group : '%s'" % credentials.getSelectedGroup() )
-    availableGroups = [ "{ text : '%s', url : '%s', handler : %s }" % ( groupName,
-                                                                        diracURL( controller='web/userdata',
-                                                                                  action='changeGroup',
-                                                                                  id=groupName ),
-                                                                        mainPageHandler ) for groupName in credentials.getAvailableGroups() ]
+    availableGroups = [ "{ text : '%s', url : '%s' }" % ( groupName,
+                                                                        diracURL( controller = 'web/userdata',
+                                                                                  action = 'changeGroup',
+                                                                                  id = groupName )
+                                                                         ) for groupName in credentials.getAvailableGroups() ]
     userData.append( "groupMenu : [%s]" % ",".join( availableGroups ) )
   dn = credentials.getUserDN()
   if not dn:
@@ -175,11 +174,11 @@ def getJSPageData():
 
 ## DEFAULT REDIRECT
 def defaultRedirect():
-  return redirect_to( controller='info/general', action='diracOverview', id=None )
+  return redirect_to( controller = 'info/general', action = 'diracOverview', id = None )
 
 def diracURL( controller, action = None, id = None ):
   urlEnd = controller.find( "?" )
-  if urlEnd >-1 :
+  if urlEnd > -1 :
     urlArgs = controller[ urlEnd : ]
     controller = controller[ : urlEnd ]
   else:
@@ -190,4 +189,4 @@ def diracURL( controller, action = None, id = None ):
                                     dsetup = request.environ[ 'pylons.routes_dict' ][ 'dsetup' ],
                                     dgroup = request.environ[ 'pylons.routes_dict' ][ 'dgroup' ] ),
                     urlArgs )
-  
+
