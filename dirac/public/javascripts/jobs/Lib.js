@@ -76,8 +76,7 @@ function AJAXerror(response){
   if(response){
     var jsonData = Ext.util.JSON.decode(response.responseText);
   }else{
-    alert('Wrong response:',response);
-    alert('Error: Server response have wrong data structure');
+    alert('Wrong response:' + response + '\nError: Server response have wrong data structure');
     return;
   }
   if(jsonData){
@@ -85,13 +84,11 @@ function AJAXerror(response){
       alert('Error: ' + jsonData['error']);
       return;
     }else{
-      alert('data:',jsonData.toSource());
-      alert('Error: Server response have wrong data structure');
+      alert('data:' + jsonData.toSource() + '\nError: Server response have wrong data structure');
       return;
     }
   }else{
-    alert('No json data found');
-    alert('Error: Server response have wrong data structure');
+    alert('No json data found' + '\nError: Server response have wrong data structure');
     return;
   }
 }
@@ -109,6 +106,7 @@ function AJAXrequest(value,id){
     success:function(response){
       AJAXsuccess(value,id,response.responseText);
     },
+    timeout:60000, // 1min
     url:'action'
   });
 }
@@ -208,7 +206,7 @@ function displayWin(panel,title,modal){
     iconCls:'icon-grid',
     closable:true,
     width:600,
-    height:350,
+    height:400,
     border:true,
     collapsible:true,
     constrain:true,
@@ -551,10 +549,14 @@ function refreshSelect(){
     alert('Unable to refresh components');
   }
 }
-function sideBar(){
+function sideBar(newID){
+  var id = 'sideBar';
+  if(newID){
+    id = newID;
+  }
   var panel = new Ext.Panel({
     autoScroll:true,
-    id:'sideBar',
+    id:id,
     split:true,
     region:'west',
     collapsible:true,
@@ -668,9 +670,33 @@ function selectPanel(newID){
       id = newID;
     }
   }catch(e){}
-  function submitForm(){
+  function submitForm(panelID){
     var selections = {};
-    var sideBar = Ext.getCmp('sideBar');
+    if(panelID == 'SiteSelectPanel'){
+      selections.mode = 'Site';
+      var sideBar = Ext.getCmp('SiteSelectSideBar');
+    }else if(panelID == 'ServiceSelectPanel'){
+      selections.mode = 'Service';
+      var sideBar = Ext.getCmp('ServiceSelectSideBar');
+    }else if(panelID == 'ResourceSelectPanel'){
+      selections.mode = 'Resource';
+      var sideBar = Ext.getCmp('ResourceSelectSideBar');
+    }else if(panelID == 'StorageSelectPanel'){
+      selections.mode = 'Storage';
+      var sideBar = Ext.getCmp('StorageSelectSideBar')
+    }else{
+      var sideBar = Ext.getCmp('sideBar');
+    }
+    var flag = 0;
+    try{
+      if(!sideBar.body){
+        flag = 1;
+        sideBar.body = gMainLayout.container;
+      }
+    }catch(e){
+      flag = 1;
+      sideBar.body = gMainLayout.container;
+    }
     sideBar.body.mask('Sending data...');
     try{
       selections.sort = dataSelect.globalSort;
@@ -686,12 +712,27 @@ function selectPanel(newID){
           params:selections,
           success:function(form,action){
             sideBar.body.unmask();
+            if(flag == 1){
+              delete sideBar.body;
+            }
             if(action.result.success == 'false'){
               alert('Error: ' + action.result.error);
             }else{
               if(dataMngr.store){
                 store = dataMngr.store;
                 store.loadData(action.result);
+              }else if(panelID == 'SiteSelectPanel'){
+                var siteTable = Ext.getCmp('SiteTab');
+                siteTable.store.loadData(action.result);
+              }else if(panelID == 'ServiceSelectPanel'){
+                var resTable = Ext.getCmp('ServiceTab');
+                resTable.store.loadData(action.result);
+              }else if(panelID == 'ResourceSelectPanel'){
+                var resTable = Ext.getCmp('ResourceTab');
+                resTable.store.loadData(action.result);
+              }else if(panelID == 'StorageSelectPanel'){
+                var resTable = Ext.getCmp('StorageTab');
+                resTable.store.loadData(action.result);
               }else{
                 alert('Error: Unable to load data to the table dataMngr.store is absent');
               }
@@ -699,6 +740,9 @@ function selectPanel(newID){
           },
           failure:function(form,action){
             sideBar.body.unmask();
+            if(flag == 1){
+              delete sideBar.body;
+            }
             try{
               alert('Error: ' + action.response.statusText);
             }catch(e){
@@ -708,10 +752,16 @@ function selectPanel(newID){
         });
       }else{
         sideBar.body.unmask();
+        if(flag == 1){
+          delete sideBar.body;
+        }
         alert('Error: Unable to load parameters for form submition');
       }
     }else{
       sideBar.body.unmask();
+      if(flag == 1){
+        delete sideBar.body;
+      }
       alert('Error: Unable to find data store manager');
     }
   }
@@ -729,7 +779,7 @@ function selectPanel(newID){
     cls:"x-btn-text-icon",
     handler:function(){
       panel.form.reset();
-      var number = Ext.getCmp('selectID');
+      var number = Ext.getCmp('id');
       hideControls(number);
     },
     icon:gURLRoot+'/images/iface/reset.gif',
@@ -740,10 +790,12 @@ function selectPanel(newID){
   var submit = new Ext.Button({
     cls:"x-btn-text-icon",
     handler:function(){
-      submitForm();
+      submitForm(panel.id);
     },
+    id:'submitFormButton',
     icon:gURLRoot+'/images/iface/submit.gif',
     minWidth:'70',
+    name:'submitFormButton',
     tooltip:'Send request to the server',
     text:'Submit'
   });
@@ -754,8 +806,14 @@ function selectPanel(newID){
     buttonAlign:'center',
     buttons:[submit,reset,refresh],
     collapsible:true,
-//    id:'selectPanel',
     id:id,
+    keys:[{
+      key:13,
+      scope:this,
+      fn:function(key,e){
+        submitForm(panel.id);
+      }
+    }],
     labelAlign:'top',
     method:'POST',
     minWidth:'200',
@@ -955,6 +1013,10 @@ function selectProductionID(){
 }
 function selectRequestID(){
   return genericID('reqId','RequestID');
+}
+function selectPilotID(){
+  var regex = new RegExp( /.+/);
+  return genericID('pilotId','PilotJobReference',regex,'Test');
 }
 function createMenu(dataName,menuName,altValue){
   var data = [['']];
@@ -1262,7 +1324,7 @@ function showMenu(mode,table,rowIndex,columnIndex){
   if((columnName != 'checkBox') && (columnName != 'expand')){ // column with checkboxes
     dirac.menu.removeAll();
     if(mode == 'main'){
-      setMenuItems(selections);
+      setMenuItems(selections,table);
       dirac.menu.add('-',{handler:function(){Ext.Msg.minWidth = 360;Ext.Msg.alert('Cell value is:',value);},text:'Show value'});
     }else{
       dirac.menu.add({handler:function(){Ext.Msg.minWidth = 360;Ext.Msg.alert('Cell value is:',value);},text:'Show value'});
@@ -1389,7 +1451,7 @@ function status(value){
     return '<img src="'+gURLRoot+'/images/monitoring/done.gif">';
   }else if((value == 'Failed')||(value == 'Bad')||(value == 'Banned')){
     return '<img src="'+gURLRoot+'/images/monitoring/failed.gif">';
-  }else if((value == 'Waiting')||(value == 'Stopped')||(value == 'Poor')){
+  }else if((value == 'Waiting')||(value == 'Stopped')||(value == 'Poor')||(value == 'Probing')){
     return '<img src="'+gURLRoot+'/images/monitoring/waiting.gif">';
   }else if(value == 'Deleted'){
     return '<img src="'+gURLRoot+'/images/monitoring/deleted.gif">';
@@ -1401,6 +1463,49 @@ function status(value){
     return '<img src="'+gURLRoot+'/images/monitoring/unknown.gif">';
   }else{
     return '<img src="'+gURLRoot+'/images/monitoring/unknown.gif">';
+  }
+}
+function statusColor(value){
+  if(value == 'Done'){
+    return '00BD39';
+  }else if(value == 'Ready'){
+    return '007B25';
+  }else if(value == 'Completed'){
+    return '007B25';
+  }else if(value == 'Good'){
+   return '238D43';
+  }else if(value == 'Active'){
+   return '37DE6A';
+  }else if(value == 'Failed'){
+   return 'FF2300';
+  }else if(value == 'Aborted'){
+   return 'BF4330';
+  }else if(value == 'Bad'){
+   return 'BF4330';
+  }else if(value == 'Banned'){
+   return 'FF5A40';
+  }else if(value == 'Scheduled'){
+   return 'FF8100';
+  }else if(value == 'Waiting'){
+   return 'FF8100';
+  }else if(value == 'Stopped'){
+   return 'FFA040';
+  }else if(value == 'Poor'){
+   return 'BF7830';
+  }else if(value == 'Deleted'){
+   return '666666';
+  }else if(value == 'Matched'){
+   return '025167';
+  }else if(value == 'Running'){
+   return '39AECF';
+  }else if(value == 'Active'){
+   return '61B7CF';
+  }else if(value == 'Fair'){
+   return '057D9F';
+  }else if(value == 'NoMask'){
+   return '999999';
+  }else{
+   return 'cccccc';
   }
 }
 function statPanel(title,mode,id){
@@ -1513,6 +1618,11 @@ function table(tableMngr){
   }else{
     var viewConfig = ''
   }
+  if(tableMngr.id){
+    var id = tableMngr.id;
+  }else{
+    var id = 'JobMonitoringTable';
+  }
   var tbar = new Ext.Toolbar({items:[]});
   if(tableMngr.tbar){
     tbar = new Ext.Toolbar({items:tableMngr.tbar});
@@ -1537,7 +1647,7 @@ function table(tableMngr){
     autoHeight:false,
     bbar:tableMngr.bbar,
     columns:columns,
-    id:'JobMonitoringTable',
+    id:id,
     labelAlign:'left',
     loadMask:true,
     margins:'2 0 2 0',
