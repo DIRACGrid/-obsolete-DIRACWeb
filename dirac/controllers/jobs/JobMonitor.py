@@ -143,6 +143,7 @@ class JobmonitorController(BaseController):
     else:
       RPC = getRPCClient("WorkloadManagement/JobMonitoring")
       result = RPC.getProductionIds()
+      gLogger.info("\033[0;31m ERROR RPC RESULT: \033[0m %s" % result)
       if result["OK"]:
         prod = []
         prods = result["Value"]
