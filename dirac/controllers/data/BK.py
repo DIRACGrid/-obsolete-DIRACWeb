@@ -3,9 +3,10 @@ from time import time, gmtime, strftime
 
 from dirac.lib.diset import getRPCClient
 from dirac.lib.base import *
-from LHCbDIRAC.BookkeepingSystem.Client.LHCB_BKKDBClient  import LHCB_BKKDBClient
+from DIRAC.BookkeepingSystem.Client.LHCB_BKKDBClient  import LHCB_BKKDBClient
 from DIRAC.Core.Utilities.List import sortList
 from DIRAC import gLogger
+from DIRAC.FrameworkSystem.Client.UserProfileClient import UserProfileClient
 import dirac.lib.credentials as credentials
 
 from DIRAC.Core.Utilities import Time
@@ -15,37 +16,19 @@ log = logging.getLogger(__name__)
 class BkController(BaseController):
 ################################################################################
   def display(self):
-#    c.select = self.__getSelectionData()
-#    gLogger.info("SELECTION RESULTS:",c.select)
+    c.select = self.__getSelectionData()
+    if not c.select.has_key("extra"):
+      c.select["extra"] = {"mode":"bkSim","adv":"false"}
     return render("data/BK.mako")
 ################################################################################
-#  def __getSelectionData(self):
-#    callback = {}
-#    if len(request.params) > 0:
-#      tmp = {}
-#      for i in request.params:
-#        tmp[i] = str(request.params[i])
-#      callback["extra"] = tmp
-####
-#    RPC = LHCB_BKKDBClient(getRPCClient('Bookkeeping/BookkeepingManager'))
-#    result = RPC.getAvailableProductions()
-#    gLogger.info("SELECTION RESULTS:",result)
-#    if result["OK"]:
-#      stat = []
-#      if len(result["Value"])>0:
-#        stat.append([str("All")])
-#        for i in result["Value"]:
-#          i = str(i)
-#          i = i.replace(",","")
-#          i = i.replace("(","")
-#          i = i.replace(")","")
-#          stat.append([i])
-#      else:
-#        stat = [["Nothing to display"]]
-#    else:
-#      stat = [["Error during RPC call"]]
-#    callback["production"] = stat
-#    return callback
+  def __getSelectionData(self):
+    callback = {}
+    if len(request.params) > 0:
+      tmp = {}
+      for i in request.params:
+        tmp[i] = str(request.params[i])
+      callback["extra"] = tmp
+    return callback
 ################################################################################
   def download(self):
     lhcbGroup = credentials.getSelectedGroup()
@@ -56,6 +39,8 @@ class BkController(BaseController):
     req = ()
     if request.params.has_key("root") and len(request.params["root"]) > 0:
       req = str(request.params["root"])
+      req = req.replace("'","")
+      req = req.replace("*spaceplusspace*"," + ")
     else:
       c.result = {"success":"false","error":"File name field is empty"}
       return c.result
@@ -87,10 +72,42 @@ class BkController(BaseController):
   @jsonify
   def submit(self):
     req = ()
+    if request.params.has_key("adv") and len(request.params["adv"]) > 0:
+      advParameter = str(request.params["adv"])
+      if advParameter == "true":
+        adv = True
+      else:
+        adv = False
+    else:
+      adv = False
     if request.params.has_key("root") and len(request.params["root"]) > 0:
       req = str(request.params["root"])
     else:
       req = "/"
+    if request.params.has_key("mode") and len(request.params["mode"]) > 0:
+      modeParameter = str(request.params["mode"])
+      if modeParameter == "bkSim":
+        mode = "Configuration"
+      elif modeParameter == "bkEvent":
+        mode = "Event type"
+      elif modeParameter == "bkProd":
+        mode = "Productions"
+        if request.params.has_key("value") and len(request.params["value"]) > 0:
+          req = str(request.params["value"])
+          return self.__showDir(req,adv,mode)
+        else:
+          return {"success":"false","error":"Production value is empty"}
+      elif modeParameter == "bkRun":
+        mode = "Runlookup"
+        if request.params.has_key("value") and len(request.params["value"]) > 0:
+          req = str(request.params["value"])
+          return self.__showDir(req,adv,mode)
+        else:
+          return {"success":"false","error":"Run value is empty"}
+      else:
+        mode = "Configuration"
+    else:
+      mode = "Configuration"
     if request.params.has_key("level") and len(request.params["level"]) > 0:
       level = str(request.params["level"])
       if level == "showFiles":
@@ -107,17 +124,26 @@ class BkController(BaseController):
         sortDict = ['total','now']
         return self.__showFiles(req,sortDict,StartItem,MaxItems)
       else:
-        return self.__showDir(req)
+        return self.__showDir(req,adv,mode)
     else:
-      return self.__showDir(req)
+      return self.__showDir(req,adv,mode)
 ################################################################################
-  def __showDir(self,request):
+  def __showDir(self,request,advOption,mode="Configuration"):
     cl = LHCB_BKKDBClient(getRPCClient('Bookkeeping/BookkeepingManager'))
     lhcbGroup = credentials.getSelectedGroup()
     if lhcbGroup == "visitor":
       c.result = {"success":"false","error":"You are not authorised"}
     else:
+      gLogger.info("\033[0;31m request: %s, advOption: %s, mode: %s \033[0m" % (request,advOption,mode))
+      if advOption:
+        cl.setAdvancedQueries(True)
+      else:
+        cl.setAdvancedQueries(False)
+      cl.setParameter(mode)
+      gLogger.info("\033[0;31m BK MODE: \033[0m",mode)
       result = cl.list(request)
+      gLogger.info("\033[0;31m BK ShowDirectory REQUEST: \033[0m",request)
+      gLogger.info("\033[0;31m BK ShowDirectory RESULT: \033[0m",result)
       if len(result) > 0:
         tempDict = {}
         for i in result:
@@ -128,6 +154,8 @@ class BkController(BaseController):
           returnD = {}
           i = tempDict[j]
           try:
+            if i["name"][0] == "-":
+              i["name"] = i["name"].replace('-','',1)
             returnD["text"] = i["name"]
             returnD["extra"] = i["fullpath"]
             returnD["allowDrag"] = "false"
@@ -172,7 +200,18 @@ class BkController(BaseController):
                 for i in jobs:
                   tmp = {}
                   for j in range(0,headLength):
-                    tmp[head[j]] = i[j]
+                    gLogger.info("\033[0;31m head[j]:%s i[j]:%s \033[0m" % (head[j],i[j]))
+                    if i[j] == "" or i[j] == None:
+                      i[j] = "-"
+                      tmp[head[j]] = i[j]
+                    else:
+                      if head[j] == "EventStat" or head[j] == "PhysicStat":
+                        tmp[head[j]] = self.__niceNumbers(i[j])
+                      elif head[j] == "FileSize":
+                        tmp[head[j]] = i[j]
+                        tmp["NormalFileSize"] = self.__bytestr(i[j])
+                      else:
+                        tmp[head[j]] = i[j]
                   c.result.append(tmp)
                 total = result["TotalRecords"]
                 if result.has_key("Extras"):
@@ -259,6 +298,12 @@ class BkController(BaseController):
         limit = 25
       limit = int(start) + int(limit)
       return self.__production(id,type,start,limit)
+    elif request.params.has_key("byRun"):
+      if request.params.has_key("runID"):
+        id = int(request.params["runID"])
+      else:
+        id = 0
+      return self.__run(id)
     elif request.params.has_key("byFile"):
       if request.params.has_key("lfn"):
         id = request.params["lfn"]
@@ -292,6 +337,82 @@ class BkController(BaseController):
       return self.__getFileTypes()
     elif request.params.has_key("productionMenu"):
       return self.__getSelectionData()
+    elif request.params.has_key("getBookmarks"):
+      return self.__getBookmarks()
+    elif request.params.has_key("addBookmark"):
+      path = str(request.params["addBookmark"])
+      if request.params.has_key("addTitle"):
+        title = str(request.params["addTitle"])
+      else:
+        title = "Default title"
+      return self.__addBookmark(path,title)
+    elif request.params.has_key("delBookmark"):
+      path = str(request.params["delBookmark"])
+      if request.params.has_key("delTitle"):
+        title = str(request.params["delTitle"])
+      else:
+        return {"success":"false","error":"Bookmark title is absent"}
+      return self.__delBookmark(path,title)
+    elif request.params.has_key("ping"): # quick truck to fire load event on client side
+      return {"success":"true","result":{}}
+################################################################################
+  def __run(self,runID):
+    cl = LHCB_BKKDBClient(getRPCClient('Bookkeeping/BookkeepingManager'))
+    lhcbGroup = credentials.getSelectedGroup()
+    if lhcbGroup == "visitor":
+      c.result = {"success":"false","error":"You are not authorised"}
+    else:
+      result = cl.setParameter('Runlookup')
+      result = cl.list();
+      gLogger.info("\033[0;31m help \033[0m",result)
+      result = cl.list("/RUN_50675");
+      gLogger.info("\033[0;31m help \033[0m",result)
+      if len(result) > 0:
+        c.result = []
+        for i in result:
+          returnD = {}
+          if i.has_key("fullpath") and len(i["fullpath"]) > 0:
+            returnD["extra"] = i["fullpath"]
+          else:
+            returnD["extra"] = ""
+            gLogger.info("Key 'fullpath' is absent or has a null length: ",i)
+          if i.has_key("Total ProcessingPass") and len(i["Total ProcessingPass"]) > 0:
+            returnD["name"] = i["Total ProcessingPass"]
+          else:
+            returnD["name"] = ""
+            gLogger.info("Key 'Total ProcessingPass' is absent or has a null length: ",i)
+          returnD["allowDrag"] = "false"
+          c.result.append(returnD)
+#        tempDict = {}
+#        for i in result:
+#          if i.has_key("name") and len(i["name"]) > 0:
+#            tempDict[i["name"]] = i
+#        c.result = []
+#        for j in sortList(tempDict.keys()):
+#          returnD = {}
+#          i = tempDict[j]
+#          try:
+#            returnD["text"] = i["name"]
+#            returnD["extra"] = i["fullpath"]
+#            returnD["allowDrag"] = "false"
+#            if i.has_key("level") and len(i["level"]) > 0:
+#              level = i["level"]
+#              if i.has_key("showFiles"):
+#                returnD["qtip"] = "showFiles"
+#                returnD["leaf"] = "True"
+#                returnD["cls"] = "x-tree-node-collapsed"
+#              else:
+#                returnD["qtip"] = level
+#              if level == "Event types":
+#                returnD["text"] = returnD["text"] + " ( " + i["Description"] + " )"
+#          except:
+#            gLogger.info("Some error happens here: ",j)
+#            pass
+#          c.result.append(returnD)
+      else:
+        c.result = {"success":"false","error":"Run doesn't exist"}
+    return c.result
+    gLogger.info("\033[0;31mBK ShowDirectory RUN REQUEST:\033[0m")
 ################################################################################
   def __production(self,prodID,type,start=0,limit=25):
     pagestart = time()
@@ -482,3 +603,51 @@ class BkController(BaseController):
     gLogger.info("\033[0;31m logLFN: \033[0m",lfn)
     return c.result
 ################################################################################
+  def __getBookmarks(self):
+    upc = UserProfileClient( "Bookkeeping", getRPCClient )
+    result = upc.retrieveVar( "Bookmarks" )
+    if result["OK"]:
+      c.result = {"success":"true","result":result["Value"]}
+    else:
+      if result['Message'].find("No data for") != -1:
+        c.result = {"success":"true","result":{}}
+      else:
+        c.result = {"success":"false","error":result["Message"]}
+    return c.result
+################################################################################
+  def __addBookmark(self,path,title):
+    upc = UserProfileClient( "Bookkeeping", getRPCClient )
+    result = upc.retrieveVar( "Bookmarks" )
+    if result["OK"]:
+      data = result["Value"]
+    else:
+      data = {}
+    if title in data:
+      return {"success":"false","error":"The bookmark with the title \"" + title + "\" is already exists"}
+    else:
+      data[title] = path
+    result = upc.storeVar( "Bookmarks", data )
+    if result["OK"]:
+      return self.__getBookmarks()
+    else:
+      return {"success":"false","error":result["Message"]}
+################################################################################
+  def __delBookmark(self,path,title):
+    upc = UserProfileClient( "Bookkeeping", getRPCClient )
+    result = upc.retrieveVar( "Bookmarks" )
+    if result["OK"]:
+      data = result["Value"]
+    else:
+      data = {}
+    gLogger.info("\033[0;31m data: \033[0m",data)
+    if title in data:
+      del data[title]
+    else:
+      return {"success":"false","error":"Can't delete not existing bookmark: \"" + title + "\""}
+    gLogger.info("\033[0;31m data: \033[0m",data)
+    result = upc.storeVar( "Bookmarks", data )
+    gLogger.info("\033[0;31m result: \033[0m",result)
+    if result["OK"]:
+      return self.__getBookmarks()
+    else:
+      return {"success":"false","error":result["Message"]}
