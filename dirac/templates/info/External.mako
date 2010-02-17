@@ -8,6 +8,6 @@ ${ h.javascript_link( "/javascripts/web/External.js" ) }
 
 <%def name="body()">
 <script type="text/javascript">
-  initJobMonitor("${c.select}");
+  initExternal("${c.select}");
 </script>
 </%def>
