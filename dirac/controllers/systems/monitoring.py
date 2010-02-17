@@ -11,18 +11,18 @@ from dirac.lib.credentials import authorizeAction
 from dirac.lib.diset import getRPCClient, getTransferClient
 from dirac.lib.webBase import defaultRedirect
 
-log = logging.getLogger(__name__)
+log = logging.getLogger( __name__ )
 
-class MonitoringController(BaseController):
+class MonitoringController( BaseController ):
 
-  def index(self):
+  def index( self ):
     # Return a rendered template
     #   return render('/some/template.mako')
     # or, Return a response
     return defaultRedirect()
 
 
-  def viewMaker(self):
+  def viewMaker( self ):
     """
     Render template for making views
     """
@@ -41,7 +41,7 @@ class MonitoringController(BaseController):
     if plotImageFile.find( ".png" ) < -1:
       c.error( "Not a valid image!" )
       return render( "/error.mako" )
-    transferClient = getTransferClient( "Monitoring/Server" )
+    transferClient = getTransferClient( "Framework/Monitoring" )
     tempFile = tempfile.TemporaryFile()
     retVal = transferClient.receiveFile( tempFile, plotImageFile )
     if not retVal[ 'OK' ]:
@@ -53,7 +53,7 @@ class MonitoringController(BaseController):
     #response.headers['Content-Disposition'] = 'attachment; filename="%s"' % plotImageFile
     response.headers['Content-Length'] = len( data )
     response.headers['Content-Transfer-Encoding'] = 'Binary'
-    print len(data)
+    print len( data )
     return data
 
   def manageViews( self ):
@@ -62,7 +62,7 @@ class MonitoringController(BaseController):
     """
     if not authorizeAction():
       return render( "/error.mako" )
-    rpcClient = getRPCClient( "Monitoring/Server" )
+    rpcClient = getRPCClient( "Framework/Monitoring" )
     retVal = rpcClient.getViews( False )
     if not retVal[ 'OK' ]:
       c.error = retVal[ 'Message' ]
@@ -76,7 +76,7 @@ class MonitoringController(BaseController):
     """
     if not authorizeAction():
       return render( "/error.mako" )
-    rpcClient = getRPCClient( "Monitoring/Server" )
+    rpcClient = getRPCClient( "Framework/Monitoring" )
     retVal = rpcClient.getViews( False )
     if not retVal[ 'OK' ]:
       c.error = retVal[ 'Message' ]
@@ -98,7 +98,7 @@ class MonitoringController(BaseController):
     except Exception, e:
       c.error = "View id is not valid"
       return render( "/error.mako" )
-    rpcClient = getRPCClient( "Monitoring/Server" )
+    rpcClient = getRPCClient( "Framework/Monitoring" )
     retVal = rpcClient.deleteView( id )
     if not retVal[ 'OK' ]:
       c.error = "Error while deleting view %s" % retVal[ 'Message' ]
@@ -111,7 +111,7 @@ class MonitoringController(BaseController):
     """
     if not authorizeAction():
       return render( "/error.mako" )
-    rpcClient = getRPCClient( "Monitoring/Server" )
+    rpcClient = getRPCClient( "Framework/Monitoring" )
     retVal = rpcClient.getActivities()
     if not retVal[ 'OK' ]:
       c.error = retVal[ 'Message' ]
@@ -134,7 +134,7 @@ class MonitoringController(BaseController):
     except Exception, e:
       c.error = "id is not valid"
       return render( "/error.mako" )
-    rpcClient = getRPCClient( "Monitoring/Server" )
+    rpcClient = getRPCClient( "Framework/Monitoring" )
     retVal = rpcClient.deleteActivity( sid, aid )
     if not retVal[ 'OK' ]:
       c.error = "Error while deleting activity %s" % retVal[ 'Message' ]
@@ -155,7 +155,7 @@ class MonitoringController(BaseController):
     except Exception, e:
       c.error = "ids are not valid"
       return render( "/error.mako" )
-    rpcClient = getRPCClient( "Monitoring/Server" )
+    rpcClient = getRPCClient( "Framework/Monitoring" )
     retVal = rpcClient.deleteActivities( deletionList )
     if not retVal[ 'OK' ]:
       c.error = "Error while deleting activities %s" % retVal[ 'Message' ]
@@ -170,7 +170,7 @@ class MonitoringController(BaseController):
     fieldQuery = str( request.params[ 'query' ] )
     print request.params[ 'defined' ]
     definedFields = simplejson.loads( request.params[ 'defined' ] )
-    rpcClient = getRPCClient( "Monitoring/Server" )
+    rpcClient = getRPCClient( "Framework/Monitoring" )
     return rpcClient.queryField( fieldQuery, definedFields )
 
   def __dateToSecs( self, timeVar ):
@@ -217,7 +217,7 @@ class MonitoringController(BaseController):
         toSecs = self.__dateToSecs( toDate )
     except Exception, e:
       return S_ERROR( "Error while processing plot parameters: %s" % str( e ) )
-    rpcClient = getRPCClient( "Monitoring/Server" )
+    rpcClient = getRPCClient( "Framework/Monitoring" )
     requestStub = DEncode.encode( plotRequest )
     retVal = rpcClient.tryView( fromSecs, toSecs, requestStub )
     if not retVal[ 'OK' ]:
@@ -236,7 +236,7 @@ class MonitoringController(BaseController):
       viewName = str( request.params[ 'viewName' ] )
     except Exception, e:
       return S_ERROR( "Error while processing plot parameters: %s" % str( e ) )
-    rpcClient = getRPCClient( "Monitoring/Server" )
+    rpcClient = getRPCClient( "Framework/Monitoring" )
     requestStub = DEncode.encode( plotRequest )
     return rpcClient.saveView( viewName, requestStub )
 
@@ -276,5 +276,5 @@ class MonitoringController(BaseController):
         return S_ERROR( "Missing view id!" )
     except Exception, e:
       return S_ERROR( "Error while processing plot parameters: %s" % str( e ) )
-    rpcClient = getRPCClient( "Monitoring/Server" )
+    rpcClient = getRPCClient( "Framework/Monitoring" )
     return rpcClient.plotView( plotRequest )
