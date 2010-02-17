@@ -11,11 +11,11 @@ from dirac.lib.credentials import authorizeAction
 from dirac.lib.diset import getRPCClient, getTransferClient
 from dirac.lib.webBase import defaultRedirect
 
-log = logging.getLogger(__name__)
+log = logging.getLogger( __name__ )
 
-class ActivitiesmonitoringController(BaseController):
+class ActivitiesmonitoringController( BaseController ):
 
-  def index(self):
+  def index( self ):
     # Return a rendered template
     #   return render('/some/template.mako')
     # or, Return a response
@@ -32,7 +32,7 @@ class ActivitiesmonitoringController(BaseController):
     return render( "/systems/activitiesMonitoring/componentPlots.mako" )
 
   def plotStaticViews( self ):
-    rpcClient = getRPCClient( "Monitoring/Server" )
+    rpcClient = getRPCClient( "Framework/Monitoring" )
     retVal = rpcClient.getViews( True )
     if not retVal[ 'OK' ]:
       c.error = retVal[ 'Message' ]
@@ -43,13 +43,13 @@ class ActivitiesmonitoringController(BaseController):
   def createViews( self ):
     return render( "/systems/activitiesMonitoring/createViews.mako" )
 
-  def manageViews(self):
+  def manageViews( self ):
     return render( "/systems/activitiesMonitoring/manageViews.mako" )
 
-  def manageActivities(self):
+  def manageActivities( self ):
     return render( "/systems/activitiesMonitoring/manageActivities.mako" )
 
-  def variablesHelp(self):
+  def variablesHelp( self ):
     return """
   <html>
  <head><title>Variables for substitution</title></head>
@@ -91,7 +91,7 @@ class ActivitiesmonitoringController(BaseController):
     if plotImageFile.find( ".png" ) < -1:
       c.error( "Not a valid image!" )
       return render( "/error.mako" )
-    transferClient = getTransferClient( "Monitoring/Server" )
+    transferClient = getTransferClient( "Framework/Monitoring" )
     tempFile = tempfile.TemporaryFile()
     retVal = transferClient.receiveFile( tempFile, plotImageFile )
     if not retVal[ 'OK' ]:
@@ -103,7 +103,7 @@ class ActivitiesmonitoringController(BaseController):
     #response.headers['Content-Disposition'] = 'attachment; filename="%s"' % plotImageFile
     response.headers['Content-Length'] = len( data )
     response.headers['Content-Transfer-Encoding'] = 'Binary'
-    print len(data)
+    print len( data )
     return data
 
   @jsonify
@@ -135,11 +135,11 @@ class ActivitiesmonitoringController(BaseController):
         plotRequest[ 'varData' ] = webRequest[ 'varData' ]
     except Exception, e:
       return self.__translateToExpectedExtResult( S_ERROR( "Error while processing plot parameters: %s" % str( e ) ) )
-    rpcClient = getRPCClient( "Monitoring/Server" )
+    rpcClient = getRPCClient( "Framework/Monitoring" )
     return self.__translateToExpectedExtResult( rpcClient.plotView( plotRequest ) )
 
   @jsonify
-  def getViewsList(self):
+  def getViewsList( self ):
     try:
       start = int( request.params[ 'start' ] )
     except:
@@ -155,7 +155,7 @@ class ActivitiesmonitoringController(BaseController):
       sort = [ ( sortField, sortDir ) ]
     except:
       sort = []
-    rpcClient = getRPCClient( "Monitoring/Server" )
+    rpcClient = getRPCClient( "Framework/Monitoring" )
     retVal = rpcClient.getViews( False )
     if not retVal[ 'OK' ]:
       return retVal
@@ -168,7 +168,7 @@ class ActivitiesmonitoringController(BaseController):
     return data
 
   @jsonify
-  def deleteViews(self):
+  def deleteViews( self ):
     try:
       webIds = simplejson.loads( str( request.params[ 'idList' ] ) )
     except Exception, e:
@@ -179,7 +179,7 @@ class ActivitiesmonitoringController(BaseController):
         idList.append( int( webId ) )
       except Exception, e:
         return S_ERROR( "Error while processing arguments: %s" % str( e ) )
-    rpcClient = getRPCClient( "Monitoring/Server" )
+    rpcClient = getRPCClient( "Framework/Monitoring" )
     print idList
     retVal = rpcClient.deleteViews( idList )
     if 'rpcStub' in retVal:
@@ -187,7 +187,7 @@ class ActivitiesmonitoringController(BaseController):
     return retVal
 
   @jsonify
-  def getActivitiesList(self):
+  def getActivitiesList( self ):
     try:
       start = int( request.params[ 'start' ] )
     except:
@@ -203,7 +203,7 @@ class ActivitiesmonitoringController(BaseController):
       sort = [ ( sortField, sortDir ) ]
     except:
       sort = []
-    rpcClient = getRPCClient( "Monitoring/Server" )
+    rpcClient = getRPCClient( "Framework/Monitoring" )
     retVal = rpcClient.getActivitiesContents( {}, sort, start, limit )
     if not retVal[ 'OK' ]:
       return retVal
@@ -213,26 +213,26 @@ class ActivitiesmonitoringController(BaseController):
     for record in svcData[ 'Records' ]:
       formatted = {}
       for i in range( len( svcData[ 'Fields' ] ) ):
-        formatted[ svcData[ 'Fields' ][i].replace(".","_") ] = record[i]
+        formatted[ svcData[ 'Fields' ][i].replace( ".", "_" ) ] = record[i]
       if 'activities_lastUpdate' in formatted:
         formatted[ 'activities_lastUpdate' ] = now - int( formatted[ 'activities_lastUpdate' ] )
       data[ 'activities' ].append( formatted )
     return data
 
   @jsonify
-  def deleteActivities(self):
+  def deleteActivities( self ):
     try:
       webIds = simplejson.loads( str( request.params[ 'idList' ] ) )
     except Exception, e:
       return S_ERROR( "No valid id's specified" )
-    print webIds,"<-"
+    print webIds, "<-"
     idList = []
     for webId in webIds:
       try:
-        idList.append( [ int( field ) for field in webId.split(".") ] )
+        idList.append( [ int( field ) for field in webId.split( "." ) ] )
       except Exception, e:
         return S_ERROR( "Error while processing arguments: %s" % str( e ) )
-    rpcClient = getRPCClient( "Monitoring/Server" )
+    rpcClient = getRPCClient( "Framework/Monitoring" )
     print idList
     retVal = rpcClient.deleteActivities( idList )
     if 'rpcStub' in retVal:
@@ -246,7 +246,7 @@ class ActivitiesmonitoringController(BaseController):
     """
     fieldQuery = str( request.params[ 'queryField' ] )
     definedFields = simplejson.loads( request.params[ 'selectedFields' ] )
-    rpcClient = getRPCClient( "Monitoring/Server" )
+    rpcClient = getRPCClient( "Framework/Monitoring" )
     result = rpcClient.queryField( fieldQuery, definedFields )
     if 'rpcStub' in result:
       del( result[ 'rpcStub' ] )
@@ -279,7 +279,7 @@ class ActivitiesmonitoringController(BaseController):
         toSecs = self.__dateToSecs( toDate )
     except Exception, e:
       return S_ERROR( "Error while processing plot parameters: %s" % str( e ) )
-    rpcClient = getRPCClient( "Monitoring/Server" )
+    rpcClient = getRPCClient( "Framework/Monitoring" )
     requestStub = DEncode.encode( plotRequest )
     retVal = rpcClient.tryView( fromSecs, toSecs, requestStub )
     if not retVal[ 'OK' ]:
@@ -296,7 +296,7 @@ class ActivitiesmonitoringController(BaseController):
       viewName = str( request.params[ 'viewName' ] )
     except Exception, e:
       return S_ERROR( "Error while processing plot parameters: %s" % str( e ) )
-    rpcClient = getRPCClient( "Monitoring/Server" )
+    rpcClient = getRPCClient( "Framework/Monitoring" )
     requestStub = DEncode.encode( plotRequest )
     result = rpcClient.saveView( viewName, requestStub )
     if 'rpcStub' in result:
