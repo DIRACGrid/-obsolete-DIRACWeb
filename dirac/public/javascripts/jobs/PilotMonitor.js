@@ -41,6 +41,7 @@ function initSidebar(){
   var ce = selectCEMenu();
   var pilotStatus = selectStatusMenu();
   var broker = selectBrokerMenu();
+  var id = selectPilotID(); // Initialize field for JobIDs
   var dateSelect = dateTimeWidget();
   var select = selectPanel(); // Initializing container for selection objects
   select.buttons[2].hide(); // Remove refresh button
@@ -52,6 +53,7 @@ function initSidebar(){
   select.insert(3,owner);
   select.insert(4,ownerGrp);
   select.insert(5,broker);
+  select.insert(6,id);
   select.insert(7,dateSelect);
 //  select.insert(6,gridType); Commentted for later usage
 //  select.insert(1,statSelect);
@@ -107,7 +109,8 @@ function setMenuItems(selections){
   if(dirac.menu){
     dirac.menu.add(
       {handler:function(){jump(jobID)},text:'Show Job'},
-      {handler:function(){AJAXrequest('getPilotOutput',id)},text:'PilotOutput'}
+      {handler:function(){AJAXrequest('getPilotOutput',id)},text:'PilotOutput'},
+      {handler:function(){AJAXrequest('getPilotLoggingInfo',id)},text:'LoggingInfo'}
     );
   }
   if(jobID == '-'){
@@ -125,8 +128,11 @@ function AJAXsuccess(value,id,response){
   }
   var result = jsonData.result;
   var panel = {};
-  if((value == 'getPilotOutput')||(value == 'getStandardOutput')||(value == 'pilotStdOut')||(value == 'pilotStdErr')||(value == 'getStagerReport')){
+  if(value == 'getPilotOutput'){
     var html = '<pre>' + result.StdOut + '</pre>';
+    panel = new Ext.Panel({border:0,autoScroll:true,html:html,layout:'fit'})
+  }else if(value == 'getPilotLoggingInfo'){
+    var html = '<pre>' + result + '</pre>';
     panel = new Ext.Panel({border:0,autoScroll:true,html:html,layout:'fit'})
   }else if(value == 'LogURL'){
     result = result.replace(/"/g,"");
