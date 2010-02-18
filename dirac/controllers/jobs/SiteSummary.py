@@ -11,8 +11,15 @@ from DIRAC import gLogger
 from DIRAC.Core.Utilities.DictCache import DictCache
 import dirac.lib.credentials as credentials
 
+########
+from DIRAC.FrameworkSystem.Client.UserProfileClient import UserProfileClient
+########
+
 log = logging.getLogger(__name__)
 
+global numberOfJobs
+global pageNumber
+global globalSort
 numberOfJobs = 25
 pageNumber = 0
 globalSort = []
@@ -22,6 +29,11 @@ imgCache = DictCache()
 #globalSort = [["SiteName","DESC"]]
 
 class SitesummaryController(BaseController):
+################################################################################
+#  def profile(self):
+#    upc = UserProfileClient( profileName, getRPCClient( "Framework/UserProfileManager" ) )
+#    upc.storeWebData( varNameInProfile, data )
+#    upc.retrieveWebData( varInProfile )
 ################################################################################
   def display(self):
     pagestart = time()
@@ -140,17 +152,19 @@ class SitesummaryController(BaseController):
   def __request(self):
     req = {}
     global pageNumber
-    global globalSort
-    global numberOfJobs
     if request.params.has_key("id") and len(request.params["id"]) > 0:
       pageNumber = 0
       req["JobID"] = str(request.params["id"])
     elif request.params.has_key("expand") and len(request.params["expand"]) > 0:
+      global globalSort
+      global numberOfJobs
       globalSort = [["GridSite","ASC"]]
       numberOfJobs = 500
       pageNumber = 0
       req["ExpandSite"] = str(request.params["expand"])
     else:
+      global numberOfJobs
+      global globalSort
       pageNumber = 0
       numberOfJobs = 500
       if request.params.has_key("country") and len(request.params["country"]) > 0:
@@ -459,3 +473,40 @@ class SitesummaryController(BaseController):
     "su": "Soviet Union"
     }
     return countries
+################################################################################
+  @jsonify
+  def act(self):
+    if request.params.has_key("action") and len(request.params["action"]) > 0:
+      action = request.params["action"]
+    else:
+      action = ""
+    if request.params.has_key("comment") and len(request.params["comment"]) > 0:
+      text = request.params["comment"]
+    else:
+      text = "Default comment"
+    if request.params.has_key("siteName") and len(request.params["siteName"]) > 0:
+      site = request.params["siteName"]
+    else:
+      site = ""
+    return self.__getAction(action,text,site)
+################################################################################
+  def __getAction(self,action,text,site):
+    action = str(action)
+    text = str(text)
+    site = str(site)
+    if len(action) == 0 or len(text) == 0 or len(site) == 0:
+      c.result = {"success":"false","result":"Either action or comment message or site not defined"}
+    else:
+      RPCClient = getRPCClient("WorkloadManagement/WMSAdministrator")
+      if action == "ban":
+        result = RPCClient.banSite(site,text)
+      elif action == "unban":
+        result = RPCClient.allowSite(site,text)
+      else:
+        result = "This " + action + " action is not supported"
+      if result["OK"]:
+        result = result["Value"]
+        c.result = {"success":"true","result":result}
+      else:
+        c.result = {"success":"false","result":result["Message"]}
+    return c.result
