@@ -276,54 +276,6 @@ function initFileLookup(){
       url:'action'
     });
   }
-  var reset = new Ext.Button({
-    cls:"x-btn-text-icon",
-    handler:function(){
-      panel.form.reset();
-    },
-    icon:gURLRoot+'/images/iface/reset.gif',
-    minWidth:'70',
-    tooltip:'Reset values in the form',
-    text:'Reset'
-  });
-  var submit = new Ext.Button({
-    cls:"x-btn-text-icon",
-    handler:function(){
-      submitForm();
-    },
-    icon:gURLRoot+'/images/iface/submit.gif',
-    minWidth:'70',
-    tooltip:'Send request to the server',
-    text:'Submit'
-  });
-  var panel = new Ext.FormPanel({
-    autoScroll:true,
-    bodyStyle:'padding: 5px',
-    border:false,
-    buttonAlign:'center',
-    buttons:[submit,reset],
-    collapsible:true,
-    id:'initFileLookup',
-    items:[{
-      anchor:'90%',
-      allowBlank:false,
-      allowDecimals:false,
-      allowNegative:false,
-      fieldLabel:'LFN',
-      mode:'local',
-      name:'lfn',
-      selectOnFocus:true,
-      value:'',
-      xtype:'field'
-    }],
-    labelAlign:'top',
-    method:'POST',
-    minWidth:'200',
-    title:'File Lookup',
-    url:'submit',
-    waitMsgTarget:true
-  });
-  return panel
 }
 function initProductionLookup(){
   function submitForm(){
@@ -342,102 +294,6 @@ function initProductionLookup(){
       }
     }
   }
-  var reset = new Ext.Button({
-    cls:"x-btn-text-icon",
-    handler:function(){
-      panel.form.reset();
-    },
-    icon:gURLRoot+'/images/iface/reset.gif',
-    minWidth:'70',
-    tooltip:'Reset values in the form',
-    text:'Reset'
-  });
-  var submit = new Ext.Button({
-    cls:"x-btn-text-icon",
-    handler:function(){
-      submitForm();
-    },
-    icon:gURLRoot+'/images/iface/submit.gif',
-    minWidth:'70',
-    tooltip:'Send request to the server',
-    text:'Submit'
-  });
-/*
-  var storePRD = new Ext.data.JsonStore({
-    autoLoad:true,
-    baseParams:{productionMenu:'true'},
-    fields:['production'],
-    method:'POST',
-    root:'result',
-    url:'action'
-  });
-  var prod = new Ext.form.ComboBox({
-    anchor:'90%',
-    allowBlank:false,
-    displayField:'production',
-    fieldLabel:'Production',
-    forceSelection:true,
-    hiddenName:'prodID',
-    mode:'local',
-    name:'prodID',
-    selectOnFocus:true,
-    store:storePRD,
-    triggerAction:'all',
-    typeAhead:true,
-    value:'ALL'
-  });
-*/
-  var prod = new Ext.form.NumberField({
-    anchor:'90%',
-    allowBlank:false,
-    allowDecimals:false,
-    allowNegative:false,
-    fieldLabel:'Production ID',
-    mode:'local',
-    name:'prodID',
-    selectOnFocus:true,
-    value:0
-  })
-  var store = new Ext.data.JsonStore({
-    autoLoad:true,
-    baseParams:{fileTypes:'true'},
-    fields:['type'],
-    method:'POST',
-    root:'result',
-    url:'action'
-  });
-  var combo = new Ext.form.ComboBox({
-    anchor:'90%',
-    allowBlank:false,
-    displayField:'type',
-    fieldLabel:'Restrict to Files',
-    forceSelection:true,
-    hiddenName:'restrictFiles',
-    mode:'local',
-    name:'restFiles',
-    selectOnFocus:true,
-    store:store,
-    triggerAction:'all',
-    typeAhead:true,
-    value:'ALL'
-  });
-  var panel = new Ext.FormPanel({
-    autoScroll:true,
-    bodyStyle:'padding: 5px',
-    border:false,
-    buttonAlign:'center',
-    buttons:[submit,reset],
-    collapsible:true,
-    id:'initProductionLookup',
-    items:[prod,combo],
-    labelAlign:'top',
-    method:'POST',
-    minWidth:'200',
-    title:'Production Lookup',
-    url:'submit',
-    waitMsgTarget:true
-  });
-  return panel
 }
 function createStateMatrix(msg){
   var result = [];
@@ -686,32 +542,6 @@ function sideBar(){
     }
   });
   return panel;
-}
-function sideTree(loader,title,root){
-  var tree = new Ext.tree.TreePanel({
-    border:false,
-    collapsible:true,
-    columns:[{
-      header:'Tree',
-      width:300,
-      dataIndex:'text'
-    },{
-      header:'Description',
-      width:90,
-      dataIndex:'qtip'
-    }],
-    id:'selectPanel',
-    labelAlign:'top',
-    minWidth:'200',
-    autoScroll:true,
-    animate:true,
-    lines:true,
-    containerScroll:true,
-    loader:loader,
-    title:title,
-    root:root
-  });
-  return tree
 }
 function selectAll(selection){
   var inputs = document.getElementsByTagName('input');
@@ -1675,6 +1505,215 @@ function dateTimeWidget(pin){
     return date
   }
   function retTime(name,nameExtra,fieldLabel){
+    var data = new Array();
+    var j = 0;
+    for(i=0;i<24;i++){
+      var heure = '';
+      if(i < 10){
+        heure = i + '';
+        heure = '0' + '' + heure;
+      }else{
+        heure = i + '';
+      }
+      data[j] = [heure + ':00'];
+      data[j + 1] = [heure + ':30'];
+      j = j + 2;
+    }
+    var store = new Ext.data.SimpleStore({
+      fields:['time'],
+      data:data
+    });
+    var timeField = new Ext.form.ComboBox({
+      allowBlank:true,
+      displayField:'time',
+      editable:true,
+      emptyText:'00:00',
+      fieldLabel:fieldLabel,
+      mode:'local',
+      name:name,
+      selectOnFocus:true,
+      store:store,
+      triggerAction:'all',
+      typeAhead:true,
+      width:60
+    });
+    timeField.on({
+      'render':function(){
+        try{
+          var sTime = dataSelect.extra[nameExtra];
+          sTime = sTime.substring(11,16); // First 5 digits
+          time.setValue(sTime);
+          delete dataSelect.extra[nameExtra];
+        }catch(e){}
+      }
+    });
+    return timeField
+  }
+  var startDate = retDate('startDate','startDate','Start Date');
+  var endDate = retDate('endDate','endDate','End Date');
+  var startTime = retTime('startTime','startTime','');
+  var endTime = retTime('endTime','endTime','End Time');
+  var store = new Ext.data.SimpleStore({
+    fields:['timeSpan'],
+    data:[['Last hour'],['Last day'],['Last week'],['Last month'],['Manual selection']]
+  });
+  var timeSpan = new Ext.form.ComboBox({
+    allowBlank:true,
+    displayField:'timeSpan',
+    colspan:2,
+    editable:false,
+    emptyText:'Select time span',
+    mode:'local',
+    name:'timeSpan',
+    selectOnFocus:true,
+    store:store,
+    triggerAction:'all'
+  });
+  timeSpan.setWidth(158);
+  timeSpan.on({
+    'render':function(){
+      try{
+        var sTime = dataSelect.extra['timeSpan'];
+        timeSpan.setValue(sTime);
+        delete dataSelect.extra['timeSpan'];
+      }catch(e){}
+    },
+    'valid':function(){
+      var currentTime = new Date();
+      var hoursToSet = currentTime.getHours();
+      if(hoursToSet < 10){
+        hoursToSet = '0' + hoursToSet;
+      }
+      var minutesToSet = currentTime.getMinutes();
+      if(minutesToSet < 10){
+        minutesToSet = '0' + minutesToSet;
+      }
+      timeToSet = hoursToSet + ':' + minutesToSet;
+      var value = timeSpan.getValue();
+      if(value == 'Last hour'){
+        var minHour = currentTime.add(Date.HOUR,-1).getHours()
+        if(minHour < 10){
+          minHour = '0' + minHour;
+        }
+        var minMinutes = currentTime.getMinutes();
+        if(minMinutes < 10){
+          minMinutes = '0' + minMinutes;
+        }
+        startTime.setValue(minHour + ':' + minMinutes);
+        startDate.setValue(currentTime);
+      }else if(value == 'Last day'){
+        startTime.setValue(timeToSet);
+        startDate.setValue(currentTime.add(Date.DAY,-1));
+      }else if(value == 'Last week'){
+        startTime.setValue(timeToSet);
+        startDate.setValue(currentTime.add(Date.DAY,-7));
+      }else if(value == 'Last month'){
+        startTime.setValue(timeToSet);
+        startDate.setValue(currentTime.add(Date.MONTH,-1));
+      }else if(value == 'Manual selection'){
+        var startDateValue = startDate.getValue();
+        if(startDateValue == ''){
+          startDate.setValue(currentTime);
+        }
+        var endTimeValue = endTime.getValue();
+        var endDateValue = endDate.getValue();
+        if(endTimeValue == ''){
+          endTime.setValue(timeToSet);
+        }
+        if(endDateValue == ''){
+          endDate.setValue(currentTime);
+        }
+      }
+      if(value == 'Manual selection'){
+        panel.items.items[5].body.update('End:');
+        endDate.enable();
+        endTime.enable();
+      }else{
+        panel.items.items[5].body.update('End: <b>Now</b>');
+        endDate.disable();
+        endTime.disable();
+      }
+      delete currentTime
+    }
+  });
+  function manualSelection(){
+    var timeSpanValue = timeSpan.getValue();
+    if(timeSpanValue != 'Manual selection'){
+      timeSpan.setValue('Manual selection');
+    }
+  }
+  startDate.on({
+    'focus':function(){
+      manualSelection();
+    }
+  });
+  startTime.on({
+    'focus':function(){
+      manualSelection();
+    }
+  });
+  var datePin = {xtype:'checkbox',id:'datePin',fieldLabel:'',name:'datePin',boxLabel:'Pin the date'};
+  var panel = new Ext.Panel({
+    layout:'table',
+    id:'time-panel',
+    defaults: {
+      bodyStyle:'padding:5px',
+    },
+    layoutConfig: {
+      columns: 2
+    },
+    cls:'x-form-item',
+    disabledClass:Ext.emptyFn,
+    bodyStyle:'padding: 5px',
+    items:[
+      {html:'Time Span:',colspan:2,bodyStyle:'border:0px'},
+      timeSpan,
+      {html:'Start:',colspan:2,bodyStyle:'border:0px'},
+      startDate,
+      startTime,
+      {html:'End: <b>Now</b>',colspan:2,bodyStyle:'border:0px'},
+      endDate.disable(),
+      endTime.disable()
+    ],
+    labelAlign:'top',
+    minWidth:'170',
+    width:'170'
+  });
+  try{
+    if(pin){
+      panel.insert(8,datePin);
+    }
+  }catch(e){}
+  return panel
+}
+/*
+function dateTimeWidget(pin){
+  function retDate(name,nameExtra,fieldLabel){
+    var date = new Ext.form.DateField({
+      anchor:'90%',
+      allowBlank:true,
+      emptyText:'YYYY-mm-dd',
+      fieldLabel:fieldLabel,
+      format:'Y-m-d',
+      name:name,
+      selectOnFocus:true,
+      startDay:1,
+      value:'',
+      width:98
+    });
+    date.on({
+      'render':function(){
+        try{
+          var sDate = dataSelect.extra[nameExtra];
+          sDate = sDate.substring(0,10); // First 10 digits
+          date.setValue(sDate);
+          delete dataSelect.extra[nameExtra];
+        }catch(e){}
+      }
+    });
+    return date
+  }
+  function retTime(name,nameExtra,fieldLabel){
     var time = new Ext.form.TimeField({
       emptyText:'00:00',
       fieldLabel:fieldLabel,
@@ -1802,3 +1841,4 @@ function dateTimeWidget(pin){
   }catch(e){}
   return panel
 }
+*/
