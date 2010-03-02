@@ -15,22 +15,24 @@ import dirac.lib.credentials as credentials
 from DIRAC.ConfigurationSystem.private.Modificator import Modificator
 from DIRAC.Core.Utilities.CFG import CFG
 from DIRAC.ConfigurationSystem.Client.Config import gConfig
-import DIRAC.Core.Utilities.List as List
+import DIRAC.Core.Utilities.List as List, Time
 from DIRAC import S_OK, S_ERROR
 from DIRAC import gLogger
 
-log = logging.getLogger(__name__)
+log = logging.getLogger( __name__ )
 
-class ConfigurationController(BaseController):
+class ConfigurationController( BaseController ):
 
-  maxFileSize = 1024*1024*10 #10MB
+  maxFileSize = 1024 * 1024 * 10 #10MB
 
-  def index(self):
+  def index( self ):
     return redirect_to( 'manageRemoteConfig' )
 
   def __getModificator( self ):
     rpcClient = getRPCClient( gConfig.getValue( "/DIRAC/Configuration/MasterServer", "Configuration/Server" ) )
-    commiter = "%s@%s - %s" % ( credentials.getUsername(), credentials.getSelectedGroup(), credentials.getUserDN() )
+    commiter = "%s@%s - %s" % ( credentials.getUsername(),
+                                credentials.getSelectedGroup(),
+                                Time.dateTime().strftime( "%Y-%m-%d %H:%M:%S" ) )
     return Modificator( rpcClient, commiter )
 
   def __getRemoteConfiguration( self ):
@@ -53,7 +55,7 @@ class ConfigurationController(BaseController):
       c.error = "Can't reset configuration<br/>%s" % retVal[ 'Message' ]
       return render( "/error.mako" )
 
-  def __loadRemoteConfig(self):
+  def __loadRemoteConfig( self ):
     if not 'cfgData' in session or not 'csName' in session:
       if 'csFilename'  in session:
         del( session[ 'csFilename' ] )
@@ -69,7 +71,7 @@ class ConfigurationController(BaseController):
         c.cfgData.loadFromBuffer( session[ 'cfgData' ] )
         c.csName = session[ 'csName' ]
       except Exception, e:
-        c.error = "There was an error with your modifications. %s" % str(e)
+        c.error = "There was an error with your modifications. %s" % str( e )
         c.link = ( 'resetConfigurationToRemote', "Click here to reset your configuration" )
         gLogger.error( "There was an error with modified configuration %s" % str( e ) )
         S_ERROR()
@@ -159,7 +161,7 @@ class ConfigurationController(BaseController):
     rawLines = rawComment.strip().split( "\n" )
     if rawLines[-1].find( "@@-" ) == 0:
       commiter = rawLines[-1][3:]
-      rawLines.pop(-1)
+      rawLines.pop( -1 )
     for line in rawLines:
       line = line.strip()
       if not line:
@@ -244,7 +246,7 @@ class ConfigurationController(BaseController):
       parentNodeId = str( request.params[ 'node' ] )
       sectionPath = str( request.params[ 'nodePath' ] )
     except Exception, e:
-      return S_ERROR( "Cannot expand section %s" % str(e) )
+      return S_ERROR( "Cannot expand section %s" % str( e ) )
     cfgData = CFG()
     cfgData.loadFromBuffer( session[ 'cfgData' ] )
     gLogger.info( "Expanding section", "%s" % sectionPath )
@@ -253,8 +255,8 @@ class ConfigurationController(BaseController):
       for section in [ section for section in sectionPath.split( "/" ) if not section.strip() == "" ]:
         sectionCfg = sectionCfg[ section ]
     except Exception, v:
-      gLogger.error( "Section does not exist", "%s -> %s" % ( sectionPath, str(v) ) )
-      return S_ERROR( "Section %s does not exist: %s" % ( sectionPath, str(v) ) )
+      gLogger.error( "Section does not exist", "%s -> %s" % ( sectionPath, str( v ) ) )
+      return S_ERROR( "Section %s does not exist: %s" % ( sectionPath, str( v ) ) )
     gLogger.verbose( "Section to expand %s" % sectionPath )
     retData = []
     for entryName in sectionCfg.listAll():
@@ -278,7 +280,7 @@ class ConfigurationController(BaseController):
       optionPath = str( request.params[ 'path' ] )
       optionValue = str( request.params[ 'value' ] )
     except Exception, e:
-      return S_ERROR( "Can't decode path or value: %s" % str(e) )
+      return S_ERROR( "Can't decode path or value: %s" % str( e ) )
     modCfg = self.__getModificator()
     modCfg.loadFromBuffer( session[ 'cfgData' ] )
     modCfg.setOptionValue( optionPath, optionValue )
@@ -296,7 +298,7 @@ class ConfigurationController(BaseController):
       path = str( request.params[ 'path' ] )
       value = str( request.params[ 'value' ] )
     except Exception, e:
-      return S_ERROR( "Can't decode path or value: %s" % str(e) )
+      return S_ERROR( "Can't decode path or value: %s" % str( e ) )
 
     modCfg = self.__getModificator()
     modCfg.loadFromBuffer( session[ 'cfgData' ] )
@@ -313,7 +315,7 @@ class ConfigurationController(BaseController):
       destinationParentPath = request.params[ 'parentPath' ]
       beforeOfIndex = int( request.params[ 'beforeOfIndex' ] )
     except Exception, e:
-      return S_ERROR( "Can't decode parameter: %s" % str(e) )
+      return S_ERROR( "Can't decode parameter: %s" % str( e ) )
 
     gLogger.info( "Moving %s under %s before pos %s" % ( nodePath, destinationParentPath, beforeOfIndex ) )
     cfgData = CFG()
@@ -346,7 +348,7 @@ class ConfigurationController(BaseController):
           addArgs[ key ] = nodeDict[ key ]
       newParentDict[ 'value' ].addKey( **addArgs )
     except Exception, e:
-      return S_ERROR( "Can't move node: %s" % str( e ))
+      return S_ERROR( "Can't move node: %s" % str( e ) )
 
     session[ 'cfgData' ] = str( cfgData )
     session.save()
@@ -358,7 +360,7 @@ class ConfigurationController(BaseController):
       originalPath = str( request.params[ 'path' ] ).strip()
       newName = str( request.params[ 'newName' ] ).strip()
     except Exception, e:
-      return S_ERROR( "Can't decode parameter: %s" % str(e) )
+      return S_ERROR( "Can't decode parameter: %s" % str( e ) )
     try:
       if len( originalPath ) == 0:
         return S_ERROR( "Parent path is not valid" )
@@ -387,7 +389,7 @@ class ConfigurationController(BaseController):
       keyPath = str( request.params[ 'path' ] ).strip()
       newName = str( request.params[ 'newName' ] ).strip()
     except Exception, e:
-      return S_ERROR( "Can't decode parameter: %s" % str(e) )
+      return S_ERROR( "Can't decode parameter: %s" % str( e ) )
     try:
       if len( keyPath ) == 0:
         return S_ERROR( "Entity path is not valid" )
@@ -412,7 +414,7 @@ class ConfigurationController(BaseController):
     try:
       keyPath = str( request.params[ 'path' ] ).strip()
     except Exception, e:
-      return S_ERROR( "Can't decode parameter: %s" % str(e) )
+      return S_ERROR( "Can't decode parameter: %s" % str( e ) )
     try:
       if len( keyPath ) == 0:
         return S_ERROR( "Entity path is not valid" )
@@ -433,7 +435,7 @@ class ConfigurationController(BaseController):
       parentPath = str( request.params[ 'path' ] ).strip()
       sectionName = str( request.params[ 'name' ] ).strip()
     except Exception, e:
-      return S_ERROR( "Can't decode parameter: %s" % str(e) )
+      return S_ERROR( "Can't decode parameter: %s" % str( e ) )
     try:
       if len( parentPath ) == 0:
         return S_ERROR( "Parent path is not valid" )
@@ -464,7 +466,7 @@ class ConfigurationController(BaseController):
       optionName = str( request.params[ 'name' ] ).strip()
       optionValue = str( request.params[ 'value' ] ).strip()
     except Exception, e:
-      return S_ERROR( "Can't decode parameter: %s" % str(e) )
+      return S_ERROR( "Can't decode parameter: %s" % str( e ) )
     try:
       if len( parentPath ) == 0:
         return S_ERROR( "Parent path is not valid" )
