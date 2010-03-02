@@ -15,7 +15,8 @@ import dirac.lib.credentials as credentials
 from DIRAC.ConfigurationSystem.private.Modificator import Modificator
 from DIRAC.Core.Utilities.CFG import CFG
 from DIRAC.ConfigurationSystem.Client.Config import gConfig
-import DIRAC.Core.Utilities.List as List, Time
+import DIRAC.Core.Utilities.List as List
+from DIRAC.Core.Utilities import Time
 from DIRAC import S_OK, S_ERROR
 from DIRAC import gLogger
 
