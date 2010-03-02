@@ -34,19 +34,30 @@ function initPalettes()
 			};
 }
 
-function showSiteControlWindow( siteName )
+function showSiteControlWindow( siteName, allowActions )
 {
+  var allowActions = allowActions;
 	var siteData = gSiteData[ siteName ];
+	var items = [];
 	var siteInfoTab = createInfoTab( siteName, siteData );
+	items.push( siteInfoTab );
 	var statusPlotsTab = createSiteStatusPlots( siteName, siteData );
+	items.push( statusPlotsTab );
+  var accountingPlotsTab = createAccountingPlots( siteName );
+  items.push( accountingPlotsTab );
 	var siteMaskLogTab = createSiteMaskLogTab( siteName );
-	var siteMaskActionTab = createSiteMaskActionTab( siteName, siteMaskLogTab );
-	var accountingPlotsTab = createAccountingPlots( siteName );
+	items.push( siteMaskLogTab );
+	if( allowActions )
+	{
+	  var siteMaskActionTab = createSiteMaskActionTab( siteName, siteMaskLogTab );
+	  items.push( siteMaskActionTab );
+	}
+
 	
 	var tabPanel = new Ext.TabPanel({
 			activeTab:0,			
 			enableTabScroll:true,
-		    items:[ siteInfoTab, statusPlotsTab, accountingPlotsTab, siteMaskLogTab, siteMaskActionTab ],
+		    items: items,
 		    region:'center'
 		});
 	var extendedInfoWindow = new Ext.Window({
@@ -687,10 +698,12 @@ function createSiteMaskActionTab( siteName, siteMaskLogTab )
 			title : 'Site Mask Control',
 			url : 'applySiteMaskAction'
 	});
+	
 	siteMaskActionTab.on( 'resize', function() {
 		var h = siteMaskActionTab.getInnerHeight() - 50;
 		siteMaskActionComment.setHeight(h);
 	});	
+	
 	function siteMaskModificationAction( action )
 	{
 		if( ! action )

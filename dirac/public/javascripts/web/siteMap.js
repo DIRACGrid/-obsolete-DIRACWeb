@@ -13,9 +13,11 @@ var gOverInfoWindow = false;
 var gIconCache = {};
 var gMarkers = {};
 var gMarkedSites = [];
+var gAllowActions = false;
 
-function initSiteMap() 
+function initSiteMap( allowActions ) 
 {
+  gAllowActions = allowActions;
 	Ext.onReady( function()
 	{
 		var toolBarItems = [ { text : 'Where am I?', 
@@ -156,8 +158,8 @@ function autoPosition( position )
 	gCurrentLatLong = new google.maps.LatLng( position.coords.latitude, position.coords.longitude );
 	gMap.set_center( gCurrentLatLong );
 	if( gAutoLocationMarker )
-		gAutoLocationMarker.set_map( null );
-	gAutoLocation.set_map( gMap );
+		gAutoLocationMarker.setMap( null );
+	gAutoLocation.setMap( gMap );
 	gAutoLocation.set_position( gCurrentLatLong );
 }
 
@@ -316,7 +318,7 @@ function cleanMarkers()
 {
 	for( siteName in gMarkers )
 	{
-		gMarkers[ siteName ].set_map( null );
+		gMarkers[ siteName ].setMap( null );
 	}
 	gMarkedSites = [];
 }
@@ -343,8 +345,8 @@ function addMarker( siteName, siteData, icon )
 	}
 	else
 	{
-		gMarkers[ siteName ].set_icon( icon );
-		gMarkers[ siteName ].set_map( gMap );
+		gMarkers[ siteName ].setIcon( icon );
+		gMarkers[ siteName ].setMap( gMap );
 	}
 	gMarkedSites.push( siteName );
 }
@@ -440,14 +442,14 @@ function applyTierFilter()
 		var passFilter = ( gTierLevelFilter == -1 || gSiteData[ siteName ].tier == gTierLevelFilter );
 		if( markedSite && passFilter )
 		{
-			gMarkers[ siteName ].set_map( gMap );
+			gMarkers[ siteName ].setMap( gMap );
 			var tier = gSiteData[ siteName ].tier;
 			if( ! shownSites[ tier ] )
 				shownSites[ tier ] = [];
 			shownSites[ tier ].push( siteName )
 		}
 		else
-			gMarkers[ siteName ].set_map( null );
+			gMarkers[ siteName ].setMap( null );
 	}
 	var ordered = [];
 	var tiers = [];
@@ -491,7 +493,7 @@ function showSiteStatusInfo( marker, site, siteData )
 	{
 		var contentString = '<div style="width:100%">'+
 		getSiteDescriptionHTML( site, siteData )+
-	    '<h2 style="border-top:1px solid;font-variant:small-caps;text-align:center;background-color:#EEE;width:100%" onclick="javascript:showSiteControlWindow(\''+site+'\')">More info</h2>'+
+	    '<h2 style="border-top:1px solid;font-variant:small-caps;text-align:center;background-color:#EEE;width:100%" onclick="javascript:showSiteControlWindow(\''+site+'\','+gAllowActions+')">More info</h2>'+
 	    '</div>'+
 	    '</div>';
 

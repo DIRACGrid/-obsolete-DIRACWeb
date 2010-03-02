@@ -1,30 +1,35 @@
-import logging 
+import logging
 import datetime
 import tempfile
 
 from dirac.lib.base import *
 from dirac.lib.diset import getRPCClient, getTransferClient
-from dirac.lib.credentials import authorizeAction
+from dirac.lib.credentials import getProperties
 from dirac.lib.sessionManager import *
 from DIRAC.AccountingSystem.Client.ReportsClient import ReportsClient
 from DIRAC.FrameworkSystem.Client.SiteMapClient import SiteMapClient
+from DIRAC.Core.Security import Properties
 from DIRAC import gLogger
 from DIRAC import S_ERROR, S_OK
 #from DIRAC.Core.Utilities.DictCache import DictCache
 
-log = logging.getLogger(__name__)
+log = logging.getLogger( __name__ )
 
 gSiteMapClient = SiteMapClient( getRPCClient )
 #cache = DictCache()
 
-class SitemapController(BaseController):
-  
-  def index(self):
-    return redirect_to( action='display', id=None )
-  
-  def display(self):
-    return render("web/siteMap.mako")
-  
+class SitemapController( BaseController ):
+
+  def index( self ):
+    return redirect_to( action = 'display', id = None )
+
+  def display( self ):
+    if Properties.OPERATOR in getProperties():
+      c.allowActions = True
+    else:
+      c.allowActions = False
+    return render( "web/siteMap.mako" )
+
   @jsonify
   def generateAccountingPlot( self ):
     try:
@@ -60,7 +65,7 @@ class SitemapController(BaseController):
       extraParams[ 'lastSeconds' ] = 2592000
     else:
       return S_ERROR( "Oops, invalid time!" )
-    
+
     end = datetime.datetime.utcnow()
     start = end - datetime.timedelta( seconds = extraParams[ 'lastSeconds' ] )
     repClient = ReportsClient( rpcClient = getRPCClient( "Accounting/ReportGenerator" ) )
@@ -68,30 +73,30 @@ class SitemapController(BaseController):
     if not result[ 'OK' ]:
       return S_ERROR( result[ 'Message' ] )
     return S_OK( result[ 'Value' ][ 'plot' ] )
-  
+
   @jsonify
   def getSitesData( self ):
     result = gSiteMapClient.getSitesData()
     if 'rpcStub' in result:
       del( result[ 'rpcStub' ] )
     return result
-  
+
   @jsonify
-  def getSiteMaskLog(self):
+  def getSiteMaskLog( self ):
     if 'siteName' not in request.params or not request.params[ "siteName" ]:
       return { "success" : "false" , "result" : "Please, define a site!" }
     site = str( request.params[ "siteName" ] )
     rpcClient = getRPCClient( "WorkloadManagement/WMSAdministrator" )
-    gLogger.info("- siteName:", site )
+    gLogger.info( "- siteName:", site )
     result = rpcClient.getSiteMaskLogging( site )
-    gLogger.info("- siteName:", site )
-    gLogger.info("- Info result:", result )
+    gLogger.info( "- siteName:", site )
+    gLogger.info( "- Info result:", result )
     if not result[ "OK" ]:
       return { "success" : "false" , "result" : result[ "Message" ] }
     return result['Value'][ site ]
-  
+
   @jsonify
-  def applySiteMaskAction(self):
+  def applySiteMaskAction( self ):
     params = request.params
     for reqParam in ( 'action', 'comment', 'siteName' ):
       if reqParam not in params or not params[ reqParam ]:
@@ -100,7 +105,7 @@ class SitemapController(BaseController):
     action = str( params[ 'action' ] )
     comment = str( params[ 'comment' ] )
     site = str( params[ 'siteName' ] )
-    rpcClient = getRPCClient("WorkloadManagement/WMSAdministrator")
+    rpcClient = getRPCClient( "WorkloadManagement/WMSAdministrator" )
     if action == "ban":
       result = rpcClient.banSite( site, comment )
     elif action == "unban":

@@ -14,6 +14,10 @@ ${ h.stylesheet_link( "/stylesheets/main.css" ) }
 <%def name="body()">
 
 <script type="text/javascript">
-  initSiteMap();
+%if c.allowActions:
+  initSiteMap( true );
+%else:
+  initSiteMap( false );
+%endif
 </script>
 </%def>
