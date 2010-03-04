@@ -46,6 +46,7 @@ function initSidebar(){
   var dateSelect = dateSelectMenu(); // Initializing date dialog
   var id = selectID(); // Initialize field for JobIDs
   var select = selectPanel(); // Initializing container for selection objects
+  select.buttons[2].hide(); // Remove refresh button
   // Insert object to container BEFORE buttons:
 //  select.insert(0,siteSelect);
   select.insert(1,selectStatusSiteSummary);
