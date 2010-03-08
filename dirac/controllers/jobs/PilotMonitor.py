@@ -12,6 +12,11 @@ import dirac.lib.credentials as credentials
 
 log = logging.getLogger(__name__)
 
+numberOfJobs = 25
+pageNumber = 0
+globalSort = []
+globalSort = [["SubmissionTime","DESC"]]
+
 class PilotmonitorController(BaseController):
 ################################################################################
   def display(self):
@@ -150,20 +155,21 @@ class PilotmonitorController(BaseController):
     lhcbGroup = credentials.getSelectedGroup()
     lhcbUser = str(credentials.getUsername())
     global pageNumber
-    if request.params.has_key("id") and len(request.params["id"]) > 0:
-      pageNumber = 0
-      req["JobID"] = str(request.params["id"])
-    else:
-      global numberOfJobs
-      global globalSort
-      if request.params.has_key("limit") and len(request.params["limit"]) > 0:
-        if request.params.has_key("start") and len(request.params["start"]) > 0:
-          numberOfJobs = int(request.params["limit"])
-          pageNumber = int(request.params["start"])
-        else:
-          pageNumber = 0
+    global numberOfJobs
+    global globalSort
+    if request.params.has_key("limit") and len(request.params["limit"]) > 0:
+      numberOfJobs = int(request.params["limit"])
+      if request.params.has_key("start") and len(request.params["start"]) > 0:
+        pageNumber = int(request.params["start"])
       else:
-        numberOfJobs = 25
+        pageNumber = 0
+    else:
+      numberOfJobs = 25
+      pageNumber = 0
+    if request.params.has_key("pilotId") and len(request.params["pilotId"]) > 0:
+      pageNumber = 0
+      req["PilotJobReference"] = str(request.params["pilotId"])
+    else:
       if request.params.has_key("broker") and len(request.params["broker"]) > 0:
         if str(request.params["broker"]) != "All":
           req["Broker"] = str(request.params["broker"]).split('::: ')
@@ -210,10 +216,23 @@ class PilotmonitorController(BaseController):
     if request.params.has_key("getPilotOutput"):
       ref = str(request.params["getPilotOutput"])
       return self.__getPilotOutput(ref)
+    if request.params.has_key("getPilotLoggingInfo"):
+      ref = str(request.params["getPilotLoggingInfo"])
+      return self.__getPilotLoggingInfo(ref)
 ################################################################################
   def __getPilotOutput(self,pilotReference):
     RPC = getRPCClient("WorkloadManagement/WMSAdministrator")
     result = RPC.getPilotOutput(pilotReference)
+    if result["OK"]:
+      c.result = result["Value"]
+      c.result = {"success":"true","result":c.result}
+    else:
+      c.result = {"success":"false","error":result["Message"]}
+    return c.result
+################################################################################
+  def __getPilotLoggingInfo(self,pilotReference):
+    RPC = getRPCClient("WorkloadManagement/WMSAdministrator")
+    result = RPC.getPilotLoggingInfo(pilotReference)
     if result["OK"]:
       c.result = result["Value"]
       c.result = {"success":"true","result":c.result}
