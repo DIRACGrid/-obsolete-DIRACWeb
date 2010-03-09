@@ -1447,9 +1447,9 @@ function setTitle(value,id){
   return title;
 }
 function status(value){
-  if((value == 'Done')||(value == 'Completed')||(value == 'Good')||(value == 'Active')){
+  if((value == 'Done')||(value == 'Completed')||(value == 'Good')||(value == 'Active')||(value == 'Cleared')){
     return '<img src="'+gURLRoot+'/images/monitoring/done.gif">';
-  }else if((value == 'Failed')||(value == 'Bad')||(value == 'Banned')){
+  }else if((value == 'Failed')||(value == 'Bad')||(value == 'Banned')||(value == 'Aborted')){
     return '<img src="'+gURLRoot+'/images/monitoring/failed.gif">';
   }else if((value == 'Waiting')||(value == 'Stopped')||(value == 'Poor')||(value == 'Probing')){
     return '<img src="'+gURLRoot+'/images/monitoring/waiting.gif">';
