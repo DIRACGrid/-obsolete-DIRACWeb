@@ -124,12 +124,14 @@ function initData(store){
       text:'Select None',
       tooltip:'Click to uncheck selected row(s)'
     },'->',{
+/*
       cls:"x-btn-text-icon",
       handler:function(){action('job','reschedule')},
       icon:gURLRoot+'/images/iface/reschedule.gif',
       text:'Reschedule',
       tooltip:'Click to reschedule selected job(s)'
     },{
+*/
       cls:"x-btn-text-icon",
       handler:function(){action('job','kill')},
       icon:gURLRoot+'/images/iface/close.gif',
@@ -149,9 +151,17 @@ function initData(store){
         handler:function(){action('job','reset')},
         text:'Reset',
         tooltip:'Click to reset selected job(s)'
-      }
+      };
+      var rescheduleButton = {
+        cls:"x-btn-text-icon",
+        handler:function(){action('job','reschedule')},
+        icon:gURLRoot+'/images/iface/reschedule.gif',
+        text:'Reschedule',
+        tooltip:'Click to reschedule selected job(s)'
+      };
       var a = tbar.slice(), b = a.splice( 3 );
       a[3] = resetButton;
+      a[4] = rescheduleButton;
       tbar = a.concat( b );
     }
   }catch(e){}
