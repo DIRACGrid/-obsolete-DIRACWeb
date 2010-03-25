@@ -10,7 +10,7 @@ function initPilotPlots( plotsList, selectionData ){
 }
 
 function renderPage( plotsList, selectionData ){
-  initPlotPage( "WMS history plot generation" );
+  initPlotPage( "Pilots plot generation" );
 
   appendToLeftPanel( createComboBox( "plotName", "Plot to generate", "Select a plot", plotsList ) );
 
