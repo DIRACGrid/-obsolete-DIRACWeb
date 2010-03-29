@@ -278,7 +278,7 @@ function imagePanel(){
   });
   return panel;
 }
-function initStore(record,groupBy){
+function initStore(record,options){
   var reader = new Ext.data.JsonReader({
     root:'result',
     totalProperty:'total'
@@ -326,6 +326,17 @@ function initStore(record,groupBy){
     }
   }catch(e){
     auto = {params:{start:0,limit:25}};
+  }
+  if(options){
+    if(options.auto){
+      auto = false;
+    }
+  }
+  var groupBy = false;
+  if(options ){
+    if(options.groupBy){
+      groupBy = options.groupBy;
+    }
   }
   if(groupBy){
     var store = new Ext.data.GroupingStore({
@@ -423,7 +434,7 @@ function hideControls(caller){
     }
   }
 }
-function itemsNumber(){
+function itemsNumber(mainStore,id){
   var store = new Ext.data.SimpleStore({
     fields:['number'],
     data:[[25],[50],[100],[200],[500],[1000]]
@@ -445,7 +456,6 @@ function itemsNumber(){
     minLength:1,
     minLengthText:'The minimum value for this field is 1',
     mode:'local',
-    name:'number',
     selectOnFocus:true,
     store:store,
     triggerAction:'all',
@@ -455,27 +465,32 @@ function itemsNumber(){
   });
   combo.on({
     'collapse':function(){
-      if(dataMngr.store){
-        if(tableMngr.bbar){
-          if(tableMngr.bbar.pageSize){
-            if(tableMngr.bbar.pageSize != combo.value){
-              tableMngr.bbar.pageSize = combo.value;
-              dataMngr.store.autoLoad.params.limit = combo.value;
-              var sortGlobalPanel = Ext.getCmp('sortGlobalPanel');
-              var sort = false;
-              if(sortGlobalPanel){
-                if(sortGlobalPanel.globalSort){
-                  sort = true;
-                }
-              }
-              if(sort){
-                dataMngr.store.load({params:{start:0,limit:tableMngr.bbar.pageSize,sort:sortGlobalPanel.globalSort}});
-              }else{
-                dataMngr.store.load({params:{start:0,limit:tableMngr.bbar.pageSize}});
-              }
-            }
+      if(mainStore){
+        var bbar = Ext.getCmp(id);
+        if(bbar){
+          if(bbar.pageSize != combo.value){
+            bbar.pageSize = combo.value;
+            mainStore.autoLoad['params'] = {limit:combo.value};
           }
+        }else{
+          alert('Error: Can not get the bottombar component with id: ' + id + ' in function itemsNumber() action collapse');
+          return
         }
+        var sort = false;
+        try{
+          var sortGlobalPanel = Ext.getCmp('sortGlobalPanel');
+          if(sortGlobalPanel.globalSort){
+            sort = true;
+          }
+        }catch(e){}
+        if(sort){
+          mainStore.load({params:{start:0,limit:tableMngr.bbar.pageSize,sort:sortGlobalPanel.globalSort}});
+        }else{
+          mainStore.load({params:{start:0,limit:tableMngr.bbar.pageSize}});
+        }
+      }else{
+        alert('Error: Can not find the mainStore in function itemsNumber() action collapse');
+        return
       }
     }
   });
@@ -670,6 +685,53 @@ function selectPanel(newID){
       id = newID;
     }
   }catch(e){}
+  function returnPages(id){
+    var panel = Ext.getCmp(id);
+    if(!panel){
+      alert();
+      return
+    }
+    var bbar = panel.getBottomToolbar();
+    if(!bbar){
+      alert();
+      return
+    }
+    var start = bbar.cursor;
+    var page = bbar.pageSize;
+    if(start || page){
+      return {'start':start,'limit':page}
+    }else{
+      return {'start':0,'limit':25}
+    }
+  }
+  function returnValues(){
+    var selections = {};
+    var tTask = returnPages('TransTaskTab');
+    if(tTask.start || tTask.limit){
+      selections.ttasksStart = tTask.start;
+      selections.ttasksLimit = tTask.limit;
+    }else{
+      selections.ttasksStart = 0;
+      selections.ttasksLimit = 25;
+    }
+    var tFiles = returnPages('TransFilesTab');
+    if(tFiles.start || tFiles.limit){
+      selections.tfilesStart = tFiles.start;
+      selections.tfilesLimit = tFiles.limit;
+    }else{
+      selections.tfilesStart = 0;
+      selections.tfilesLimit = 25;
+    }
+    var trans = returnPages('TransTab')
+    if(trans.start || trans.limit){
+      selections.transStart = trans.start;
+      selections.transLimit = trans.limit;
+    }else{
+      selections.transStart = 0;
+      selections.transLimit = 25;
+    }
+    return selections
+  }
   function submitForm(panelID){
     var selections = {};
     if(panelID == 'SiteSelectPanel'){
@@ -684,6 +746,18 @@ function selectPanel(newID){
     }else if(panelID == 'StorageSelectPanel'){
       selections.mode = 'Storage';
       var sideBar = Ext.getCmp('StorageSelectSideBar')
+    }else if(panelID == 'transTaskSelectPanel'){
+      selections = returnValues();
+      selections.mode = 'Tasks';
+      var sideBar = Ext.getCmp('TransTaskSelectSideBar')
+    }else if(panelID == 'transFilesSelectPanel'){
+      selections = returnValues();
+      selections.mode = 'Files';
+      var sideBar = Ext.getCmp('TransFilesSelectSideBar')
+    }else if(panelID == 'transSelectPanel'){
+      selections = returnValues();
+      selections.mode = 'Trans';
+      var sideBar = Ext.getCmp('TransSelectSideBar')
     }else{
       var sideBar = Ext.getCmp('sideBar');
     }
@@ -1627,7 +1701,7 @@ function table(tableMngr){
   if(tableMngr.tbar){
     tbar = new Ext.Toolbar({items:tableMngr.tbar});
   }
-  var iNumber = itemsNumber();
+  var iNumber = itemsNumber(store);
   var pageSize = 25;
   if(dataSelect){
     if(dataSelect.extra){
@@ -1636,9 +1710,11 @@ function table(tableMngr){
       }
     }
   }
+  var bbarID = id + 'bbar';
   tableMngr.bbar = new Ext.PagingToolbar({
     displayInfo:true,
-    items:['-','Items displaying per page: ',iNumber,],
+    id:bbarID,
+    items:['-','Items displaying per page: ',itemsNumber(store,bbarID)],
     pageSize:pageSize,
     refreshText:'Click to refresh current page',
     store:store
