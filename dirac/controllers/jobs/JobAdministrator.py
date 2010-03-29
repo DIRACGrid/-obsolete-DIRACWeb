@@ -9,12 +9,8 @@ log = logging.getLogger(__name__)
 class JobadministratorController(BaseController):
 
   def getSandbox( self ):
+    """ Get job sandbox 
     """
-    Get job sandbox 
-    """
-
-    print request.params
-
     if 'jobID' not in request.params:
       c.error = "Maybe you forgot the jobID ?"
       return render( "/error.mako" )
