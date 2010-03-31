@@ -1,4 +1,4 @@
-import logging
+import logging, sys
 from time import time, gmtime, strftime
 
 from dirac.lib.diset import getRPCClient
@@ -62,9 +62,14 @@ class BkController(BaseController):
       fileName = "BK_default_name"
     files = self.__showFiles(req,{},startItem,maxItems)
     files = files["result"]
-    tmp = cl.writePythonOrJobOptions(startItem,maxItems,req,fileType)
+    try:
+      tmp = cl.writePythonOrJobOptions(startItem,maxItems,req,fileType)
+    except:
+      return {"success":"false","error":str(sys.exc_info()[1])}
     fileName = fileName + "." + fileType
-    gLogger.info("\033[0;31m - \033[0m",fileName)
+    gLogger.info("\033[0;31m *** \033[0m",fileName)
+    fileName = str(fileName)
+    gLogger.info("\033[0;31m --- \033[0m",fileName)
     response.headers['Content-type'] = 'application/x-unknown'
     response.headers["Content-Disposition"] = "attachment; filename=%s" % fileName
     return tmp
@@ -80,10 +85,6 @@ class BkController(BaseController):
         adv = False
     else:
       adv = False
-    if request.params.has_key("root") and len(request.params["root"]) > 0:
-      req = str(request.params["root"])
-    else:
-      req = "/"
     if request.params.has_key("mode") and len(request.params["mode"]) > 0:
       modeParameter = str(request.params["mode"])
       if modeParameter == "bkSim":
@@ -92,22 +93,16 @@ class BkController(BaseController):
         mode = "Event type"
       elif modeParameter == "bkProd":
         mode = "Productions"
-        if request.params.has_key("value") and len(request.params["value"]) > 0:
-          req = str(request.params["value"])
-          return self.__showDir(req,adv,mode)
-        else:
-          return {"success":"false","error":"Production value is empty"}
       elif modeParameter == "bkRun":
         mode = "Runlookup"
-        if request.params.has_key("value") and len(request.params["value"]) > 0:
-          req = str(request.params["value"])
-          return self.__showDir(req,adv,mode)
-        else:
-          return {"success":"false","error":"Run value is empty"}
       else:
         mode = "Configuration"
     else:
       mode = "Configuration"
+    if request.params.has_key("root") and len(request.params["root"]) > 0:
+      req = str(request.params["root"])
+    else:
+      req = "/"
     if request.params.has_key("level") and len(request.params["level"]) > 0:
       level = str(request.params["level"])
       if level == "showFiles":
@@ -122,7 +117,7 @@ class BkController(BaseController):
           MaxItems = 25
         MaxItems = int(StartItem) + int(MaxItems)
         sortDict = ['total','now']
-        return self.__showFiles(req,sortDict,StartItem,MaxItems)
+        return self.__showFiles(req,sortDict,StartItem,MaxItems,mode)
       else:
         return self.__showDir(req,adv,mode)
     else:
@@ -135,15 +130,16 @@ class BkController(BaseController):
       c.result = {"success":"false","error":"You are not authorised"}
     else:
       gLogger.info("\033[0;31m request: %s, advOption: %s, mode: %s \033[0m" % (request,advOption,mode))
-      if advOption:
-        cl.setAdvancedQueries(True)
-      else:
-        cl.setAdvancedQueries(False)
-      cl.setParameter(mode)
-      gLogger.info("\033[0;31m BK MODE: \033[0m",mode)
+      try:
+        if advOption:
+          cl.setAdvancedQueries(True)
+        else:
+          cl.setAdvancedQueries(False)
+        cl.setParameter(mode)
+        result = cl.list(request)
+      except:
+        return {"success":"false","error":str(sys.exc_info()[1])}
       result = cl.list(request)
-      gLogger.info("\033[0;31m BK ShowDirectory REQUEST: \033[0m",request)
-      gLogger.info("\033[0;31m BK ShowDirectory RESULT: \033[0m",result)
       if len(result) > 0:
         tempDict = {}
         for i in result:
@@ -178,14 +174,19 @@ class BkController(BaseController):
     gLogger.info("\033[0;31mBK ShowDirectory REQUEST:\033[0m")
     return c.result
 ################################################################################
-  def __showFiles(self,request,sortDict,StartItem,MaxItems):
+  def __showFiles(self,request,sortDict,StartItem,MaxItems,mode="Configuration"):
     cl = LHCB_BKKDBClient(getRPCClient('Bookkeeping/BookkeepingManager'))
     lhcbGroup = credentials.getSelectedGroup()
     if lhcbGroup == "visitor":
       c.result = {"success":"false","error":"You are not authorised"}
     else:
       request = {'fullpath':request}
-      result = cl.getLimitedFiles(request,sortDict,StartItem,MaxItems)
+      try:
+        cl.setParameter(mode)
+        gLogger.info("\033[0;31m cl.getLimitedFiles(%s,%s,%s,%s) \033[0m" % (request,sortDict,StartItem,MaxItems))
+        result = cl.getLimitedFiles(request,sortDict,StartItem,MaxItems)
+      except:
+        return {"success":"false","error":str(sys.exc_info()[1])}
       gLogger.info("\033[0;31m RESULT \033[0m",result)
       if result.has_key("TotalRecords"):
         if result["TotalRecords"] >= 0:
@@ -262,6 +263,8 @@ class BkController(BaseController):
   def __bytestr(self,size,precision=1):
     """Return a string representing the greek/metric suffix of a size"""
     abbrevs = [(1<<50L, ' PB'),(1<<40L, ' TB'),(1<<30L, ' GB'),(1<<20L, ' MB'),(1<<10L, ' kB'),(1, ' bytes')]
+    if size is None:
+      return '0 bytes'
     if size==1:
       return '1 byte'
     for factor, suffix in abbrevs:
@@ -356,127 +359,127 @@ class BkController(BaseController):
     elif request.params.has_key("ping"): # quick truck to fire load event on client side
       return {"success":"true","result":{}}
 ################################################################################
-  def __run(self,runID):
-    cl = LHCB_BKKDBClient(getRPCClient('Bookkeeping/BookkeepingManager'))
-    lhcbGroup = credentials.getSelectedGroup()
-    if lhcbGroup == "visitor":
-      c.result = {"success":"false","error":"You are not authorised"}
-    else:
-      result = cl.setParameter('Runlookup')
-      result = cl.list();
-      gLogger.info("\033[0;31m help \033[0m",result)
-      result = cl.list("/RUN_50675");
-      gLogger.info("\033[0;31m help \033[0m",result)
-      if len(result) > 0:
-        c.result = []
-        for i in result:
-          returnD = {}
-          if i.has_key("fullpath") and len(i["fullpath"]) > 0:
-            returnD["extra"] = i["fullpath"]
-          else:
-            returnD["extra"] = ""
-            gLogger.info("Key 'fullpath' is absent or has a null length: ",i)
-          if i.has_key("Total ProcessingPass") and len(i["Total ProcessingPass"]) > 0:
-            returnD["name"] = i["Total ProcessingPass"]
-          else:
-            returnD["name"] = ""
-            gLogger.info("Key 'Total ProcessingPass' is absent or has a null length: ",i)
-          returnD["allowDrag"] = "false"
-          c.result.append(returnD)
-#        tempDict = {}
-#        for i in result:
-#          if i.has_key("name") and len(i["name"]) > 0:
-#            tempDict[i["name"]] = i
+#  def __run(self,runID):
+#    cl = LHCB_BKKDBClient(getRPCClient('Bookkeeping/BookkeepingManager'))
+#    lhcbGroup = credentials.getSelectedGroup()
+#    if lhcbGroup == "visitor":
+#      c.result = {"success":"false","error":"You are not authorised"}
+#    else:
+#      result = cl.setParameter('Runlookup')
+#      result = cl.list();
+#      gLogger.info("\033[0;31m help \033[0m",result)
+#      result = cl.list("/RUN_50675");
+#      gLogger.info("\033[0;31m help \033[0m",result)
+#      if len(result) > 0:
 #        c.result = []
-#        for j in sortList(tempDict.keys()):
+#        for i in result:
 #          returnD = {}
-#          i = tempDict[j]
-#          try:
-#            returnD["text"] = i["name"]
+#          if i.has_key("fullpath") and len(i["fullpath"]) > 0:
 #            returnD["extra"] = i["fullpath"]
-#            returnD["allowDrag"] = "false"
-#            if i.has_key("level") and len(i["level"]) > 0:
-#              level = i["level"]
-#              if i.has_key("showFiles"):
-#                returnD["qtip"] = "showFiles"
-#                returnD["leaf"] = "True"
-#                returnD["cls"] = "x-tree-node-collapsed"
-#              else:
-#                returnD["qtip"] = level
-#              if level == "Event types":
-#                returnD["text"] = returnD["text"] + " ( " + i["Description"] + " )"
-#          except:
-#            gLogger.info("Some error happens here: ",j)
-#            pass
+#          else:
+#            returnD["extra"] = ""
+#            gLogger.info("Key 'fullpath' is absent or has a null length: ",i)
+#          if i.has_key("Total ProcessingPass") and len(i["Total ProcessingPass"]) > 0:
+#            returnD["name"] = i["Total ProcessingPass"]
+#          else:
+#            returnD["name"] = ""
+#            gLogger.info("Key 'Total ProcessingPass' is absent or has a null length: ",i)
+#          returnD["allowDrag"] = "false"
 #          c.result.append(returnD)
-      else:
-        c.result = {"success":"false","error":"Run doesn't exist"}
-    return c.result
-    gLogger.info("\033[0;31mBK ShowDirectory RUN REQUEST:\033[0m")
+##        tempDict = {}
+##        for i in result:
+##          if i.has_key("name") and len(i["name"]) > 0:
+##            tempDict[i["name"]] = i
+##        c.result = []
+##        for j in sortList(tempDict.keys()):
+##          returnD = {}
+##          i = tempDict[j]
+##          try:
+##            returnD["text"] = i["name"]
+##            returnD["extra"] = i["fullpath"]
+##            returnD["allowDrag"] = "false"
+##            if i.has_key("level") and len(i["level"]) > 0:
+##              level = i["level"]
+##              if i.has_key("showFiles"):
+##                returnD["qtip"] = "showFiles"
+##                returnD["leaf"] = "True"
+##                returnD["cls"] = "x-tree-node-collapsed"
+##              else:
+##                returnD["qtip"] = level
+##              if level == "Event types":
+##                returnD["text"] = returnD["text"] + " ( " + i["Description"] + " )"
+##          except:
+##            gLogger.info("Some error happens here: ",j)
+##            pass
+##          c.result.append(returnD)
+#      else:
+#        c.result = {"success":"false","error":"Run doesn't exist"}
+#    return c.result
+#    gLogger.info("\033[0;31mBK ShowDirectory RUN REQUEST:\033[0m")
 ################################################################################
-  def __production(self,prodID,type,start=0,limit=25):
-    pagestart = time()
-    RPC = getRPCClient('Bookkeeping/BookkeepingManager')
-    if prodID == 0:
-      c.result = {"success":"false","error":"There is no production with ID: %s" % prodID}
-    else:
-      prodID = int(prodID)
-      start = long(start)
-      limit = long(limit)
-      result = RPC.getProductionFilesForUsers(prodID,{"type":type},{"total":"now"},start,limit)
-      gLogger.info("\033[0;31m result: \033[0m",result)
-      gLogger.info("\033[0;31m getProductionFilesForUsers(%s,{'type':%s},{'total':'now'},%s,%s) \033[0m" % (prodID,type,start,limit))
-      if result["OK"]:
-        result = result["Value"]
-        if result.has_key("TotalRecords"):
-          if result["TotalRecords"] >= 0:
-            if result.has_key("ParameterNames") and result.has_key("Records"):
-              if len(result["ParameterNames"]) > 0:
-                if len(result["Records"]) > 0:
-                  c.result = []
-                  jobs = result["Records"]
-                  head = result["ParameterNames"]
-                  headLength = len(head)
-                  for i in jobs:
-                    tmp = {}
-                    for j in range(0,headLength):
-                      tmp[head[j]] = i[j]
-                    c.result.append(tmp)
-                  total = result["TotalRecords"]
-                  if result.has_key("Extras"):
-                    extra = result["Extras"]
-                    gLogger.info("\033[0;31m extra: \033[0m",extra)
-                    toSend = {}
-                    if extra.has_key("GlobalStatistics"):
-                      temExtra = extra["GlobalStatistics"]
-                      if temExtra.has_key("Files Size"):
-                        extra["GlobalStatistics"]["Files Size"] = self.__bytestr(extra["GlobalStatistics"]["Files Size"])
-                      if temExtra.has_key("Number of Events"):
-                        extra["GlobalStatistics"]["Number of Events"] = self.__niceNumbers(extra["GlobalStatistics"]["Number of Events"])
-                      extra["GlobalStatistics"]["Number of Files"] = self.__niceNumbers(total)
-                    for k in extra:
-                      toSend[k] = {}
-                      for l in extra[k]:
-                        m = l.replace(" ","")
-                        toSend[k][m] = extra[k][l]
-                    c.result = {"success":"true","result":c.result,"total":total,"extra":toSend}
-                  else:
-                    c.result = {"success":"true","result":c.result,"total":total}
-                else:
-                  c.result = {"success":"false","result":"","error":"There are no data to display"}
-              else:
-                c.result = {"success":"false","result":"","error":"ParameterNames field is missing"}
-            else:
-              c.result = {"success":"false","result":"","error":"Data structure is corrupted, there is no either 'ParameterNames' key or 'Records' key"}
-          else:
-            c.result = {"success":"false","result":"","error":"There were no data matching your selection"}
-        else:
-          c.result = {"success":"false","result":"","error":"Data structure is corrupted, there is no 'TotalRecords' key"}
-      else:
-        c.result = {"success":"false","error":result["Message"]}
-    gLogger.info("\033[0;31m * * * Bookkeeping REQUEST: \033[0m %s" % (time() - pagestart))
-    gLogger.info("Bookkeeping/BookkeepingManager getProductionFiles: ",prodID)
-    return c.result
+#  def __production(self,prodID,type,start=0,limit=25):
+#    pagestart = time()
+#    RPC = getRPCClient('Bookkeeping/BookkeepingManager')
+#    if prodID == 0:
+#      c.result = {"success":"false","error":"There is no production with ID: %s" % prodID}
+#    else:
+#      prodID = int(prodID)
+#      start = long(start)
+#      limit = long(limit)
+#      result = RPC.getProductionFilesForUsers(prodID,{"type":type},{"total":"now"},start,limit)
+#      gLogger.info("\033[0;31m result: \033[0m",result)
+#      gLogger.info("\033[0;31m getProductionFilesForUsers(%s,{'type':%s},{'total':'now'},%s,%s) \033[0m" % (prodID,type,start,limit))
+#      if result["OK"]:
+#        result = result["Value"]
+#        if result.has_key("TotalRecords"):
+#          if result["TotalRecords"] >= 0:
+#            if result.has_key("ParameterNames") and result.has_key("Records"):
+#              if len(result["ParameterNames"]) > 0:
+#                if len(result["Records"]) > 0:
+#                  c.result = []
+#                  jobs = result["Records"]
+#                  head = result["ParameterNames"]
+#                  headLength = len(head)
+#                  for i in jobs:
+#                    tmp = {}
+#                    for j in range(0,headLength):
+#                      tmp[head[j]] = i[j]
+#                    c.result.append(tmp)
+#                  total = result["TotalRecords"]
+#                  if result.has_key("Extras"):
+#                    extra = result["Extras"]
+#                    gLogger.info("\033[0;31m extra: \033[0m",extra)
+#                    toSend = {}
+#                    if extra.has_key("GlobalStatistics"):
+#                      temExtra = extra["GlobalStatistics"]
+#                      if temExtra.has_key("Files Size"):
+#                        extra["GlobalStatistics"]["Files Size"] = self.__bytestr(extra["GlobalStatistics"]["Files Size"])
+#                      if temExtra.has_key("Number of Events"):
+#                        extra["GlobalStatistics"]["Number of Events"] = self.__niceNumbers(extra["GlobalStatistics"]["Number of Events"])
+#                      extra["GlobalStatistics"]["Number of Files"] = self.__niceNumbers(total)
+#                    for k in extra:
+#                      toSend[k] = {}
+#                      for l in extra[k]:
+#                        m = l.replace(" ","")
+#                        toSend[k][m] = extra[k][l]
+#                    c.result = {"success":"true","result":c.result,"total":total,"extra":toSend}
+#                  else:
+#                    c.result = {"success":"true","result":c.result,"total":total}
+#                else:
+#                  c.result = {"success":"false","result":"","error":"There are no data to display"}
+#              else:
+#                c.result = {"success":"false","result":"","error":"ParameterNames field is missing"}
+#            else:
+#              c.result = {"success":"false","result":"","error":"Data structure is corrupted, there is no either 'ParameterNames' key or 'Records' key"}
+#          else:
+#            c.result = {"success":"false","result":"","error":"There were no data matching your selection"}
+#        else:
+#          c.result = {"success":"false","result":"","error":"Data structure is corrupted, there is no 'TotalRecords' key"}
+#      else:
+#        c.result = {"success":"false","error":result["Message"]}
+#    gLogger.info("\033[0;31m * * * Bookkeeping REQUEST: \033[0m %s" % (time() - pagestart))
+#    gLogger.info("Bookkeeping/BookkeepingManager getProductionFiles: ",prodID)
+#    return c.result
 ################################################################################
   def __file(self,lfn=""):
     RPC = getRPCClient('Bookkeeping/BookkeepingManager')
@@ -569,7 +572,10 @@ class BkController(BaseController):
       return "Error! Root variable is not defined"
     gLogger.info("\033[0;31m !!! \033[0m")
     cl = LHCB_BKKDBClient(getRPCClient('Bookkeeping/BookkeepingManager'))
-    result = cl.getLimitedInformations(StartItem,MaxItems,root)
+    try:
+      result = cl.getLimitedInformations(StartItem,MaxItems,root)
+    except:
+      return {"success":"false","error":str(sys.exc_info()[1])}
     if result["OK"]:
       result = result["Value"]
       if result["Number of files"]:
