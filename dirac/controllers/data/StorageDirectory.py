@@ -48,7 +48,7 @@ class StoragedirectoryController(BaseController):
       callback["extra"] = tmp
       gLogger.info(" - ",callback["extra"])
 ###
-    RPC = getRPCClient("dips://volhcb08.cern.ch:9151/DataManagement/StorageUsage")
+    RPC = getRPCClient("DataManagement/StorageUsage")
     result = RPC.getStorageElementSelection()
     if result["OK"]:
       se = []
@@ -107,7 +107,7 @@ class StoragedirectoryController(BaseController):
   @jsonify
   def submit(self):
     gLogger.info(" -- SUBMIT --")
-    RPC = getRPCClient("dips://volhcb08.cern.ch:9151/DataManagement/StorageUsage")
+    RPC = getRPCClient("DataManagement/StorageUsage")
     result = self.__request()
     gLogger.info(" req ", result)
     gLogger.info(" sort ", globalSort)
