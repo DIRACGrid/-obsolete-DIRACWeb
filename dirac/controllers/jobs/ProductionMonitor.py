@@ -158,7 +158,7 @@ class ProductionmonitorController(BaseController):
         tmp[i] = str(request.params[i])
       callback["extra"] = tmp
     RPC = getRPCClient("ProductionManagement/ProductionManager")
-    result = RPC.getTransformationSummary()
+    result = RPC.getTransformationSummaryWeb()
     if result["OK"]:
       prod = []
       prods = result["Value"]
