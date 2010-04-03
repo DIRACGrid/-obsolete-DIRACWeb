@@ -9,7 +9,7 @@ from DIRAC import gLogger
 from DIRAC.Core.Utilities.List import sortList
 from DIRAC.AccountingSystem.Client.ReportsClient import ReportsClient
 from DIRAC.Core.Utilities.DictCache import DictCache
-
+from DIRAC.ConfigurationSystem.Client import PathFinder
 log = logging.getLogger(__name__)
 
 numberOfJobs = 25
@@ -18,9 +18,13 @@ globalSort = []
 globalSort = [["runID","DESC"]]
 
 class RundbmonitorController(BaseController):
+
+  def __init__(self):
+    self.gatewayURL = PathFinder.getServiceURL('Framework/Gateway').replace("/Framework/Gateway","/DataManagement/RunDBInterface")
+
 ################################################################################
   def display(self):
-    RPC = getRPCClient("dips://volhcb09.cern.ch:9300/DataManagement/RunDBInterface")
+    RPC = getRPCClient(self.gatewayURL)
     result = RPC.ping()
     gLogger.info(" - P I N G - ",result)
     c.select = self.__getSelectionData()
@@ -40,7 +44,7 @@ class RundbmonitorController(BaseController):
       for i in request.params:
         tmp[i] = str(request.params[i])
       callback["extra"] = tmp
-    RPC = getRPCClient("dips://volhcb09.cern.ch:9300/DataManagement/RunDBInterface")
+    RPC = getRPCClient(self.gatewayURL)
     result = RPC.getRunSelections()
     if result["OK"]:
       if len(result["Value"])>0:
@@ -56,7 +60,7 @@ class RundbmonitorController(BaseController):
   def submit(self):
     gLogger.info(" -- SUBMIT --")
     pagestart = time()
-    RPC = getRPCClient("dips://volhcb09.cern.ch:9300/DataManagement/RunDBInterface")
+    RPC = getRPCClient(self.gatewayURL)
     result = self.__request()
     result = RPC.getRunsSummaryWeb(result,globalSort,pageNumber,numberOfJobs)
     if result["OK"]:
@@ -199,7 +203,7 @@ class RundbmonitorController(BaseController):
     except:
       c.result = {"success":"false","error":"Wrong data type, numerical expected"}
       return c.result
-    RPC = getRPCClient("dips://volhcb09.cern.ch:9300/DataManagement/RunDBInterface")
+    RPC = getRPCClient(self.gatewayURL)
     result = RPC.getFilesSummaryWeb({'runID':[id]},[],start,limit)
     if result["OK"]:
       result = result["Value"]
@@ -244,7 +248,7 @@ class RundbmonitorController(BaseController):
     except:
       c.result = {"success":"false","error":"Wrong data type, numerical expected"}
       return c.result
-    RPC = getRPCClient("dips://volhcb09.cern.ch:9300/DataManagement/RunDBInterface")
+    RPC = getRPCClient(self.gatewayURL)
     result = RPC.getRunParams(id)
     if result["OK"]:
       res = result["Value"]
