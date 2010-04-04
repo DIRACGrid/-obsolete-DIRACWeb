@@ -87,6 +87,7 @@ class PilotmonitorController(BaseController):
 ###
     RPC = getRPCClient("WorkloadManagement/WMSAdministrator")
     result = RPC.getPilotMonitorSelectors()
+    gLogger.info("\033[0;31m RPC.getPilotMonitorSelectors() \033[0m %s" % result)
     if result["OK"]:
       result = result["Value"]
       gLogger.info("\033[0;31m *** \033[0m %s",result)
