@@ -114,6 +114,7 @@ Ext.ux.form.LovCombo = Ext.extend(Ext.form.ComboBox, {
 						this.store.data.items[k].set(this.checkField, record.get(this.checkField));
 					}
 					this.setValue(this.getCheckedValue());
+                                        this.fireEvent('select', this, record, index);
 				}else{
 					this.setValue(this.getCheckedValue());
 					this.fireEvent('select', this, record, index);
