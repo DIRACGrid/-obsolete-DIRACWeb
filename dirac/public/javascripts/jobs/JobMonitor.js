@@ -124,14 +124,6 @@ function initData(store){
       text:'Select None',
       tooltip:'Click to uncheck selected row(s)'
     },'->',{
-/*
-      cls:"x-btn-text-icon",
-      handler:function(){action('job','reschedule')},
-      icon:gURLRoot+'/images/iface/reschedule.gif',
-      text:'Reschedule',
-      tooltip:'Click to reschedule selected job(s)'
-    },{
-*/
       cls:"x-btn-text-icon",
       handler:function(){action('job','kill')},
       icon:gURLRoot+'/images/iface/close.gif',
@@ -240,18 +232,29 @@ function setMenuItems(selections){
       {handler:function(){AJAXrequest('LogURL',id)},text:'Get LogFile'},
       {handler:function(){AJAXrequest('getPending',id)},text:'Get PendingRequest'},
       {handler:function(){AJAXrequest('getStagerReport',id)},text:'Get StagerReport'},
-      {handler:function(){AJAXrequest('getSandBox',id)},text:'Get SandBox file'},
+      {text:'Get Sandbox',icon:gURLRoot + '/images/iface/addfile.gif',menu:({items:[
+         {handler:function(){showInputSandbox(id,'Input')},text:'Input'},
+         {handler:function(){showInputSandbox(id,'Output')},text:'Output'},
+       ]})},
       '-',
       {text:'Actions',icon:gURLRoot + '/images/iface/action.gif',menu:({items:[
-        {handler:function(){action('job','reset',id)},text:'Reset'},
-        {handler:function(){action('job','kill',id)},text:'Kill'},
-        {handler:function(){action('job','delete',id)},text:'Delete'}
+        {handler:function(){action('job','kill',id)},icon:gURLRoot + '/images/iface/close.gif',text:'Kill'},
+        {handler:function(){action('job','delete',id)},icon:gURLRoot + '/images/iface/delete.gif',text:'Delete'}
       ]})},
       {text:'Pilot', menu:({items:[
         {handler:function(){AJAXrequest('pilotStdOut',id)},text:'Get StdOut'},
         {handler:function(){AJAXrequest('pilotStdErr',id)},text:'Get StdErr'}
       ]})}
     );
+    if(gPageDescription.userData.group == 'diracAdmin'){
+      var reset = new Ext.menu.Item({handler:function(){action('job','reset',id)},icon:gURLRoot + '/images/iface/reschedule.gif',text:'Reset'});
+      dirac.menu.items.items[12].menu.insert(0,reset);
+    }
+    if((status == 'Done')||(status == 'Completed')||(status == 'Failed')){
+      dirac.menu.items.items[10].menu.items.items[1].enable();
+    }else{
+      dirac.menu.items.items[10].menu.items.items[1].disable();
+    }
     if((status == 'Done')||(status == 'Failed')){
       dirac.menu.items.items[9].enable();
     }else{
@@ -361,6 +364,11 @@ function AJAXsuccess(value,id,response){
   }
   id = setTitle(value,id);
   displayWin(panel,id);
+}
+function showInputSandbox(id,type){
+  var setup = gPageDescription.selectedSetup;
+  var group = gPageDescription.userData.group;
+  window.open('https://volhcb12.cern.ch/DIRAC/'+setup+'/'+group+'/jobs/JobAdministrator/getSandbox?jobID='+id+'&sandbox='+type,'Input Sandbox file','width=400,height=200')
 }
 function afterDataLoad(){
   var msg = [];
