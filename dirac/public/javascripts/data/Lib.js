@@ -933,6 +933,9 @@ var regexDir = new RegExp( /[^\0]+/);
 function selectDirectory(){
   return basicID('dir','Directory','none','Any non-NULL character');
 }
+function seSites(){
+  return createMenu('seSites','Site');
+}
 function selectSEs(){
   var menu = createMenu('se','SEs');
   return menu
