@@ -34,7 +34,7 @@ class StoragedirectoryController(BaseController):
     elif lhcbGroup == "lhcb_user":
       c.select["extra"]["dir"] = path
     else:
-      c.select["extra"]["dir"] = "/lhcb/MC/MC09"
+      c.select["extra"]["dir"] = "/lhcb/data/2010"
     return render("data/DirectorySummary.mako")
 ################################################################################
   def __getSelectionData(self):
@@ -63,6 +63,8 @@ class StoragedirectoryController(BaseController):
       se = [["Error during RPC call"]]
     callback["se"] = se
 ###
+    callback["seSites"] = [["All"],["LCG.CERN.ch"],["LCG.CNAF.it"],["LCG.GRIDKA.de"],["LCG.IN2P3.fr"],["LCG.NIKHEF.nl"],["LCG.PIC.es"],["LCG.RAL.uk"]]
+###
     return callback
 ################################################################################
   def __request(self):
@@ -87,12 +89,21 @@ class StoragedirectoryController(BaseController):
     if request.params.has_key("type") and len(request.params["type"]) > 0:
       if str(request.params["type"]) != "All":
         req["FileType"] = str(request.params["type"])
-    if request.params.has_key("se") and len(request.params["se"]) > 0:
-      if str(request.params["se"]) != "All":
-        req["SEs"] = str(request.params["se"]).split('::: ')
     if request.params.has_key("dir") and len(request.params["dir"]) > 0:
       if str(request.params["dir"]) != "All":
         req["Directory"] = str(request.params["dir"])
+    if request.params.has_key("se") and len(request.params["se"]) > 0:
+      if str(request.params["se"]) != "All":
+        req["SEs"] = str(request.params["se"]).split('::: ')
+    elif request.params.has_key("seSites") and len(request.params["seSites"]) > 0:
+      if str(request.params["seSites"]) != "All":
+        tmp = str(request.params["seSites"]).split('::: ')
+        se = []
+        for i in tmp:
+          tmpSites = gConfig.getValue( "/Resources/Sites/LCG/%s/SE" % i, [])
+          for element in tmpSites:
+            se.append(str(element))
+        req["SEs"] = se
     if request.params.has_key("sort") and len(request.params["sort"]) > 0:
       globalSort = str(request.params["sort"])
       key,value = globalSort.split(" ")
@@ -102,17 +113,11 @@ class StoragedirectoryController(BaseController):
     gLogger.info("REQUEST:",req)
     return req
 ################################################################################
-#self.__bytestr(extra["GlobalStatistics"]["Files Size"])
-
   @jsonify
   def submit(self):
     gLogger.info(" -- SUBMIT --")
     RPC = getRPCClient("DataManagement/StorageUsage")
     result = self.__request()
-    gLogger.info(" req ", result)
-    gLogger.info(" sort ", globalSort)
-    gLogger.info(" start ", pageNumber)
-    gLogger.info(" end ", numberOfJobs)
     result = RPC.getStorageDirectorySummaryWeb(result,globalSort,pageNumber,numberOfJobs)
     if result["OK"]:
       result = result["Value"]
@@ -134,8 +139,6 @@ class StoragedirectoryController(BaseController):
                 for i in c.result:
                   if i.has_key("Size"):
                     i["Size"] = self.__bytestr(i["Size"])
-#                  if i.has_key("Files"):
-#                    i["Files"] = self.__niceNumbers(i["Files"])
                 total = result["TotalRecords"]
                 if result.has_key("Extras"):
                   extra = []
