@@ -24,6 +24,21 @@ function initSidebar(){
   var prod = selectProduction(); // Initialize field for JobIDs
   var type = selectFileType();
   var se = selectSEs();
+  var site = seSites();
+  site.on({'select':function(){
+    if(site.getValue().length > 0){
+      se.disable();
+    }else{
+      se.enable();
+    }
+  }});
+  se.on({'select':function(){
+    if(se.getValue().length > 0){
+      site.disable();
+    }else{
+      site.enable();
+    }
+  }});
   var dir = selectDirectory();
   var select = selectPanel(); // Initializing container for selection objects
   select.buttons[2].hide(); // Remove refresh button
@@ -32,6 +47,7 @@ function initSidebar(){
   select.insert(1,type);
   select.insert(2,dir);
   select.insert(3,se);
+  select.insert(4,site);
 //  var sortGlobal = sortGlobalPanel(); // Initializing the global sort panel
   var stat = statPanel('SE Usage','storage','statGrid');
 //  var glStat = statPanel('Global Statistics','global','glStatGrid');
