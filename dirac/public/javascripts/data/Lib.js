@@ -878,6 +878,11 @@ function basicID(name,fieldLabel,altRegex,altRegexText){
     }
   }catch(e){}
   try{
+    if(altRegex == 'none'){
+      regex = '';
+    }
+  }catch(e){}
+  try{
     if(altRegexText){
       regexText = altRegexText;
     }
@@ -924,8 +929,9 @@ function selectProduction(){
 function selectFileType(){
   return genericID('type','FileType');
 }
+var regexDir = new RegExp( /[^\0]+/);
 function selectDirectory(){
-  return genericID('dir','Directory');
+  return basicID('dir','Directory','none','Any non-NULL character');
 }
 function selectSEs(){
   var menu = createMenu('se','SEs');
