@@ -144,6 +144,13 @@ function initData(store){
         text:'Reset',
         tooltip:'Click to reset selected job(s)'
       };
+      var a = tbar.slice(), b = a.splice( 3 );
+      a[3] = resetButton;
+      tbar = a.concat( b );
+    }
+  }catch(e){}
+  try{
+    if(gPageDescription.userData.group != 'lhcb_prod'){
       var rescheduleButton = {
         cls:"x-btn-text-icon",
         handler:function(){action('job','reschedule')},
@@ -151,9 +158,13 @@ function initData(store){
         text:'Reschedule',
         tooltip:'Click to reschedule selected job(s)'
       };
-      var a = tbar.slice(), b = a.splice( 3 );
-      a[3] = resetButton;
-      a[4] = rescheduleButton;
+      if(gPageDescription.userData.group == 'diracAdmin'){
+        var a = tbar.slice(), b = a.splice( 4 );
+        a[4] = rescheduleButton;
+      }else{
+        var a = tbar.slice(), b = a.splice( 3 );
+        a[3] = rescheduleButton;
+      }
       tbar = a.concat( b );
     }
   }catch(e){}
@@ -246,9 +257,15 @@ function setMenuItems(selections){
         {handler:function(){AJAXrequest('pilotStdErr',id)},text:'Get StdErr'}
       ]})}
     );
-    if(gPageDescription.userData.group == 'diracAdmin'){
-      var reset = new Ext.menu.Item({handler:function(){action('job','reset',id)},icon:gURLRoot + '/images/iface/reschedule.gif',text:'Reset'});
-      dirac.menu.items.items[12].menu.insert(0,reset);
+    if(gPageDescription.userData.group != 'lhcb_prod'){
+      var reset = new Ext.menu.Item({handler:function(){action('job','reset',id)},text:'Reset'});
+      var reschedule = new Ext.menu.Item({handler:function(){action('job','reschedule',id)},icon:gURLRoot + '/images/iface/reschedule.gif',text:'Reschedule'});
+      if(gPageDescription.userData.group == 'diracAdmin'){
+        dirac.menu.items.items[12].menu.insert(0,reset);
+        dirac.menu.items.items[12].menu.insert(1,reschedule);
+      }else{
+        dirac.menu.items.items[12].menu.insert(0,reschedule);
+      }
     }
     if((status == 'Done')||(status == 'Completed')||(status == 'Failed')){
       dirac.menu.items.items[10].menu.items.items[1].enable();
