@@ -924,10 +924,10 @@ function selectFTSID(){
   return genericID('ftsid','ID');
 }
 function selectProduction(){
-  return genericID('prod','Production');
+  return basicID('prod','Production','none','Any non-NULL character');
 }
 function selectFileType(){
-  return genericID('type','FileType');
+  return basicID('type','FileType','none','Any non-NULL character');
 }
 var regexDir = new RegExp( /[^\0]+/);
 function selectDirectory(){
