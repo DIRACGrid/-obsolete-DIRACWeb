@@ -177,12 +177,19 @@ def defaultRedirect():
   return redirect_to( controller = 'info/general', action = 'diracOverview', id = None )
 
 def diracURL( controller, action = None, id = None ):
+  if controller.find( "http" ) == 0:
+    return controller
   urlEnd = controller.find( "?" )
   if urlEnd > -1 :
     urlArgs = controller[ urlEnd : ]
     controller = controller[ : urlEnd ]
   else:
     urlArgs = ""
+  if not action:
+    controller = [ p.strip() for p in controller.split( "/" ) if p.strip() ]
+    if len( controller ) > 2:
+      action = controller.pop()
+    controller = "/".join( controller )
   return "%s%s" % ( helpers.url_for( controller = controller,
                                     action = action,
                                     id = id,
