@@ -12,7 +12,8 @@ from DIRAC.Core.Security import CS, X509Certificate
 
 gAuthManager = AuthManager( "%s/Authorization" % gWebConfig.getWebSection() )
 
-log = logging.getLogger(__name__)
+log = logging.getLogger( __name__ )
+diracLogger = gLogger.getSubLogger( "Credentials" )
 
 def checkURL( environ, routesDict ):
   #Before all we try to sanitize inputs
@@ -41,7 +42,7 @@ def __checkSetup( setup ):
 def __checkDN( environ ):
   userDN = False
   if 'SERVER_SOFTWARE' not in environ:
-    gLogger.info( "Getting the DN from /Website/DebugDN" )
+    diracLogger.info( "Getting the DN from /Website/DebugDN" )
     userDN = gWebConfig.getDebugDN()
   if 'HTTPS' in environ and environ[ 'HTTPS' ] == 'on':
     if 'SSL_CLIENT_S_DN' in environ:
@@ -50,12 +51,12 @@ def __checkDN( environ ):
       userCert = X509Certificate.X509Certificate()
       result = userCert.loadFromString( environ[ 'SSL_CLIENT_CERT' ] )
       if not result[ 'OK' ]:
-        gLogger.error( "Could not load SSL_CLIENT_CERT: %s" % result[ 'Message' ] )
+        diracLogger.error( "Could not load SSL_CLIENT_CERT: %s" % result[ 'Message' ] )
         userName = "anonymous"
       else:
         userDN = userCert.getSubjectDN()[ 'Value' ]
     else:
-      gLogger.error( "Web server is not properly configured to get SSL_CLIENT_S_DN or SSL_CLIENT_CERT in env" )
+      diracLogger.error( "Web server is not properly configured to get SSL_CLIENT_S_DN or SSL_CLIENT_CERT in env" )
   if not userDN:
     userName = "anonymous"
   else:
@@ -64,7 +65,7 @@ def __checkDN( environ ):
       userName = "anonymous"
     else:
       userName = retVal[ 'Value' ]
-  gLogger.info( "Got username for user" " => %s for %s" % ( userName, userDN ) )
+  diracLogger.info( "Got username for user" " => %s for %s" % ( userName, userDN ) )
   return ( userDN, userName )
 
 def __checkGroup( userName, group ):
@@ -110,11 +111,11 @@ def authorizeAction( routeDict = False, userCred = False ):
   if not userCred:
     userCred = request.environ[ 'DIRAC.userCredentials' ]
   userRep = "%s@%s" % ( userCred[ 'username' ], userCred[ 'group' ] )
-  gLogger.info( "Testing %s for %s action" % ( userRep, actionPath ) )
+  diracLogger.info( "Testing %s for %s action" % ( userRep, actionPath ) )
   if gAuthManager.authQuery( actionPath, userCred, defaultProperties = 'all' ):
-    gLogger.info( "Authorized %s for %s" % ( actionPath, userRep ) )
+    diracLogger.info( "Authorized %s for %s" % ( actionPath, userRep ) )
     return True
-  gLogger.info( "NOT authorized %s for %s" % ( actionPath, userRep ) )
+  diracLogger.info( "NOT authorized %s for %s" % ( actionPath, userRep ) )
   return False
 
 def getUsername():
