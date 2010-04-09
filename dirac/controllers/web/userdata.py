@@ -10,14 +10,14 @@ from dirac.lib.webconfig import gWebConfig
 from dirac.lib.webBase import defaultRedirect
 from DIRAC import gLogger
 
-log = logging.getLogger(__name__)
+log = logging.getLogger( __name__ )
 
-class UserdataController(BaseController):
+class UserdataController( BaseController ):
 
-  def index(self):
+  def index( self ):
     return defaultRedirect()
 
-  def __mapReferer(self):
+  def __mapReferer( self ):
     ref = request.environ[ 'HTTP_REFERER' ]
     ref = ref[ ref.find( "/", 8 ) : ]
     scriptName = request.environ[ 'SCRIPT_NAME' ]
@@ -28,12 +28,14 @@ class UserdataController(BaseController):
         ref = ref[ len( scriptName ): ]
     pI = ref.find( '?' );
     if pI > -1:
-      params = ref[ pI+1: ]
+      params = ref[ pI + 1: ]
       ref = ref[ :pI ]
     else:
       params = ""
-    pDict = dict( cgi.parse_qsl( params ) ) 
-    return ( config[ 'routes.map' ].match( ref ), pDict  )
+    pDict = dict( cgi.parse_qsl( params ) )
+    if not ref:
+      ref = "/"
+    return ( config[ 'routes.map' ].match( ref ), pDict )
 
   def changeGroup( self ):
     return self.__changeURLPropertyAndRedirect( 'dgroup', credentials.getAvailableGroups() )
