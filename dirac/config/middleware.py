@@ -14,8 +14,6 @@ from pylons.error import error_template
 from pylons.middleware import error_mapper, ErrorDocuments, ErrorHandler
 from pylons.wsgiapp import PylonsApp
 
-from dirac.lib.DiracWebApp import DiracWebApp
-
 from dirac.config.environment import load_environment
 
 def make_app( global_conf, full_stack = True, **app_conf ):
@@ -40,7 +38,8 @@ def make_app( global_conf, full_stack = True, **app_conf ):
     load_environment( global_conf, app_conf )
 
     # The Pylons WSGI app
-    # Overload with DIRAC app
+    # Overload with DIRAC app after the PYTHONPATH has been set
+    from dirac.lib.DiracWebApp import DiracWebApp
     app = DiracWebApp()
 
     # CUSTOM MIDDLEWARE HERE (filtered by error handling middlewares)
