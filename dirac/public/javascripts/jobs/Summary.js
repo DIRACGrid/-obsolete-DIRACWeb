@@ -2,17 +2,6 @@ var columnWidth = '.33'; // 3 Columns per page
 var refreshRate = 0; // autorefresh is off
 var layout = 'default';
 function initLoop(initValues){
-  if(initValues){
-    if(initValues.columns){
-      columnWidth = initValues.columns;
-    }
-    if(initValues.refresh){
-      refreshRate = initValues.refresh;
-    }
-    if(initValues.defaultLayout){
-      layout = initValues.defaultLayout;
-    }
-  }
   Ext.onReady(function(){
     var mainContent = mainPanel(initValues);
     renderInMainViewport([ mainContent ]);
@@ -44,36 +33,39 @@ function mainPanel(initValues){
   var set = new Ext.SplitButton({
     cls:"x-btn-text-icon",
     handler:function(){
-      var welcome = Ext.getCmp('welcomeMessage');
-      if(welcome){
-        Ext.Msg.alert('Warning','Can not save the default layout')
-      }else{
-        saveState();
-      }
+      saveLayout(layout);
     },
     iconCls:'Save',
-    id:'saveLayoutButton',
-    menu:getMenu(initValues),
+    id:'setLayoutButton',
+    menu:createMenu('set',initValues),
     tooltip:'Read your current layout and save it on the server',
-    text:''
+    text:'Save Layout'
   });
   var get = new Ext.SplitButton({
     cls:"x-btn-text-icon",
     handler:function(){
-      restoreState(layout);
+      loadLayout(layout);
       var mainPanel = Ext.getCmp('mainConteiner');
       if(mainPanel){
         mainPanel.doLayout();
       }
     },
     iconCls:'Restore',
-    id:'loadLayoutButton',
-    menu:getMenu(initValues),
+    id:'getLayoutButton',
+    menu:createMenu('get',initValues),
     tooltip:'Download your saved layout and apply it',
-    text:''
+    text:'Load Layout'
   });
-  get.on('render',function(){
-    returnText('loadLayoutButton',layout);
+  var del = new Ext.SplitButton({
+    cls:"x-btn-text-icon",
+    handler:function(){
+      deleteLayout(layout);
+    },
+    iconCls:'Delete',
+    id:'delLayoutButton',
+    menu:createMenu('del',initValues),
+    tooltip:'',
+    text:'Delete Layout'
   });
   var column = new Ext.Toolbar.Button({
     cls:"x-btn-text-icon",
@@ -102,11 +94,8 @@ function mainPanel(initValues){
       {checked:setChk(3600000),checkHandler:function(){setRefresh(3600000);},group:'refresh',text:'Each Hour'},
       {checked:setChk(86400000),checkHandler:function(){setRefresh(86400000);},group:'refresh',text:'Each Day'}
     ]}),
-    text:'',
+    text:'Refresh',
     tooltip:'Click the button for manual refresh. Set autorefresh rate in the button menu',
-  });
-  refresh.on('render',function(){
-    returnText('refreshSplitButton',refreshRate);
   });
   var panel = new Ext.Panel({
     autoScroll:true,
@@ -120,11 +109,11 @@ function mainPanel(initValues){
     margins:'2 0 2 0',
     monitorResize:true,
     region:'center',
-    tbar:[add,'Save As:',set,'Load Layout:',get,'->','Auto Refresh:',refresh,column]
+    tbar:[add,'-',get,set,del,'->',refresh,column]
   });
   panel.on('render',function(){
     if(initValues){
-//      restoreState(initValues);
+      redoLayout(initValues);
     }
   });
   return panel
@@ -135,73 +124,80 @@ function setChk(value){
     return true
   }else if(value == refreshRate){
     return true
-  }else if(value == layout){
-    return true
   }else{
     return false
   }
 }
-function returnText(id,value){
-  var button = Ext.getCmp(id);
-  if(button){
-    try{
-      if(id == 'refreshSplitButton'){
-        if(value == 900000){
-          button.setText('Each 15m');
-        }else if(value == 3600000){
-          button.setText('Each Hour');
-        }else if(value == 86400000){
-          button.setText('Each Day');
-        }else{
-          button.setText('Disabled');
-        }
-      }else if(id == 'loadLayoutButton'){
-        button.setText(value);
-      }
-    }catch(e){}
-  }
-}
-function chkMenuItem(value,group){
-  var item = new Ext.menu.CheckItem({
-    checked:setChk(value),
-    checkHandler:function(item,status){
-      if(group == 'get' && status){
-        restoreState(value);
+function menuItem(value,group){
+  var item = new Ext.menu.Item({
+    handler:function(item){
+      if(group == 'get'){
+        loadLayout(value);
+      }else if(group == 'set'){
+        saveLayout(value);
+      }else if(group == 'del'){
+        deleteLayout(value);
       }
     },
-    group:group,
     text:value
   });
   return item
 }
-function getMenu(init){
+function createMenu(mode,init){
   var menu = new Ext.menu.Menu();
-  var tmp = chkMenuItem(layout,'get');
-  menu.addItem(tmp);
   if(init){
-    if(init.layouts){
-      var layouts = init.layouts.split(';');
-      if(layouts.indexOf(layout)>=0){
-        layouts.splice(layouts.indexOf(layout),1);
+    if(init.layoutNames){
+      var layouts = init.layoutNames;
+      if(layouts.length > 0){
+        layouts = layouts.split(';');
       }
+    }
+  }
+  if(mode == 'set'){
+    menu.addItem(new Ext.menu.Item({handler:function(){saveAs()},icon:gURLRoot + '/images/iface/save.gif',text:'Save as new'}));
+    if(layouts){
+      menu.addItem(new Ext.menu.Separator());
     }
   }
   if(layouts){
     var length = layouts.length;
-    for(i=0; i<length; i++){
+    for(var i=0; i<length; i++){
       if(layouts[i].length > 0){
-        tmp = chkMenuItem(layouts[i],'get');
+        tmp = menuItem(layouts[i],mode);
         menu.addItem(tmp);
       }
     }
   }
+  if(mode == 'del'){
+    if(layouts){
+      menu.addItem(new Ext.menu.Separator());
+    }
+    menu.addItem(new Ext.menu.Item({handler:function(){deleteAll()},icon:gURLRoot + '/images/iface/close.gif',text:'Delete All'}));
+  }
   return menu
+}
+function resetMenu(value){
+  var id = ['getLayoutButton','setLayoutButton','delLayoutButton'];
+  for(var i=0; i<id.length; i++ ){
+    try{
+      var button = Ext.getCmp(id[i]);
+      if(button){
+        var menu = createMenu(id[i].slice(0,3),value);
+      }
+      if(button && menu){
+        button.menu = menu;
+      }
+    }catch(e){
+      alert('Error: ' + e.name + ': ' + e.message);
+      return
+    }
+  }
 }
 function refreshCycle(){
   try{
     var mainPanel = Ext.getCmp('mainConteiner');
     var length = mainPanel.items.getCount();
-    for(i=0; i<length; i++){
+    for(var i=0; i<length; i++){
       var j = mainPanel.getComponent(i);
       if(j.id != 'welcomeMessage'){
         var tmp = createPanel(j.autoEl.src);
@@ -221,7 +217,7 @@ function setColumn(width){
     var mainPanel = Ext.getCmp('mainConteiner');
     columnWidth = width;
     var length = mainPanel.items.getCount();
-    for(i=0; i<length; i++){
+    for(var i=0; i<length; i++){
       var tmp = mainPanel.getComponent(i);
       tmp.columnWidth = width;
     }
@@ -242,51 +238,316 @@ function setRefresh(time){
     refreshRate = 0;
     heartbeat.stopAll();
   }
-  returnText('refreshSplitButton',time);
 }
 function changeIcon(id,state){
   var button = Ext.getCmp(id);
   var class = '';
-  if(id == 'loadLayoutButton' && state == 'load'){
+  if(id == 'getLayoutButton' && state == 'load'){
     class = 'Loading';
-  }else if(id == 'loadLayoutButton' && state == 'normal'){
+  }else if(id == 'getLayoutButton' && state == 'normal'){
     class = 'Restore';
-  }else if(id == 'saveLayoutButton' && state == 'load'){
+  }else if(id == 'setLayoutButton' && state == 'load'){
     class = 'Loading';
-  }else if(id == 'saveLayoutButton' && state == 'normal'){
+  }else if(id == 'setLayoutButton' && state == 'normal'){
     class = 'Save';
+  }else if(id == 'delLayoutButton' && state == 'load'){
+    class = 'Loading';
+  }else if(id == 'delLayoutButton' && state == 'normal'){
+    class = 'Delete';
   }
   try{
     button.setIconClass(class);
   }catch(e){}
 }
-function saveState(){
-}
-function restoreState(name){
-  changeIcon('loadLayoutButton','load');
-  returnText('loadLayoutButton',name);
-  layout = name;
-  Ext.Ajax.request({
-    failure:function(response){
-      changeIcon('loadLayoutButton','normal');
-      AJAXerror(response.responseText);
-      return false
-    },
-    method:'POST',
-    params:{'getBookmarks':true,'layouName':name},
-    success:function(response){
-      changeIcon('loadLayoutButton','normal');
-      var jsonData = Ext.util.JSON.decode(response.responseText);
-      if(jsonData['success'] == 'false'){
-        AJAXerror(response.responseText);
-        return false
-      }else{
-        var mainPanel = Ext.getCmp('mainConteiner');
-        mainPanel.doLayout();
+function gatherInfo(){
+  var url = '';
+  try{
+    var mainPanel = Ext.getCmp('mainConteiner');
+    var length = mainPanel.items.getCount();
+    for(var i=0; i<length; i++){
+      if(mainPanel.getComponent(i).id != 'welcomeMessage'){
+        url = url + mainPanel.getComponent(i).autoEl.src + ';';
       }
-    },
-    url:'action'
+    }
+  }catch(e){
+    alert('Error: ' + e.name + ': ' + e.message);
+    return
+  }
+  var params = {'columns':columnWidth,'refresh':refreshRate,'plots':url};  
+  return params
+}
+function saveAs(){
+  var params = gatherInfo();
+  var title = 'Save Layout';
+  var welcome = Ext.getCmp('welcomeMessage');
+  if(welcome){
+    Ext.Msg.alert(title,'This is the default layout and can not be saved')
+  }else{
+    var msg = 'Enter the name of the new layout: ';
+    Ext.Msg.prompt(title,msg,function(btn,text){
+      if(btn == 'ok'){
+        if(text){
+          params['setBookmarks'] = text;
+          changeIcon('setLayoutButton','load');
+          Ext.Ajax.request({
+            failure:function(response){
+              changeIcon('setLayoutButton','normal');
+              AJAXerror(response.responseText);
+              return false
+            },
+            method:'POST',
+            params:params,
+            success:function(response){
+              changeIcon('setLayoutButton','normal');
+              var jsonData = Ext.util.JSON.decode(response.responseText);
+              if(jsonData['success'] == 'false'){
+                AJAXerror(response.responseText);
+                return false
+              }else{
+                redoLayout(jsonData['result']);
+                var mainPanel = Ext.getCmp('mainConteiner');
+                if(mainPanel){
+                  mainPanel.doLayout();
+                }
+              }
+            },
+            url:'action'
+          });
+        }
+      }
+    });
+  }
+}
+function saveLayout(name){
+  var params = gatherInfo();
+  params['setBookmarks'] = name;
+  var title = 'Save Layout';
+  var welcome = Ext.getCmp('welcomeMessage');
+  if(welcome){
+    Ext.Msg.alert(title,'This is the default layout and can not be saved')
+  }else{
+    var msg = 'Save current layout to: ' + name + ' ?';
+    Ext.Msg.confirm(title,msg,function(btn){
+      if(btn == 'yes'){
+        changeIcon('setLayoutButton','load');
+        Ext.Ajax.request({
+          failure:function(response){
+            changeIcon('setLayoutButton','normal');
+            AJAXerror(response.responseText);
+            return false
+          },
+          method:'POST',
+          params:params,
+          success:function(response){
+            changeIcon('setLayoutButton','normal');
+            var jsonData = Ext.util.JSON.decode(response.responseText);
+            if(jsonData['success'] == 'false'){
+              AJAXerror(response.responseText);
+              return false
+            }else{
+              redoLayout(jsonData['result']);
+              var mainPanel = Ext.getCmp('mainConteiner');
+              if(mainPanel){
+                mainPanel.doLayout();
+              }
+            }
+          },
+          url:'action'
+        });
+      }
+    });
+  }
+}
+function loadLayout(name){
+  var title = 'Load Layout';
+  var button = Ext.getCmp('getLayoutButton');
+  try{
+    var button = Ext.getCmp('getLayoutButton');
+    var length = button.menu.items.getCount();
+    if(length <= 0){
+      Ext.Msg.alert(title,'Seems you do not have any layout to load');
+      return;
+    }
+  }catch(e){
+    alert('Error: ' + e.name + ': ' + e.message);
+    return
+  }
+  var msg = 'Load the layout: ' + name + ' ?';
+  Ext.Msg.confirm(title,msg,function(btn){
+    if(btn == 'yes'){
+      changeIcon('getLayoutButton','load');
+      Ext.Ajax.request({
+        failure:function(response){
+          changeIcon('getLayoutButton','normal');
+          AJAXerror(response.responseText);
+          return false
+        },
+        method:'POST',
+        params:{'getBookmarks':name},
+        success:function(response){
+          changeIcon('getLayoutButton','normal');
+         var jsonData = Ext.util.JSON.decode(response.responseText);
+          if(jsonData['success'] == 'false'){
+            AJAXerror(response.responseText);
+            return false
+          }else{
+            redoLayout(jsonData['result']);
+            var mainPanel = Ext.getCmp('mainConteiner');
+            if(mainPanel){
+              mainPanel.doLayout();
+            }
+          }
+        },
+        url:'action'
+      });
+    }
   });
+}
+function deleteAll(){
+  var title = 'Delete Layout';
+  var msg = 'Do you really want to delete all layouts stored at remote service?';
+  Ext.Msg.confirm(title,msg,function(btn){
+    if(btn == 'yes'){
+      msg = 'Are you sure?'
+      Ext.Msg.confirm(title,msg,function(btn){
+        if(btn == 'yes'){
+          changeIcon('delLayoutButton','load');
+          Ext.Ajax.request({
+            failure:function(response){
+              changeIcon('delLayoutButton','normal');
+              AJAXerror(response.responseText);
+              return false
+            },
+            method:'POST',
+            params:{'delAllBookmarks':true},
+            success:function(response){
+              changeIcon('delLayoutButton','normal');
+              var jsonData = Ext.util.JSON.decode(response.responseText);
+              if(jsonData['success'] == 'false'){
+                AJAXerror(response.responseText);
+                return false
+              }else{
+                redoLayout(jsonData['result']);
+                var mainPanel = Ext.getCmp('mainConteiner');
+                if(mainPanel){
+                  mainPanel.doLayout();
+                }
+              }
+            },
+            url:'action'
+          });
+        }
+      });
+    }
+  });
+}
+function deleteLayout(name){
+  var title = 'Delete Layout';
+  if(name == 'default'){
+    Ext.Msg.alert(title,'Your can not delete current layout');
+    return;
+  }
+  var msg = 'Do you really want to delete layout: ' + name + ' ?';
+  Ext.Msg.confirm(title,msg,function(btn){
+    if(btn == 'yes'){
+      changeIcon('delLayoutButton','load');
+      Ext.Ajax.request({
+        failure:function(response){
+          changeIcon('delLayoutButton','normal');
+          AJAXerror(response.responseText);
+          return false
+        },
+        method:'POST',
+        params:{'delBookmarks':name,'defaultLayout':layout},
+        success:function(response){
+          changeIcon('delLayoutButton','normal');
+          var jsonData = Ext.util.JSON.decode(response.responseText);
+          if(jsonData['success'] == 'false'){
+            AJAXerror(response.responseText);
+            return false
+          }else{
+            redoLayout(jsonData['result']);
+            var mainPanel = Ext.getCmp('mainConteiner');
+            if(mainPanel){
+              mainPanel.doLayout();
+            }
+          }
+        },
+        url:'action'
+      });
+    }
+  });
+}
+function redoLayout(result){
+// ToDo set some kind of check here
+  if(!result){
+    return
+  }
+  if(result.defaultLayout){
+    layout = result.defaultLayout;
+  }
+  resetMenu(result);
+  if(result.layouts){
+    for(var i in result.layouts){
+      if(i == layout){
+        var plots = result.layouts[i]['url'].split(';');
+        columnWidth = result.layouts[i]['columns'];
+        refreshRate = result.layouts[i]['refresh'];
+      }
+    }
+    var mainPanel = Ext.getCmp('mainConteiner');
+    if(plots && mainPanel){
+      try{
+        var length = mainPanel.items.getCount() - 1;
+        for(i=length; i>=0; i--){
+          var tmp = mainPanel.getComponent(i);
+          mainPanel.remove(tmp,true);
+        }
+      }catch(e){
+        alert('Error: ' + e.name + ': ' + e.message);
+        return
+      }
+      if(plots.length > 0){
+        for(i=0; i<plots.length; i++){
+          if(plots[i].length > 0){
+            mainPanel.add(createPanel(plots[i]));
+          }
+        }
+      }
+    }
+  }
+  var button = Ext.getCmp('refreshSplitButton');
+  try{
+    if(refreshRate == 0){
+      button.menu.items.items[0].setChecked(true);
+    }else if(refreshRate == 900000){
+      button.menu.items.items[1].setChecked(true);
+    }else if(refreshRate == 3600000){
+      button.menu.items.items[2].setChecked(true);
+    }else if(refreshRate == 86400000){
+      button.menu.items.items[3].setChecked(true);
+    }
+  }catch(e){
+    alert('Error: ' + e.name + ': ' + e.message);
+    return
+  }
+  button = Ext.getCmp('columnSplitButton');
+  try{
+    if(columnWidth == '.98'){
+      button.menu.items.items[0].setChecked(true);
+    }else if(columnWidth == '.49'){
+      button.menu.items.items[1].setChecked(true);
+    }else if(columnWidth == '.24'){
+      button.menu.items.items[3].setChecked(true);
+    }else if(columnWidth == '.19'){
+      button.menu.items.items[4].setChecked(true);
+    }else if(columnWidth == '.33'){
+      button.menu.items.items[2].setChecked(true);
+    }
+  }catch(e){
+    alert('Error: ' + e.name + ': ' + e.message);
+    return
+  }
 }
 function createPanel(img){
   var welcome = Ext.getCmp('welcomeMessage');
@@ -423,4 +684,22 @@ function addPanel(){
     width:320
   });
   win.show();
+}
+function AJAXerror(response){
+  try{
+    gMainLayout.container.unmask();
+  }catch(e){}
+  try{
+    var jsonData = Ext.util.JSON.decode(response);
+    if(jsonData['success'] == 'false'){
+      alert('Error: ' + jsonData['error']);
+      return;
+    }else{
+      alert('data: ' + jsonData.toSource() + '\nError: Server response has wrong data structure');
+      return;
+    }
+  }catch(e){
+    alert('Error: ' + e.name + ': ' + e.message);
+    return
+  }
 }
