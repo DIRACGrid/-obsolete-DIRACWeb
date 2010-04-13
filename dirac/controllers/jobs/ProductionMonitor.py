@@ -361,10 +361,12 @@ class ProductionmonitorController(BaseController):
   def __actProduction(self,prodid,cmd):
     prodid = prodid.split(",")
     RPC = getRPCClient("ProductionManagement/ProductionManager")
+    agentType = 'Manual'
     if cmd == 'clean':
       status = 'Cleaning'
     elif cmd == 'start':
       status = 'Active'
+      agentType = 'Automatic'
     elif cmd == 'stop':
       status = 'Stopped'
     elif cmd == 'flush':
@@ -375,9 +377,12 @@ class ProductionmonitorController(BaseController):
     for i in prodid:
       try:
         id = int(i)
-        result = RPC.setTransformationStatus(id,status)
+        result = RPC.setTransformationParameter(id,'Status',status)
         if result["OK"]:
           resString = "ProdID: %s set to %s successfully" % (i,cmd)
+          result = RPC.setTransformationParameter(id,'AgentType',agentType)
+          if not result["OK"]:
+            resString = "ProdID: %s failed to set to %s: %s" % (i,cmd,result["Message"])
         else:
           resString = "ProdID: %s failed due the reason: %s" % (i,result["Message"])
       except:
