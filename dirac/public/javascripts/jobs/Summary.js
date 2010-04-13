@@ -1,15 +1,14 @@
 var columnWidth = '.33'; // 3 Columns per page
 var refreshRate = 0; // autorefresh is off
 var layout = 'default';
+var heartbeat = '';
+var contextMenu = '';
 function initLoop(initValues){
   Ext.onReady(function(){
     var mainContent = mainPanel(initValues);
     renderInMainViewport([ mainContent ]);
   });
 }
-// Declaration
-var heartbeat = '';
-var contextMenu = '';
 function mainPanel(initValues){
   heartbeat = new Ext.util.TaskRunner();
   contextMenu = new Ext.menu.Menu();
@@ -21,6 +20,12 @@ function mainPanel(initValues){
     id:'welcomeMessage',
     xtype:'label'
   };
+  var current = {
+    disabled:true,
+    disabledClass:'my-disabled',
+    id:'currentID',
+    text:'Current Layout: <b>' + layout + '</b>'
+  }; 
   var add = {
     cls:"x-btn-text-icon",
     handler:function(){
@@ -39,7 +44,7 @@ function mainPanel(initValues){
     id:'setLayoutButton',
     menu:createMenu('set',initValues),
     tooltip:'Read your current layout and save it on the server',
-    text:'Save Layout'
+    text:'Save'
   });
   var get = new Ext.SplitButton({
     cls:"x-btn-text-icon",
@@ -54,7 +59,7 @@ function mainPanel(initValues){
     id:'getLayoutButton',
     menu:createMenu('get',initValues),
     tooltip:'Download your saved layout and apply it',
-    text:'Load Layout'
+    text:'Load'
   });
   var del = new Ext.SplitButton({
     cls:"x-btn-text-icon",
@@ -65,7 +70,7 @@ function mainPanel(initValues){
     id:'delLayoutButton',
     menu:createMenu('del',initValues),
     tooltip:'',
-    text:'Delete Layout'
+    text:'Delete'
   });
   var column = new Ext.Toolbar.Button({
     cls:"x-btn-text-icon",
@@ -109,11 +114,11 @@ function mainPanel(initValues){
     margins:'2 0 2 0',
     monitorResize:true,
     region:'center',
-    tbar:[add,'-',get,set,del,'->',refresh,column]
+    tbar:[current,'->',add,'-',get,set,del,'-',refresh,column]
   });
   panel.on('render',function(){
     if(initValues){
-      redoLayout(initValues);
+      redoLayout(initValues,'load');
     }
   });
   return panel
@@ -155,6 +160,12 @@ function createMenu(mode,init){
   }
   if(mode == 'set'){
     menu.addItem(new Ext.menu.Item({handler:function(){saveAs()},icon:gURLRoot + '/images/iface/save.gif',text:'Save as new'}));
+    if(layouts){
+      menu.addItem(new Ext.menu.Separator());
+    }
+  }
+  if(mode == 'get'){
+    menu.addItem(new Ext.menu.Item({handler:function(){syncLayout()},icon:gURLRoot + '/images/iface/reschedule.gif',text:'Synchronize Menues'}));
     if(layouts){
       menu.addItem(new Ext.menu.Separator());
     }
@@ -213,19 +224,21 @@ function refreshCycle(){
 }
 function setColumn(width){
   var button = Ext.getCmp('columnSplitButton');
+  var mainPanel = Ext.getCmp('mainConteiner');
   try{
-    var mainPanel = Ext.getCmp('mainConteiner');
     columnWidth = width;
     var length = mainPanel.items.getCount();
     for(var i=0; i<length; i++){
       var tmp = mainPanel.getComponent(i);
       tmp.columnWidth = width;
     }
-    mainPanel.doLayout();
   }catch(e){
     alert('Error: ' + e.name + ': ' + e.message);
     return
   }
+  try{
+    mainPanel.doLayout();
+  }catch(e){}
 }
 function setRefresh(time){
   if(time == 900000 || time == 3600000 || time == 86400000){
@@ -256,6 +269,11 @@ function changeIcon(id,state){
     class = 'Delete';
   }
   try{
+    if(state == 'load'){
+      button.disable();
+    }else{
+      button.enable();
+    }
     button.setIconClass(class);
   }catch(e){}
 }
@@ -275,6 +293,29 @@ function gatherInfo(){
   }
   var params = {'columns':columnWidth,'refresh':refreshRate,'plots':url};  
   return params
+}
+function syncLayout(){
+  changeIcon('getLayoutButton','load');
+  Ext.Ajax.request({
+    failure:function(response){
+      changeIcon('getLayoutButton','normal');
+      AJAXerror(response.responseText);
+      return false
+    },
+    method:'POST',
+    params:{'getBookmarks':''},
+    success:function(response){
+      changeIcon('getLayoutButton','normal');
+      var jsonData = Ext.util.JSON.decode(response.responseText);
+      if(jsonData['success'] == 'false'){
+        AJAXerror(response.responseText);
+        return false
+      }else{
+        redoLayout(jsonData['result'],'sync');
+      }
+    },
+    url:'action'
+  });
 }
 function saveAs(){
   var params = gatherInfo();
@@ -304,7 +345,7 @@ function saveAs(){
                 AJAXerror(response.responseText);
                 return false
               }else{
-                redoLayout(jsonData['result']);
+                redoLayout(jsonData['result'],'save');
                 var mainPanel = Ext.getCmp('mainConteiner');
                 if(mainPanel){
                   mainPanel.doLayout();
@@ -345,7 +386,7 @@ function saveLayout(name){
               AJAXerror(response.responseText);
               return false
             }else{
-              redoLayout(jsonData['result']);
+              redoLayout(jsonData['result'],'save');
               var mainPanel = Ext.getCmp('mainConteiner');
               if(mainPanel){
                 mainPanel.doLayout();
@@ -360,7 +401,6 @@ function saveLayout(name){
 }
 function loadLayout(name){
   var title = 'Load Layout';
-  var button = Ext.getCmp('getLayoutButton');
   try{
     var button = Ext.getCmp('getLayoutButton');
     var length = button.menu.items.getCount();
@@ -391,7 +431,7 @@ function loadLayout(name){
             AJAXerror(response.responseText);
             return false
           }else{
-            redoLayout(jsonData['result']);
+            redoLayout(jsonData['result'],'load');
             var mainPanel = Ext.getCmp('mainConteiner');
             if(mainPanel){
               mainPanel.doLayout();
@@ -427,7 +467,7 @@ function deleteAll(){
                 AJAXerror(response.responseText);
                 return false
               }else{
-                redoLayout(jsonData['result']);
+                redoLayout(jsonData['result'],'del');
                 var mainPanel = Ext.getCmp('mainConteiner');
                 if(mainPanel){
                   mainPanel.doLayout();
@@ -443,9 +483,19 @@ function deleteAll(){
 }
 function deleteLayout(name){
   var title = 'Delete Layout';
-  if(name == 'default'){
-    Ext.Msg.alert(title,'Your can not delete current layout');
-    return;
+  if(name == layout){
+    try{
+      var button = Ext.getCmp('delLayoutButton');
+      var length = button.menu.items.getCount();
+      if(length > 1){
+        layout = button.menu.items.items[0].text;
+      }else{
+        layout = '';
+      }
+    }catch(e){
+      alert('Error: ' + e.name + ': ' + e.message);
+      return
+    }
   }
   var msg = 'Do you really want to delete layout: ' + name + ' ?';
   Ext.Msg.confirm(title,msg,function(btn){
@@ -466,7 +516,7 @@ function deleteLayout(name){
             AJAXerror(response.responseText);
             return false
           }else{
-            redoLayout(jsonData['result']);
+            redoLayout(jsonData['result'],'del');
             var mainPanel = Ext.getCmp('mainConteiner');
             if(mainPanel){
               mainPanel.doLayout();
@@ -478,15 +528,25 @@ function deleteLayout(name){
     }
   });
 }
-function redoLayout(result){
+function redoLayout(result,mode){
 // ToDo set some kind of check here
   if(!result){
     return
   }
+  resetMenu(result);
+  if(mode == 'sync'){
+    return // just to update the menues
+  }
   if(result.defaultLayout){
     layout = result.defaultLayout;
+  }else{
+    layout = 'default';
   }
-  resetMenu(result);
+  var mainPanel = Ext.getCmp('mainConteiner');
+  var current = Ext.getCmp('currentID');
+  if(current){
+    current.setText('Current Layout: <b>' + layout + '</b>');
+  }
   if(result.layouts){
     for(var i in result.layouts){
       if(i == layout){
@@ -495,7 +555,6 @@ function redoLayout(result){
         refreshRate = result.layouts[i]['refresh'];
       }
     }
-    var mainPanel = Ext.getCmp('mainConteiner');
     if(plots && mainPanel){
       try{
         var length = mainPanel.items.getCount() - 1;
@@ -549,6 +608,20 @@ function redoLayout(result){
     return
   }
 }
+function fullSize(link){
+  var html = '<img src="' + link + '" />';
+  var win = new Ext.Window({
+    collapsible:true,
+    constrain:true,
+    constrainHeader:true,
+    html:html,
+    layout:'fit',
+    minHeight:200,
+    minWidth:320,
+    title:'Actual size'
+  });
+  win.show();
+}
 function createPanel(img){
   var welcome = Ext.getCmp('welcomeMessage');
   if(welcome){
@@ -575,6 +648,18 @@ function createPanel(img){
           },
           icon:gURLRoot + '/images/iface/close.gif',
           text:'Remove'
+        },{
+          handler:function(){
+            fullSize(img);
+          },
+//          icon:gURLRoot + '/images/iface/close.gif',
+          text:'Actual size'
+        },{
+          handler:function(){
+            window.open(img)
+          },
+//          icon:gURLRoot + '/images/iface/close.gif',
+          text:'Open in new window'
         },{
           handler:function(){
             Ext.Msg.alert('Show URL',img);
