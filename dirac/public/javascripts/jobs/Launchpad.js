@@ -1,4 +1,115 @@
-function launchJob(){
+/**
+* Convert number of bytes into human readable format
+*
+* @param integer bytes     Number of bytes to convert
+* @param integer precision Number of digits after the decimal separator
+* @return string
+*/
+function bytesToSize(bytes, precision){  
+  var kilobyte = 1024;
+  var megabyte = kilobyte * 1024;
+  var gigabyte = megabyte * 1024;
+  var terabyte = gigabyte * 1024;
+  if ((bytes >= 0) && (bytes < kilobyte)) {
+    return bytes + ' B';
+  } else if ((bytes >= kilobyte) && (bytes < megabyte)) {
+    return (bytes / kilobyte).toFixed(precision) + ' KB';
+  } else if ((bytes >= megabyte) && (bytes < gigabyte)) {
+    return (bytes / megabyte).toFixed(precision) + ' MB';
+  } else if ((bytes >= gigabyte) && (bytes < terabyte)) {
+    return (bytes / gigabyte).toFixed(precision) + ' GB';
+  } else if (bytes >= terabyte) {
+    return (bytes / terabyte).toFixed(precision) + ' TB';
+  } else {
+    return bytes + ' B';
+  }
+}
+function submitJobNew(){
+  var formID = Ext.id(); // from panel
+  var innID =  Ext.id(); // For JDL and Sandboxescontainer
+  var jdlID = Ext.id();
+  var fileID = Ext.id();
+  var lfnID = Ext.id();
+  var winID = Ext.id();
+  var fileAnchor = 45;
+  var fieldAnchor = '-5';
+// check for proxy
+  var proxyCheckerFunction = function(){
+    showProxyStat('check');
+    Ext.Ajax.request({
+      failure:function(response){
+        AJAXerror(response.responseText);
+        showProxyStat('neutral');
+        return false
+      },
+      method:'POST',
+      params:{'getProxyStatus':86460},
+      success:function(response){
+        var jsonData = Ext.util.JSON.decode(response.responseText);
+        if(jsonData['success'] == 'false'){
+          showProxyStat('false');
+          return false
+        }else{
+          if(jsonData['result'] == 'false'){
+            showProxyStat('false');
+            return false
+          }else{
+            showProxyStat('true');
+            return true
+          }
+        }
+      },
+      url:'action'
+    });
+  };
+// Periodic check for a user proxy
+  var heartbeat = {
+    run:proxyCheckerFunction,
+    interval:86400*1000 // 1 day
+  };
+  Ext.TaskMgr.start(heartbeat);
+// Returns proxy button
+  function proxyButton(mode){
+    var msg = 'Proxy Status: ';
+    if(mode == 'true'){
+      msg = msg + '<span style="color:#009900; font-weight:bold">Valid</span>';
+    }else if(mode == 'false'){
+      msg = msg + '<span style="color:#FF0000; font-weight:bold">Not Valid</span>';
+    }else if(mode == 'check'){
+      msg = msg + '<span style="color:#FF9900; font-weight:bold">Checking</span>';
+    }else{
+      msg = msg + '<span style="font-weight:bold">Unknown</span>';
+    }
+    var button = {
+      cls:'x-btn-text',
+      handler:proxyCheckerFunction,
+      tooltip:'Proxy status updates automatically once per day',
+      text:msg
+    };
+    return button
+  }
+// Update proxy status in the panel topbar
+  function showProxyStat(mode){
+    var button = proxyButton(mode);
+    var form = Ext.getCmp(formID);
+    if(!form){
+      return false
+    }
+    var bar = form.getTopToolbar();
+    if(!bar){
+      return false
+    }
+    Ext.fly(bar.items.get(0).getEl()).remove();
+    bar.items.removeAt(0);
+    bar.insertButton(0,button);
+    var bButton = form.buttons[0];
+    if(mode == 'false'||mode == 'check'){
+      bButton.disable();
+    }else{
+      bButton.enable();
+    }
+  }
+// This function is a bit of puzzle
   function showJob(id){
     var textField = Ext.getCmp('id');
     textField.setValue(id);
@@ -6,321 +117,375 @@ function launchJob(){
     var button = Ext.getCmp('submitFormButton');
     button.handler.call(button.scope, button, Ext.EventObject)
   }
-  function submitForm(panelid){
+// Form submition function
+  function submitForm(id){
     gMainLayout.container.mask('Please wait');
-    panel.form.submit({
-      success:function(form,action){
-        gMainLayout.container.unmask();
-        if(action.result.success == 'false'){
-           alert('Error: ' + action.result.error);
-        }else{
-          var warn = Ext.Msg.show({
-            animEl: 'elId',
-            buttons:{ok:'Ok',cancel:'Show Job'},
-            icon: Ext.MessageBox.INFO,
-            fn:function(btn){
-              warn.hide();
-              if(btn == 'cancel'){
-                showJob(action.result.result);
-              }
-            },
-            minWidth:300,
-            msg:'Your Job ID is ' + action.result.result,
-            title:'Success '
-          });
-        }
-      },
-      failure:function(form,action){
-        gMainLayout.container.unmask();
-        try{
+    var panel = Ext.getCmp(id);
+    try{
+      panel.form.submit({
+        success:function(form,action){
+          gMainLayout.container.unmask();
+          if(action.result.success == 'false'){
+             alert('Error: ' + action.result.error);
+          }else{
+            var warn = Ext.Msg.show({
+              animEl: 'elId',
+              buttons:{ok:'Ok',cancel:'Show Job'},
+              icon: Ext.MessageBox.INFO,
+              fn:function(btn){
+                warn.hide();
+                if(btn == 'cancel'){
+                  showJob(action.result.result);
+                }
+              },
+              minWidth:300,
+              msg:'Your Job ID is ' + action.result.result,
+              title:'Success '
+            });
+          }
+        },
+        failure:function(form,action){
+          gMainLayout.container.unmask();
           alert('Error: ' + action.response.statusText);
-        }catch(e){
-          alert('Error: Unknow error during sending request to service. panel.form.submit');
+        },
+        url:'jobSubmit'
+      });
+    }catch(e){
+      alert('Error: ' + e.name + ': ' + e.message);
+    }
+  }
+// fileField return the file input field and updates the bottom toolbar element of panel
+  function fileField(){
+    var field = new Ext.ux.form.FileUploadField({
+      buttonOffset:2,
+      cls:"x-btn-text-icon",
+      hideLabel:true,
+      icon:gURLRoot+'/images/iface/addfile.gif',
+      listeners:{
+        'fileselected':function(fb,name){
+          var panel = Ext.getCmp(fileID);
+          if(!panel){
+            alert('Error: can not get component by fileID');
+            return
+          }
+          var inn = Ext.getCmp(innID);
+          if(!inn){
+            alert('Error: can not get component by innID');
+            return
+          }
+          var width = inn.getInnerWidth() - fileAnchor;
+          var length = panel.items.getCount();
+          var addFile = true;
+          for(i=0; i<length; i++){
+            var tmpItem = panel.getComponent(i);
+            if(!tmpItem.value){
+              var addFile = false;
+            }
+          }
+          if(addFile){
+            var tmp = fileField();
+            tmp.setWidth(width);
+            panel.add(tmp);
+          }
+          length = panel.items.getCount();
+          var size = 0;
+          for(i=0; i<length; i++){
+            var tmpItem = panel.getComponent(i);
+            var fileSize = tmpItem.getFileSize();
+            if(fileSize){
+              size = size + fileSize;
+            }
+          }
+          var msg = 'Input Sandbox';
+          if(size > 0){
+            var msg = 'Input Sandbox (Total Size: ' + bytesToSize(size, 1) + ')';
+          }
+          var form = Ext.getCmp(formID);
+          if(!form){
+            return false
+          }
+          var bar = form.getTopToolbar();
+          if(!bar){
+            return false
+          }
+          try{
+            if(bar.items.items[3].disabled){ // Last button in the top toolbar
+              bar.items.items[3].enable();
+            }
+          }catch(e){}          
+          panel.setTitle(msg);
+          panel.doLayout();
         }
       },
-      url:'jobSubmit'
+      width:300
     });
+    return field
   }
-  var fbutton = new Ext.ux.form.FileUploadField({
-    buttonText:'Add File',
-    buttonOnly:true,
-    buttonOffset:0,
-    cls:"x-btn-text-icon",
-    icon:gURLRoot+'/images/iface/addfile.gif',
-    listeners:{
-      'fileselected':function(fb,name){
-        var panel = Ext.getCmp('sandboxStore'); 
-        if(!panel){
-          alert('Error: can not get component by id sandboxStore');
-          return
+// Create an text entrie for JDL panel
+  function createText(name,value){
+    var text = new Ext.form.TextField({
+      anchor:fieldAnchor,
+      fieldLabel:name,
+      name:name,
+      value:value
+    });
+    return text
+  }
+// Add or remove entries from the JDL panel
+  function entryMagic(item,state){
+    var data = [
+      ['CPUTime','86400'],
+      ['StdError','testJob.err'],
+      ['JobType','MPI'],
+      ['CPUNumber','2'],
+      ['InputDataType',''],
+      ['SystemConfig','slc4_ia32_gcc34'],
+      ['Site',''],
+      ['BannedSite',''],
+      ['OutputSE',''],
+      ['OutputData','']
+    ];
+    var panel = Ext.getCmp(jdlID);
+    if(!panel){
+      alert('Error: ');
+      return
+    }
+    var form = Ext.getCmp(formID);
+    if(!form){
+      alert('Error: ');
+      return
+    }
+    var text = item.text;
+    var findJDL = panel.find('fieldLabel',text);
+    var isJDL = false;
+    if(findJDL.length > 0){
+      isJDL = true;
+    }
+    if(state){
+      for(var i=0; i<data.length; i++){
+        if(data[i][0] == text && !isJDL){
+          var field = createText(data[i][0],data[i][1]);
+          form.form.add(field);
+          panel.add(field);
         }
-        var recordConstructor = Ext.data.Record.create([
-          {name:'icon'},
-          {name:'fileName'},
-          {name:'bytesTotal'}
-        ]);
-        record = new recordConstructor({icon:'file',fileName:name,bytesTotal:'1Gb'});
-        panel.store.add(record);
-        panel.store.commitChanges();
+      }
+    }else{
+      if(isJDL){
+        for(var i=0; i<findJDL.length; i++){
+          if(findJDL[i].fieldLabel && findJDL[i].fieldLabel == text){
+            var tmpJDL = panel.getComponent(findJDL[i].id);
+            if(!tmpJDL){
+              return
+            }
+            var itemParentNode = tmpJDL.el.dom.parentNode.parentNode;
+            panel.remove(tmpJDL);
+            if(itemParentNode){
+              Ext.fly(itemParentNode).remove();
+            }
+            form.form.remove(tmpJDL);
+          }
+        }
+      }
+    }
+    panel.doLayout();
+  }
+// Create the specific entries for the Add Elements menu
+  function checkedMenu(text){
+    var item = new Ext.menu.CheckItem({
+      checkHandler:entryMagic,
+      hideOnClick:false,
+      text:text
+    });
+    return item
+  }
+// End of function declaration
+  var submit = new Ext.Button({
+    cls:"x-btn-text-icon",
+    handler:function(){
+      submitForm(formID);
+    },
+    icon:gURLRoot+'/images/iface/submit.gif',
+    minWidth:'70',
+    tooltip:'Send a request to the server',
+    text:'Submit'
+  });
+  var reset = new Ext.Button({
+    cls:"x-btn-text-icon",
+    handler:function(){
+      var panel = Ext.getCmp(formID);
+      try{
+        panel.form.reset();
+      }catch(e){
+        alert('Error: ' + e.name + ': ' + e.message);
+      }
+    },
+    icon:gURLRoot+'/images/iface/reset.gif',
+    minWidth:'70',
+    tooltip:'Reset values in the form',
+    text:'Reset'
+  });
+  var close = new Ext.Button({
+    cls:"x-btn-text-icon",
+    handler:function(){
+      var win = Ext.getCmp(winID);
+      try{
+        win.close();
+      }catch(e){
+        alert('Error: ' + e.name + ': ' + e.message)
+      }
+    },
+    icon:gURLRoot+'/images/iface/close.gif',
+    minWidth:'70',
+    tooltip:'Alternatively, you can close the dialogue by pressing the [X] button on the top of the window',
+    text:'Close'
+  });
+  var jdl = new Ext.form.FieldSet({
+    autoHeight:true,
+    bodyStyle:'padding: 5px',
+    collapsible: true,
+    defaultType:'textfield',
+    id:jdlID,
+    items:[{
+      anchor:fieldAnchor,
+      fieldLabel:'JobName',
+      name:'JobName',
+      allowBlank:true,
+      value:'DIRAC_' + gPageDescription.userData.username + '_' + Math.floor(Math.random()*1000001)
+    },{
+      allowBlank:false,
+      anchor:fieldAnchor,
+      fieldLabel:'Executable',
+      name:'Executable',
+      value:'/bin/ls'
+    },{
+      anchor:fieldAnchor,
+      fieldLabel:'Arguments',
+      name:'Arguments',
+      value:'-ltrA'
+    },{
+      anchor:fieldAnchor,
+      fieldLabel:'OutputSandbox',
+      name:'OutputSandbox',
+      value:'std.out, std.err'
+    }],
+    monitorResize:true,
+    title:'JDL',
+  });
+  var sandbox = new Ext.form.FieldSet({
+    autoHeight:true,
+    collapsible: true,
+    id:fileID,
+    items:[fileField()],
+    monitorResize:true,
+    title:'Input Sandbox',
+  });
+/*
+  var lfnbox = new Ext.form.FieldSet({
+    autoHeight:true,
+    collapsible: true,
+    items:[],
+    title:'Input Sandbox LFN',
+  });
+//*/
+  var addButton = new Ext.Toolbar.Button({
+    cls:"x-btn-text-icon",
+    icon:gURLRoot+'/images/iface/advanced.gif',
+    menu:[
+      checkedMenu('CPUTime'),
+      checkedMenu('StdError'),
+      checkedMenu('JobType'),
+      checkedMenu('CPUNumber'),
+      checkedMenu('InputDataType'),
+      checkedMenu('SystemConfig'),
+      checkedMenu('Site'),
+      checkedMenu('BannedSite'),
+      checkedMenu('OutputSE'),
+      checkedMenu('OutputData')
+    ],
+    text:'Add Parameters',
+    tooltip:'Click to add more parameters to the JDL'
+  });
+  var cancelButton = new Ext.Toolbar.Button({
+    cls:"x-btn-text-icon",
+    disabled:true,
+    handler:function(button){
+      var sandbox = Ext.getCmp(fileID);
+      if(sandbox){
+        var length = sandbox.items.getCount() - 1;
+        for(i=length; i>=0; i--){
+          var tmp = sandbox.getComponent(i);
+          sandbox.remove(tmp,true);
+        }
+        var width = sandbox.getInnerWidth() - fileAnchor;
+        var tmp = fileField();
+        tmp.setWidth(width);
+        sandbox.add(tmp);
+        sandbox.setTitle('Input Sandbox');
+        sandbox.doLayout();
+      }
+      button.disable();
+    },
+    icon:gURLRoot+'/images/iface/close.gif',
+    scope:this,
+    tooltip:'Remove all files and LFNs from the sandbox',
+    text:'Clear Sandbox'
+  });
+  var inn = new Ext.Panel({
+    autoScroll:true,
+    bodyStyle:'padding: 5px',
+    border:false,
+    id:innID,
+    items:[jdl,sandbox],
+    layout:'fit',
+    monitorResize:true
+  });
+  inn.on({
+    'resize':function(){
+      var sandbox = Ext.getCmp(fileID);
+      if(!sandbox){
+        return
+      }
+      var width = inn.getInnerWidth() - fileAnchor;
+      var length = sandbox.items.getCount();
+      for(i=0; i<length; i++){
+        var tmp = sandbox.getComponent(i);
+        tmp.setWidth(width);
       }
     }
   });
-  function showTable(id){
-    function createText(name,value){
-      var text = new Ext.form.TextField({
-        anchor:'-15',
-        fieldLabel:name,
-        name:name,
-        value:value
-      });
-      return text
-    }
-    function chkBoxJDL(flag){
-      if(flag == 1){
-        var img = '<img src="'+gURLRoot+'/images/iface/checked.gif">';
-      }else{
-        var img = '<img src="'+gURLRoot+'/images/iface/unchecked.gif">';
-      }
-      return img
-    }
-    var data = [
-      [0,'CPUTime','86400'],
-      [0,'StdError','testJob.err'],
-      [0,'JobType','MPI'],
-      [0,'CPUNumber','2'],
-      [0,'InputDataType',''],
-      [0,'SystemConfig','slc4_ia32_gcc34'],
-      [0,'Site',''],
-      [0,'BannedSite','']
-    ];
-    var store = new Ext.data.SimpleStore({
-      fields:['Flag','Option','Value'],
-      data:data
-    });
-    var table = new Ext.grid.GridPanel({
-      anchor:'-15',
-      autoScroll:true,
-      border:false,
-      columns:[
-        {header:'',width:26,sortable:false,dataIndex:'Flag',renderer:chkBoxJDL,hideable:false,fixed:true,menuDisabled:true},
-        {header:'JDL Parameter',sortable:true,dataIndex:'Option',align:'left',hideable:false},
-        {header:'Default Value',sortable:true,dataIndex:'Value',align:'left',hideable:false}
-      ],
-      header:false,
-      layout:'fit',
-      loadMask:true,
-      store:store,
-      stripeRows:true,
-      viewConfig:{forceFit:true,scrollOffset:1}
-    });
-    table.addListener('rowclick',function(tab,rowIndex){
-      var record = tab.getStore().getAt(rowIndex); // Get the Record for the row
-      var panel = Ext.getCmp(id);
-      var jdl = panel.items.items[0].items.items[0].items;
-      var jdlPanel = panel.items.items[0].items.items[0];
-      var currentJDL = []
-      for(var i = 0; i < jdl.length; i++){
-        currentJDL[i] = jdl.items[i].name;
-      }
-      var isCurrentJDL = currentJDL.indexOf(record.data.Option); // Is an option already in the JDL
-      var msg = '';
-      if(isCurrentJDL == -1){ // Option is not in JDL
-        var field = createText(record.data.Option,record.data.Value);
-        panel.form.add(field);
-        var index = panel.items.items[0].items.items[0].items.length;
-        jdlPanel.insert(index,field);
-        record.data['Flag'] = 1;
-        msg = record.data.Option + ' has been add to JDL';
-      }else if(isCurrentJDL >= 0){ //Option is already in JDL
-        var item = jdlPanel.getComponent(isCurrentJDL);
-        var itemParentNode = item.el.dom.parentNode.parentNode;
-        jdlPanel.remove(isCurrentJDL);
-        Ext.fly(itemParentNode).remove();
-        panel.form.remove(item);
-        record.data['Flag'] = 0;
-        msg = record.data.Option + ' has been deleted from JDL';
-      }else{ // Fallback
-        record.data['Flag'] = 0;
-        msg = record.data.Option + ' has been reset';
-      }
-      var bar = panel.items.items[0].items.items[2].getBottomToolbar();
-      Ext.fly(bar.items.get(1).getEl().parentNode).remove(); // Secret hack for remove an element from toolbar
-      bar.items.removeAt(1);
-      bar.add({xtype:'label',text:msg});
-      record.commit(); // Renders changes
-      jdlPanel.doLayout();
-    });
-    return table
-  }
-  function showSPanel(){
-    function deleteBox(flag){
-      var img = '<img src="'+gURLRoot+'/images/iface/close.gif">';
-      return img
-    }
-    function whichIcon(mode){
-      if(mode == 'file'){
-        return '<img src="'+gURLRoot+'/images/iface/addfile.gif">'
-      }else if(mode == 'lfn'){
-        return '<img src="'+gURLRoot+'/images/iface/lfn.gif">'
-      }else{
-        return '<img src="'+gURLRoot+'/images/iface/unknown.gif">'
-      }
-    }
-    var data = [['file','TestName.txt','1GB']];
-    var store = new Ext.data.SimpleStore({
-      fields:['icon','fileName','bytesTotal'],
-      data:data,
-    });
-    var panel = new Ext.grid.GridPanel({
-      anchor:'-15',
-      autoScroll:true,
-      border:false,
-      columns:[
-        {dataIndex:'icon',width:26,renderer:whichIcon,sortable:false,fixed:true},
-        {dataIndex:'fileName',sortable:true,align:'left'},
-        {dataIndex:'bytesTotal',width:100,sortable:true,align:'left',fixed:true},
-        {dataIndex:'fileName',width:26,renderer:deleteBox,sortable:false,fixed:true,css:'cursor:pointer;cursor:hand;'}
-      ],
-      enableHdMenu:false,
-      hideHeaders:true,
-      header:false,
-//      html:'<center><br><b>Sandbox is empty</b></center>',
-      id:'sandboxStore',
-      layout:'fit',
-      loadMask:true,
-      store:store,
-      stripeRows:true,
-      viewConfig:{forceFit:true,scrollOffset:1}
-    });
-    panel.addListener('cellclick',function(table,rowIndex,columnIndex){
-      var record = table.getStore().getAt(rowIndex); // Get the Record for the row
-      if(columnIndex == 3){
-        store.remove(record);
-      }
-    });
-    return panel
-  }
   var panel = new Ext.FormPanel({
+    border:false,
+    buttons:[submit,reset,close],
     fileUpload: true,
+    id:formID,
+    items:[inn],
     labelWidth:100,
     monitorResize:true,
-    border:false,
-    items:[{
-      xtype:'tabpanel',
-      activeTab:0,
-      monitorResize:true,
-      items:[{
-        bodyStyle:'padding: 5px',
-        defaultType:'textfield',
-        iconCls:'jdl',
-        monitorResize:true,
-        autoScroll:true,
-        items:[{
-          anchor:'-15',
-          fieldLabel:'JobName',
-          name:'jobname',
-          allowBlank:true,
-          value:'DIRAC_' + gPageDescription.userData.username + '_' + Math.floor(Math.random()*1000001)
-        },{
-          allowBlank:false,
-          anchor:'-15',
-          fieldLabel:'Executable',
-          name:'exec',
-          value:'/bin/ls'
-        },{
-          anchor:'-15',
-          fieldLabel:'Arguments',
-          name:'params',
-          value:'-ltrA'
-        },{
-          anchor:'-15',
-          fieldLabel:'OutputSandbox',
-          name:'outputSandbox',
-          value:'std.out, std.err'
-        }],
-        layout:'form',
-        title:'JDL'
-      },{
-        bodyStyle:'padding: 0px !important',
-        defaultType:'label',
-        iconCls:'sandbox',
-        items:showSPanel(),
-        layout:'form',
-        tbar:[fbutton,{
-          cls:"x-btn-text-icon",
-          handler:function(){
-            addLFN(panel.id);
-          },
-          icon:gURLRoot+'/images/iface/lfn.gif',
-          tooltip:'Input Logical File Name of your data sample',
-          text:'Add LFN'
-        },'->',{
-          cls:"x-btn-text-icon",
-          disabled:true,
-          handler:function(){
-            addLFN(panel.id);
-          },
-          icon:gURLRoot+'/images/iface/close.gif',
-          scope:this,
-          tooltip:'Remove all items from the sandbox',
-          text:'Clear All'
-        }],
-        title:'Sandbox'
-      },{
-        autoScroll:true,
-        defaultType:'grid',
-        iconCls:'advanced',
-        layout:'form',
-        monitorResize:true,
-        tabTip:'Here you can include or exclude any of the JDL parameters',
-        bbar:['->','Click on a row to start working'],
-        title:'Advanced'
-      }]
-    }],
-    buttons:[{
-      cls:"x-btn-text-icon",
-      handler:function(){
-        submitForm(panel.id);
-      },
-      icon:gURLRoot+'/images/iface/submit.gif',
-      minWidth:'70',
-      tooltip:'Send a request to the server',
-      text:'Submit'
-    },{
-      cls:"x-btn-text-icon",
-      handler:function(){
-        panel.form.reset();
-      },
-      icon:gURLRoot+'/images/iface/reset.gif',
-      minWidth:'70',
-      tooltip:'Reset values in the form',
-      text:'Reset'
-    },{
-      cls:"x-btn-text-icon",
-      handler:function(){
-        win.close();
-      },
-      icon:gURLRoot+'/images/iface/close.gif',
-      minWidth:'70',
-      tooltip:'Alternatively, you can close the dialogue by pressing the [X] button on the top of the window',
-      text:'Close'
-    }],
-    url:'',
+    tbar:[proxyButton('init'),'->',addButton,cancelButton],
+    url:''
   });
-  panel.on({
-    'render':function(){
-      var grid = showTable(panel.id);
-      panel.items.items[0].items.items[2].insert(0,grid);
-    }
+  var win = new Ext.Window({
+    collapsible:true,
+    constrain:true,
+    constrainHeader:true,
+    id:winID,
+    items:[panel],
+    layout:'fit',
+    maximizable:true,
+    minHeight:240,
+    minWidth:320,
+    title:'Launchpad',
   });
-  var win = displayWin(panel,'Launchpad');
+  win.show();
   win.on({
     'resize':function(){
-      var wHeight = win.getInnerHeight();
+      var panel = Ext.getCmp(innID);
+      var form = Ext.getCmp(formID);
+      var wHeight = form.getInnerHeight();
       var wWidth = win.getInnerWidth();
-      panel.items.items[0].setHeight(wHeight - 39);
-      panel.items.items[0].setWidth(wWidth - 2);
+      panel.setHeight(wHeight);
+      panel.setWidth(wWidth);
     }
   });
-  win.setSize(400,300);
+  win.setSize(500,500);
 }
