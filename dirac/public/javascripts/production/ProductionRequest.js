@@ -10,6 +10,8 @@
  * ProdRequests.css must be loaded as well
  */
 
+var timeout = 60000;
+
 Ext.ns('PR');
 
 PR.filterOptions = {};
@@ -842,6 +844,7 @@ PR.SubRequestAdder = Ext.extend(Ext.Window, {
       method: 'POST',
       params: pdict,
       scope: this,
+      timeout:timeout,
       success: function(response){
 	if (response) { // check that it is really OK... AZ: !! ??
 	  var str = '';
@@ -989,6 +992,7 @@ PR.RequestSpliter = Ext.extend(Ext.Window, {
       method: 'POST',
       params: pdict,
       scope: this,
+      timeout:timeout,
       success: function(response){
 	if (response) { // check that it is really OK... AZ: !! ??
 	  var str = '';
@@ -1335,7 +1339,8 @@ PR.PrWorkflow = Ext.extend(Ext.Window, {
   },
   finishEnable: function() {
     if(this.detail.data.Type != 'Simple'){
-      Ext.getCmp('prw-finish-btn').enable();
+      if(gPageDescription.userData.group == "lhcb_prmgr")
+        Ext.getCmp('prw-finish-btn').enable();
       Ext.getCmp('prw-spreview-btn').enable();
     }
     if(this.detail.data.Type != 'Script')
@@ -1453,6 +1458,7 @@ PR.PrWorkflow = Ext.extend(Ext.Window, {
       method: 'POST',
       params: pdict,
       scope: this,
+      timeout:timeout,
       success: function(response){
 	if (response) { // check that it is really OK... AZ: !! ??
 	  var str = '';
@@ -1508,6 +1514,7 @@ PR.PrWorkflow = Ext.extend(Ext.Window, {
       method: 'POST',
       params: pdict,
       scope: this,
+      timeout:timeout,
       success: function(response){
 	if (response) { // check that it is really OK... AZ: !! ??
 	  var str = '';
@@ -2280,22 +2287,33 @@ PR.RequestEditor = Ext.extend(Ext.FormPanel, {
 	{text: 'Cancel', handler: this.onCancel, scope: this}
       ];
     } else if(this.state == "Submitted" || this.state == "Tech OK"){
-      buttons = [
-	{text: 'Sign the request', handler: this.onSign,   scope: this},
-	{text: 'Reject the request (better first comment why)', handler: this.onReject, scope: this},
-	{text: 'Cancel', handler: this.onCancel, scope: this}
-      ];
+      if(gPageDescription.userData.group == "lhcb_tech"){
+ 	buttons = [
+          {text: 'Sign the request', handler: this.onSign,   scope: this},
+          {text: 'Reject the request (better first comment why)', handler: this.onReject, scope: this},
+          {text: 'Generate', handler: this.onWorkflow, scope: this},
+          {text: 'Cancel', handler: this.onCancel, scope: this}
+        ];
+      } else {
+        buttons = [
+	  {text: 'Sign the request', handler: this.onSign,   scope: this},
+	  {text: 'Reject the request (better first comment why)', handler: this.onReject, scope: this},
+	  {text: 'Cancel', handler: this.onCancel, scope: this}
+        ];
+      }
     } else if(this.state == "PPG OK"){
       buttons = [
 	{text: 'Sign the request', handler: this.onSign,   scope: this},
 	{text: 'Put on-hold', handler: this.onHold,   scope: this},
 	{text: 'Reject the request (better first comment why)', handler: this.onReject, scope: this},
+        {text: 'Generate', handler: this.onWorkflow, scope: this},
 	{text: 'Cancel', handler: this.onCancel, scope: this}
       ];
     } else if(this.state == "On-hold"){
       buttons = [
 	{text: 'Sign the request', handler: this.onSign,   scope: this},
 	{text: 'Reject the request (better first comment why)', handler: this.onReject, scope: this},
+	{text: 'Generate', handler: this.onWorkflow, scope: this},
 	{text: 'Cancel', handler: this.onCancel, scope: this}
       ];
     } else if(this.state == "Accepted"){
@@ -3448,6 +3466,7 @@ PR.ProductionManager = Ext.extend(Ext.Window, {
       method: 'GET',
       params: params,
       scope: this,
+      timeout:timeout,
       success: function(response){
 	if (response) { // check that it is really OK... AZ: !! ??
 	  var str = '';
@@ -4253,6 +4272,7 @@ PR.RequestManager = Ext.extend(Ext.TabPanel, {
       method: 'GET',
       params: {'ID': id},
       scope: this,
+      timeout:timeout,
       success: function(response){
 	if (response) { // check that it is really OK... AZ: !! ??
 	  var str = '';
@@ -4298,6 +4318,7 @@ PR.RequestManager = Ext.extend(Ext.TabPanel, {
       method: 'GET',
       params: {'anode': id},
       scope: this,
+      timeout:timeout,
       success: function(response){
 	if (response) { // check that it is really OK... AZ: !! ??
 	  var str = '';
@@ -4354,6 +4375,7 @@ PR.RequestManager = Ext.extend(Ext.TabPanel, {
       method: 'POST',
       params: { ID: r.data.ID, reqState: 'New' },
       scope: this,
+      timeout:timeout,
       success: function(response){
 	if (response) { // check that it is really OK... AZ: !! ??
 	  var str = '';
@@ -4388,6 +4410,7 @@ PR.RequestManager = Ext.extend(Ext.TabPanel, {
       method: 'POST',
       params: { ID: r.data.ID, reqState: 'Active' },
       scope: this,
+      timeout:timeout,
       success: function(response){
 	if (response) { // check that it is really OK... AZ: !! ??
 	  var str = '';
@@ -4444,6 +4467,7 @@ PR.RequestManager = Ext.extend(Ext.TabPanel, {
       method: 'GET',
       params: { ID: r.data.ID, ClearPP: clearpp },
       scope: this,
+      timeout:timeout,
       success: function(response){
 	if (response) { // check that it is really OK... AZ: !! ??
 	  var str = '';
@@ -4569,6 +4593,7 @@ PR.RequestManager = Ext.extend(Ext.TabPanel, {
       method: 'POST',
       params: { RequestID: r.data.ID },
       scope: this,
+      timeout:timeout,
       success: function(response){
 	if (response) { // check that it is really OK... AZ: !! ??
 	  var str = '';
