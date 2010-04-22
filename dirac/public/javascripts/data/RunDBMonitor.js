@@ -60,13 +60,13 @@ function initSidebar(){
   //select.insert(9,startLSelect);
   //select.insert(10,endLSelect);
 //  var sortGlobal = sortGlobalPanel(); // Initializing the global sort panel
-  var stat = statPanel('Current Statistics','current','statGrid');
-//  var glStat = statPanel('Global Statistics','global','glStatGrid');
+  var stat = statPanel('Selected Statuses','current','statGrid');
+  var glStat = statPanel('Selected Statistics','headOff','statisticGrid');
   var bar = sideBar();
   bar.insert(0,select);
 //  bar.insert(1,sortGlobal);
   bar.insert(2,stat);
-//  bar.insert(3,glStat);
+  bar.insert(3,glStat);
   bar.setTitle('RunDB Monitor');
   return bar
 }
@@ -212,10 +212,14 @@ function AJAXsuccess(value,id,response){
 }
 function afterDataLoad(){
   var msg = [];
+  var stat = [];
   if(dataMngr){
     if(dataMngr.store){
       if(dataMngr.store.extra_msg){
          msg = dataMngr.store.extra_msg;
+      }
+      if(dataMngr.store.extra_stat){
+         stat = dataMngr.store.extra_stat;
       }
     }
   }
@@ -223,6 +227,11 @@ function afterDataLoad(){
   if((statPanel)&&(msg)){
     msg = createStateMatrix(msg);
     statPanel.store.loadData(msg);
+  }
+  var statisticPanel = Ext.getCmp('statisticGrid');
+  if((statisticPanel)&&(stat)){
+    stat = createStateMatrix(stat);
+    statisticPanel.store.loadData(stat);
   }
 /*
   try{

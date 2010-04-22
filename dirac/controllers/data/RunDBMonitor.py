@@ -81,11 +81,11 @@ class RundbmonitorController(BaseController):
                     tmp[head[j]] = i[j]
                   c.result.append(tmp)
                 total = result["TotalRecords"]
+                c.result = {"success":"true","result":c.result,"total":total}
+                if result.has_key("Counters"):
+                  c.result['count'] = result["Counters"]
                 if result.has_key("Extras"):
-                  extra = result["Extras"]
-                  c.result = {"success":"true","result":c.result,"total":total,"extra":extra}
-                else:
-                  c.result = {"success":"true","result":c.result,"total":total}
+                  c.result['extra'] = result["Extras"]
               else:
                 c.result = {"success":"false","result":"","error":"There are no data to display"}
             else:
