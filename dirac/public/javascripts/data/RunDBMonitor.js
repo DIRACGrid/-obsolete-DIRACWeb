@@ -25,6 +25,9 @@ function initRecord(){
     {name:'runType'},
     {name:'partitionName'},
     {name:'endTime',type:'date',dateFormat:'Y-n-j h:i:s'},
+    {name:'files'},
+    {name:'events'},
+    {name:'size'},
     {name:'StatusIcon',mapping:'state'}
   ]);
   return record
@@ -51,11 +54,11 @@ function initSidebar(){
   select.insert(3,runtypeSelect);
   select.insert(4,partSelect);
   select.insert(5,fillSelect);
-  select.insert(6,startLSelect);
-  select.insert(7,endLSelect);
-  select.insert(8,beamSelect);
-  select.insert(9,dateStartSelect);
-  select.insert(10,dateEndSelect);
+  select.insert(6,beamSelect);
+  select.insert(7,dateStartSelect);
+  select.insert(8,dateEndSelect);
+  //select.insert(9,startLSelect);
+  //select.insert(10,endLSelect);
 //  var sortGlobal = sortGlobalPanel(); // Initializing the global sort panel
   var stat = statPanel('Current Statistics','current','statGrid');
 //  var glStat = statPanel('Global Statistics','global','glStatGrid');
@@ -73,12 +76,15 @@ function initData(store){
     {header:'',width:26,sortable:false,dataIndex:'StatusIcon',renderer:status,hideable:false,fixed:true,menuDisabled:true},
     {header:'State',sortable:true,dataIndex:'state',align:'left'},
     {header:'Destination',sortable:true,dataIndex:'destination',align:'left'},
-    {header:'RunType',sortable:true,dataIndex:'RunType',align:'left'},
+    {header:'RunType',sortable:true,dataIndex:'runType',align:'left'},
     {header:'PartitionName',sortable:true,dataIndex:'partitionName',align:'left'},
-    {header:'FillID',sortable:true,dataIndex:'fillID',align:'left'},
-    {header:'StartLumi',width:60,sortable:true,dataIndex:'startLumi',align:'left'},
-    {header:'EndLumi',sortable:true,dataIndex:'endLumi',align:'left'},
-    {header:'BeamEnergy',sortable:true,dataIndex:'beamEnergy',align:'left'},
+    {header:'FillID',sortable:true,dataIndex:'fillID',align:'right'},
+    {header:'StartLumi',width:60,sortable:true,dataIndex:'startLumi',align:'left',hidden:true},
+    {header:'EndLumi',sortable:true,dataIndex:'endLumi',align:'left',hidden:true},
+    {header:'BeamEnergy',sortable:true,dataIndex:'beamEnergy',align:'right'},
+    {header:'Files',sortable:true,dataIndex:'files',align:'right'},
+    {header:'Events',sortable:true,dataIndex:'events',align:'right'},
+    {header:'Size [GB]',sortable:true,dataIndex:'size',align:'right'},
     {header:'StartTime [UTC]',sortable: true,renderer:Ext.util.Format.dateRenderer('Y-m-d H:i'),dataIndex:'startTime'},
     {header:'EndTime [UTC]',sortable:true,renderer:Ext.util.Format.dateRenderer('Y-m-d H:i'),dataIndex:'endTime'}
   ];
