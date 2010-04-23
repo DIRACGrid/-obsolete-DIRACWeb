@@ -212,10 +212,11 @@ function addMenu(){
     var button = new Ext.Toolbar.Button({
       text:'Tools',
       menu:[
-//        {handler:function(){submitJobNew()},text:'Job Launchpad'},
+        {handler:function(){submitJobNew()},text:'Job Launchpad'},
 //        {handler:function(){launchJob()},text:'Launchpad in progress'},
         {handler:function(){showURL()},text:'Full URL'},
         {menu:{items:[
+          {handler:function(){showJobID(' ')},text:'Space separated'},
           {handler:function(){showJobID(', ')},text:'Comma separated'},
           {handler:function(){showJobID('; ')},text:'Semicolon separated'}
         ]},text:'Show selected JobIDs'}
