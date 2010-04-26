@@ -5,6 +5,12 @@ var heartbeat = '';
 var contextMenu = '';
 function initLoop(initValues){
   Ext.onReady(function(){
+    if(window.location.hash){
+      var test = window.location.hash.split('#layout=');
+      if(test.length == 2 && initValues){
+        initValues.defaultLayout = test[1];
+      }
+    }
     var mainContent = mainPanel(initValues);
     renderInMainViewport([ mainContent ]);
   });
@@ -12,14 +18,6 @@ function initLoop(initValues){
 function mainPanel(initValues){
   heartbeat = new Ext.util.TaskRunner();
   contextMenu = new Ext.menu.Menu();
-  var message = {
-    anchor:'100%',
-    fieldLabel:'Tip',
-    columnWidth:.99,
-    html:'Welcome to the Summary page. With this page you can build your own monitoring environment. To start with, press \'Add\' button and enter an image URL in the \'Path\' field. You can enter any URL of a plot not only for the DIRAC accounting plots. To remove an image do mouse right click on it and in the menu select \'Remove\'. Unfortunately you can not reshuffle items yet, so to remove and to add the items is the only way to reshuffle it so far. You can always save the current layout on the server side by clicking \'Save Layout\' button, so you\'ll have the same environment at any browser at any time. If you want to discard the changes, just click the \'Restore Layout\' button',
-    id:'welcomeMessage',
-    xtype:'label'
-  };
   var current = {
     disabled:true,
     disabledClass:'my-disabled',
@@ -33,55 +31,47 @@ function mainPanel(initValues){
     },
     iconCls:'Add',
     tooltip:'Some wise tooltip here',
-    text:'Add',
+    text:'Add'
   };
-  var set = new Ext.SplitButton({
+  var set = new Ext.Toolbar.Button({
     cls:"x-btn-text-icon",
-    handler:function(){
-      saveLayout(layout);
-    },
     iconCls:'Save',
     id:'setLayoutButton',
     menu:createMenu('set',initValues),
     tooltip:'Read your current layout and save it on the server',
     text:'Save'
   });
-  var get = new Ext.SplitButton({
+  var get = new Ext.Toolbar.Button({
     cls:"x-btn-text-icon",
-    handler:function(){
-      loadLayout(layout);
-      var mainPanel = Ext.getCmp('mainConteiner');
-      if(mainPanel){
-        mainPanel.doLayout();
-      }
-    },
     iconCls:'Restore',
     id:'getLayoutButton',
     menu:createMenu('get',initValues),
     tooltip:'Download your saved layout and apply it',
     text:'Load'
   });
-  var del = new Ext.SplitButton({
+  var act = new Ext.Toolbar.Button({
     cls:"x-btn-text-icon",
-    handler:function(){
-      deleteLayout(layout);
-    },
-    iconCls:'Delete',
-    id:'delLayoutButton',
-    menu:createMenu('del',initValues),
+    iconCls:'Act',
+    id:'actLayoutButton',
+    menu:[
+      {handler:function(){exportLayout();},icon:gURLRoot + '/images/iface/export.gif',text:'Export'},
+      {handler:function(){importLayout()},icon:gURLRoot + '/images/iface/import.gif',text:'Import'},
+      {handler:function(){deleteLayout()},icon:gURLRoot + '/images/iface/close.gif',text:'Delete'},
+      {handler:function(){deleteLayout('All')},icon:gURLRoot + '/images/iface/delete.gif',text:'Delete All'}
+    ],
     tooltip:'',
-    text:'Delete'
+    text:'Actions'
   });
   var column = new Ext.Toolbar.Button({
     cls:"x-btn-text-icon",
     iconCls:'columnSplitButton',
     id:'columnSplitButton',
     menu:[
-      {checked:setChk('.98'),checkHandler:function(){setColumn('.98')},group:'column',text:'1 Column'},
-      {checked:setChk('.49'),checkHandler:function(){setColumn('.49')},group:'column',text:'2 Columns'},
-      {checked:setChk('.33'),checkHandler:function(){setColumn('.33')},group:'column',text:'3 Columns'},
-      {checked:setChk('.24'),checkHandler:function(){setColumn('.24')},group:'column',text:'4 Columns'},
-      {checked:setChk('.19'),checkHandler:function(){setColumn('.19')},group:'column',text:'5 Columns'}
+      {checked:setChk('.98'),checkHandler:function(){setColumn('.98');},group:'column',text:'1 Column'},
+      {checked:setChk('.49'),checkHandler:function(){setColumn('.49');},group:'column',text:'2 Columns'},
+      {checked:setChk('.33'),checkHandler:function(){setColumn('.33');},group:'column',text:'3 Columns'},
+      {checked:setChk('.24'),checkHandler:function(){setColumn('.24');},group:'column',text:'4 Columns'},
+      {checked:setChk('.19'),checkHandler:function(){setColumn('.19');},group:'column',text:'5 Columns'}
     ],
     text:'Columns',
     tooltip:'Click to change number of columns'
@@ -109,12 +99,12 @@ function mainPanel(initValues){
       bodyStyle:'padding:5px'
     },
     id:'mainConteiner',
-    items:[message],
+    items:[newLayout()],
     layout:'column',
     margins:'2 0 2 0',
     monitorResize:true,
     region:'center',
-    tbar:[current,'->',add,'-',get,set,del,'-',refresh,column]
+    tbar:[current,'->',add,'-',get,set,act,'-',refresh,column]
   });
   panel.on('render',function(){
     if(initValues){
@@ -124,6 +114,60 @@ function mainPanel(initValues){
   return panel
 }
 ///////////////////////////////////////////////////////
+function changedFlag(){
+  var current = Ext.getCmp('currentID');
+  if(current){
+    current.setText('Current Layout: <b>' + layout + '*</b>');
+  }
+}
+function newLayout(){
+/*
+  var html = '';
+  html = html + '<div class="document" id="information-presenter"><h1 class="title">Information Presenter</h1>';
+  html = html + '<p>With this page you can build your own collection of monitoring tools. Currently only plots can be presented in a grid like layout. ';
+  html = html + 'The layouts can be saved in the User Profile and recalled back. You can define as many layouts as you need.</p>';
+  html = html + '<div class="section" id="managing-layouts"><h1>Managing layouts</h1><div class="section" id="adding-image">';
+  html = html + '<h2>Adding image</h2><p>To start with, press <strong>Add</strong> button and enter an image URL in the <em>Path</em> field.';
+  html = html + 'You can enter any URL of a plot not only the DIRAC accounting plots. The image will be added to the layout. ';
+  html = html + 'The number of columns of the layout grid can be chosen with the <strong>Columns</strong> selector.</p></div>';
+  html = html + '<div class="section" id="removing-image"><h2>Removing image</h2>';
+  html = html + '<p>To remove an image do mouse right click on it and select <em>Remove</em> in the drop-down menu.</p></div>';
+  html = html + '<div class="section" id="saving-layout"><h2>Saving layout</h2>';
+  html = html + '<p>You can always save the current layout on the server side by clicking <strong>Save</strong> -&gt; <strong>Save as new</strong> button.</p>';
+  html = html + '</div><div class="section" id="loading-layout"><h2>Loading layout</h2>';
+  html = html + '<p>If you want to load layout or to discard the changes, just click the <strong>Load</strong> button and select layout to restore</p>';
+  html = html + '</div><div class="section" id="exporting-and-importing-layouts"><h2>Exporting and importing layouts</h2>';
+  html = html + '<p>If you want to share your layout with others, you can choose <strong>Actions</strong> -&gt; <strong>Export</strong> ';
+  html = html + 'menu item and copy the layout description from a pop-up panel as a long string. This string can now be sent to other users. ';
+  html = html + 'To use it, choose <strong>Actions</strong> -&gt; <strong>Import</strong> and paste the layout description.</p></div></div></div>';
+*/
+  var html = '<br><center><h1>Information Presenter</h1></center><br><p>With this page you can build your own collection of monitoring tools.';
+  html = html + 'Currently only plots can be presented in a grid like layout. The layouts can be saved in the User Profile and recalled back.';
+  html = html + ' You can define as many layouts as you need.</p><br>';
+  html = html + '<h1>Managing layouts</h1><br><h3>Adding image</h3><p>To start with, press <b>Add</b> button and enter an image URL in the <i>Path</i> field.';
+  html = html + 'You can enter any URL of a plot not only the DIRAC accounting plots. The image will be added to the layout.';
+  html = html + ' The number of columns of the layout grid can be chosen with the <b>Columns</b> selector.</p>';
+  html = html + '<br><h3>Removing image</h3><p>To remove an image do mouse right click on it and select <i>Remove</i> in the drop-down menu.</p>';
+  html = html + '<br><h3>Saving layout</h3><p>You can always save the current layout on the server side by clicking ';
+  html = html + '<b>Save</b> -&gt; <b>Save as new</b> button.</p><br><h3>Loading layout</h3>';
+  html = html + '<p>If you want to load layout or to discard the changes, just click the <b>Load</b> button and select layout to restore</p>';
+  html = html + '<br><h3>Exporting and importing layouts</h3><p>If you want to share your layout with others, you can choose ';
+  html = html + '<b>Actions</b> -&gt; <b>Export</b> menu item and copy the layout description from a pop-up panel as a long string.';
+  html = html + ' This string can now be sent to other users. To use it, choose <b>Actions</b> -&gt; <b>Import</b>';
+  html = html + ' and paste the layout description.</p><center>';
+
+  html = html + '<object width="425" height="344"><param name="movie" value="http://www.youtube.com/v/TSY4y-Qr_LM&hl=en&fs=1"></param><param name="allowFullScreen" value="true"></param><param name="allowscriptaccess" value="always"></param><embed src="http://www.youtube.com/v/TSY4y-Qr_LM&hl=en&fs=1"type="application/x-shockwave-flash" allowscriptaccess="always" allowfullscreen="true" width="425" height="344"></embed></object>';
+  html = html + '</center>';
+  var message = {
+    anchor:'100%',
+    fieldLabel:'Tip',
+    columnWidth:.99,
+    html:html,
+    id:'welcomeMessage',
+    xtype:'label'
+  };
+  return message
+}
 function setChk(value){
   if(value == columnWidth){
     return true
@@ -140,8 +184,6 @@ function menuItem(value,group){
         loadLayout(value);
       }else if(group == 'set'){
         saveLayout(value);
-      }else if(group == 'del'){
-        deleteLayout(value);
       }
     },
     text:value
@@ -179,24 +221,22 @@ function createMenu(mode,init){
       }
     }
   }
-  if(mode == 'del'){
-    if(layouts){
-      menu.addItem(new Ext.menu.Separator());
-    }
-    menu.addItem(new Ext.menu.Item({handler:function(){deleteAll()},icon:gURLRoot + '/images/iface/close.gif',text:'Delete All'}));
-  }
   return menu
 }
 function resetMenu(value){
-  var id = ['getLayoutButton','setLayoutButton','delLayoutButton'];
+  var id = ['getLayoutButton','setLayoutButton'];
   for(var i=0; i<id.length; i++ ){
     try{
       var button = Ext.getCmp(id[i]);
       if(button){
-        var menu = createMenu(id[i].slice(0,3),value);
+        var tmpMenu = createMenu(id[i].slice(0,3),value);
       }
-      if(button && menu){
-        button.menu = menu;
+      if(button && tmpMenu){
+        button.menu.removeAll();;
+        var length = tmpMenu.items.getCount();
+        for(var j=0; j<length; j++){
+          button.menu.add(tmpMenu.items.items[j]);
+        }
       }
     }catch(e){
       alert('Error: ' + e.name + ': ' + e.message);
@@ -253,20 +293,23 @@ function setRefresh(time){
   }
 }
 function changeIcon(id,state){
+  if(id == 'del'){
+    id = 'actLayoutButton';
+  }
   var button = Ext.getCmp(id);
-  var class = '';
+  var btnClass = 0;
   if(id == 'getLayoutButton' && state == 'load'){
-    class = 'Loading';
+    btnClass = 'Loading';
   }else if(id == 'getLayoutButton' && state == 'normal'){
-    class = 'Restore';
+    btnClass = 'Restore';
   }else if(id == 'setLayoutButton' && state == 'load'){
-    class = 'Loading';
+    btnClass = 'Loading';
   }else if(id == 'setLayoutButton' && state == 'normal'){
-    class = 'Save';
-  }else if(id == 'delLayoutButton' && state == 'load'){
-    class = 'Loading';
-  }else if(id == 'delLayoutButton' && state == 'normal'){
-    class = 'Delete';
+    btnClass = 'Save';
+  }else if(id == 'actLayoutButton' && state == 'load'){
+    btnClass = 'Loading';
+  }else if(id == 'actLayoutButton' && state == 'normal'){
+    btnClass = 'Act';
   }
   try{
     if(state == 'load'){
@@ -274,7 +317,7 @@ function changeIcon(id,state){
     }else{
       button.enable();
     }
-    button.setIconClass(class);
+    button.setIconClass(btnClass);
   }catch(e){}
 }
 function gatherInfo(){
@@ -443,106 +486,117 @@ function loadLayout(name){
     }
   });
 }
-function deleteAll(){
+// change icon 'delLayoutButton'
+function deleteLayout(mode){
   var title = 'Delete Layout';
-  var msg = 'Do you really want to delete all layouts stored at remote service?';
+  if(mode == 'All'){
+    var msg = 'Do you really want to delete all layouts stored at remote service?';
+    var params = {'delAllBookmarks':true};
+  }else{
+    var msg = 'Do you really want to delete layout: ' + layout + ' ?';
+    var params = {'delBookmarks':layout};
+  }
   Ext.Msg.confirm(title,msg,function(btn){
     if(btn == 'yes'){
-      msg = 'Are you sure?'
-      Ext.Msg.confirm(title,msg,function(btn){
-        if(btn == 'yes'){
-          changeIcon('delLayoutButton','load');
-          Ext.Ajax.request({
-            failure:function(response){
-              changeIcon('delLayoutButton','normal');
-              AJAXerror(response.responseText);
-              return false
-            },
-            method:'POST',
-            params:{'delAllBookmarks':true},
-            success:function(response){
-              changeIcon('delLayoutButton','normal');
-              var jsonData = Ext.util.JSON.decode(response.responseText);
-              if(jsonData['success'] == 'false'){
-                AJAXerror(response.responseText);
-                return false
-              }else{
-                redoLayout(jsonData['result'],'del');
-                var mainPanel = Ext.getCmp('mainConteiner');
-                if(mainPanel){
-                  mainPanel.doLayout();
-                }
-              }
-            },
-            url:'action'
-          });
-        }
-      });
+      if(mode == 'All'){
+        Ext.Msg.confirm(title,'Are you sure?',function(btn){
+          if(btn == 'yes'){
+            changeIcon('del','load');
+            action(params,'del');
+          }
+        });
+      }else{
+        changeIcon('del','load');
+        action(params,'del');
+      }
     }
   });
 }
-function deleteLayout(name){
-  var title = 'Delete Layout';
-  if(name == layout){
-    try{
-      var button = Ext.getCmp('delLayoutButton');
-      var length = button.menu.items.getCount();
-      if(length > 1){
-        layout = button.menu.items.items[0].text;
+function action(params,mode){
+  Ext.Ajax.request({
+    failure:function(response){
+      changeIcon(mode,'normal');
+      AJAXerror(response.responseText);
+      return false
+    },
+    method:'POST',
+    params:params,
+    success:function(response){
+      changeIcon(mode,'normal');
+      var jsonData = Ext.util.JSON.decode(response.responseText);
+      if(jsonData['success'] == 'false'){
+        AJAXerror(response.responseText);
+        return false
       }else{
-        layout = '';
+        redoLayout(jsonData['result'],mode);
+        var mainPanel = Ext.getCmp('mainConteiner');
+        if(mainPanel){
+          mainPanel.doLayout();
+        }
       }
-    }catch(e){
-      alert('Error: ' + e.name + ': ' + e.message);
-      return
-    }
-  }
-  var msg = 'Do you really want to delete layout: ' + name + ' ?';
-  Ext.Msg.confirm(title,msg,function(btn){
-    if(btn == 'yes'){
-      changeIcon('delLayoutButton','load');
-      Ext.Ajax.request({
-        failure:function(response){
-          changeIcon('delLayoutButton','normal');
-          AJAXerror(response.responseText);
-          return false
-        },
-        method:'POST',
-        params:{'delBookmarks':name,'defaultLayout':layout},
-        success:function(response){
-          changeIcon('delLayoutButton','normal');
-          var jsonData = Ext.util.JSON.decode(response.responseText);
-          if(jsonData['success'] == 'false'){
-            AJAXerror(response.responseText);
-            return false
-          }else{
-            redoLayout(jsonData['result'],'del');
-            var mainPanel = Ext.getCmp('mainConteiner');
-            if(mainPanel){
-              mainPanel.doLayout();
-            }
-          }
-        },
-        url:'action'
-      });
-    }
+    },
+    url:'action'
   });
+}
+function exportLayout(){
+  var finalStr = '';
+  var layoutObj = gatherInfo();
+  for(var i in layoutObj){
+    finalStr = finalStr + i + ' is equal ' + layoutObj[i] + '&';
+  }
+  finalStr = finalStr.replace(/;$/,"");
+  Ext.Msg.alert('Export',finalStr);
+}
+function importLayout(){
+  Ext.Msg.prompt('Import', 'Please enter the layout definition:',function(btn,text){
+    if(btn == 'ok'){
+      if(text){
+        var finalObj = new Object;
+        text = text.replace(/\n/g,'');
+        var layoutObj = text.split('&');
+        for(var i=0; i<layoutObj.length; i++){
+          var tmp = layoutObj[i].split(' is equal ');
+          if(tmp.length == 2){
+            finalObj[tmp[0]] = tmp[1];
+          }
+        }
+        if(!finalObj.plots || !finalObj.columns || !finalObj.refresh){
+          alert('Error: The format of imported data is not valid');
+          return
+        }else{
+          redoLayout(finalObj,'import');
+          var mainPanel = Ext.getCmp('mainConteiner');
+          if(mainPanel){
+            mainPanel.doLayout();
+          }
+        }
+      }  
+    }
+  },this,true);
 }
 function redoLayout(result,mode){
 // ToDo set some kind of check here
   if(!result){
     return
   }
-  resetMenu(result);
+  if(mode != 'import'){
+    resetMenu(result);
+  }
   if(mode == 'sync'){
     return // just to update the menues
   }
   if(result.defaultLayout){
-    layout = result.defaultLayout;
+    if(result.defaultLayout == ''){
+      layout = 'default';
+    }else{
+      layout = result.defaultLayout;
+    }
+  }else if(mode == 'import'){
+    layout = layout + '*';
   }else{
     layout = 'default';
   }
-  var mainPanel = Ext.getCmp('mainConteiner');
+  window.location.hash = 'layout=' + layout;
   var current = Ext.getCmp('currentID');
   if(current){
     current.setText('Current Layout: <b>' + layout + '</b>');
@@ -555,25 +609,39 @@ function redoLayout(result,mode){
         refreshRate = result.layouts[i]['refresh'];
       }
     }
-    if(plots && mainPanel){
+  }else if(mode == 'import'){
+    if(result.plots){
+      var plots = result.plots.split(';');
+    }
+  }
+  var mainPanel = Ext.getCmp('mainConteiner');
+  if(mainPanel){
       try{
-        var length = mainPanel.items.getCount() - 1;
-        for(i=length; i>=0; i--){
-          var tmp = mainPanel.getComponent(i);
-          mainPanel.remove(tmp,true);
+        if(plots){
+          var length = mainPanel.items.getCount() - 1;
+          for(i=length; i>=0; i--){
+            var tmp = mainPanel.getComponent(i);
+            mainPanel.remove(tmp,true);
+          }
+          if(plots.length > 0){
+            for(i=0; i<plots.length; i++){
+              if(plots[i].length > 0){
+                mainPanel.add(createPanel(plots[i]));
+              }
+            }
+          }
+        }else{
+          var length = mainPanel.items.getCount() - 1;
+          for(i=length; i>=0; i--){
+            var tmp = mainPanel.getComponent(i);
+            mainPanel.remove(tmp,true);
+          }
+          mainPanel.add(newLayout());
         }
       }catch(e){
         alert('Error: ' + e.name + ': ' + e.message);
         return
       }
-      if(plots.length > 0){
-        for(i=0; i<plots.length; i++){
-          if(plots[i].length > 0){
-            mainPanel.add(createPanel(plots[i]));
-          }
-        }
-      }
-    }
   }
   var button = Ext.getCmp('refreshSplitButton');
   try{
@@ -632,12 +700,17 @@ function createPanel(img){
   var box = new Ext.BoxComponent({
     autoEl:{
       tag:'img',
+      style:'cursor:pointer;cursor:hand;',
       src:img
     },
     columnWidth:columnWidth,
+    cls:'pointer',
     id:boxID
   });
   box.on('render',function(){
+    box.el.on('click', function(evt,div,x,y,z) {
+      fullSize(img);
+    });
     box.el.on('contextmenu', function(evt,div,x,y,z) {
       evt.stopEvent();
       contextMenu.removeAll();
@@ -645,15 +718,13 @@ function createPanel(img){
           handler:function(){
             var mainPanel = Ext.getCmp('mainConteiner');
             mainPanel.remove(box);
+            var current = Ext.getCmp('currentID');
+            if(current){
+              current.setText('Current Layout: <b>' + layout + '*</b>');
+            }
           },
           icon:gURLRoot + '/images/iface/close.gif',
           text:'Remove'
-        },{
-          handler:function(){
-            fullSize(img);
-          },
-//          icon:gURLRoot + '/images/iface/close.gif',
-          text:'Actual size'
         },{
           handler:function(){
             window.open(img)
@@ -671,6 +742,53 @@ function createPanel(img){
     });
   });
   return box
+}
+function createTable(){
+  function status(value){
+  if((value == 'Done')||(value == 'Completed')||(value == 'Good')||(value == 'Active')||(value == 'Cleared')){
+    return '<img src="'+gURLRoot+'/images/monitoring/done.gif">';
+  }else if((value == 'Failed')||(value == 'Bad')||(value == 'Banned')||(value == 'Aborted')){
+    return '<img src="'+gURLRoot+'/images/monitoring/failed.gif">';
+  }else if((value == 'Waiting')||(value == 'Stopped')||(value == 'Poor')||(value == 'Probing')){
+    return '<img src="'+gURLRoot+'/images/monitoring/waiting.gif">';
+  }else if(value == 'Deleted'){
+    return '<img src="'+gURLRoot+'/images/monitoring/deleted.gif">';
+  }else if(value == 'Matched'){
+    return '<img src="'+gURLRoot+'/images/monitoring/matched.gif">';
+  }else if((value == 'Running')||(value == 'Active')||(value == 'Fair')){
+    return '<img src="'+gURLRoot+'/images/monitoring/running.gif">';
+  }else if(value == 'NoMask'){
+    return '<img src="'+gURLRoot+'/images/monitoring/unknown.gif">';
+  }else{
+    return '<img src="'+gURLRoot+'/images/monitoring/unknown.gif">';
+  }
+  }
+  var reader = new Ext.data.ArrayReader({},[
+    {name:'Status'},
+    {name:'Number'}
+  ]);
+  var columns = [
+    {header:'',width:26,sortable:false,dataIndex:'Status',renderer:status,hideable:false},
+    {header:'Status',width:60,sortable:true,dataIndex:'Status',align:'left'},
+    {header:'Numbers',sortable:true,dataIndex:'Number',align:'left'}
+  ];
+  var store = new Ext.data.Store({
+    autoLoad:{params:{globalStat:'true'}},
+    proxy: new Ext.data.HttpProxy({
+      url:'https://lhcbtest.pic.es/DIRAC/LHCb-Production/diracAdmin/jobs/JobMonitor/action',
+      method:'POST',
+    }),
+    reader:reader
+  });
+  var grid = new Ext.grid.GridPanel({
+    columns:columns,
+    header:false,
+    loadMask:true,
+    store:store,
+    stripeRows:true,
+    viewConfig:{forceFit:true}
+  });
+  return grid
 }
 function addPanel(){
   var winID = Ext.id();
@@ -701,6 +819,10 @@ function addPanel(){
           tmpPanel.setWidth(newWidth);
           mainPanel.add(tmpPanel);
           mainPanel.doLayout();
+          var current = Ext.getCmp('currentID');
+          if(current){
+            current.setText('Current Layout: <b>' + layout + '*</b>');
+          }
         }catch(e){
           alert('Error: ' + e.name + ': ' + e.message);
           return
@@ -716,6 +838,38 @@ function addPanel(){
       minWidth:'150',
       tooltip:'Add the link in the input field to the bookmark panel',
       text:'Add Panel'
+/*
+    },{
+      cls:"x-btn-text-icon",
+      handler:function(){
+        try{
+          var tmpPanel = createTable();
+          var mainPanel = Ext.getCmp('mainConteiner');
+          var newWidth = Math.round((mainPanel.getInnerWidth() - 30)/3);
+          mainPanel.add(tmpPanel);
+          mainPanel.doLayout();
+          tmpPanel.setWidth(newWidth);
+          tmpPanel.setHeight(newWidth);
+          var current = Ext.getCmp('currentID');
+          if(current){
+            current.setText('Current Layout: <b>' + layout + '*</b>');
+          }
+        }catch(e){
+          alert('Error: ' + e.name + ': ' + e.message);
+          return
+        }
+        var win = Ext.getCmp(winID);
+        try{
+          win.close();
+        }catch(e){
+          alert('Error: ' + e.name + ': ' + e.message)
+        }
+      },
+      icon:gURLRoot+'/images/iface/advanced.gif',
+      minWidth:'50',
+      tooltip:' ',
+      text:'Add Table'
+*/
     },{
       cls:"x-btn-text-icon",
       handler:function(){
