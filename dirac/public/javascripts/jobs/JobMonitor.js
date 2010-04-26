@@ -212,11 +212,10 @@ function addMenu(){
     var button = new Ext.Toolbar.Button({
       text:'Tools',
       menu:[
-        {handler:function(){submitJobNew()},text:'Job Launchpad'},
+//        {handler:function(){submitJobNew()},text:'Job Launchpad'},
 //        {handler:function(){launchJob()},text:'Launchpad in progress'},
         {handler:function(){showURL()},text:'Full URL'},
         {menu:{items:[
-          {handler:function(){showJobID(' ')},text:'Space separated'},
           {handler:function(){showJobID(', ')},text:'Comma separated'},
           {handler:function(){showJobID('; ')},text:'Semicolon separated'}
         ]},text:'Show selected JobIDs'}
@@ -244,10 +243,7 @@ function setMenuItems(selections){
       {handler:function(){AJAXrequest('LogURL',id)},text:'Get LogFile'},
       {handler:function(){AJAXrequest('getPending',id)},text:'Get PendingRequest'},
       {handler:function(){AJAXrequest('getStagerReport',id)},text:'Get StagerReport'},
-      {text:'Get Sandbox',icon:gURLRoot + '/images/iface/addfile.gif',menu:({items:[
-         {handler:function(){showInputSandbox(id,'Input')},text:'Input'},
-         {handler:function(){showInputSandbox(id,'Output')},text:'Output'},
-       ]})},
+      {handler:function(){AJAXrequest('getSandBox',id)},text:'Get SandBox file'},
       '-',
       {text:'Actions',icon:gURLRoot + '/images/iface/action.gif',menu:({items:[
         {handler:function(){action('job','kill',id)},icon:gURLRoot + '/images/iface/close.gif',text:'Kill'},
@@ -267,11 +263,6 @@ function setMenuItems(selections){
       }else{
         dirac.menu.items.items[12].menu.insert(0,reschedule);
       }
-    }
-    if((status == 'Done')||(status == 'Completed')||(status == 'Failed')){
-      dirac.menu.items.items[10].menu.items.items[1].enable();
-    }else{
-      dirac.menu.items.items[10].menu.items.items[1].disable();
     }
     if((status == 'Done')||(status == 'Failed')){
       dirac.menu.items.items[9].enable();
@@ -403,3 +394,4 @@ function afterDataLoad(){
     statPanel.store.loadData(msg);
   }
 }
+
