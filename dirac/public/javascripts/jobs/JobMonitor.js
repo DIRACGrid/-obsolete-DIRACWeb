@@ -140,7 +140,9 @@ function initData(store){
   try{
     if(gPageDescription.userData.group == 'diracAdmin'){
       var resetButton = {
+        cls:"x-btn-text-icon",
         handler:function(){action('job','reset')},
+        icon:gURLRoot+'/images/iface/resetButton.gif',
         text:'Reset',
         tooltip:'Click to reset selected job(s)'
       };
@@ -256,7 +258,7 @@ function setMenuItems(selections){
       ]})}
     );
     if(gPageDescription.userData.group != 'lhcb_prod'){
-      var reset = new Ext.menu.Item({handler:function(){action('job','reset',id)},text:'Reset'});
+      var reset = new Ext.menu.Item({handler:function(){action('job','reset',id)},icon:gURLRoot + '/images/iface/resetButton.gif',text:'Reset'});
       var reschedule = new Ext.menu.Item({handler:function(){action('job','reschedule',id)},icon:gURLRoot + '/images/iface/reschedule.gif',text:'Reschedule'});
       if(gPageDescription.userData.group == 'diracAdmin'){
         dirac.menu.items.items[12].menu.insert(0,reset);
