@@ -512,7 +512,7 @@ function paramsSite(type){
   params = params + "&type=" + type;
   return params;
 }
-function refreshSelect(){
+function refreshSelect(id){
   var sideBar = Ext.getCmp('sideBar');
   var params = 'refreshSelection=true';
   if(sideBar){
@@ -527,31 +527,32 @@ function refreshSelect(){
       success:function(response){
         var result = Ext.util.JSON.decode(response.responseText);
         if(result){
-          for(var i = 0; i < dataMngr.form.items.items.length; i++){
-            if(dataMngr.form.items.items[i].store){
-              if(dataMngr.form.items.items[i].hiddenName){
-                var name = dataMngr.form.items.items[i].hiddenName;
-                if(result[name]){
-                  var data = result[name];
-                  var ccc = dataMngr.form.items.items[i].getCheckedValue();
-                  for(var j = 0; j < data.length; j++){
-                    data[j] = [j ,data[j][0]];
-                  }
-                  dataMngr.form.items.items[i].store.loadData(data);
-                  var ttt = dataMngr.form.items.items[i].getRawValue();
-                  if(dataMngr.form.items.items[i].displayValue){
-                    value = dataMngr.form.items.items[i].displayValue;
-                    value = value.split(', ');
-                    for(var k = 0; k < value.length; k++){
-                      for(var l = 0; l < data.length; l++){
-                        if(value == data[l][1]){
-                          dataMngr.form.items.items[i].setValue(l);
-                        }
-                      }
+          var select = Ext.getCmp(id);
+          if(!select){
+            alert('Error: Unable to refresh components. Component with id: ' + id + ' does not exist');
+            return
+          }
+          var length = select.items.getCount();
+          for(i=0; i<length; i++){
+            var tmp = select.getComponent(i);
+            var name = tmp.hiddenName;
+            if(result[name] && tmp.store){
+              var data = result[name];
+              for(var j = 0; j < data.length; j++){
+                data[j] = [j ,data[j][0]];
+              }
+              tmp.store.loadData(data);
+              if(tmp.displayValue){
+                value = tmp.displayValue;
+                value = value.split(', ');
+                for(var k = 0; k < value.length; k++){
+                  for(var l = 0; l < data.length; l++){
+                    if(value == data[l][1]){
+                      tmp.setValue(l);
                     }
-                    dataMngr.form.items.items[i].onRealBlur();
                   }
                 }
+                tmp.onRealBlur();
               }
             }
           }
@@ -561,7 +562,7 @@ function refreshSelect(){
       url:'action'
     });
   }else{
-    alert('Unable to refresh components');
+    alert('Error: Unable to refresh components. sideBar seems does not exist');
   }
 }
 function sideBar(newID){
@@ -842,7 +843,7 @@ function selectPanel(newID){
   var refresh = new Ext.Button({
     cls:"x-btn-icon",
     handler:function(){
-      refreshSelect();
+      refreshSelect(id);
     },
     icon:gURLRoot+'/images/iface/refresh.gif',
     minWidth:'20',
