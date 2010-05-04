@@ -953,7 +953,7 @@ function statPanel(title,mode,id){
       {name:'Count'}
     ]);
   }
-  if(mode == 'text'){
+  if(mode == 'text' || id == 'statisticGrid'){
     var columns = [
       {header:'Status',sortable:true,dataIndex:'Status',align:'left'},
       {header:'Count',sortable:true,dataIndex:'Number',align:'left'}
@@ -966,7 +966,7 @@ function statPanel(title,mode,id){
     ];
   }else if((mode == 'fileStatus') || (mode == 'globalFile')){
     var columns = [
-      {header:'',width:26,sortable:false,dataIndex:'Status',renderer:fileStatus,hideable:false}, 
+      {header:'',width:26,sortable:false,dataIndex:'Status',renderer:fileStatus,hideable:false},
       {header:'Status',width:60,sortable:true,dataIndex:'Status',align:'left'},
       {header:'Count',sortable:true,dataIndex:'Number',align:'left'}
     ];
