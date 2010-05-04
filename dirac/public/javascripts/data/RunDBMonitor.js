@@ -42,9 +42,8 @@ function initSidebar(){
   var dateStartSelect = dateStartSelectMenu(); // Initializing date dialog
   var dateEndSelect = dateEndSelectMenu();
   var id = selectID(); // Initialize field for JobIDs
+  var dateSelect = dateTimeWidget(); // Initializing date dialog
   var select = selectPanel(); // Initializing container for selection objects
-  var endLSelect = selectEndLumiMenu();
-  var startLSelect = selectStartLumiMenu();
   var beamSelect = selectBeamEnergyMenu();
   select.buttons[2].hide(); // Remove refresh button
   // Insert object to container BEFORE buttons:
@@ -55,10 +54,7 @@ function initSidebar(){
   select.insert(4,partSelect);
   select.insert(5,fillSelect);
   select.insert(6,beamSelect);
-  select.insert(7,dateStartSelect);
-  select.insert(8,dateEndSelect);
-  //select.insert(9,startLSelect);
-  //select.insert(10,endLSelect);
+  select.insert(7,dateSelect);
 //  var sortGlobal = sortGlobalPanel(); // Initializing the global sort panel
   var stat = statPanel('Selected Statuses','current','statGrid');
   var glStat = statPanel('Selected Statistics','headOff','statisticGrid');
