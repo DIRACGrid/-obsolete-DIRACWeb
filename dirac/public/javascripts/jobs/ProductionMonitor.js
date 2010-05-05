@@ -1,15 +1,71 @@
 var dataSelect = ''; // Required to store the data for filters fields. Object.
 var dataMngr = ''; // Required to connect form and table. Object.
 var tableMngr = ''; // Required to handle configuration data for table. Object.
+var testObject = {}; // Used to store values between refresh action
 // Main routine
 function initProductionMonitor(reponseSelect){
   dataSelect = reponseSelect;
   dataSelect.globalSort = '';
   var record = initRecord();
   var store = initStore(record);
+  store.addListener('beforeload',function(store){
+    if(store.totalLength){
+      testObject = {}
+      for(var i = 0; i < store.totalLength; i++){
+        var record = store.getAt(i);
+        try{
+          testObject[record.data.TransformationID] = {};
+          testObject[record.data.TransformationID]['Jobs_Created'] = record.data['Jobs_Created'];
+          testObject[record.data.TransformationID]['Jobs_Done'] = record.data['Jobs_Done'];
+          testObject[record.data.TransformationID]['Jobs_Failed'] = record.data['Jobs_Failed'];
+          testObject[record.data.TransformationID]['Jobs_Running'] = record.data['Jobs_Running'];
+          testObject[record.data.TransformationID]['Jobs_Stalled'] = record.data['Jobs_Stalled'];
+          testObject[record.data.TransformationID]['Jobs_Submitted'] = record.data['Jobs_Submitted'];
+          testObject[record.data.TransformationID]['Jobs_Waiting'] = record.data['Jobs_Waiting'];
+          testObject[record.data.TransformationID]['Files_PercentProcessed'] = record.data['Files_PercentProcessed'];
+          testObject[record.data.TransformationID]['Files_Total'] = record.data['Files_Total'];
+          testObject[record.data.TransformationID]['Files_Unused'] = record.data['Files_Unused'];
+          testObject[record.data.TransformationID]['Files_Assigned'] = record.data['Files_Assigned'];
+          testObject[record.data.TransformationID]['Files_Processed'] = record.data['Files_Processed'];
+          testObject[record.data.TransformationID]['Files_Problematic'] = record.data['Files_Problematic'];
+        }catch(e){}
+      }
+    }
+  });
   Ext.onReady(function(){
+    Ext.override(Ext.PagingToolbar, {
+      onRender :  Ext.PagingToolbar.prototype.onRender.createSequence(function(ct, position){
+        this.loading.removeClass("x-btn-icon")
+        this.loading.setText('Refresh');
+        this.loading.addClass("x-btn-text-icon");
+      })
+    });
     renderData(store);
   });
+}
+function diffValues(value,metaData,record,rowIndex,colIndex,store){
+  var id = record.data.TransformationID;
+  if(id && testObject[id]){
+    var name = this.name;
+    try{
+      var diff = value - testObject[id][name];
+      var test = diff + '';
+      if(test.indexOf(".") > 0){
+        diff = diff.toFixed(2);
+      }
+      if(diff > 0){
+        return value + ' <font color="#00CC00">(+' + diff + ')</font>';
+      }else if(diff < 0){
+        return value + ' <font color="#FF3300">(' + diff + ')</font>';
+      }else{
+        return value;
+      }
+    }catch(e){
+      return value;
+    }
+  }else{
+    return value;
+  }
 }
 // function describing data structure, should be individual per page 
 function initRecord(){
@@ -96,19 +152,19 @@ function initData(store){
     {header:'Type',sortable:true,dataIndex:'Type',align:'left'},//,hidden:true},
     {header:'Group',sortable:true,dataIndex:'TransformationGroup',align:'left',hidden:true},
     {header:'Name',sortable:true,dataIndex:'TransformationName',align:'left'},
-    {header:'Files',sortable:true,dataIndex:'Files_Total',align:'left'},
-    {header:'Processed (%)',sortable:true,dataIndex:'Files_PercentProcessed',align:'left'},
-    {header:'Files Processed',sortable:true,dataIndex:'Files_Processed',align:'left',hidden:true},
-    {header:'Files Assigned',sortable:true,dataIndex:'Files_Assigned',align:'left',hidden:true},
-    {header:'Files Problematic',sortable:true,dataIndex:'Files_Problematic',align:'left',hidden:true},
-    {header:'Files Unused',sortable:true,dataIndex:'Files_Unused',align:'left',hidden:true},
-    {header:'Created',sortable:true,dataIndex:'Jobs_Created',align:'left'},
-    {header:'Submitted',sortable:true,dataIndex:'Jobs_Submitted',align:'left'},
-    {header:'Waiting',sortable:true,dataIndex:'Jobs_Waiting',align:'left',hidden:true},
-    {header:'Running',sortable:true,dataIndex:'Jobs_Running',align:'left',hidden:true},
-    {header:'Done',sortable:true,dataIndex:'Jobs_Done',align:'left'},
-    {header:'Failed',sortable:true,dataIndex:'Jobs_Failed',align:'left'},
-    {header:'Stalled',sortable:true,dataIndex:'Jobs_Stalled',align:'left'},
+    {header:'Files',sortable:true,dataIndex:'Files_Total',align:'left',renderer:diffValues},
+    {header:'Processed (%)',sortable:true,dataIndex:'Files_PercentProcessed',align:'left',renderer:diffValues},
+    {header:'Files Processed',sortable:true,dataIndex:'Files_Processed',align:'left',hidden:true,renderer:diffValues},
+    {header:'Files Assigned',sortable:true,dataIndex:'Files_Assigned',align:'left',hidden:true,renderer:diffValues},
+    {header:'Files Problematic',sortable:true,dataIndex:'Files_Problematic',align:'left',hidden:true,renderer:diffValues},
+    {header:'Files Unused',sortable:true,dataIndex:'Files_Unused',align:'left',hidden:true,renderer:diffValues},
+    {header:'Created',sortable:true,dataIndex:'Jobs_Created',align:'left',renderer:diffValues},
+    {header:'Submitted',sortable:true,dataIndex:'Jobs_Submitted',align:'left',renderer:diffValues},
+    {header:'Waiting',sortable:true,dataIndex:'Jobs_Waiting',align:'left',renderer:diffValues},
+    {header:'Running',sortable:true,dataIndex:'Jobs_Running',align:'left',renderer:diffValues},
+    {header:'Done',sortable:true,dataIndex:'Jobs_Done',align:'left',renderer:diffValues},
+    {header:'Failed',sortable:true,dataIndex:'Jobs_Failed',align:'left',renderer:diffValues},
+    {header:'Stalled',sortable:true,dataIndex:'Jobs_Stalled',align:'left',renderer:diffValues},
     {header:'InheritedFrom',sortable:true,dataIndex:'InheritedFrom',align:'left',hidden:true},
     {header:'GroupSize',sortable:true,dataIndex:'GroupSize',align:'left',hidden:true},
     {header:'FileMask',sortable:true,dataIndex:'FileMask',align:'left',hidden:true},
@@ -157,6 +213,7 @@ function initData(store){
   t.addListener('cellclick',function(table,rowIndex,columnIndex){
       showMenu('main',table,rowIndex,columnIndex);
   });
+//  var bbar = t.;
   return t
 }
 function renderData(store){
