@@ -2,6 +2,9 @@ var dataSelect = ''; // Required to store the data for filters fields. Object.
 var dataMngr = ''; // Required to connect form and table. Object.
 var tableMngr = ''; // Required to handle configuration data for table. Object.
 var testObject = {}; // Used to store values between refresh action
+var heartbeat = '';
+var refreshRate = 0;
+var tableID = 'tmpID';
 // Main routine
 function initProductionMonitor(reponseSelect){
   dataSelect = reponseSelect;
@@ -33,11 +36,12 @@ function initProductionMonitor(reponseSelect){
     }
   });
   Ext.onReady(function(){
+    heartbeat = new Ext.util.TaskRunner();
     Ext.override(Ext.PagingToolbar, {
       onRender :  Ext.PagingToolbar.prototype.onRender.createSequence(function(ct, position){
-        this.loading.removeClass("x-btn-icon")
+        this.loading.removeClass('x-btn-icon');
         this.loading.setText('Refresh');
-        this.loading.addClass("x-btn-text-icon");
+        this.loading.addClass('x-btn-text-icon');
       })
     });
     renderData(store);
@@ -51,7 +55,7 @@ function diffValues(value,metaData,record,rowIndex,colIndex,store){
       var diff = value - testObject[id][name];
       var test = diff + '';
       if(test.indexOf(".") > 0){
-        diff = diff.toFixed(2);
+        diff = diff.toFixed(1);
       }
       if(diff > 0){
         return value + ' <font color="#00CC00">(+' + diff + ')</font>';
@@ -161,7 +165,7 @@ function initData(store){
     {header:'Created',sortable:true,dataIndex:'Jobs_Created',align:'left',renderer:diffValues},
     {header:'Submitted',sortable:true,dataIndex:'Jobs_Submitted',align:'left',renderer:diffValues},
     {header:'Waiting',sortable:true,dataIndex:'Jobs_Waiting',align:'left',renderer:diffValues},
-    {header:'Running',sortable:true,dataIndex:'Jobs_Running',align:'left',renderer:diffValues},
+    {header:'Running',sortable:true,dataIndex:'Jobs_Running',align:'left',renderer:diffValues,hidden:true},
     {header:'Done',sortable:true,dataIndex:'Jobs_Done',align:'left',renderer:diffValues},
     {header:'Failed',sortable:true,dataIndex:'Jobs_Failed',align:'left',renderer:diffValues},
     {header:'Stalled',sortable:true,dataIndex:'Jobs_Stalled',align:'left',renderer:diffValues},
@@ -177,7 +181,6 @@ function initData(store){
     {header:'LongDescription',sortable:true,dataIndex:'LongDescription',align:'left',hidden:true},
     {header:'CreationDate [UTC]',sortable:true,renderer:Ext.util.Format.dateRenderer('Y-n-j h:i'),dataIndex:'CreationDate'},
     {header:'LastUpdate [UTC]',sortable:true,renderer:Ext.util.Format.dateRenderer('Y-n-j h:i'),dataIndex:'LastUpdate'}
-
 //    {header:'Bk_ConfigName',sortable:true,dataIndex:'Bk_ConfigName',align:'left',hidden:true},
 //    {header:'Bk_Events',sortable:true,dataIndex:'Bk_Events',align:'left'},
 //    {header:'Bk_ConfigVersion',sortable:true,dataIndex:'Bk_ConfigVersion',align:'left',hidden:true},
@@ -208,13 +211,65 @@ function initData(store){
     {handler:function(){action('production','clean')},text:'Clean',tooltip:'Click to clean selected production(s)'}
   ];
   store.setDefaultSort('TransformationID','DESC'); // Default sorting
-  tableMngr = {'store':store,'columns':columns,'tbar':tbar};
+  var autorefreshMenu = [
+    {checked:setChk(900000),checkHandler:function(){setRefresh(900000,store);},group:'refresh',text:'15 Minutes'},
+    {checked:setChk(1800000),checkHandler:function(){setRefresh(1800000,store);},group:'refresh',text:'30 Minutes'},
+    {checked:setChk(3600000),checkHandler:function(){setRefresh(3600000,store);},group:'refresh',text:'One Hour'},
+    {checked:setChk(0),checkHandler:function(){setRefresh(0);},group:'refresh',text:'Disabled'},
+  ];
+  tableMngr = {'store':store,'columns':columns,'tbar':tbar,'autorefresh':autorefreshMenu};
   var t = table(tableMngr);
   t.addListener('cellclick',function(table,rowIndex,columnIndex){
       showMenu('main',table,rowIndex,columnIndex);
   });
-//  var bbar = t.;
+  tableID = t.id;
   return t
+}
+function setChk(value){
+  if(value == refreshRate){
+    return true
+  }else{
+    return false
+  } 
+}
+function setRefresh(time,store){
+  var stamp = Ext.getCmp('stampTableButton');
+  if(time == 900000 || time == 3600000 || time == 1800000){
+    refreshRate = time;
+    heartbeat.start({
+      run:function(){
+        if(tableID != 'tmpID'){
+          var table = Ext.getCmp(tableID);
+          var bbar = table.getBottomToolbar();
+          if(bbar){
+            store.baseParams = {'limit':bbar.pageSize,'start':bbar.cursor};
+          }
+        }
+        store.load();
+        if(stamp){
+
+          var d = new Date();
+          var hh = d.getHours();
+          if(hh < 10){ 
+            hh = '0' + hh;
+          }
+          var mm = d.getMinutes()
+          if(mm < 10){
+            mm = '0' + mm;
+          }
+          stamp.setText('Updated: ' + hh + ":" + mm);
+          stamp.show();
+        }
+      },
+      interval:time
+    });
+  }else{
+    if(stamp){
+      stamp.hide();
+    }
+    refreshRate = 0;
+    heartbeat.stopAll();
+  }
 }
 function renderData(store){
   var leftBar = initSidebar();
