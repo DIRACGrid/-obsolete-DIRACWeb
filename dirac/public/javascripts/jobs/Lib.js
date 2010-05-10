@@ -374,7 +374,10 @@ function initStore(record,options){
   });
   store.on('beforeload',function(){
     try{
-      store.baseParams = dataMngr.form.getForm().getValues();
+      var tmpSelection = dataMngr.form.getForm().getValues();
+      for(var k in tmpSelection){
+        store.baseParams[k] = tmpSelection[k];
+      }
       store.baseParams.sort = dataSelect.globalSort;
     }catch(e){}
   });
@@ -1712,10 +1715,36 @@ function table(tableMngr){
     }
   }
   var bbarID = id + 'bbar';
+  var items = ['-','Items per page: ',itemsNumber(store,bbarID)];
+  if(tableMngr.autorefresh){
+    var stamp = new Ext.Toolbar.Button({
+      disabled:true,
+      disabledClass:'my-disabled',
+      hidden:true,
+      id:'stampTableButton',
+      text:'Updated: -'
+    });
+    var autorefresh = new Ext.Toolbar.Button({
+      cls:"x-btn-text",
+      id:'autorefreshTableButton',
+      menu:tableMngr.autorefresh,
+      text:'Disabled',
+      tooltip:'Click to set the time for autorefresh'
+    });
+    autorefresh.on('menuhide',function(button,menu){
+      var length = menu.items.getCount();
+      for(var i = 0; i < length; i++){
+        if(menu.items.items[i].checked){
+          button.setText(menu.items.items[i].text);
+        }
+      }
+    });
+    items = ['-','Auto:',autorefresh,stamp,'-','Items per page: ',itemsNumber(store,bbarID)];
+  }
   tableMngr.bbar = new Ext.PagingToolbar({
     displayInfo:true,
     id:bbarID,
-    items:['-','Items displaying per page: ',itemsNumber(store,bbarID)],
+    items:items,
     pageSize:pageSize,
     refreshText:'Click to refresh current page',
     store:store
