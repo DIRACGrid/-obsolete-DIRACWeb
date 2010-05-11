@@ -17,9 +17,9 @@ var gAllowActions = false;
 
 function initSiteMap( allowActions ) 
 {
-  gAllowActions = allowActions;
 	Ext.onReady( function()
 	{
+		gAllowActions = allowActions;
 		var toolBarItems = [ { text : 'Where am I?', 
 			                  handler : function(){ navigator.geolocation.getCurrentPosition( autoPosition ); },
 							 },
