@@ -43,8 +43,8 @@ function showSiteControlWindow( siteName, allowActions )
 	items.push( siteInfoTab );
 	var statusPlotsTab = createSiteStatusPlots( siteName, siteData );
 	items.push( statusPlotsTab );
-  var accountingPlotsTab = createAccountingPlots( siteName );
-  items.push( accountingPlotsTab );
+	var accountingPlotsTab = createAccountingPlots( siteName );
+	items.push( accountingPlotsTab );
 	var siteMaskLogTab = createSiteMaskLogTab( siteName );
 	items.push( siteMaskLogTab );
 	if( allowActions )
