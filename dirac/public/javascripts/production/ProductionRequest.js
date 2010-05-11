@@ -1862,7 +1862,7 @@ PR.RequestEditor = Ext.extend(Ext.FormPanel, {
 	  { layout: 'form', autoHeight: true, labelWidth: 89,
 	    items: {xtype: 'combo', fieldLabel: 'Application',
 		    name: 'p'+no+'App',
-		    store: ['&nbsp;','Gauss','Boole','Brunel','DaVinci','LHCb'],
+		    store: ['&nbsp;','Gauss','Boole','Brunel','DaVinci','Moore','LHCb'],
 		    forceSelection: true, mode: 'local',
 		    triggerAction: 'all',emptyText: 'Select application',
 		    selectOnFocus: true, stepno: no,
