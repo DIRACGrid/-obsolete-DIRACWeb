@@ -24,7 +24,7 @@ class SitemapController( BaseController ):
     return redirect_to( action = 'display', id = None )
 
   def display( self ):
-    if Properties.OPERATOR in getProperties():
+    if "SiteManager" in getProperties():
       c.allowActions = True
     else:
       c.allowActions = False
