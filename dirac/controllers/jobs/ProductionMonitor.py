@@ -187,7 +187,7 @@ class ProductionmonitorController(BaseController):
 ####
 #    result = RPC.getDistinctAttributeValues("Status",{})
 #    if result["OK"]:
-    status = [["New"],["Active"],["ValidatingInput"],["ValidatingOuptut"],["WaitingIntegrity"],["ValidatedOutputs"],["RemovingFiles"],["RemovedFiles"],["Completed"],["Archived"],["Cleaning"],["Stopped"]]
+    status = [["New"],["Active"],["ValidatingInput"],["ValidatingOuptut"],["WaitingIntegrity"],["ValidatedOutputs"],["RemovingFiles"],["RemovedFiles"],["Completing"],["Completed"],["Archived"],["Cleaning"],["Stopped"]]
 #      if len(result["Value"])>0:
 #        status.append([str("All")])
 #        for i in result["Value"]:
