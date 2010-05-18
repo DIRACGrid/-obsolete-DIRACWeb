@@ -4,9 +4,9 @@ var tableMngr = ''; // Required to handle configuration data for table. Object.
 // Main routine
 function initSiteSummary(reponseSelect){
   dataSelect = reponseSelect;
-  var record = initRecord();
-  var store = initStore(record,'FullCountry');
   Ext.onReady(function(){
+    var record = initRecord();
+    var store = initStore(record,{'groupBy':'FullCountry'});
     renderData(store);
   });
 }
@@ -38,7 +38,6 @@ function initRecord(){
 }
 // Initialisation of selection sidebar, all changes with selection items should goes here
 function initSidebar(){
-//  var siteSelect = selectSiteSummaryMenu(); // Initializing Site Menu
   var selectStatusSiteSummary = selectStatusSiteSummaryMenu(); // Initializing Owner Menu
   var selectGridType = selectGridTypeMenu(); // Initializing Application status Menu
   var selectMaskStatus = selectMaskStatusMenu(); // Initializing JobStatus Menu
@@ -46,22 +45,14 @@ function initSidebar(){
   var dateSelect = dateSelectMenu(); // Initializing date dialog
   var id = selectID(); // Initialize field for JobIDs
   var select = selectPanel(); // Initializing container for selection objects
-  select.buttons[2].hide(); // Remove refresh button
+//  select.buttons[2].hide(); // Remove refresh button
   // Insert object to container BEFORE buttons:
-//  select.insert(0,siteSelect);
-  select.insert(1,selectStatusSiteSummary);
-  select.insert(2,selectGridType);
-  select.insert(3,selectMaskStatus);
-  select.insert(4,selectCountry);
-//  select.insert(5,id);
-//  var sortGlobal = sortGlobalPanel(); // Initializing the global sort panel
-//  var stat = statPanel('Current Statistics','current','statGrid');
-//  var glStat = statPanel('Global Statistics','global','glStatGrid');
+  select.insert(0,selectStatusSiteSummary);
+  select.insert(1,selectGridType);
+  select.insert(2,selectMaskStatus);
+  select.insert(3,selectCountry);
   var bar = sideBar();
   bar.insert(0,select);
-//  bar.insert(1,sortGlobal);
-//  bar.insert(2,stat);
-//  bar.insert(3,glStat);
   bar.setTitle('SiteSummary');
   return bar
 }
