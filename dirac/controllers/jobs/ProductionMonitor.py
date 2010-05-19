@@ -122,6 +122,30 @@ class ProductionmonitorController(BaseController):
           req["TransformationID"] = testString
       else:
         req["TransformationID"] = testString
+    elif request.params.has_key("requestID") and len(request.params["requestID"]) > 0:
+      testString = str(request.params["requestID"])
+      testString = testString.strip(';, ')
+      testString = testString.split(', ')
+      if len(testString) == 1:
+        testString = testString[0].split('; ')
+        if len(testString) == 1:
+          testString = testString[0].split(' ')
+          if len(testString) == 1:
+            testString = testString[0].split(',')
+            if len(testString) == 1:
+              testString = testString[0].split(';')
+              if len(testString) == 1:
+                req["TransformationFamily"] = testString[0]
+              else:
+                req["TransformationFamily"] = testString
+            else:
+              req["TransformationFamily"] = testString
+          else:
+            req["TransformationFamily"] = testString
+        else:
+          req["TransformationFamily"] = testString
+      else:
+        req["TransformationFamily"] = testString
     else:
       if request.params.has_key("agentType") and len(request.params["agentType"]) > 0:
         if str(request.params["agentType"]) != "All":
@@ -158,19 +182,19 @@ class ProductionmonitorController(BaseController):
         tmp[i] = str(request.params[i])
       callback["extra"] = tmp
     RPC = getRPCClient("ProductionManagement/ProductionManager")
-    result = RPC.getTransformationSummaryWeb()
-    if result["OK"]:
-      prod = []
-      prods = result["Value"]
-      if len(prods)>0:
-        for keys,i in prods.items():
-          id = str(int(keys)).zfill(8)
-          prod.append([str(id)])
-      else:
-        prod = "Nothing to display"
-    else:
-      prod = "Error during RPC call"
-    callback["prod"] = prod
+#    result = RPC.getTransformationSummaryWeb()
+#    if result["OK"]:
+#      prod = []
+#      prods = result["Value"]
+#      if len(prods)>0:
+#        for keys,i in prods.items():
+#          id = str(int(keys)).zfill(8)
+#          prod.append([str(id)])
+#      else:
+#        prod = "Nothing to display"
+#    else:
+#      prod = "Error during RPC call"
+#    callback["prod"] = prod
 ####
     result = RPC.getDistinctAttributeValues("Plugin",{})
     if result["OK"]:
@@ -185,17 +209,18 @@ class ProductionmonitorController(BaseController):
       plugin = "Error during RPC call"
     callback["plugin"] = plugin
 ####
-#    result = RPC.getDistinctAttributeValues("Status",{})
-#    if result["OK"]:
-    status = [["New"],["Active"],["ValidatingInput"],["ValidatingOuptut"],["WaitingIntegrity"],["ValidatedOutputs"],["RemovingFiles"],["RemovedFiles"],["Completing"],["Completed"],["Archived"],["Cleaning"],["Stopped"]]
-#      if len(result["Value"])>0:
-#        status.append([str("All")])
-#        for i in result["Value"]:
-#          status.append([str(i)])
-#      else:
-#        status = "Nothing to display"
-#    else:
-#      status = "Error during RPC call"
+    result = RPC.getDistinctAttributeValues("Status",{})
+    if result["OK"]:
+      status = []
+#    status = [["New"],["Active"],["ValidatingInput"],["ValidatingOuptut"],["WaitingIntegrity"],["ValidatedOutputs"],["RemovingFiles"],["RemovedFiles"],["Completed"],["Archived"],["Cleaning"],["Stopped"]]
+      if len(result["Value"])>0:
+        status.append([str("All")])
+        for i in result["Value"]:
+          status.append([str(i)])
+      else:
+        status = "Nothing to display"
+    else:
+      status = "Error during RPC call"
     callback["prodStatus"] = status
 ####
     result = RPC.getDistinctAttributeValues("TransformationGroup",{})
@@ -253,6 +278,9 @@ class ProductionmonitorController(BaseController):
     elif request.params.has_key("clean") and len(request.params["clean"]) > 0:
       id = str(request.params["clean"])
       return self.__actProduction(id,"clean")
+    elif request.params.has_key("complete") and len(request.params["complete"]) > 0:
+      id = str(request.params["complete"])
+      return self.__actProduction(id,"complete")
     elif (request.params.has_key("extend") and len(request.params["extend"]) > 0) and (request.params.has_key("tasks") and len(request.params["tasks"]) > 0):
       id = str(request.params["extend"])
       tasks = str(request.params["tasks"])
@@ -371,16 +399,22 @@ class ProductionmonitorController(BaseController):
       status = 'Stopped'
     elif cmd == 'flush':
       status = 'Flush'
+    elif cmd == 'complete':
+      status = 'Completed'
     else:
       return {"success":"false","error": "Unknown action"}
     c.result = []
+    gLogger.info("******",cmd)
     for i in prodid:
       try:
         id = int(i)
+#        gLogger.info("RPC.setTransformationParameter(%s,'Status',%s)" % (id,status))
         result = RPC.setTransformationParameter(id,'Status',status)
+        gLogger.info("-----",result)
         if result["OK"]:
           resString = "ProdID: %s set to %s successfully" % (i,cmd)
           result = RPC.setTransformationParameter(id,'AgentType',agentType)
+          gLogger.info("-----",result)
           if not result["OK"]:
             resString = "ProdID: %s failed to set to %s: %s" % (i,cmd,result["Message"])
         else:
