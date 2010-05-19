@@ -10,7 +10,8 @@ function initProductionMonitor(reponseSelect){
   dataSelect = reponseSelect;
   dataSelect.globalSort = '';
   var record = initRecord();
-  var store = initStore(record);
+  var store = initStore(record,{'groupBy':'TransformationFamily'});
+//  var store = initStore(record);
   store.addListener('beforeload',function(store){
     if(store.totalLength){
       testObject = {}
@@ -106,7 +107,8 @@ function initRecord(){
     {name:'Jobs_Running'},
     {name:'Jobs_Done'},
     {name:'Jobs_Failed'},
-    {name:'Jobs_Stalled'}
+    {name:'Jobs_Stalled'},
+    {name:'TransformationFamily'},
 //    {name:'Bk_ConfigName'},
 //    {name:'Bk_Events'},
 //    {name:'Bk_ConfigVersion'},
@@ -127,6 +129,7 @@ function initSidebar(){
   var plugin = selectPluginMenu();
   var dateSelect = dateSelectMenu(); // Initializing date dialog
   var id = selectProductionID(); // Initialize field for JobIDs
+  var requestID = genericID('requestID','RequestID');
   var select = selectPanel(); // Initializing container for selection objects
   select.buttons[2].hide(); // Remove refresh button
   // Insert object to container BEFORE buttons:
@@ -137,6 +140,7 @@ function initSidebar(){
   select.insert(4,plugin);
   select.insert(5,dateSelect);
   select.insert(6,id);
+  select.insert(7,requestID);
   var stat = statPanel('Current Statistics','current','statGrid');
   var glStat = statPanel('Global Statistics','global','glStatGrid');
   var bar = sideBar();
@@ -150,6 +154,7 @@ function initData(store){
   var columns = [
     {header:'',id:'checkBox',width:26,sortable:false,dataIndex:'TransformationIDcheckBox',renderer:chkBox,hideable:false,fixed:true,menuDisabled:true},
     {header:'ID',width:60,sortable:true,dataIndex:'TransformationID',align:'left',hideable:false},
+    {header:'Request',sortable:true,dataIndex:'TransformationFamily',align:'left',hidden:true},
     {header:'',width:26,sortable:false,dataIndex:'StatusIcon',renderer:status,hideable:false,fixed:true,menuDisabled:true},
     {header:'Status',width:60,sortable:true,dataIndex:'Status',align:'left'},
     {header:'AgentType',width:60,sortable:true,dataIndex:'AgentType',align:'left'},
@@ -208,16 +213,20 @@ function initData(store){
     {handler:function(){action('production','start')},text:'Start',tooltip:'Click to start selected production(s)'},
     {handler:function(){action('production','stop')},text:'Stop',tooltip:'Click to kill selected production(s)'},
     {handler:function(){action('production','flush')},text:'Flush',tooltip:'Click to flush selected production(s)'},
+    {handler:function(){action('production','complete')},text:'Complete',tooltip:'Click to set selected production(s) as complete'},
     {handler:function(){action('production','clean')},text:'Clean',tooltip:'Click to clean selected production(s)'}
   ];
-  store.setDefaultSort('TransformationID','DESC'); // Default sorting
+  var view = new Ext.grid.GroupingView({
+    groupTextTpl:'<tpl>{text}</tpl>'
+  })
+  store.setDefaultSort('TransformationFamily','DESC'); // Default sorting
   var autorefreshMenu = [
     {checked:setChk(900000),checkHandler:function(){setRefresh(900000,store);},group:'refresh',text:'15 Minutes'},
     {checked:setChk(1800000),checkHandler:function(){setRefresh(1800000,store);},group:'refresh',text:'30 Minutes'},
     {checked:setChk(3600000),checkHandler:function(){setRefresh(3600000,store);},group:'refresh',text:'One Hour'},
     {checked:setChk(0),checkHandler:function(){setRefresh(0);},group:'refresh',text:'Disabled'},
   ];
-  tableMngr = {'store':store,'columns':columns,'tbar':tbar,'autorefresh':autorefreshMenu};
+  tableMngr = {'store':store,'columns':columns,'tbar':tbar,'autorefresh':autorefreshMenu,'view':view};
   var t = table(tableMngr);
   t.addListener('cellclick',function(table,rowIndex,columnIndex){
       showMenu('main',table,rowIndex,columnIndex);
@@ -338,8 +347,8 @@ function setMenuItems(selections){
     {handler:function(){action('production','stop',id)},text:'Stop'},
     {handler:function(){extendTransformation(id)},text:'Extend'},
     {handler:function(){action('production','flush',id)},text:'Flush'},
+    {handler:function(){action('production','complete',id)},text:'Complete'},
     {handler:function(){action('production','clean',id)},text:'Clean'},
-    '-'
   ];
   if(dirac.menu){
     dirac.menu.add(
