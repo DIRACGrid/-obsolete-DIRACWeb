@@ -204,5 +204,5 @@ class AccountingplotsController( BaseController ):
     response.headers['Content-Transfer-Encoding'] = 'Binary'
     response.headers['Cache-Control'] = "no-cache"
     response.headers['Pragma'] = "no-cache"
-    response.headers['Expires'] = 0
+    response.headers['Expires'] = "0"
     return data
