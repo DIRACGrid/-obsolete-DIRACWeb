@@ -3,6 +3,10 @@ import logging
 import datetime
 import simplejson
 import tempfile
+try:
+  from hashlib import md5
+except:
+  from md5 import md5
 from dirac.lib.base import *
 from dirac.lib.diset import getRPCClient, getTransferClient
 
@@ -195,7 +199,7 @@ class AccountingplotsController( BaseController ):
     tempFile.seek( 0 )
     data = tempFile.read()
     response.headers['Content-type'] = 'image/png'
-    response.headers['Content-Disposition'] = 'attachment; filename="%s"' % plotImageFile
+    response.headers['Content-Disposition'] = 'attachment; filename="%s.png"' % md5( plotImageFile ).hexdigest()
     response.headers['Content-Length'] = len( data )
     response.headers['Content-Transfer-Encoding'] = 'Binary'
     response.headers['Cache-Control'] = "no-cache"
