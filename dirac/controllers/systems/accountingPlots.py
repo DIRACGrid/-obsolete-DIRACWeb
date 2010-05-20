@@ -6,14 +6,14 @@ import tempfile
 from dirac.lib.base import *
 from dirac.lib.diset import getRPCClient, getTransferClient
 
-from DIRAC import S_OK, S_ERROR,gLogger
+from DIRAC import S_OK, S_ERROR, gLogger
 from DIRAC.Core.Utilities import Time, List
 from DIRAC.AccountingSystem.Client.ReportsClient import ReportsClient
 from dirac.lib.webBase import defaultRedirect
 
-log = logging.getLogger(__name__)
+log = logging.getLogger( __name__ )
 
-class AccountingplotsController(BaseController):
+class AccountingplotsController( BaseController ):
 
   def __getUniqueKeyValues( self, typeName ):
     rpcClient = getRPCClient( "Accounting/ReportGenerator" )
@@ -22,25 +22,25 @@ class AccountingplotsController(BaseController):
       del( retVal[ 'rpcStub' ] )
     return retVal
 
-  def index(self):
+  def index( self ):
     # Return a rendered template
     #   return render('/some/template.mako')
     # or, Return a response
     return defaultRedirect()
 
-  def dataOperation(self):
+  def dataOperation( self ):
     return self.__showPlotPage( "DataOperation", "/systems/accounting/dataOperation.mako" )
 
-  def job(self):
+  def job( self ):
     return self.__showPlotPage( "Job", "/systems/accounting/job.mako" )
 
-  def WMSHistory(self):
+  def WMSHistory( self ):
     return self.__showPlotPage( "WMSHistory", "/systems/accounting/WMSHistory.mako" )
 
-  def pilot(self):
+  def pilot( self ):
     return self.__showPlotPage( "Pilot", "/systems/accounting/Pilot.mako" )
 
-  def SRMSpaceTokenDeployment(self):
+  def SRMSpaceTokenDeployment( self ):
     return self.__showPlotPage( "SRMSpaceTokenDeployment", "/systems/accounting/SRMSpaceTokenDeployment.mako" )
 
   def __showPlotPage( self, typeName, templateFile ):
@@ -134,7 +134,7 @@ class AccountingplotsController(BaseController):
     retVal = repClient.generateDelayedPlot( *params )
     return retVal
 
-  def getPlotData(self):
+  def getPlotData( self ):
     retVal = self.__parseFormParams()
     if not retVal[ 'OK' ]:
       c.error = retVal[ 'Message' ]
@@ -169,7 +169,7 @@ class AccountingplotsController(BaseController):
   def generatePlot( self ):
     return self.__translateToExpectedExtResult( self.__queryForPlot() )
 
-  def generatePlotAndGetHTML(self):
+  def generatePlotAndGetHTML( self ):
     retVal = self.__queryForPlot()
     if not retVal[ 'OK' ]:
       return "<h2>Can't regenerate plot: %s</h2>" % retVal[ 'Message' ]
@@ -195,7 +195,10 @@ class AccountingplotsController(BaseController):
     tempFile.seek( 0 )
     data = tempFile.read()
     response.headers['Content-type'] = 'image/png'
-    #response.headers['Content-Disposition'] = 'attachment; filename="%s"' % plotImageFile
+    response.headers['Content-Disposition'] = 'attachment; filename="%s"' % plotImageFile
     response.headers['Content-Length'] = len( data )
     response.headers['Content-Transfer-Encoding'] = 'Binary'
+    response.headers['Cache-Control'] = "no-cache"
+    response.headers['Pragma'] = "no-cache"
+    response.headers['Expires'] = 0
     return data
