@@ -165,7 +165,7 @@ class AccountingplotsController( BaseController ):
           lineData.append( "" )
       strData += "%s\n" % ",".join( lineData )
     response.headers['Content-type'] = 'text/csv'
-    response.headers['Content-Disposition'] = 'attachment; filename="%s.csv"' % md5( plotImageFile ).hexdigest()
+    response.headers['Content-Disposition'] = 'attachment; filename="%s.csv"' % md5( str( params ) ).hexdigest()
     response.headers['Content-Length'] = len( strData )
     return strData
 
