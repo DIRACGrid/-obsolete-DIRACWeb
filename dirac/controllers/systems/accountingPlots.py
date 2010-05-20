@@ -199,7 +199,7 @@ class AccountingplotsController( BaseController ):
     tempFile.seek( 0 )
     data = tempFile.read()
     response.headers['Content-type'] = 'image/png'
-    response.headers['Content-Disposition'] = 'attachment; filename="%s.png"' % md5( plotImageFile ).hexdigest()
+    #response.headers['Content-Disposition'] = 'attachment; filename="%s.png"' % md5( plotImageFile ).hexdigest()
     response.headers['Content-Length'] = len( data )
     response.headers['Content-Transfer-Encoding'] = 'Binary'
     response.headers['Cache-Control'] = "no-cache"
