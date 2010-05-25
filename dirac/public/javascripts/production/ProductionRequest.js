@@ -511,7 +511,7 @@ PR.InDataDetail = Ext.extend(Ext.Panel, {
     '<b>Subdetectors:</b> {DetectorCond}<br/>',
     '<br/><b>Process Pass:</b> {inProPass}<br/>',
     '<br/><b>Event type:</b> {evType}<br/>',
-    '<br/><b>File type:</b> {inFileType}<br/>'
+    '<br/><b>File type:</b> {inFileType_sp}<br/>'
   ],
 
   initComponent: function() {
@@ -521,12 +521,43 @@ PR.InDataDetail = Ext.extend(Ext.Panel, {
     PR.InDataDetail.superclass.initComponent.call(this);
   },
 
+  set: function(data) {
+    for ( var x in data )
+       this.data[x] = data[x];
+    this.data.inFileType_sp = data.inFileType;
+  },
+
   updateDetail: function(data) {
-    this.data = data;
-    if(data.condType == 'Run')
+    if(data.condType == 'Run') {
+      if (this.data &&
+	  this.data.configName == data.configName &&
+	  this.data.configVersion == data.configVersion &&
+	  this.data.condType == data.condType &&
+	  this.data.inProPass == data.inProPass &&
+	  this.data.evType == data.evType ) {
+        if ( this.data.inFileType == data.inFileType )
+          return; // exception, do not remove the last element
+        var types = this.data.inFileType.split(',');
+	for ( var i = 0; i < types.length ; ++i ) {
+	  if ( types[i] == data.inFileType )
+	    break;
+        }
+	if ( i < types.length )
+	  types.splice(i,1);
+	else
+	  types.push(data.inFileType);
+	types.sort()
+	this.data.inFileType = types.join(',');
+	this.data.inFileType_sp = types.join(' ');
+	this.run_tpl.overwrite(this.body, this.data);
+	return;
+      }
+      this.set(data);
       this.run_tpl.overwrite(this.body, this.data);
-    else
+    } else {
+      this.set(data);
       this.sim_tpl.overwrite(this.body, this.data);
+    }
   }
 });
 
@@ -3669,9 +3700,9 @@ PR.ExpanderTemplate = Ext.extend(Ext.Template,{
 	'<b>Author:</b> {reqAuthor}<br/>',
 	'<b>Config:</b> {configName}/{configVersion} ',
 	'<b>Processing pass:</b> {inProPass} ',
-	'<b>File type:</b> {inFileType} ',
-	'<b>DQ:</b> {inDataQualityFlag} ',
-	'<b>Production:</b> {inProductionID}<br/>',
+	'<b>Production:</b> {inProductionID} ',
+	'<b>DQ:</b> {inDataQualityFlag}<br/>',
+	'<b>File type(s):</b> {inFileType}<br/>',
 	'<b>EventType:</b> {eventText} <b>Steps:</b> {pAll} <br/>'
       );
     this.runTpl.compile()
