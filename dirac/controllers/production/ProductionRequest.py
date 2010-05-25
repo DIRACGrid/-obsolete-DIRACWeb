@@ -1467,13 +1467,16 @@ class ProductionrequestController(BaseController):
         else:
           success.append({ 'ID': x['ID'], 'Body': tpl.apply(x)})
       else:
-        if not run_tpl:
-          res = RPC.execProductionScript(tpl.apply(x),"")
-        else:
-          res = RPC.execProductionScript(run_tpl.apply(x),tpl.apply(x))
-        if res['OK']:
-          success.append({ 'ID': x['ID'], 'Body':  res['Value'] })
-        else:
+	try:
+          if not run_tpl:
+            res = RPC.execProductionScript(tpl.apply(x),"")
+          else:
+            res = RPC.execProductionScript(run_tpl.apply(x),tpl.apply(x))
+          if res['OK']:
+            success.append({ 'ID': x['ID'], 'Body':  res['Value'] })
+          else:
+            fail.append(str(x['ID']))
+        except Exception,msg:
           fail.append(str(x['ID']))
       continue # not working with WF DB for now    
       name = 'PRQ_%s' % x['ID']
@@ -1491,7 +1494,7 @@ class ProductionrequestController(BaseController):
         success.append(str(x['ID']))
 
     if len(fail):
-      return S_ERROR("Couldn't create workflows for %s." \
+      return S_ERROR("Couldn't get results from %s." \
                      % (','.join(fail)))
     else:
       # return S_OK("Success with %s" % ','.join(success))
