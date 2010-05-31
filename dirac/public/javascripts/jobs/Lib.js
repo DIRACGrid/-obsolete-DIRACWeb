@@ -332,18 +332,27 @@ function initStore(record,options){
       auto = false;
     }
   }
+  var url = 'submit';
   var groupBy = false;
+  var params = [];
   if(options ){
     if(options.groupBy){
       groupBy = options.groupBy;
+    }
+    if(options.url){
+      url = options.url;
+    }
+    if(options.params){
+      params = options.params;
     }
   }
   if(groupBy){
     var store = new Ext.data.GroupingStore({
       autoLoad:auto,
+      baseParams:params,
       groupField:groupBy,
       proxy: new Ext.data.HttpProxy({
-        url:'submit',
+        url:url,
         method:'POST',
       }),
       reader:reader
@@ -351,8 +360,9 @@ function initStore(record,options){
   }else{
     var store = new Ext.data.Store({
       autoLoad:auto,
+      baseParams:params,
       proxy: new Ext.data.HttpProxy({
-        url:'submit',
+        url:url,
         method:'POST',
         timeout:360000
       }),
@@ -372,7 +382,7 @@ function initStore(record,options){
       alert("There is an exception while loading data. Please, refresh table");
     }
   });
-  store.on('beforeload',function(){
+  store.on('beforeload',storeLoadFunction = function(){
     try{
       var tmpSelection = dataMngr.form.getForm().getValues();
       for(var k in tmpSelection){
@@ -391,11 +401,13 @@ function initStore(record,options){
           store.extra_msg = store.reader.jsonData.extra;
         }
         var value = store.baseParams.sort;
-        if(value){
+        try{
           var sort = value.split(' ');
           if(sort.length == 2){
             store.sort(sort[0],sort[1]);
           }
+        }catch(e){
+          var ttt = 0;
         }
       }else{
         alert("Error in store.reader.jsonData, trying to reload data store...");
@@ -487,9 +499,9 @@ function itemsNumber(mainStore,id){
           }
         }catch(e){}
         if(sort){
-          mainStore.load({params:{start:0,limit:tableMngr.bbar.pageSize,sort:sortGlobalPanel.globalSort}});
+          mainStore.load({params:{start:0,limit:bbar.pageSize,sort:sortGlobalPanel.globalSort}});
         }else{
-          mainStore.load({params:{start:0,limit:tableMngr.bbar.pageSize}});
+          mainStore.load({params:{start:0,limit:bbar.pageSize}});
         }
       }else{
         alert('Error: Can not find the mainStore in function itemsNumber() action collapse');
@@ -1525,7 +1537,7 @@ function setTitle(value,id){
   return title;
 }
 function status(value){
-  if((value == 'Done')||(value == 'Completed')||(value == 'Good')||(value == 'Active')||(value == 'Cleared')){
+  if((value == 'Done')||(value == 'Completed')||(value == 'Good')||(value == 'Active')||(value == 'Cleared')||(value == 'Completing')){
     return '<img src="'+gURLRoot+'/images/monitoring/done.gif">';
   }else if((value == 'Failed')||(value == 'Bad')||(value == 'Banned')||(value == 'Aborted')){
     return '<img src="'+gURLRoot+'/images/monitoring/failed.gif">';
@@ -1705,7 +1717,7 @@ function table(tableMngr){
   if(tableMngr.tbar){
     tbar = new Ext.Toolbar({items:tableMngr.tbar});
   }
-  var iNumber = itemsNumber(store);
+  var iNumber = itemsNumber(store,id);
   var pageSize = 25;
   if(dataSelect){
     if(dataSelect.extra){
