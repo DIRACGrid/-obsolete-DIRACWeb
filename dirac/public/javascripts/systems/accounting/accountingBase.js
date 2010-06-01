@@ -50,7 +50,13 @@ function createLeftSelectPanel( panelTitle, submitURL, cbParseSelection , cbSucc
                               createNewTab : true,
                             },
                             { text: 'Reset',
-                              handler: cbLeftPanelResetHandler,
+                              handler: cbLeftPanelResetHandler,                              
+                            },
+                            { cls : "x-btn-icon",
+                              icon : gURLRoot+'/images/iface/refresh.gif',
+                              minWidth : '20',
+                              width : '100%',
+                              handler : cbRefreshSelectorValues,
                             }
                           ]
               }
@@ -59,10 +65,76 @@ function createLeftSelectPanel( panelTitle, submitURL, cbParseSelection , cbSucc
   return gLeftSidebarPanel;
 }
 
+/*
+ * Start of refresh values
+ */
+
+function cbRefreshSelectorValues( submitButton, clickEvent )
+{
+	Ext.Ajax.request({
+		url : 'getKeyValuesForType',
+		params : { 'typeName' : gTypeName },
+		success : cbOKRefreshSelectorValues,
+		failure : function() { alert( "Error while refreshing selectors"); }
+	});
+}
+
+function cbOKRefreshSelectorValues( ajaxResponse, ajaxRequest )
+{
+	var result = Ext.util.JSON.decode( ajaxResponse.responseText );
+	if( ! result.OK )
+	{
+		alert( "Could not refresh selector values: " + result.Message );
+		return
+	}
+	var selectorData = result.Value;
+	setLeftSelectorsValues( selectorData );
+	gLeftSidebarPanel.form.reset();
+}
+
+function setLeftSelectorsValues( selectorValues, rootElement )
+{
+	var numChildren = 0;
+	if( ! rootElement )
+	{
+		rootElement = gLeftSidebarPanel;
+		numChildren = gLeftSidebarPanel.items.length - 1;
+	}
+	else
+		numChildren = rootElement.items.length;
+
+	for( var iEl = 0; iEl < numChildren; iEl ++ )
+	{
+		var currentEl = rootElement.getComponent( iEl );
+		if( currentEl.items )
+		{
+			setLeftSelectorsValues( selectorValues, currentEl );
+		}
+		else 
+		{
+			if( currentEl.name in selectorValues )
+			{
+				var value = selectorValues[ currentEl.name ];
+				var data = [];
+				for( var j = 0; j < value.length; j++)
+				{	
+					data.push( [ value[j], value[j] ] );
+				}
+				currentEl.store.removeAll();
+				currentEl.store.loadData( data );
+			}
+		}
+	}
+}
+
 function cbLeftPanelResetHandler( submitButton, clickEvent )
 {
 	gLeftSidebarPanel.form.reset();
 }
+
+/*
+ * End of refresh values
+ */
 
 function cbLeftPanelAJAXSubmitHandler( submitButton, clickEvent )
 {
@@ -371,8 +443,8 @@ function createCollepsibleMultiselect( elName, elLabel, elValues )
 	var selectHeigth = numItems * 23;
 	if( selectHeigth > 200 )
 		selectHeigth = 200;
-	if( selectHeigth < 50 )
-		selectHeigth = 50;
+	if( selectHeigth < 100 )
+		selectHeigth = 100;
 
 	var multiSelect = new Ext.ux.Multiselect( {
 		anchor : '90%',

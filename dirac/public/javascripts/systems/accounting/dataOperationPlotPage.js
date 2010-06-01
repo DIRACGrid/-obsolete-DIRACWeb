@@ -4,6 +4,7 @@ var gMainPanel = false;
 
 function initDataOpPlots( plotsList, selectionData ){
   gPlotsList = plotsList;
+  gTypeName = "DataOperation";
   Ext.onReady(function(){
     renderPage( plotsList, selectionData );
   });

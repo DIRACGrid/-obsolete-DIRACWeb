@@ -4,6 +4,7 @@ var gMainPanel = false;
 
 function initWMSHistoryPlots( plotsList, selectionData ){
   gPlotsList = plotsList;
+  gTypeName = "WMSHistory";
   Ext.onReady(function(){
     renderPage( plotsList, selectionData );
   });

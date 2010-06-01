@@ -4,6 +4,7 @@ var gMainPanel = false;
 
 function initJobPlots( plotsList, selectionData ){
   gPlotsList = plotsList;
+  gTypeName = "Job";
   Ext.onReady(function(){
     renderPage( plotsList, selectionData );
   });

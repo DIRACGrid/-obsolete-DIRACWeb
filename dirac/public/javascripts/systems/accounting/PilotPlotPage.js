@@ -4,6 +4,7 @@ var gMainPanel = false;
 
 function initPilotPlots( plotsList, selectionData ){
   gPlotsList = plotsList;
+  gTypeName = "Pilot";
   Ext.onReady(function(){
     renderPage( plotsList, selectionData );
   });

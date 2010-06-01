@@ -4,6 +4,7 @@ var gMainPanel = false;
 
 function initSRMSpaceTokenDeploymentPlots( plotsList, selectionData ){
   gPlotsList = plotsList;
+  gTypeName = "SRMSpaceTokenDeployment";
   Ext.onReady(function(){
     renderPage( plotsList, selectionData );
   });
