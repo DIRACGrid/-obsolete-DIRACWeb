@@ -151,19 +151,24 @@ class AccountingplotsController( BaseController ):
       return render( "/error.mako" )
     rawData = retVal[ 'Value' ]
     groupKeys = rawData[ 'data' ].keys()
-    granularity = rawData[ 'granularity' ]
-    data = rawData['data']
-    tS = int( Time.toEpoch( params[2] ) )
-    timeStart = tS - tS % granularity
-    strData = "epoch,%s\n" % ",".join( groupKeys )
-    for timeSlot in range( timeStart, int( Time.toEpoch( params[3] ) ), granularity ):
-      lineData = [ str( timeSlot ) ]
-      for key in groupKeys:
-        if timeSlot in data[ key ]:
-          lineData.append( str( data[ key ][ timeSlot ] ) )
-        else:
-          lineData.append( "" )
-      strData += "%s\n" % ",".join( lineData )
+    groupKeys.sort()
+    if 'granularity' in rawData:
+      granularity = rawData[ 'granularity' ]
+      data = rawData['data']
+      tS = int( Time.toEpoch( params[2] ) )
+      timeStart = tS - tS % granularity
+      strData = "epoch,%s\n" % ",".join( groupKeys )
+      for timeSlot in range( timeStart, int( Time.toEpoch( params[3] ) ), granularity ):
+        lineData = [ str( timeSlot ) ]
+        for key in groupKeys:
+          if timeSlot in data[ key ]:
+            lineData.append( str( data[ key ][ timeSlot ] ) )
+          else:
+            lineData.append( "" )
+        strData += "%s\n" % ",".join( lineData )
+    else:
+      strData = "%s\n" % ",".join( groupKeys )
+      strData +=  ",".join( [ str( rawData[ 'data' ][ k ] ) for k in groupKeys ] )
     response.headers['Content-type'] = 'text/csv'
     response.headers['Content-Disposition'] = 'attachment; filename="%s.csv"' % md5( str( params ) ).hexdigest()
     response.headers['Content-Length'] = len( strData )
