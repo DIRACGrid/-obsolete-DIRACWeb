@@ -63,6 +63,17 @@ class AccountingplotsController( BaseController ):
     c.plotsList = simplejson.dumps( retVal[ 'Value' ] )
     return render ( templateFile )
 
+  @jsonify
+  def getKeyValuesForType( self ):
+    try:
+      typeName = str( request.params[ 'typeName' ] )
+    except:
+      return S_ERROR( "Missing or invalid type name!" )
+    retVal = self.__getUniqueKeyValues( typeName )
+    if not retVal[ 'OK' ] and 'rpcStub' in retVal:
+      del( retVal[ 'rpcStub' ] )
+    return retVal
+
   def __parseFormParams( self ):
     pD = {}
     extraParams = {}
