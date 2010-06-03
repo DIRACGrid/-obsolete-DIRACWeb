@@ -108,15 +108,7 @@ function initRecord(){
     {name:'Jobs_Done'},
     {name:'Jobs_Failed'},
     {name:'Jobs_Stalled'},
-    {name:'TransformationFamily'},
-//    {name:'Bk_ConfigName'},
-//    {name:'Bk_Events'},
-//    {name:'Bk_ConfigVersion'},
-//    {name:'Bk_Steps'},
-//    {name:'BkQueryID'},
-//    {name:'Bk_Files'},
-//    {name:'Bk_EventType'},
-//    {name:'Bk_Jobs'},
+    {name:'TransformationFamily',type:'float'}
   ]);
   return record
 }
@@ -131,7 +123,7 @@ function initSidebar(){
   var id = selectProductionID(); // Initialize field for JobIDs
   var requestID = genericID('requestID','RequestID');
   var select = selectPanel(); // Initializing container for selection objects
-  select.buttons[2].hide(); // Remove refresh button
+//  select.buttons[2].hide(); // Remove refresh button
   // Insert object to container BEFORE buttons:
   select.insert(0,prodSelect);
   select.insert(1,agentSelect);
@@ -186,14 +178,6 @@ function initData(store){
     {header:'LongDescription',sortable:true,dataIndex:'LongDescription',align:'left',hidden:true},
     {header:'CreationDate [UTC]',sortable:true,renderer:Ext.util.Format.dateRenderer('Y-n-j h:i'),dataIndex:'CreationDate'},
     {header:'LastUpdate [UTC]',sortable:true,renderer:Ext.util.Format.dateRenderer('Y-n-j h:i'),dataIndex:'LastUpdate'}
-//    {header:'Bk_ConfigName',sortable:true,dataIndex:'Bk_ConfigName',align:'left',hidden:true},
-//    {header:'Bk_Events',sortable:true,dataIndex:'Bk_Events',align:'left'},
-//    {header:'Bk_ConfigVersion',sortable:true,dataIndex:'Bk_ConfigVersion',align:'left',hidden:true},
-//    {header:'Bk_Steps',sortable:true,dataIndex:'Bk_Steps',align:'left',hidden:true},
-//    {header:'BkQueryID',sortable:true,dataIndex:'BkQueryID',align:'left',hidden:true},
-//    {header:'Bk_Files',sortable:true,dataIndex:'Bk_Files',align:'left',hidden:true},
-//    {header:'Bk_EventType',sortable:true,dataIndex:'Bk_EventType',align:'left',hidden:true},
-//    {header:'Bk_Jobs',sortable:true,dataIndex:'Bk_Jobs',align:'left',hidden:true}
   ];
   var tbar = [
     {
@@ -339,6 +323,8 @@ function setMenuItems(selections){
     var id = selections.TransformationID;
     var status = selections.Status;
     var submited = selections.Jobs_Submitted;
+    var family = selections.TransformationFamily;
+    var type = selections.Type;
   }else{
     return
   }
@@ -353,22 +339,35 @@ function setMenuItems(selections){
   if(dirac.menu){
     dirac.menu.add(
       {handler:function(){jump('job',id,submited)},text:'Show Jobs'},
+      {handler:function(){jump('request',family,1)},text:'Show Request'},
       {handler:function(){AJAXrequest('log',id)},text:'Logging Info'},
+      {handler:function(){runStatus(id)},text:'Run Status'},
       {handler:function(){AJAXrequest('fileStat',id)},text:'File Status'},
+      {handler:function(){AJAXrequest('fileRetry',id)},text:'File Error Count'},
+      {handler:function(){AJAXrequest('dataQuery',id)},text:'Input Data Query'},
+      {handler:function(){AJAXrequest('additionalParams',id)},text:'Additional Params'},
       {handler:function(){AJAXrequest('elog',id)},text:'Show Details'},
       '-',
       {text:'Actions',menu:({items:subMenu})}
     );
   }
   if(status == 'Active'){
-    dirac.menu.items.items[5].menu.items.items[1].enable();
-    dirac.menu.items.items[5].menu.items.items[0].disable();
+    dirac.menu.items.items[10].menu.items.items[1].enable();
+    dirac.menu.items.items[10].menu.items.items[0].disable();
   }else if(status == 'New'){
-    dirac.menu.items.items[5].menu.items.items[1].disable();
-    dirac.menu.items.items[5].menu.items.items[0].enable();
+    dirac.menu.items.items[10].menu.items.items[1].disable();
+    dirac.menu.items.items[10].menu.items.items[0].enable();
   }else{
-    dirac.menu.items.items[5].menu.items.items[1].disable();
-    dirac.menu.items.items[5].menu.items.items[0].enable();
+    dirac.menu.items.items[10].menu.items.items[1].disable();
+    dirac.menu.items.items[10].menu.items.items[0].enable();
+  }
+  if(type == 'MCSimulation'){
+    dirac.menu.items.items[4].disable();
+    dirac.menu.items.items[5].disable();
+    dirac.menu.items.items[6].disable();
+  }
+  if((type != 'DataReconstruction')&&(type != 'DataStripping')&&(type != 'Replication')){
+    dirac.menu.items.items[3].disable();
   }
 };
 
@@ -409,7 +408,29 @@ function AJAXsuccess(value,id,response){
     panel.addListener('cellclick',function(table,rowIndex,columnIndex){
       showMenu('nonMain',table,rowIndex,columnIndex);
     });
-  }else if(value == 'fileStat'){
+  }else if((value == 'additionalParams')||(value == 'dataQuery')){
+    var reader = new Ext.data.ArrayReader({},[
+      {name:'name'},
+      {name:'value'}
+    ]);
+    var columns = [
+      {header:'Name',sortable:true,dataIndex:'name',align:'left'},
+      {header:'Value',sortable:true,dataIndex:'value',align:'left'}
+    ];
+    var store = new Ext.data.Store({
+      data:result,
+      reader:reader
+    }),
+    panel = new Ext.grid.GridPanel({
+      columns:columns,
+      store:store,
+      stripeRows:true,
+      viewConfig:{forceFit:true}
+    });
+    panel.addListener('cellclick',function(table,rowIndex,columnIndex){
+      showMenu('nonMain',table,rowIndex,columnIndex);
+    });
+  }else if((value == 'fileStat') || (value == 'fileRetry')){
     var reader = {};
     var columns = [];
     reader = new Ext.data.ArrayReader({},[
@@ -417,11 +438,19 @@ function AJAXsuccess(value,id,response){
       {name:'count'},
       {name:'percent'}
     ]);
-    columns = [
+    if(value == 'fileRetry'){
+      columns = [
+        {header:'Retries',sortable:true,dataIndex:'status',align:'left'},
+        {header:'Count',sortable:true,dataIndex:'count',align:'left'},
+        {header:'Percentage',sortable:true,dataIndex:'percent',align:'left'}
+      ];
+    }else{
+      columns = [
         {header:'Status',sortable:true,dataIndex:'status',align:'left'},
         {header:'Count',sortable:true,dataIndex:'count',align:'left'},
         {header:'Percentage',sortable:true,dataIndex:'percent',align:'left'}
-    ];
+      ];
+    }
     var store = new Ext.data.Store({
       data:result,
       reader:reader 
@@ -433,28 +462,52 @@ function AJAXsuccess(value,id,response){
       viewConfig:{forceFit:true}
     });
     panel.addListener('cellclick',function(table,rowIndex,columnIndex){
-      showMenu('nonMain',table,rowIndex,columnIndex);
+      if(value == 'fileStat'){
+        var record = table.getStore().getAt(rowIndex); // Get the Record for the row
+        try{
+          if(record.data.status){
+            var stat = record.data.status;
+          }
+        }catch(e){
+          return
+        }
+        var columnName = table.getColumnModel().getColumnId(columnIndex); // Get the name for the column
+        var fieldName = table.getColumnModel().getDataIndex(columnIndex); // Get field name for the column
+        if(record.data){
+          var v = record.get(fieldName);
+        }
+        var coords = Ext.EventObject.xy;
+        var menu = new Ext.menu.Menu();
+        menu.add(
+          {handler:function(){showFileStat(stat,id)},text:'Show Files'},
+          '-',
+          {handler:function(){Ext.Msg.minWidth = 360;Ext.Msg.alert('Cell value is:',v);},text:'Show value'}
+        );
+        menu.showAt(coords);
+      }else{
+        showMenu('nonMain',table,rowIndex,columnIndex);
+      }
     });
   }else if(value == 'elog'){
     var html = '<pre>' + result + '</pre>';
     panel = new Ext.Panel({border:0,autoScroll:true,html:html,layout:'fit'})
   }
-  displayWin(panel,id)
+  var titleID = 'Production: ' + id;
+  displayWin(panel,titleID)
 }
 function jump(type,id,submited){
   if(submited == 0){
     alert('Nothing to display');
     return
+  }
+  if(type == 'request'){
+    var url = document.location.protocol + '//' + document.location.hostname + gURLRoot + '/' + gPageDescription.selectedSetup;
+    url = url + '/' + gPageDescription.userData.group + '/production/ProductionRequest/display#ds3:idFs3:' + id + 'e';
   }else{
     var url = document.location.protocol + '//' + document.location.hostname + gURLRoot + '/' + gPageDescription.selectedSetup;
-    url = url + '/' + gPageDescription.userData.group + '/jobs/JobMonitor/display';
-    var post_req = '<form id="redirform" action="' + url + '" method="POST" >';
-    post_req = post_req + '<input type="hidden" name="prod" value="' + id + '">';
-    post_req = post_req + '</form>';
-    document.body.innerHTML = document.body.innerHTML + post_req;
-    var form = document.getElementById('redirform');
-    form.submit();
+    url = url + '/' + gPageDescription.userData.group + '/jobs/JobMonitor/display?prod=' + id;
   }
+  window.open(url)
 }
 function afterDataLoad(){
   var msg = [];
@@ -475,4 +528,76 @@ function afterDataLoad(){
     }
     statPanel.store.loadData(data);
   }
+}
+function showFileStat(stat,id){
+  var params = {'getFileStatus':stat,'prodID':id};
+  var title = 'Files with status ' + stat + ' for production: ' + id;
+  var record = new Ext.data.Record.create([
+    {name:'LFN'},
+    {name:'TransformationID'},
+    {name:'FileID'},
+    {name:'Status'},
+    {name:'TaskID'},
+    {name:'TargetSE'},
+    {name:'UsedSE'},
+    {name:'ErrorCount'},
+    {name:'LastUpdate'},
+    {name:'InsertedTime'}
+  ]);
+  var columns = [
+    {header:'LFN',sortable:true,dataIndex:'LFN',align:'left'},
+    {header:'TransformationID',sortable:true,dataIndex:'TransformationID',align:'left'},
+    {header:'FileID',sortable:true,dataIndex:'FileID',align:'left'},
+    {header:'Status',sortable:true,dataIndex:'Status',align:'left'},
+    {header:'TaskID',sortable:true,dataIndex:'TaskID',align:'left'},
+    {header:'TargetSE',sortable:true,dataIndex:'TargetSE',align:'left'},
+    {header:'UsedSE',sortable:true,dataIndex:'UsedSE',align:'left'},
+    {header:'ErrorCount',sortable:true,dataIndex:'ErrorCount',align:'left'},
+    {header:'LastUpdate',sortable:true,dataIndex:'LastUpdate',align:'left'},
+    {header:'InsertedTime',sortable:true,dataIndex:'InsertedTime',align:'left'}
+  ];
+  var store = initStore(record,{'url':'showFileStatus','params':params});
+  store.removeListener('beforeload',storeLoadFunction);
+  var tableMngr = {'store':store,'columns':columns,'id':'fileStatusTable'};
+  var panel = table(tableMngr);
+  var win = displayWin(panel,title,true);
+  win.setWidth(600);
+}
+function runStatus(id){
+  var params = {'getRunStatus':id};
+  var title = 'Run status for production: ' + id;
+  var record = new Ext.data.Record.create([
+    {name:'Status'},
+    {name:'StatusIcon',mapping:'Status'},
+    {name:'TransformationID'},
+    {name:'LastUpdate'},
+    {name:'Files_PercentProcessed'},
+    {name:'Files_Total'},
+    {name:'Files_Assigned'},
+    {name:'RunNumber'},
+    {name:'SelectedSite'},
+    {name:'Files_Processed'},
+    {name:'Files_Unused'},
+    {name:'Files_Problematic'}
+  ]);
+// Make a processed counter like bar
+  var columns = [
+    {header:'RunNumber',sortable:true,dataIndex:'RunNumber',align:'left'},
+    {header:'',width:26,sortable:false,dataIndex:'StatusIcon',renderer:status,hideable:false,fixed:true,menuDisabled:true},
+    {header:'Status',sortable:true,dataIndex:'Status',align:'left'},
+    {header:'SelectedSite',sortable:true,dataIndex:'SelectedSite',align:'left'},
+    {header:'Files',sortable:true,dataIndex:'Files_Total',align:'left'},
+    {header:'Processed (%)',sortable:true,dataIndex:'Files_PercentProcessed',align:'left'},
+    {header:'Unused',sortable:true,dataIndex:'Files_Unused',align:'left'},
+    {header:'Assigned',sortable:true,dataIndex:'Files_Assigned',align:'left'},
+    {header:'Processed',sortable:true,dataIndex:'Files_Processed',align:'left'},
+    {header:'Problematic',sortable:true,dataIndex:'Files_Problematic',align:'left'},
+    {header:'LastUpdate',sortable:true,dataIndex:'LastUpdate',align:'left'}
+  ];
+  var store = initStore(record,{'url':'showRunStatus','params':params});
+  store.removeListener('beforeload',storeLoadFunction);
+  var tableMngr = {'store':store,'columns':columns,'id':'runStatusTable'};
+  var panel = table(tableMngr);
+  var win = displayWin(panel,title,true);
+  win.setWidth(600);
 }
