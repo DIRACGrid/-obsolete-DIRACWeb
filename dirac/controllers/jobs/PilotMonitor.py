@@ -7,7 +7,7 @@ from dirac.lib.base import *
 from dirac.lib.diset import getRPCClient
 from dirac.lib.credentials import authorizeAction
 #from dirac.lib.sessionManager import *
-from DIRAC import gLogger
+from DIRAC import gConfig, gLogger
 import dirac.lib.credentials as credentials
 
 log = logging.getLogger(__name__)
@@ -124,12 +124,24 @@ class PilotmonitorController(BaseController):
         ce = [["Nothing to display"]]
       callback["ce"] = ce
       if result.has_key("GridSite") and len(result["GridSite"]) > 0:
+        tier1 = gConfig.getValue("/Website/PreferredSites")
+        if tier1:
+          try:
+            tier1 = tier1.split(", ")
+          except:
+            tier1 = list()
+        else:
+          tier1 = list()
         site = []
+        s = list(result["GridSite"])
         site.append([str("All")])
-        for i in result["GridSite"]:
+        for i in tier1:
           site.append([str(i)])
+        for i in s:
+          if i not in tier1:
+            site.append([str(i)])
       else:
-        site = [["Nothing to display"]]
+        site = [["Error during RPC call"]]
       callback["site"] = site
       if result.has_key("Broker") and len(result["Broker"]) > 0:
         broker = []
@@ -143,7 +155,6 @@ class PilotmonitorController(BaseController):
         owner = []
         owner.append([str("All")])
         for i in result["Owner"]:
-#          j = 
           owner.append([str(i)])
       else:
         owner = [["Nothing to display"]]
@@ -170,6 +181,9 @@ class PilotmonitorController(BaseController):
     if request.params.has_key("pilotId") and len(request.params["pilotId"]) > 0:
       pageNumber = 0
       req["PilotJobReference"] = str(request.params["pilotId"])
+    elif request.params.has_key("taskQueueID") and len(request.params["taskQueueID"]) > 0:
+      pageNumber = 0
+      req["TaskQueueID"] = str(request.params["taskQueueID"])
     else:
       if request.params.has_key("broker") and len(request.params["broker"]) > 0:
         if str(request.params["broker"]) != "All":
