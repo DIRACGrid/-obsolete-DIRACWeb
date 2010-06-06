@@ -41,6 +41,7 @@ function initSidebar(){
   var ce = selectCEMenu();
   var pilotStatus = selectStatusMenu();
   var broker = selectBrokerMenu();
+  var taskQueue = selectTaskQueueID();
   var id = selectPilotID(); // Initialize field for JobIDs
   var dateSelect = dateTimeWidget();
   var select = selectPanel(); // Initializing container for selection objects
@@ -53,8 +54,9 @@ function initSidebar(){
   select.insert(3,owner);
   select.insert(4,ownerGrp);
   select.insert(5,broker);
-  select.insert(6,id);
-  select.insert(7,dateSelect);
+  select.insert(6,taskQueue);
+  select.insert(7,id);
+  select.insert(8,dateSelect);
 //  select.insert(6,gridType); Commentted for later usage
 //  select.insert(1,statSelect);
 //  var stat = statPanel('Statistics','current','statGrid');
