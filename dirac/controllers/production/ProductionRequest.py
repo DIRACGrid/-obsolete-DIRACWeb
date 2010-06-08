@@ -1286,6 +1286,21 @@ class ProductionrequestController(BaseController):
       rows.insert(0,{'id':99999999, 'name': '', 'text':'&nbsp;'})
     return { 'OK':True, 'result':rows, 'total':len(rows) }    
 
+
+  @jsonify
+  def bkk_tags(self):
+    try:
+      tag = str(request.params.get('tag', ''))
+      tags = tag.split(':')
+      RPC = getRPCClient('Bookkeeping/BookkeepingManager')
+      result = RPC.getAvailableTags()
+      if not result['OK']:
+        return result
+      rows = [{'v':x[1]} for x in result['Value']['Records'] if x[0] in tags]
+      return { 'OK':True, 'result':rows, 'total':len(rows) }
+    except Exception, e:
+      return S_ERROR('Could not get tags from BK (%s)' % str(e))
+
   @jsonify
   def progress(self):
     id  = str(request.params.get('RequestID', ''))

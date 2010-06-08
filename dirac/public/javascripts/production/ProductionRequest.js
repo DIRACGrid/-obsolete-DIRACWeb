@@ -1866,6 +1866,26 @@ PR.BkPassBrowser = Ext.extend(Ext.Window, {
  */
 PR.RequestEditor = Ext.extend(Ext.FormPanel, {
 
+  makeJsonStore : function(url,bug) {
+    var store = new Ext.data.Store({
+      proxy: new Ext.data.HttpProxy({
+	url: url}),
+      reader: new Ext.data.JsonReader({
+        totalProperty: 'total',
+	root:'result'
+      }, [{name: 'v'}]),
+      listeners : { 
+	'loadexception' : { 
+	  fn: storeBugger(bug), 
+	  scope: this
+	}
+      }
+    });
+    store.load();
+    return store;
+  },
+
+
   /* AZ: ExtJS bug: in case column has no fixed or Column width,
    *           it will not be realigned after show... And if it has
    *           it is realligned buggy...  */
@@ -1886,6 +1906,12 @@ PR.RequestEditor = Ext.extend(Ext.FormPanel, {
       }
     });
     verStore.load();
+
+    var condStore = this.makeJsonStore('bkk_tags?tag=LHCBCOND:SIMCOND',
+				       'list of conditions tags');
+
+    var dddbStore = this.makeJsonStore('bkk_tags?tag=DDDB',
+				       'list of DDDB tags');
 
     return new Ext.form.FieldSet({ title: 'Step '+no, autoHeight: true, layout: 'column', items: [
       { layout: 'form', autoHeight: true, labelWidth: 89, width: 330, items: [
@@ -1930,11 +1956,17 @@ PR.RequestEditor = Ext.extend(Ext.FormPanel, {
       { layout: 'form', autoHeight: true, labelWidth: 50, columnWidth: 1.,
 	bodyStyle: 'padding-left: 5px;',
 	items: [
-	  {xtype: 'textfield', fieldLabel: 'CondDB',
-	   name: 'p'+no+'CDb', anchor: '100%'
+	  {xtype: 'combo', fieldLabel: 'CondDB',
+	   name: 'p'+no+'CDb', anchor: '100%',
+	   store: condStore, displayField: 'v',
+	   forceSelection: false, mode: 'local',
+	   selectOnFocus: true, stepno: no,
 	  },
-	  {xtype: 'textfield', fieldLabel: 'DDDB',
-	   name: 'p'+no+'DDDb', anchor: '100%'
+	  {xtype: 'combo', fieldLabel: 'DDDB',
+	   name: 'p'+no+'DDDb', anchor: '100%',
+	   store: dddbStore, displayField: 'v',
+	   forceSelection: false, mode: 'local',
+	   selectOnFocus: true, stepno: no,
 	  },
 	  { xtype: 'hidden',name: 'p'+no+'Html'},
       ]}
@@ -2131,23 +2163,6 @@ PR.RequestEditor = Ext.extend(Ext.FormPanel, {
 
     this.stepPanel = { 0: this.makeStepPanel(1) };
 
-    /*
-    var dbVerStore = new Ext.data.Store({
-      proxy: new Ext.data.HttpProxy({
-	url: 'soft_versions?name=DBASE&addempty&webname=DBASE_Det_SQLDDDB,DBASE_Det_XmlDDDB'}),
-      reader: new Ext.data.JsonReader({
-        totalProperty: 'total',
-	root:'result'
-      }, [{name: 'v'}]),
-      listeners : { 
-	'loadexception' : { 
-	  fn: storeBugger('list of Simulation Conditions'), 
-	  scope: this
-	}
-      }
-    });
-    dbVerStore.load();
-    */
 
     var proPassItems = [
       {
