@@ -327,9 +327,13 @@ function initStore(record,options){
   }catch(e){
     auto = {params:{start:0,limit:25}};
   }
+  var id = Ext.id();
   if(options){
     if(options.auto){
       auto = false;
+    }
+    if(options.id){
+      id = options.id;
     }
   }
   var url = 'submit';
@@ -351,6 +355,7 @@ function initStore(record,options){
       autoLoad:auto,
       baseParams:params,
       groupField:groupBy,
+      id:id,
       proxy: new Ext.data.HttpProxy({
         url:url,
         method:'POST',
@@ -361,6 +366,7 @@ function initStore(record,options){
     var store = new Ext.data.Store({
       autoLoad:auto,
       baseParams:params,
+      id:id,
       proxy: new Ext.data.HttpProxy({
         url:url,
         method:'POST',
@@ -1108,6 +1114,10 @@ function selectPilotID(){
   var regex = new RegExp( /.+/);
   return genericID('pilotId','PilotJobReference',regex,'Test');
 }
+function selectTaskQueueID(){
+  var regex = new RegExp( /.+/);
+  return genericID('taskQueueID','TaskQueueID',regex,'Test');
+}
 function createMenu(dataName,menuName,altValue){
   var data = [['']];
   try{
@@ -1301,6 +1311,10 @@ function selectStatusMenu(){
 }
 function selectBrokerMenu(){
   var menu = createMenu('broker','Broker');
+  return menu
+}
+function selectRunNumbers(){
+  var menu = createMenu('runNumber','Run');
   return menu
 }
 function selectGridSiteMenu(){
