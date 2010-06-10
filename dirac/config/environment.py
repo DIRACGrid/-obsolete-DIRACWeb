@@ -71,13 +71,16 @@ def initDIRAC( rootPath, enableDebug = False ):
       cfgFilePaths.append( webCFGPath )
     webCFG = CFG.CFG()
     for webCFGPath in cfgFilePaths:
-      if os.path.isfile( webCFGPath ):
+      if not os.path.isfile( webCFGPath ):
+        gLogger.info( "%s does not exist" % webCFGPath )
+      else:
+        gLogger.info( "Loading %s" % webCFGPath )
         modCFG = CFG.CFG().loadFromFile( webCFGPath )
         if modCFG.getOption( 'Website/AbsoluteDefinition', False ):
           gLogger.info( "CFG %s is absolute" % webCFGPath )
           webCFG = modCFG
         else:
-          webCFG.mergeWith( modCFG )
+          webCFG = webCFG.mergeWith( modCFG )
     gConfig.loadCFG( webCFG )
     #Define the controllers, templates and public directories
     for type in ( 'controllers', 'templates', 'public' ):
