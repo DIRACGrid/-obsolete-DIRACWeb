@@ -144,3 +144,33 @@ p.footer {
   border solid #999 ! important;
   border-top-color:#ccc ! important;
 }
+
+/* By Matvey */
+.my-disabled * {
+  cursor:default ! important;
+}
+.pointer * {
+  cursor:pointer ! important;
+  cursor:hand ! important;
+}
+.columnSplitButton {
+  background-image:url("../images/iface/columns.gif") !important;
+}
+.refreshSplitButton {
+  background-image:url("../images/iface/refresh.gif") !important;
+}
+.Save {
+  background-image:url("../images/iface/save.gif") !important;
+}
+.Restore {
+  background-image:url("../images/iface/reschedule.gif") !important;
+}
+.Add {
+  background-image:url("../images/iface/advanced.gif") !important;
+}
+.Loading {
+  background-image:url("../images/iface/loading.gif") !important;
+}
+.Act {
+  background-image:url("../images/iface/gear.gif") !important;
+}
