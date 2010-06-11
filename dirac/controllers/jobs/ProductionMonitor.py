@@ -296,9 +296,47 @@ class ProductionmonitorController(BaseController):
       return self.__transformationFileStatus(id)
     elif request.params.has_key("globalStat"):
       return self.__globalStat()
+    elif request.params.has_key("fileRetry"):
+      id = str(request.params["fileRetry"])
+      return self.__fileRetry(id)
+    elif request.params.has_key("dataQuery"):
+      id = str(request.params["dataQuery"])
+      return self.__dataQuery(id)
+    elif request.params.has_key("additionalParams"):
+      id = str(request.params["additionalParams"])
+      return self.__additionalParams(id)
+    elif request.params.has_key("refreshSelection") and len(request.params["refreshSelection"]) > 0:
+      return self.__getSelectionData()
+    elif request.params.has_key("setRunStatus") and len(request.params["setRunStatus"]) > 0:
+      if not request.params.has_key("runID"):
+        return {"success":"false","error":"runID is undefined"}
+      elif not request.params.has_key("prodID"):
+        return {"success":"false","error":"prodID is undefined"}
+      elif not request.params.has_key("status"):
+        return {"success":"false","error":"status is undefined"}
+      runid = request.params["runID"]
+      prodid = request.params["prodID"]
+      status = request.params["status"]
+      return self.__setRunStatus(runid,prodid,status)
     else:
       c.result = {"success":"false","error":"Transformation ID(s) is not defined"}
       return c.error
+################################################################################
+  def __setRunStatus(self,runid,prodid,status):
+    try:
+      runID = int(runid)
+      transID = int(prodid)
+      status = str(status)
+    except Exception,x:
+      return {"success":"false","error":str(x)}
+    RPC = getRPCClient("ProductionManagement/ProductionManager")
+    gLogger.info("\033[0;31m setTransformationRunStatus(%s, %s, %s) \033[0m" % (transID,runID,status))
+    result = RPC.setTransformationRunStatus(transID,runID,status)
+    if result["OK"]:
+      c.result = {"success":"true","result":"true"}
+    else:
+      c.result = {"success":"false","error":result["Message"]}
+    return c.result
 
 ################################################################################
   def __logProduction(self,prodid):
@@ -337,7 +375,7 @@ class ProductionmonitorController(BaseController):
   def __transformationFileStatus(self,prodid):
     id = int(prodid)
     RPC = getRPCClient('ProductionManagement/ProductionManager')
-    res = RPC.getTransformationStats(prodid)
+    res = RPC.getTransformationFilesCount(prodid,"Status")
     if not res['OK']:
       c.result = {"success":"false","error":res["Message"]}
     else:
@@ -359,7 +397,9 @@ class ProductionmonitorController(BaseController):
   def __extendTransformation(self,id,tasks):
     tasks = int(tasks)
     id = int(id)
+    gLogger.info("extend %s" % id)
     RPC = getRPCClient('ProductionManagement/ProductionManager')
+    gLogger.info("extendTransformation(%s,%s)" % (id,tasks))
     res = RPC.extendTransformation(id,tasks)
     if res["OK"]:
       resString = "%s extended by %s successfully" % (id,tasks)
@@ -404,17 +444,14 @@ class ProductionmonitorController(BaseController):
     else:
       return {"success":"false","error": "Unknown action"}
     c.result = []
-    gLogger.info("******",cmd)
     for i in prodid:
       try:
         id = int(i)
 #        gLogger.info("RPC.setTransformationParameter(%s,'Status',%s)" % (id,status))
         result = RPC.setTransformationParameter(id,'Status',status)
-        gLogger.info("-----",result)
         if result["OK"]:
           resString = "ProdID: %s set to %s successfully" % (i,cmd)
           result = RPC.setTransformationParameter(id,'AgentType',agentType)
-          gLogger.info("-----",result)
           if not result["OK"]:
             resString = "ProdID: %s failed to set to %s: %s" % (i,cmd,result["Message"])
         else:
@@ -436,3 +473,160 @@ class ProductionmonitorController(BaseController):
       for i in sortList(result.keys()):
         back.append([i,result[i]])
       return back
+################################################################################
+  def __fileRetry(self,prodid):
+    id = int(prodid)
+    RPC = getRPCClient('ProductionManagement/ProductionManager')
+    res = RPC.getTransformationFilesCount(prodid,"ErrorCount")
+    if not res['OK']:
+      c.result = {"success":"false","error":res["Message"]}
+    else:
+      resList = []
+      total = res['Value'].pop('Total')
+      if total == 0:
+        c.result = {"success":"false","error":"No files found"}
+      else:
+        for status in sortList(res['Value'].keys()):
+          count = res['Value'][status]
+          percent = "%.1f" % ((count*100.0)/total)
+          resList.append((status,str(count),percent))
+        resList.append(('Total',total,'-'))
+        c.result = {"success":"true","result":resList}
+    gLogger.info("#######",res)
+    return c.result
+################################################################################
+  def __additionalParams(self,prodid):
+    id = int(prodid)
+    RPC = getRPCClient('ProductionManagement/ProductionManager')
+    res = RPC.getAdditionalParameters(id)
+    if not res['OK']:
+      c.result = {"success":"false","error":res["Message"]}
+    else:
+      result = res["Value"]
+      back = []
+      for i in sortList(result.keys()):
+        back.append([i,result[i]])
+      c.result = {"success":"true","result":back}
+    return c.result
+################################################################################
+  def __dataQuery(self,prodid):
+    id = int(prodid)
+    RPC = getRPCClient("ProductionManagement/ProductionManager")
+    res = RPC.getBookkeepingQueryForTransformation(id)
+    gLogger.info("-= #######",res)
+    if not res['OK']:
+      c.result = {"success":"false","error":res["Message"]}
+    else:
+      result = res["Value"]
+      back = []
+      for i in sortList(result.keys()):
+        back.append([i,result[i]])
+      c.result = {"success":"true","result":back}
+    return c.result
+################################################################################
+  @jsonify
+  def showFileStatus(self):
+    req = {}
+    if request.params.has_key("limit") and len(request.params["limit"]) > 0:
+      limit = int(request.params["limit"])
+      if request.params.has_key("start") and len(request.params["start"]) > 0:
+        start = int(request.params["start"])
+      else:
+        start = 0
+    else:
+      limit = 25
+      start = 0
+    if request.params.has_key("prodID"):
+      id = int(request.params["prodID"])
+    else:
+      return {"success":"false","error":"Transformation ID(s) is not defined"}
+    if request.params.has_key("getFileStatus"):
+      status = str(request.params["getFileStatus"])
+    else:
+      return {"success":"false","error":"Files status is not defined"}
+    RPC = getRPCClient("ProductionManagement/ProductionManager")
+    result = RPC.getTransformationFilesSummaryWeb({'TransformationID':id,'Status':status},[["FileID","ASC"]],start,limit)
+    if not result['OK']:
+      c.result = {"success":"false","error":result["Message"]}
+    else:
+      result = result["Value"]
+      if result.has_key("TotalRecords") and  result["TotalRecords"] > 0:
+        if result.has_key("ParameterNames") and result.has_key("Records"):
+          if len(result["ParameterNames"]) > 0:
+            if len(result["Records"]) > 0:
+              c.result = []
+              jobs = result["Records"]
+              head = result["ParameterNames"]
+              headLength = len(head)
+              for i in jobs:
+                tmp = {}
+                for j in range(0,headLength):
+                  tmp[head[j]] = i[j]
+                c.result.append(tmp)
+              total = result["TotalRecords"]
+              if result.has_key("Extras"):
+                extra = result["Extras"]
+                c.result = {"success":"true","result":c.result,"total":total,"extra":extra}
+              else:
+                c.result = {"success":"true","result":c.result,"total":total}
+            else:
+              c.result = {"success":"false","result":"","error":"There are no data to display"}
+          else:
+            c.result = {"success":"false","result":"","error":"ParameterNames field is undefined"}
+        else:
+          c.result = {"success":"false","result":"","error":"Data structure is corrupted"}
+      else:
+        c.result = {"success":"false","result":"","error":"There were no data matching your selection"}
+    return c.result
+################################################################################
+  @jsonify
+  def showRunStatus(self):
+    req = {}
+    if request.params.has_key("limit") and len(request.params["limit"]) > 0:
+      limit = int(request.params["limit"])
+      if request.params.has_key("start") and len(request.params["start"]) > 0:
+        start = int(request.params["start"])
+      else:
+        start = 0
+    else:
+      limit = 25
+      start = 0
+    if request.params.has_key("getRunStatus"):
+      id = int(request.params["getRunStatus"])
+    else:
+      return {"success":"false","error":"Run status is not defined"}
+    RPC = getRPCClient("ProductionManagement/ProductionManager")
+    result = RPC.getTransformationRunsSummaryWeb({'TransformationID':id},[["RunNumber","DESC"]],start,limit)
+#.getTransformationFilesSummaryWeb({'TransformationID':id,'Status':status},[["FileID","ASC"]],start,limit)
+    if not result['OK']:
+      c.result = {"success":"false","error":result["Message"]}
+    else:
+      result = result["Value"]
+      if result.has_key("TotalRecords") and  result["TotalRecords"] > 0:
+        if result.has_key("ParameterNames") and result.has_key("Records"):
+          if len(result["ParameterNames"]) > 0:
+            if len(result["Records"]) > 0:
+              c.result = []
+              jobs = result["Records"]
+              head = result["ParameterNames"]
+              headLength = len(head)
+              for i in jobs:
+                tmp = {}
+                for j in range(0,headLength):
+                  tmp[head[j]] = i[j]
+                c.result.append(tmp)
+              total = result["TotalRecords"]
+              if result.has_key("Extras"):
+                extra = result["Extras"]
+                c.result = {"success":"true","result":c.result,"total":total,"extra":extra}
+              else:
+                c.result = {"success":"true","result":c.result,"total":total}
+            else:
+              c.result = {"success":"false","result":"","error":"There are no data to display"}
+          else:
+            c.result = {"success":"false","result":"","error":"ParameterNames field is undefined"}
+        else:
+          c.result = {"success":"false","result":"","error":"Data structure is corrupted"}
+      else:
+        c.result = {"success":"false","result":"","error":"There were no data matching your selection"}
+    return c.result
