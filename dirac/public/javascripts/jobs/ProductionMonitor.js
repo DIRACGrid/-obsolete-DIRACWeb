@@ -5,13 +5,13 @@ var testObject = {}; // Used to store values between refresh action
 var heartbeat = '';
 var refreshRate = 0;
 var tableID = 'tmpID';
+var idObject = new Array();
 // Main routine
 function initProductionMonitor(reponseSelect){
   dataSelect = reponseSelect;
   dataSelect.globalSort = '';
   var record = initRecord();
   var store = initStore(record,{'groupBy':'TransformationFamily'});
-//  var store = initStore(record);
   store.addListener('beforeload',function(store){
     if(store.totalLength){
       testObject = {}
@@ -215,6 +215,7 @@ function initData(store){
   t.addListener('cellclick',function(table,rowIndex,columnIndex){
       showMenu('main',table,rowIndex,columnIndex);
   });
+  idObject.push(store);
   tableID = t.id;
   return t
 }
@@ -225,7 +226,7 @@ function setChk(value){
     return false
   } 
 }
-function setRefresh(time,store){
+function  setRefresh(time,store){
   var stamp = Ext.getCmp('stampTableButton');
   if(time == 900000 || time == 3600000 || time == 1800000){
     refreshRate = time;
@@ -240,10 +241,9 @@ function setRefresh(time,store){
         }
         store.load();
         if(stamp){
-
           var d = new Date();
           var hh = d.getHours();
-          if(hh < 10){ 
+          if(hh < 10){
             hh = '0' + hh;
           }
           var mm = d.getMinutes()
@@ -366,7 +366,7 @@ function setMenuItems(selections){
     dirac.menu.items.items[5].disable();
     dirac.menu.items.items[6].disable();
   }
-  if((type != 'DataReconstruction')&&(type != 'DataStripping')&&(type != 'Replication')){
+  if((type != 'DataReconstruction')&&(type != 'DataStripping')&&(type != 'Replication')&&( type != 'Merge') ){
     dirac.menu.items.items[3].disable();
   }
 };
@@ -496,13 +496,40 @@ function AJAXsuccess(value,id,response){
   displayWin(panel,titleID)
 }
 function jump(type,id,submited){
+
+/*
+PR.getURLParams = function() {
+  var opts=parent.location.hash;
+  if(!opts)
+    return {};
+  opts = DEncode.decode( opts.substr(1) );
+  if(!opts)
+    return {};
+  return opts
+}
+
+PR.setURLParams = function(opts) {
+  var hash = DEncode.encode( opts );
+  if(!hash || hash == "de")
+    hash = "#";
+  if(parent.location.hash == hash)
+    return false;
+  parent.location.hash = hash;
+  return true;
+};
+*/
+
   if(submited == 0){
     alert('Nothing to display');
     return
   }
   if(type == 'request'){
     var url = document.location.protocol + '//' + document.location.hostname + gURLRoot + '/' + gPageDescription.selectedSetup;
-    url = url + '/' + gPageDescription.userData.group + '/production/ProductionRequest/display#ds3:idFs3:' + id + 'e';
+    var hash = DEncode.encode( {'idF':id} );
+    url = url + '/' + gPageDescription.userData.group + '/production/ProductionRequest/display#' + hash;
+  }else if(type == 'run'){
+    var url = document.location.protocol + '//' + document.location.hostname + gURLRoot + '/' + gPageDescription.selectedSetup;
+    url = url + '/' + gPageDescription.userData.group + '/jobs/JobMonitor/display?runNumber=' + id;
   }else{
     var url = document.location.protocol + '//' + document.location.hostname + gURLRoot + '/' + gPageDescription.selectedSetup;
     url = url + '/' + gPageDescription.userData.group + '/jobs/JobMonitor/display?prod=' + id;
@@ -571,7 +598,7 @@ function runStatus(id){
     {name:'StatusIcon',mapping:'Status'},
     {name:'TransformationID'},
     {name:'LastUpdate'},
-    {name:'Files_PercentProcessed'},
+    {name:'Files_PercentProcessed',type:'float'},
     {name:'Files_Total'},
     {name:'Files_Assigned'},
     {name:'RunNumber'},
@@ -586,18 +613,105 @@ function runStatus(id){
     {header:'',width:26,sortable:false,dataIndex:'StatusIcon',renderer:status,hideable:false,fixed:true,menuDisabled:true},
     {header:'Status',sortable:true,dataIndex:'Status',align:'left'},
     {header:'SelectedSite',sortable:true,dataIndex:'SelectedSite',align:'left'},
-    {header:'Files',sortable:true,dataIndex:'Files_Total',align:'left'},
-    {header:'Processed (%)',sortable:true,dataIndex:'Files_PercentProcessed',align:'left'},
-    {header:'Unused',sortable:true,dataIndex:'Files_Unused',align:'left'},
-    {header:'Assigned',sortable:true,dataIndex:'Files_Assigned',align:'left'},
-    {header:'Processed',sortable:true,dataIndex:'Files_Processed',align:'left'},
-    {header:'Problematic',sortable:true,dataIndex:'Files_Problematic',align:'left'},
+    {header:'Files',sortable:true,dataIndex:'Files_Total',align:'left',renderer:diffRuns},
+    {header:'Processed (%)',sortable:true,dataIndex:'Files_PercentProcessed',align:'left',renderer:diffRuns},
+    {header:'Unused',sortable:true,dataIndex:'Files_Unused',align:'left',renderer:diffRuns},
+    {header:'Assigned',sortable:true,dataIndex:'Files_Assigned',align:'left',renderer:diffRuns},
+    {header:'Processed',sortable:true,dataIndex:'Files_Processed',align:'left',renderer:diffRuns},
+    {header:'Problematic',sortable:true,dataIndex:'Files_Problematic',align:'left',renderer:diffRuns},
     {header:'LastUpdate',sortable:true,dataIndex:'LastUpdate',align:'left'}
   ];
   var store = initStore(record,{'url':'showRunStatus','params':params});
   store.removeListener('beforeload',storeLoadFunction);
-  var tableMngr = {'store':store,'columns':columns,'id':'runStatusTable'};
+  runObject = {}
+  store.addListener('beforeload',function(store){
+    if(store.totalLength){
+      for(var i = 0; i < store.totalLength; i++){
+        var record = store.getAt(i);
+        try{
+          runObject[record.data.RunNumber] = {};
+          runObject[record.data.RunNumber]['Files_Total'] = record.data['Files_Total'];
+          runObject[record.data.RunNumber]['Files_PercentProcessed'] = record.data['Files_PercentProcessed'];
+          runObject[record.data.RunNumber]['Files_Unused'] = record.data['Files_Unused'];
+          runObject[record.data.RunNumber]['Files_Assigned'] = record.data['Files_Assigned'];
+          runObject[record.data.RunNumber]['Files_Processed'] = record.data['Files_Processed'];
+          runObject[record.data.RunNumber]['Files_Problematic'] = record.data['Files_Problematic'];
+        }catch(e){}
+      }
+    }
+  });
+  function diffRuns(value,metaData,record,rowIndex,colIndex,store){
+    var id = record.data.RunNumber;
+    if(id && runObject[id]){
+      var name = this.name;
+      try{
+        var diff = value - runObject[id][name];
+        var test = diff + '';
+        if(test.indexOf(".") > 0){
+          diff = diff.toFixed(1);
+        }
+        if(diff > 0){
+          return value + ' <font color="#00CC00">(+' + diff + ')</font>';
+        }else if(diff < 0){
+          return value + ' <font color="#FF3300">(' + diff + ')</font>';
+        }else{
+          return value;
+        }
+      }catch(e){
+        return value;
+      }
+    }else{
+      return value;
+    }
+  }
+  var gridID = Ext.id();
+  var tableMngr = {'store':store,'columns':columns,'id':gridID};
   var panel = table(tableMngr);
-  var win = displayWin(panel,title,true);
+  panel.addListener('cellclick',function(table,rowIndex,columnIndex){
+    var record = table.getStore().getAt(rowIndex); // Get the Record for the row
+    try{
+      if(record.data.RunNumber){
+        var runID = record.data.RunNumber;
+        run = runID + '&prod=' + id;
+      }
+    }catch(e){
+      return
+    }
+    var columnName = table.getColumnModel().getColumnId(columnIndex); // Get the name for the column
+    var fieldName = table.getColumnModel().getDataIndex(columnIndex); // Get field name for the column
+    if(record.data){
+      var v = record.get(fieldName);
+    }
+    var coords = Ext.EventObject.xy;
+    var menu = new Ext.menu.Menu();
+    menu.add(
+      {handler:function(){jump('run',run,1)},text:'Show Jobs'},
+      {handler:function(){setRunStatus('Flush',id,runID,table.store)},text:'Flush'},
+      '-',
+      {handler:function(){Ext.Msg.minWidth = 360;Ext.Msg.alert('Cell value is:',v);},text:'Show value'}
+    );
+    menu.showAt(coords);
+  });
+  idObject.push(store);
+//  idObject.push(panel.id);
+  var win = displayWin(panel,title,false);
   win.setWidth(600);
+}
+function setRunStatus(status,prodID,runID,store){
+  c = confirm ('Are you sure you want to ' + status + ' this run: ' + runID + ' ?');
+  if(c === false){
+    return;
+  }
+  params = {'setRunStatus':'True','runID':runID,'prodID':prodID,'status':status}
+  Ext.Ajax.request({
+    failure:function(response){
+      AJAXerror(response.responseText);
+    },
+    method:'POST',
+    params:params,
+    success:function(response){
+      store.load();;
+    },
+    url:'action'
+  });  
 }
