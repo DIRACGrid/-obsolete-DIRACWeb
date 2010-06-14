@@ -8,6 +8,7 @@ for( var i = 0; i< nsParts.length; i++ )
   root = root[ nsParts[i] ];
 }
 
+DEncode.debugEnabled = true;
 DEncode.g_dEncodeFunctions = {};
 DEncode.g_dDecodeFunctions = {};
 
@@ -19,6 +20,7 @@ DEncode.encodeInt = function( iValue )
 
 DEncode.dencodeInt = function( buffer, i )
 {
+  DEncode.debug( "decoding int" );
   i += 1;
   var end  = buffer.indexOf( 'e', i );
   var n = parseInt( buffer.substring( i, end ) );
@@ -26,7 +28,7 @@ DEncode.dencodeInt = function( buffer, i )
 }
 
 DEncode.g_dEncodeFunctions[ 'int' ] = DEncode.encodeInt;
-DEncode.g_dDecodeFunctions[ "i" ] = DEncode.decodeInt;
+DEncode.g_dDecodeFunctions[ "i" ] = DEncode.dencodeInt;
 
 //Encoding and decoding strings
 DEncode.encodeString = function( sValue, eList )
@@ -36,6 +38,7 @@ DEncode.encodeString = function( sValue, eList )
 
 DEncode.decodeString = function( buffer, i )
 {
+  DEncode.debug( "decoding string" );
   i += 1;
   var colon = buffer.indexOf( ":", i );
   var n = parseInt( buffer.substring( i, colon ) );
@@ -59,10 +62,12 @@ DEncode.encodeList = function( lValue )
 
 DEncode.decodeList = function( buffer, i )
 {
+  DEncode.debug( "decoding list" );
   var oL = [];
   i += 1
   while( buffer[ i ] != "e" )
   {
+	DEncode.debug( buffer[i] );
     var res = DEncode.g_dDecodeFunctions[ buffer[ i ] ]( buffer, i );
     var ob = res[0];
     i = res[1];
@@ -89,13 +94,16 @@ DEncode.encodeDict = function( dValue, eList )
 
 DEncode.decodeDict = function( buffer, i )
 {
+  DEncode.debug( "Decoding dict" );
   var oD = {};
   i += 1;
   while( buffer[ i ] != "e" )
   {
+	DEncode.debug( " dict key is [" + buffer[i] +"]" );
     var res = DEncode.g_dDecodeFunctions[ buffer[ i ] ]( buffer, i );
     var k = res[0];
     i = res[1];
+    DEncode.debug( " dict value is [" + buffer[i] +"]" );
     res = DEncode.g_dDecodeFunctions[ buffer[ i ] ]( buffer, i );
     oD[ k ] = res[0];
     i = res[1];
@@ -136,6 +144,15 @@ DEncode.encode = function( uObject )
 
 DEncode.decode = function( stub )
 {
+	DEncode.debug( "Starting decoding with " + stub.charAt( 0 ) )
 	var res = DEncode.g_dDecodeFunctions[ stub.charAt( 0 ) ]( stub, 0 );
 	return res[0];
+}
+
+DEncode.debug = function( msg )
+{
+	if( DEncode.debugEnabled )
+	{
+		console.log( "[DEncode] " + msg );
+	}
 }
