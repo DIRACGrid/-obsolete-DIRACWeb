@@ -496,29 +496,6 @@ function AJAXsuccess(value,id,response){
   displayWin(panel,titleID)
 }
 function jump(type,id,submited){
-
-/*
-PR.getURLParams = function() {
-  var opts=parent.location.hash;
-  if(!opts)
-    return {};
-  opts = DEncode.decode( opts.substr(1) );
-  if(!opts)
-    return {};
-  return opts
-}
-
-PR.setURLParams = function(opts) {
-  var hash = DEncode.encode( opts );
-  if(!hash || hash == "de")
-    hash = "#";
-  if(parent.location.hash == hash)
-    return false;
-  parent.location.hash = hash;
-  return true;
-};
-*/
-
   if(submited == 0){
     alert('Nothing to display');
     return
