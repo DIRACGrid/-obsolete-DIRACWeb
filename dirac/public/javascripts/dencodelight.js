@@ -8,7 +8,7 @@ for( var i = 0; i< nsParts.length; i++ )
   root = root[ nsParts[i] ];
 }
 
-DEncode.debugEnabled = true;
+DEncode.debugEnabled = false;
 DEncode.g_dEncodeFunctions = {};
 DEncode.g_dDecodeFunctions = {};
 
