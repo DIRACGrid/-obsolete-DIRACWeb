@@ -1,5 +1,3 @@
-# $HeadURL$
-__RCSID__ = "$Id$"
 
 import types
 import logging
