@@ -127,6 +127,91 @@ if(typeof Ext.decode('{"Value": "", "OK": true}').success == "undefined"){
   }
 }
 
+/**
+ * PR.MultiComboBox
+ * @extends Ext.form.ComboBox
+ * ComboBox with multiple value selection
+ * assume there is "0" element which means "ALL"
+ */
+PR.MultiComboBox = Ext.extend( Ext.form.ComboBox, {
+  initList : function(){
+    PR.MultiComboBox.superclass.initList.call(this);
+    this.view.multiSelect = true; // enable multiple selection
+    this.view.addClass('x-combo-noedit'); // fix cursor in the list
+    this.setEditable(false); // avoid possible glitches
+  },
+  onTypeAhead : function() {
+    // prevent search
+  },
+  onSelect : function(record, index){
+    var ia = this.view.getSelectedIndexes();
+    var va = [];
+    for(i=0;i<ia.length;++i){
+      var r = this.store.getAt(ia[i]);
+      var v = r.data[this.valueField || this.displayField];
+      if ( v )
+	va.push(v);
+    }
+    var v = va.join(',');
+    if ( !v )
+      v = '0';
+    this.setValue(v);
+  },
+  setValue : function(v){
+    var text = v;
+    if(this.valueField){
+      var va = v.split(',');
+      var ta = [];
+      for(var i=0;i<va.length;++i){
+	var r = this.findRecord(this.valueField, va[i]);
+	if(r)
+	  ta.push(r.data[this.displayField]);
+	else
+	  ta.push(va[i]);
+      }
+      text = ta.join(',');
+    }
+    this.lastSelectionText = text;
+    if(this.hiddenField){
+      this.hiddenField.value = v;
+    }
+    Ext.form.ComboBox.superclass.setValue.call(this, text);
+    this.value = v;
+  },
+
+  onViewOver : function(e, t){
+    // prevent default selection
+  },
+  selectByValue : function(v, scrollIntoView){
+    if(v !== undefined && v !== null){
+      var ia = [];
+      var va = String(v).split(',');
+      for(i=0;i<va.length;++i){
+	var r = this.findRecord(this.valueField || this.displayField,
+				va[i]);
+	if(r)
+	  ia.push(this.store.indexOf(r));
+      }
+      this.select(ia, scrollIntoView);
+      return true;
+    }
+    return false;
+  },  
+  select : function(index, scrollIntoView){
+    // array version of the original method
+    this.selectedIndex = -1;
+    this.view.select(index);
+  },
+  selectNext : function() {
+    // has no meaning in multiselect
+  },
+  selectPrev : function() {
+    // has no meaning in multiselect
+  }
+});
+
+Ext.reg('multicombo', PR.MultiComboBox);
+
 
 /**
  * PR.RequestDetail
@@ -1907,7 +1992,8 @@ PR.RequestEditor = Ext.extend(Ext.FormPanel, {
     });
     verStore.load();
 
-    var condStore = this.makeJsonStore('bkk_tags?tag=LHCBCOND:SIMCOND',
+    var condTag = (this.type != 'Simulation') ? "LHCBCOND":"SIMCOND";
+    var condStore = this.makeJsonStore('bkk_tags?tag='+condTag,
 				       'list of conditions tags');
 
     var dddbStore = this.makeJsonStore('bkk_tags?tag=DDDB',
@@ -2127,13 +2213,13 @@ PR.RequestEditor = Ext.extend(Ext.FormPanel, {
 	     readOnly: true, cls: 'x-item-readonly' },
 	    {fieldLabel: 'File type',  name: 'inFileType',
 	     readOnly: true, cls: 'x-item-readonly' },
-	    { xtype: 'combo', fieldLabel: 'Production', 
+	    { xtype: 'multicombo', fieldLabel: 'Production', 
 	      hiddenName: 'inProductionID',
 	      store: inProdStore, displayField: 'text', valueField: 'id',
 	      forceSelection: true, mode: 'local',
 	      triggerAction: 'all', selectOnFocus: true, 
 	      autoCreate: {
-		tag: "input", type: "text", size: "12", autocomplete: "off"
+		tag: "input", type: "text", size: "16", autocomplete: "off"
 	      }
 	    }
 	  ]
