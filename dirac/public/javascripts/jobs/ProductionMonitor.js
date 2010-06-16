@@ -503,7 +503,7 @@ function jump(type,id,submited){
   if(type == 'request'){
     var url = document.location.protocol + '//' + document.location.hostname + gURLRoot + '/' + gPageDescription.selectedSetup;
     var hash = DEncode.encode( {'idF':id} );
-    url = url + '/' + gPageDescription.userData.group + '/production/ProductionRequest/display#' + hash;
+    url = url + '/' + gPageDescription.userData.group + '/Production/ProductionRequest/display#' + hash;
   }else if(type == 'run'){
     var url = document.location.protocol + '//' + document.location.hostname + gURLRoot + '/' + gPageDescription.selectedSetup;
     url = url + '/' + gPageDescription.userData.group + '/jobs/JobMonitor/display?runNumber=' + id;
