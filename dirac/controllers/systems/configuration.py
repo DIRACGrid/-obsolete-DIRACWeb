@@ -83,7 +83,7 @@ class ConfigurationController( BaseController ):
     return render( "/systems/configuration/editGlobalConfig.mako" )
 
   def browseRemoteConfig( self ):
-    result = self.__loadRemoteConfig()
+    result = self.__getRemoteConfiguration()
     if not result['OK']:
       return render( "/error.mako" )
     return render( "/systems/configuration/browseGlobalConfig.mako" )
