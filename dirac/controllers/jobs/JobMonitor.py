@@ -4,7 +4,7 @@ from time import time, gmtime, strftime
 from dirac.lib.base import *
 from dirac.lib.diset import getRPCClient, getTransferClient
 from dirac.lib.credentials import authorizeAction
-from DIRAC import gLogger
+from DIRAC import gConfig, gLogger
 from DIRAC.Core.Utilities.List import sortList
 from DIRAC.AccountingSystem.Client.ReportsClient import ReportsClient
 from DIRAC.Core.Utilities.DictCache import DictCache
@@ -70,17 +70,24 @@ class JobmonitorController(BaseController):
 ################################################################################
   @jsonify
   def submit(self):
-    gLogger.info(" -- SUBMIT --")
     pagestart = time()
     RPC = getRPCClient("WorkloadManagement/JobMonitoring")
     lhcbUser = str(credentials.getUsername())
     result = RPC.getOwners()
     if result["OK"]:
+      defaultGroup = gConfig.getValue("/Registry/DefaultGroup")
+      if defaultGroup:
+        try:
+          defaultGroup = str(defaultGroup)
+        except:
+          return {"success":"false","error":"Option /Registry/DefaultGroup is not a string, please set the default group as the string in the CS"} 
+      else:
+        return {"success":"false","error":"Option /Registry/DefaultGroup is undefined, please set the default group in the CS"}
       lhcbGroup = credentials.getSelectedGroup()
-      if lhcbGroup == "lhcb" or lhcbGroup == "lhcb_user":
-        if lhcbUser not in result["Value"]:
-          c.result = {"success":"false","error":"You don't have any jobs in the DIRAC system"}
-          return c.result
+      if not lhcbGroup == "diracAdmin" and lhcbUser not in result["Value"]:
+        c.result = {"success":"false","error":"You don't have any jobs in the DIRAC system"}
+        return c.result
+#      if lhcbGroup == defaultGroup:
     else:
       c.result = {"success":"false","error":result["Message"]}
       return c.result
@@ -143,7 +150,6 @@ class JobmonitorController(BaseController):
     else:
       RPC = getRPCClient("WorkloadManagement/JobMonitoring")
       result = RPC.getProductionIds()
-      gLogger.info("\033[0;31m ERROR RPC RESULT: \033[0m %s" % result)
       if result["OK"]:
         prod = []
         prods = result["Value"]
@@ -168,8 +174,15 @@ class JobmonitorController(BaseController):
     RPC = getRPCClient("WorkloadManagement/JobMonitoring")
     result = RPC.getSites()
     if result["OK"]:
+      tier1 = gConfig.getValue("/Website/PreferredSites")
+      if tier1:
+        try:
+          tier1 = tier1.split(", ")
+        except:
+          tier1 = list()
+      else:
+        tier1 = list()
       site = []
-      tier1 = list(["LCG.CERN.ch","LCG.CNAF.it","LCG.GRIDKA.de","LCG.IN2P3.fr","LCG.NIKHEF.nl","LCG.PIC.es","LCG.RAL.uk"])
       if len(result["Value"])>0:
         s = list(result["Value"])
         site.append([str("All")])
@@ -224,6 +237,21 @@ class JobmonitorController(BaseController):
     else:
       app = [["Error during RPC call"]]
     callback["app"] = app
+###
+    result = RPC.getRunNumbers()
+    if result["OK"]:
+      app = []
+      if len(result["Value"])>0:
+        app.append([str("All")])
+        for i in result["Value"]:
+          i = str(int(i))
+          i = i.replace(",",";")
+          app.append([i])
+      else:
+        app = [["Nothing to display"]]
+    else:
+      app = [["Error during RPC call"]]
+    callback["runNumber"] = app
 ###
     if lhcbUser == "Anonymous":
       callback["owner"] = [["Insufficient rights"]]
@@ -303,6 +331,9 @@ class JobmonitorController(BaseController):
       if request.params.has_key("status") and len(request.params["status"]) > 0:
         if str(request.params["status"]) != "All":
           req["Status"] = str(request.params["status"]).split('::: ')
+      if request.params.has_key("runNumber") and len(request.params["runNumber"]) > 0:
+        if str(request.params["runNumber"]) != "All":
+          req["runNumber"] = str(request.params["runNumber"]).split('::: ')
       if request.params.has_key("minorstat") and len(request.params["minorstat"]) > 0:
         if str(request.params["minorstat"]) != "All":
           req["MinorStatus"] = str(request.params["minorstat"]).split('::: ')
@@ -413,9 +444,30 @@ class JobmonitorController(BaseController):
       return self.__getPlotSrc(type,id,timeToSet,img)
     elif request.params.has_key("getPending") and len(request.params["getPending"]) > 0:
       return self.__getParams(request.params["getPending"])
+    elif request.params.has_key("getProxyStatus") and len(request.params["getProxyStatus"]) > 0:
+      if request.params["getProxyStatus"].isdigit():
+        return self.__getProxyStatus(int(request.params["getProxyStatus"]))
+      else:
+        return {"success":"false","error":"getProxyStatus not a number"}
     else:
       c.result = {"success":"false","error":"DIRAC Job ID(s) is not defined"}
       return c.result
+################################################################################
+  def __getProxyStatus( self, validSeconds = 0 ):
+    from DIRAC.FrameworkSystem.Client.ProxyManagerClient import ProxyManagerClient
+    proxyManager = ProxyManagerClient()
+    userGroup = str(credentials.getSelectedGroup())
+    if userGroup == "visitor":
+      return {"success":"false","error":"User not registered"}
+    userDN = str(credentials.getUserDN())
+    gLogger.info("\033[0;31m userHasProxy(%s, %s, %s) \033[0m" % (userDN,userGroup,validSeconds))
+    result = proxyManager.userHasProxy(userDN,userGroup,validSeconds)
+    if result["OK"]:
+      c.result = {"success":"true","result":"true"}
+    else:
+      c.result = {"success":"false","error":"false"}
+    gLogger.info("\033[0;31m PROXY: \033[0m",result)
+    return c.result
 ################################################################################
   def __getJdl(self,id):
     RPC = getRPCClient("WorkloadManagement/JobMonitoring")
@@ -456,8 +508,8 @@ class JobmonitorController(BaseController):
   def __getParams(self,id):
     try:
       id = int(id)
-    except:
-      c.result = {"success":"false","error":"Wrong data type, numerical expected"}
+    except Exception,x:
+      c.result = {"success":"false","error":"%s" % str(x)}
       return c.result
     RPC = getRPCClient("WorkloadManagement/JobMonitoring")
     result = RPC.getJobParameters(id)
@@ -699,44 +751,37 @@ class JobmonitorController(BaseController):
 ################################################################################
   @jsonify
   def jobSubmit(self):
-
-#    from DIRAC.Interfaces.API.Dirac import Dirac
-#    from DIRAC.LHCbSystem.Client.LHCbJob import LHCbJob
-#    jobbb = LHCbJob(getRPCClient("WorkloadManagement/JobManager"),getRPCClient("WorkloadManagement/SandboxStore"),getTransferClient("WorkloadManagement/SandboxStore"))
-#    gLogger.info(" - J O B :  ",jobb)
     response.headers['Content-type'] = "text/html" # Otherwise the browser would offer you to download a JobSubmit file
     jdl = ""
-    if request.params.has_key("exec") and len(request.params["exec"]) > 0:
-      jdl = jdl + "Executable = \"" + str(request.params["exec"]) + "\";"
-    else:
-      return {"success":"false","error":"Executable is absent"}
-    if request.params.has_key("outputSandbox") and len(request.params["outputSandbox"]) > 0:
-      jdl = jdl + "OutputSandbox = {" + str(request.params["outputSandbox"]) + "};"
-    else:
-      return {"success":"false","error":"OutputSandbox is absent"}
-    if request.params.has_key("params") and len(request.params["params"]) > 0:
-      jdl = jdl + "Arguments = \"" + str(request.params["params"]) + "\";"
-    if request.params.has_key("jobname") and len(request.params["jobname"]) > 0:
-      jdl = jdl + "JobName = \"" + str(request.params["jobname"]) + "\";"
-    if request.params.has_key("systemConfig") and len(request.params["systemConfig"]) > 0:
-      jdl = jdl + "SystemConfig = \"" + str(request.params["systemConfig"]) + "\";"
-    if request.params.has_key("CPUTime") and len(request.params["CPUTime"]) > 0:
-      jdl = jdl + "CPUTime = \"" + str(request.params["CPUTime"]) + "\";"
+    params = {}
+    for tmp in request.params:
+      try:
+        if len(request.params[tmp]) > 0:
+          params[tmp] = request.params[tmp]
+      except:
+        pass
+    for item in params:
+      if item == "OutputSandbox":
+        jdl = jdl + str(item) + " = {" + str(params[item]) + "};"
+      else:
+        jdl = jdl + str(item) + " = \"" + str(params[item]) + "\";"
     store = []
     for key in request.params.keys():
       try:
         if request.params[key].filename:
+          gLogger.info("\033[0;31m file - %s \033[0m " % request.params[key].filename)
           store.append(request.params[key])
       except:
         pass
+    gLogger.info("\033[0;31m *** %s \033[0m " % params)
     clearFS = False # Clear directory flag
+    fileNameList = []
+    exception_counter = 0
     if len(store) > 0: # If there is a file(s) in sandbox
-      fileNameList = []
       clearFS = True
       import shutil
       import os
       storePath = tempfile.mkdtemp(prefix='DIRAC_')
-      exception_counter = 0
       try:
         for file in store:
           name = os.path.join( storePath , file.filename.lstrip(os.sep) )
@@ -745,9 +790,9 @@ class JobmonitorController(BaseController):
           file.file.close()
           tFile.close()
           fileNameList.append(name)
-      except:
+      except Exception,x:
         exception_counter = 1
-        c.result = {"success":"false","error":"An EXCEPTION happens during saving your sandbox file(s)"}
+        c.result = {"success":"false","error":"An EXCEPTION happens during saving your sandbox file(s): %s" % str(x)}
     if len(fileNameList) > 0 and exception_counter == 0:
       sndBox = "InputSandbox = {\"" + "\",\"".join(fileNameList) + "\"};"
     else:
@@ -764,8 +809,8 @@ class JobmonitorController(BaseController):
           c.result = {"success":"true","result":result["Value"]}
         else:
           c.result = {"success":"false","error":result["Message"]}
-      except:
-        c.result = {"success":"false","error":"An EXCEPTION happens during job submittion"}
+      except Exception,x:
+        c.result = {"success":"false","error":"An EXCEPTION happens during job submittion: %s" % str(x)}
     if clearFS:
       shutil.rmtree(storePath)
     return c.result
