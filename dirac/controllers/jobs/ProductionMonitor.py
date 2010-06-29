@@ -435,10 +435,11 @@ class ProductionmonitorController(BaseController):
     elif cmd == 'start':
       status = 'Active'
       agentType = 'Automatic'
-    elif cmd == 'stop':
-      status = 'Stopped'
     elif cmd == 'flush':
       status = 'Flush'
+      agentType = 'Automatic'
+    elif cmd == 'stop':
+      status = 'Stopped'
     elif cmd == 'complete':
       status = 'Completed'
     else:
