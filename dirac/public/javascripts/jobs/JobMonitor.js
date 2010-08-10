@@ -7,6 +7,13 @@ function initJobMonitor(reponseSelect){
   var record = initRecord();
   var store = initStore(record);
   Ext.onReady(function(){
+    Ext.override(Ext.PagingToolbar, {
+      onRender :  Ext.PagingToolbar.prototype.onRender.createSequence(function(ct, position){
+        this.loading.removeClass('x-btn-icon');
+        this.loading.setText('Refresh');
+        this.loading.addClass('x-btn-text-icon');
+      })
+    })
     renderData(store);
   });
 }
@@ -50,7 +57,8 @@ function initRecord(){
     {name:'JobType'},
     {name:'JobIDcheckBox',mapping:'JobID'},
     {name:'StatusIcon',mapping:'Status'},
-    {name:'OwnerGroup'}
+    {name:'OwnerGroup'},
+    {name:'RunNumber'}
   ]);
   return record
 }
@@ -62,6 +70,7 @@ function initSidebar(){
   var statSelect = selectStatusMenu(); // Initializing JobStatus Menu
   var minSelect = selectMinorStatus(); // Initializing Minor Status Menu
   var prodSelect = selectProdMenu(); // Initializing JobGroup Menu
+  var runSelect = selectRunNumbers();
   var id = selectID(); // Initialize field for JobIDs
   var dateSelect = dateTimeWidget(); // Initializing date dialog
   var select = selectPanel(); // Initializing container for selection objects
@@ -72,8 +81,9 @@ function initSidebar(){
   select.insert(3,appSelect);
   select.insert(4,ownerSelect);
   select.insert(5,prodSelect);
-  select.insert(6,id);
-  select.insert(7,dateSelect);
+  select.insert(6,runSelect);
+  select.insert(7,id);
+  select.insert(8,dateSelect);
   var sortGlobal = sortGlobalPanel(); // Initializing the global sort panel
   var stat = statPanel('Current Statistics','current','statGrid');
   var glStat = statPanel('Global Statistics','global','glStatGrid');
@@ -95,6 +105,7 @@ function initData(store){
     {header:'ApplicationStatus',sortable:true,dataIndex:'ApplicationStatus',align:'left'},
     {header:'Site',sortable:true,dataIndex:'Site',align:'left'},
     {header:'JobName',sortable:true,dataIndex:'JobName',align:'left'},
+    {header:'RunNumber',sortable:true,dataIndex:'RunNumber',align:'left',hidden:true},
     {header:'LastUpdate [UTC]',sortable: true,renderer:Ext.util.Format.dateRenderer('Y-m-d H:i'),dataIndex:'LastUpdateTime'},
     {header:'LastSignOfLife [UTC]',sortable:true,renderer:Ext.util.Format.dateRenderer('Y-m-d H:i'),dataIndex:'LastSignOfLife'},
     {header:'SubmissionTime [UTC]',sortable:true,renderer:Ext.util.Format.dateRenderer('Y-m-d H:i'),dataIndex:'SubmissionTime'},
@@ -214,6 +225,7 @@ function addMenu(){
     var button = new Ext.Toolbar.Button({
       text:'Tools',
       menu:[
+        {handler:function(){encodeChecker()},text:'Encode Decode'},
 //        {handler:function(){submitJobNew()},text:'Job Launchpad'},
 //        {handler:function(){launchJob()},text:'Launchpad in progress'},
         {handler:function(){showURL()},text:'Full URL'},
@@ -226,6 +238,38 @@ function addMenu(){
     });
     topBar.insertButton(6,button);
   }
+}
+function encodeChecker(){
+  Ext.Msg.prompt('Check', 'Please enter the encoded object:',function(btn,text){
+    if(btn == 'ok'){
+      if(text){
+        text = DEncode.decode( text );
+        Ext.Msg.alert( text.toString() );
+      }
+    }
+  },this,true);
+/*
+PR.getURLParams = function() {
+  var opts=parent.location.hash;
+  if(!opts)
+    return {};
+  opts = DEncode.decode( opts.substr(1) );
+  if(!opts)
+    return {};
+  return opts
+}
+
+PR.setURLParams = function(opts) {
+  var hash = DEncode.encode( opts );
+  if(!hash || hash == "de")
+    hash = "#";
+  if(parent.location.hash == hash)
+    return false;
+  parent.location.hash = hash;
+  return true;
+};
+*/
+
 }
 function setMenuItems(selections){
   if(selections){
