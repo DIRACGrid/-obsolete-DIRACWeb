@@ -87,6 +87,11 @@ class SitesummaryController(BaseController):
       c.result = {"success":"false","error":result["Message"]}
     gLogger.info("\033[0;31m SITESUMMARY INDEX REQUEST: \033[0m %s" % (time() - pagestart))
     return c.result
+################################################################################
+  @jsonify
+  def action(self):
+    if request.params.has_key("refreshSelection") and len(request.params["refreshSelection"]) > 0:
+      return self.__getSelectionData()
 ###############################################################################
   def __getSelectionData(self):
     callback = {}
