@@ -1,10 +1,10 @@
 #!/usr/bin/env python
 ########################################################################
-# $HeadURL: svn+ssh://svn.cern.ch/reps/dirac/LHCbDIRAC/trunk/LHCbDIRAC/Core/scripts/lhcb-proxy-init.py $
+# $HeadURL$
 # File :   dirac-postInstall.py
 # Author : Ricardo Graciani
 ########################################################################
-__RCSID__ = "$Id: lhcb-proxy-init.py 18858 2009-12-02 12:13:33Z atsareg $"
+__RCSID__ = "$Id$"
 import os
 import sys
 basedir = sys.path[0]
