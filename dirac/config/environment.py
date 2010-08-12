@@ -67,12 +67,16 @@ def initDIRAC( rootPath, enableDebug = False ):
     cfgFilePaths = [ os.path.join( rootPath, "web.cfg" ) ]
     for extModule in extModules:
       gLogger.info( "Adding web.cfg for %s extension" % extModule )
-      webCFGPath = os.path.join( diracRootPath, extModule, "Web", "web.cfg" )
+      extModulePath = os.path.join( diracRootPath, extModule )
+      webCFGPath = os.path.join( extModulePath, "Web", "web.cfg" )
       cfgFilePaths.append( webCFGPath )
+      for systemDir in os.listdir( extModulePath ):
+        webCFGSystemPath = os.path.join( extModulePath, systemDir, "Web", "web.cfg" )
+        cfgFilePaths.append( webCFGSystemPath )
     webCFG = CFG.CFG()
     for webCFGPath in cfgFilePaths:
       if not os.path.isfile( webCFGPath ):
-        gLogger.info( "%s does not exist" % webCFGPath )
+        gLogger.warn( "%s does not exist" % webCFGPath )
       else:
         gLogger.info( "Loading %s" % webCFGPath )
         modCFG = CFG.CFG().loadFromFile( webCFGPath )
@@ -86,10 +90,16 @@ def initDIRAC( rootPath, enableDebug = False ):
     for type in ( 'controllers', 'templates', 'public' ):
       configDict[ type ] = []
       for extModule in extModules:
-        typePath = os.path.join( diracRootPath, extModule, "Web", type )
+        extModulePath = os.path.join( diracRootPath, extModule )
+        typePath = os.path.join( extModulePath, "Web", type )
         if os.path.isdir( typePath ):
           gLogger.info( "Adding %s path for module %s" % ( type, extModule ) )
           configDict[ type ].append( typePath )
+        for systemDir in os.listdir( extModulePath ):
+          systemTypePath = os.path.join( extModulePath, systemDir, "Web", type )
+          if os.path.isdir( systemTypePath ):
+            gLogger.info( "Adding %s path for system %s in module %s" % ( type, systemDir, extModule ) )
+            configDict[ type ].append( systemTypePath )
       #End of extensions
       configDict[ type ].append( os.path.join( rootPath, type ) )
 
