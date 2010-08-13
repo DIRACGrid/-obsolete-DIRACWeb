@@ -20,6 +20,6 @@ for comp in ['ext', 'yui']:
 destDir = os.path.join( basedir, 'dirac', 'public', 'images' )
 tarName = os.path.join( basedir, 'tarballs', 'images', 'flags.tar.gz' )
 
-if os.system( 'tar xjf %s -C %s' % ( tarName, destDir ) ):
+if os.system( 'tar xzf %s -C %s' % ( tarName, destDir ) ):
   sys.exit( 1 )
 
