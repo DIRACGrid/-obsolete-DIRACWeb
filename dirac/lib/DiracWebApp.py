@@ -2,6 +2,7 @@
 import os
 import sys
 
+from pylons import config
 from pylons.wsgiapp import PylonsApp
 from pylons.util import class_name_from_module_name
 
@@ -15,8 +16,12 @@ class DiracWebApp( PylonsApp ):
     self.__baseControllerPaths = []
     for module in gConfig.getValue( "/DIRAC/Extensions", [] ):
       module = "%sDIRAC" % module
-      if os.path.isdir( os.path.join( rootPath, module, "Web", "controllers" ) ):
+      modulePath = os.path.join( rootPath, module )
+      if os.path.isdir( os.path.join( modulePath, "Web", "controllers" ) ):
         self.__baseControllerPaths.append( "%s.Web.controllers" % module )
+      for systemName in os.listdir( modulePath ):
+        if os.path.isdir( os.path.join( modulePath, systemName, "Web", "controllers" ) ):
+          self.__baseControllerPaths.append( "%s.%s.Web.controllers" % ( module, systemName ) )
     self.__baseControllerPaths.append( 'dirac.controllers' )
     self.__log = gLogger.getSubLogger( "DIRACWebApp" )
     self.__log.info( "Base modules to find controllers are:\n\t%s" % "\n\t".join ( self.__baseControllerPaths ) )
