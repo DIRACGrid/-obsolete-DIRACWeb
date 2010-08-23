@@ -157,19 +157,17 @@ class SitesummaryController(BaseController):
   def __request(self):
     req = {}
     global pageNumber
+    global numberOfJobs
+    global globalSort
     if request.params.has_key("id") and len(request.params["id"]) > 0:
       pageNumber = 0
       req["JobID"] = str(request.params["id"])
     elif request.params.has_key("expand") and len(request.params["expand"]) > 0:
-      global globalSort
-      global numberOfJobs
       globalSort = [["GridSite","ASC"]]
       numberOfJobs = 500
       pageNumber = 0
       req["ExpandSite"] = str(request.params["expand"])
     else:
-      global numberOfJobs
-      global globalSort
       pageNumber = 0
       numberOfJobs = 500
       if request.params.has_key("country") and len(request.params["country"]) > 0:
