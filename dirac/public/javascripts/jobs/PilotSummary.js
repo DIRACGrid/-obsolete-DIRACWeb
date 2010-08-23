@@ -78,7 +78,7 @@ function initData(store){
     {header:'Scheduled',sortable:false,dataIndex:'Scheduled',align:'left'},
     {header:'Running',sortable:false,dataIndex:'Running',align:'left'},
     {header:'Done',sortable:false,dataIndex:'Done',align:'left'},
-    {header:'Aborted',sortable:false,dataIndex:'Aborted',align:'left',hidden:true},
+    {header:'Aborted',sortable:false,dataIndex:'Aborted',align:'left'},
     {header:'Aborted_Hour',sortable:false,dataIndex:'Aborted_Hour',align:'left'},
     {header:'Done_Empty',sortable:false,dataIndex:'Done_Empty',align:'left',hidden:true},
     {header:'Total',sortable:false,dataIndex:'Total',align:'left',hidden:true}
