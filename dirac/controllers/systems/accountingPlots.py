@@ -129,6 +129,10 @@ class AccountingplotsController( BaseController ):
         start = Time.fromString( pD[ 'startTime' ] )
         del( pD[ 'startTime' ] )
     del( pD[ 'timeSelector' ] )
+
+    for k in pD:
+      if k.find( "ex_" ) == 0:
+        extraParams[ k[3:] ] = pD[ k ]
     #Listify the rest
     for selName in pD:
       pD[ selName ] = List.fromChar( pD[ selName ], "," )
@@ -179,7 +183,7 @@ class AccountingplotsController( BaseController ):
         strData += "%s\n" % ",".join( lineData )
     else:
       strData = "%s\n" % ",".join( groupKeys )
-      strData +=  ",".join( [ str( rawData[ 'data' ][ k ] ) for k in groupKeys ] )
+      strData += ",".join( [ str( rawData[ 'data' ][ k ] ) for k in groupKeys ] )
     response.headers['Content-type'] = 'text/csv'
     response.headers['Content-Disposition'] = 'attachment; filename="%s.csv"' % md5( str( params ) ).hexdigest()
     response.headers['Content-Length'] = len( strData )

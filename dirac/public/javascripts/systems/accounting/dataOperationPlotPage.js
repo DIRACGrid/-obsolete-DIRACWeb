@@ -36,10 +36,6 @@ function renderPage( plotsList, selectionData ){
   selWidgets.push( createHidden( "typeName", "DataOperation" ) );
   appendToLeftPanel( createPanel( "Selection conditions", selWidgets ) );
 
-  var advWidgets = [];
-  advWidgets.push( createTextField( "plotTitle", "Plot title", "" ) );
-  advWidgets.push( createCheckBox( "pinDates", "Pin dates", "true" ) );
-  appendToLeftPanel( createPanel( "Advanced options", advWidgets ) );
-
+  appendAdvancedSettingsWidget();
   renderPlotPage();
 }

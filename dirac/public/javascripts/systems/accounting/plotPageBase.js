@@ -43,6 +43,19 @@ function fillSelectionPanel( plotRequest )
 	//Set pinned
 	var pinningCheck = gLeftSidebarPanel.find( "name", "pinDates" )[0];
 	pinningCheck.setValue ( '_pinDates' in plotRequest && plotRequest[ '_pinDates' ]+"" == "true" )
+	//Extra params
+	for( k in plotRequest )
+	{
+		if( k.substring( 0, 4) == "_ex_" )
+		{
+			var wgtName = k.substring( 1 );
+			var foundWdgt = gLeftSidebarPanel.find( "name", wgtName );
+			if( foundWdgt.length == 0 )
+				continue;
+			foundWdgt = foundWdgt[0];
+			foundWdgt.setValue ( plotRequest[ k ] );
+		}
+	}
 	//Set title
 	var plotTitleText = gLeftSidebarPanel.find( "name", "plotTitle" )[0];
 	plotTitleText.setValue( plotRequest._plotTitle );
@@ -314,4 +327,13 @@ function orderSiteList( siteList )
   for( var i = 0; i < siteList.length; i++ )
     orderedSites.push( siteList[i] );
   return orderedSites;
+}
+
+function appendAdvancedSettingsWidget()
+{
+	var advWidgets = [];
+	advWidgets.push( createTextField( "plotTitle", "Plot title", "" ) );
+	advWidgets.push( createCheckBox( "pinDates", "Pin dates", "true" ) );
+	advWidgets.push( createCheckBox( "ex_staticUnits", "Do not scale units", "true" ) );
+	appendToLeftPanel( createPanel( "Advanced options", advWidgets ) );	
 }
