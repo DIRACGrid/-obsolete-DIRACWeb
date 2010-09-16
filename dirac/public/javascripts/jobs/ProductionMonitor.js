@@ -226,7 +226,7 @@ function setChk(value){
     return false
   } 
 }
-function  setRefresh(time,store){
+function setRefresh(time,store){
   var stamp = Ext.getCmp('stampTableButton');
   if(time == 900000 || time == 3600000 || time == 1800000){
     refreshRate = time;
@@ -661,9 +661,20 @@ function runStatus(id){
     }
     var coords = Ext.EventObject.xy;
     var menu = new Ext.menu.Menu();
+    var siteMenu = [
+      {handler:function(){setSite(id,runID,'LCG.CERN.ch',table.store)},text:'LCG.CERN.ch'},
+      {handler:function(){setSite(id,runID,'LCG.CNAF.it',table.store)},text:'LCG.CNAF.it'},
+      {handler:function(){setSite(id,runID,'LCG.GRIDKA.de',table.store)},text:'LCG.GRIDKA.de'},
+      {handler:function(){setSite(id,runID,'LCG.IN2P3.fr',table.store)},text:'LCG.IN2P3.fr'},
+      {handler:function(){setSite(id,runID,'LCG.NIKHEF.nl',table.store)},text:'LCG.NIKHEF.nl'},
+      {handler:function(){setSite(id,runID,'LCG.PIC.es',table.store)},text:'LCG.PIC.es'},
+      {handler:function(){setSite(id,runID,'LCG.RAL.uk',table.store)},text:'LCG.RAL.uk'},
+      {handler:function(){setSite(id,runID,'LCG.SARA.nl',table.store)},text:'LCG.SARA.nl'}
+    ];
     menu.add(
       {handler:function(){jump('run',run,1)},text:'Show Jobs'},
       {handler:function(){setRunStatus('Flush',id,runID,table.store)},text:'Flush'},
+      {menu:({items:siteMenu}),text:'Set Site'},
       '-',
       {handler:function(){Ext.Msg.minWidth = 360;Ext.Msg.alert('Cell value is:',v);},text:'Show value'}
     );
@@ -674,12 +685,30 @@ function runStatus(id){
   var win = displayWin(panel,title,false);
   win.setWidth(600);
 }
-function setRunStatus(status,prodID,runID,store){
-  c = confirm ('Are you sure you want to ' + status + ' this run: ' + runID + ' ?');
+function setSite(prodID,runID,site,store){
+  var c = confirm ('Are you sure you want to set site ' + site + ' for the run ' + runID + ' in production ' + prodID + ' ?');
   if(c === false){
     return;
   }
-  params = {'setRunStatus':'True','runID':runID,'prodID':prodID,'status':status}
+  var params = {'setSite':'True','runID':runID,'prodID':prodID,'site':site}
+  Ext.Ajax.request({
+    failure:function(response){
+      AJAXerror(response.responseText);
+    },
+    method:'POST',
+    params:params,
+    success:function(response){
+      store.load();;
+    },
+    url:'action'
+  });
+}
+function setRunStatus(status,prodID,runID,store){
+  var c = confirm ('Are you sure you want to ' + status + ' this run: ' + runID + ' ?');
+  if(c === false){
+    return;
+  }
+  var params = {'setRunStatus':'True','runID':runID,'prodID':prodID,'status':status}
   Ext.Ajax.request({
     failure:function(response){
       AJAXerror(response.responseText);
