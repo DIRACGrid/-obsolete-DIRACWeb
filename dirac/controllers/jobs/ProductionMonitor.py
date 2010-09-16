@@ -45,8 +45,10 @@ class ProductionmonitorController(BaseController):
     RPC = getRPCClient("ProductionManagement/ProductionManager")
     result = self.__request()
     gLogger.info("\033[0;31m result: \033[0m %s" % result)
+    gLogger.info("getTransformationSummaryWeb(%s,%s,%s,%s)" % (result,globalSort,pageNumber,numberOfJobs))
+    callstart = time()
     result = RPC.getTransformationSummaryWeb(result,globalSort,pageNumber,numberOfJobs)
-    gLogger.info("\033[0;31m VAL: \033[0m globalSort: %s, pageNumber: %s, numberOfJobs: %s" % (globalSort,pageNumber,numberOfJobs))
+    gLogger.info("\033[0;31m PRODUCTION CALL: \033[0m %s" % (time() - callstart))
     if result["OK"]:
       result = result["Value"]
       if result.has_key("TotalRecords") and  result["TotalRecords"] > 0:
@@ -64,6 +66,7 @@ class ProductionmonitorController(BaseController):
                 c.result.append(tmp)
               total = result["TotalRecords"]
               if result.has_key("Extras"):
+                gLogger.info(result["Extras"])
                 extra = result["Extras"]
                 c.result = {"success":"true","result":c.result,"total":total,"extra":extra}
               else:
@@ -307,6 +310,17 @@ class ProductionmonitorController(BaseController):
       return self.__additionalParams(id)
     elif request.params.has_key("refreshSelection") and len(request.params["refreshSelection"]) > 0:
       return self.__getSelectionData()
+    elif request.params.has_key("setSite") and len(request.params["setSite"]) > 0:
+      if not request.params.has_key("runID"):
+        return {"success":"false","error":"runID is undefined"}
+      elif not request.params.has_key("prodID"):
+        return {"success":"false","error":"prodID is undefined"}
+      elif not request.params.has_key("site"):
+        return {"success":"false","error":"site is undefined"}
+      runid = request.params["runID"]
+      prodid = request.params["prodID"]
+      site = request.params["site"]
+      return self.__setSite(runid,prodid,site)
     elif request.params.has_key("setRunStatus") and len(request.params["setRunStatus"]) > 0:
       if not request.params.has_key("runID"):
         return {"success":"false","error":"runID is undefined"}
@@ -321,6 +335,22 @@ class ProductionmonitorController(BaseController):
     else:
       c.result = {"success":"false","error":"Transformation ID(s) is not defined"}
       return c.error
+################################################################################
+  def __setSite(self,runid,prodid,site):
+    try:
+      runID = int(runid)
+      transID = int(prodid)
+      site = str(site)
+    except Exception,x:
+      return {"success":"false","error":str(x)}
+    RPC = getRPCClient("ProductionManagement/ProductionManager")
+    gLogger.info("\033[0;31m setTransformationRunsSite(%s, %s, %s) \033[0m" % (transID,runID,site))
+    result = RPC.setTransformationRunsSite(transID,runID,site)
+    if result["OK"]:
+      c.result = {"success":"true","result":"true"}
+    else:
+      c.result = {"success":"false","error":result["Message"]}
+    return c.result
 ################################################################################
   def __setRunStatus(self,runid,prodid,status):
     try:
@@ -337,7 +367,6 @@ class ProductionmonitorController(BaseController):
     else:
       c.result = {"success":"false","error":result["Message"]}
     return c.result
-
 ################################################################################
   def __logProduction(self,prodid):
     id = int(prodid)
