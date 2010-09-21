@@ -299,9 +299,18 @@ class ProductionmonitorController(BaseController):
       return self.__transformationFileStatus(id)
     elif request.params.has_key("globalStat"):
       return self.__globalStat()
-    elif request.params.has_key("fileRetry"):
-      id = str(request.params["fileRetry"])
-      return self.__fileRetry(id)
+    elif request.params.has_key("fileProcessed"):
+      id = str(request.params["fileProcessed"])
+      return self.__fileRetry(id,"proc")
+    elif request.params.has_key("fileNotProcessed"):
+      id = str(request.params["fileNotProcessed"])
+      return self.__fileRetry(id,"not")
+    elif request.params.has_key("fileAllProcessed"):
+      id = str(request.params["fileAllProcessed"])
+      return self.__fileRetry(id,"all")
+#    elif request.params.has_key("fileRetry"):
+#      id = str(request.params["fileRetry"])
+#      return self.__fileRetry(id)
     elif request.params.has_key("dataQuery"):
       id = str(request.params["dataQuery"])
       return self.__dataQuery(id)
@@ -310,6 +319,8 @@ class ProductionmonitorController(BaseController):
       return self.__additionalParams(id)
     elif request.params.has_key("refreshSelection") and len(request.params["refreshSelection"]) > 0:
       return self.__getSelectionData()
+    elif request.params.has_key("getT1") and len(request.params["getT1"]) > 0:
+      return self. __getT1()
     elif request.params.has_key("setSite") and len(request.params["setSite"]) > 0:
       if not request.params.has_key("runID"):
         return {"success":"false","error":"runID is undefined"}
@@ -366,6 +377,14 @@ class ProductionmonitorController(BaseController):
       c.result = {"success":"true","result":"true"}
     else:
       c.result = {"success":"false","error":result["Message"]}
+    return c.result
+################################################################################
+  def __getT1(self):
+    tier1 = gConfig.getValue("/Website/PreferredSites")
+    if tier1:
+      c.result = {"success":"true","result":tier1}
+    else:
+      c.result = {"success":"false","error":"Can't get sites from /Website/PreferredSites location in CS"}
     return c.result
 ################################################################################
   def __logProduction(self,prodid):
@@ -504,10 +523,17 @@ class ProductionmonitorController(BaseController):
         back.append([i,result[i]])
       return back
 ################################################################################
-  def __fileRetry(self,prodid):
+  def __fileRetry(self,prodid,mode):
     id = int(prodid)
     RPC = getRPCClient('ProductionManagement/ProductionManager')
-    res = RPC.getTransformationFilesCount(prodid,"ErrorCount")
+    if mode == "proc":
+      res = RPC.getTransformationFilesCount(prodid,"ErrorCount",{'Status':'Processed'})
+    elif mode == "not":
+      res = RPC.getTransformationFilesCount(prodid,"ErrorCount",{'Status':['Unused','Assigned','Failed']})
+    elif mode == "all":
+      res = RPC.getTransformationFilesCount(prodid,"ErrorCount")
+    else:
+      return {"success":"false","error":res["Message"]}
     if not res['OK']:
       c.result = {"success":"false","error":res["Message"]}
     else:
