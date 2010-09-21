@@ -336,6 +336,11 @@ function setMenuItems(selections){
     {handler:function(){action('production','complete',id)},text:'Complete'},
     {handler:function(){action('production','clean',id)},text:'Clean'},
   ];
+  var subMenu1 = [
+    {handler:function(){AJAXrequest('fileProcessed',id)},text:'Processed'},
+    {handler:function(){AJAXrequest('fileNotProcessed',id)},text:'Not Processed'},
+    {handler:function(){AJAXrequest('fileAllProcessed',id)},text:'All'},
+  ];
   if(dirac.menu){
     dirac.menu.add(
       {handler:function(){jump('job',id,submited)},text:'Show Jobs'},
@@ -343,7 +348,7 @@ function setMenuItems(selections){
       {handler:function(){AJAXrequest('log',id)},text:'Logging Info'},
       {handler:function(){runStatus(id)},text:'Run Status'},
       {handler:function(){AJAXrequest('fileStat',id)},text:'File Status'},
-      {handler:function(){AJAXrequest('fileRetry',id)},text:'File Error Count'},
+      {text:'File Retries',menu:({items:subMenu1})},
       {handler:function(){AJAXrequest('dataQuery',id)},text:'Input Data Query'},
       {handler:function(){AJAXrequest('additionalParams',id)},text:'Additional Params'},
       {handler:function(){AJAXrequest('elog',id)},text:'Show Details'},
@@ -430,7 +435,7 @@ function AJAXsuccess(value,id,response){
     panel.addListener('cellclick',function(table,rowIndex,columnIndex){
       showMenu('nonMain',table,rowIndex,columnIndex);
     });
-  }else if((value == 'fileStat') || (value == 'fileRetry')){
+  }else if((value == 'fileStat') || (value == 'fileProcessed') || (value == 'fileNotProcessed') || (value == 'fileAllProcessed')){
     var reader = {};
     var columns = [];
     reader = new Ext.data.ArrayReader({},[
@@ -438,15 +443,15 @@ function AJAXsuccess(value,id,response){
       {name:'count'},
       {name:'percent'}
     ]);
-    if(value == 'fileRetry'){
+    if(value == 'fileStat'){
       columns = [
-        {header:'Retries',sortable:true,dataIndex:'status',align:'left'},
+        {header:'Status',sortable:true,dataIndex:'status',align:'left'},
         {header:'Count',sortable:true,dataIndex:'count',align:'left'},
         {header:'Percentage',sortable:true,dataIndex:'percent',align:'left'}
       ];
     }else{
       columns = [
-        {header:'Status',sortable:true,dataIndex:'status',align:'left'},
+        {header:'Retries',sortable:true,dataIndex:'status',align:'left'},
         {header:'Count',sortable:true,dataIndex:'count',align:'left'},
         {header:'Percentage',sortable:true,dataIndex:'percent',align:'left'}
       ];
@@ -686,38 +691,63 @@ function runStatus(id){
   win.setWidth(600);
 }
 function setSite(prodID,runID,site,store){
-  var c = confirm ('Are you sure you want to set site ' + site + ' for the run ' + runID + ' in production ' + prodID + ' ?');
-  if(c === false){
-    return;
-  }
-  var params = {'setSite':'True','runID':runID,'prodID':prodID,'site':site}
-  Ext.Ajax.request({
-    failure:function(response){
-      AJAXerror(response.responseText);
-    },
-    method:'POST',
-    params:params,
-    success:function(response){
-      store.load();;
-    },
-    url:'action'
+  x = getT1();
+  var title = 'Set Site ' + site;
+  var msg = 'Are you sure you want to set site ' + site + ' for the run ' + runID + ' in production ' + prodID + ' ?';
+  Ext.Msg.confirm(title,msg,function(btn){
+    if(btn == 'yes'){
+      var params = {'setSite':'True','runID':runID,'prodID':prodID,'site':site};
+      Ext.Ajax.request({
+        failure:function(response){
+          AJAXerror(response.responseText);
+        },
+        method:'POST',
+        params:params,
+        success:function(response){
+          store.load();
+        },
+        url:'action'
+      });
+    }
   });
 }
 function setRunStatus(status,prodID,runID,store){
-  var c = confirm ('Are you sure you want to ' + status + ' this run: ' + runID + ' ?');
-  if(c === false){
-    return;
-  }
-  var params = {'setRunStatus':'True','runID':runID,'prodID':prodID,'status':status}
+  var title = 'Flush ' + runID;
+  var msg = 'Are you sure you want to ' + status + ' this run: ' + runID + ' ?';
+  Ext.Msg.confirm(title,msg,function(btn){
+    if(btn == 'yes'){
+      var params = {'setRunStatus':'True','runID':runID,'prodID':prodID,'status':status};
+      Ext.Ajax.request({
+        failure:function(response){
+          AJAXerror(response.responseText);
+        },
+        method:'POST',
+        params:params,
+        success:function(response){
+          store.load();
+        },
+        url:'action'
+      });
+    }
+  });
+}
+function getT1(){
   Ext.Ajax.request({
     failure:function(response){
       AJAXerror(response.responseText);
     },
     method:'POST',
-    params:params,
+    params:{'getT1':'True'},
     success:function(response){
-      store.load();;
+      var jsonData = Ext.util.JSON.decode(response.responseText);
+      if(jsonData['success'] == 'false'){
+        alert('Error: ' + jsonData['error']);
+        return;
+      }else{
+        var tier1 = jsonData['result'].split(', ');
+        return tier1
+      }
     },
     url:'action'
-  });  
+  });
 }
