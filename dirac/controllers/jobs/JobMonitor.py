@@ -23,17 +23,14 @@ class JobmonitorController(BaseController):
 ################################################################################
   def display(self):
     pagestart = time()
-    lhcbGroup = credentials.getSelectedGroup()
-    if lhcbGroup == "visitor":
+    group = credentials.getSelectedGroup()
+    if group == "visitor" and credentials.getUserDN == "":
       return render("/login.mako")
     c.select = self.__getSelectionData()
     if not c.select.has_key("extra"):
-      if lhcbGroup == "lhcb":
+      groupProperty = credentials.getProperties(group)
+      if ( "JobAdministrator" or "JobSharing" ) not in groupProperty: #len(groupProperty) == 1 and groupProperty[0] == "NormalUser":
         c.select["extra"] = {"owner":credentials.getUsername()}
-      elif lhcbGroup == "lhcb_user":
-        c.select["extra"] = {"owner":credentials.getUsername()}
-    gLogger.info("SELECTION RESULTS:",c.select)
-    gLogger.info("\033[0;31mJOB INDEX REQUEST:\033[0m %s" % (time() - pagestart))
     return render("jobs/JobMonitor.mako")
 ################################################################################
   def __getJobSummary(self,jobs,head):
@@ -42,37 +39,11 @@ class JobmonitorController(BaseController):
       valueList.append({"id":str(i[2]),"status":str(i[6]),"minorStatus":str(i[10]),"applicationStatus":str(i[11]),"site":str(i[26]),"jobname":str(i[22]),"lastUpdate":str(i[25]),"owner":str(i[31]),"submissionTime":str(i[12]),"signTime":str(i[3])})
     return valueList
 ################################################################################
-  def getPlot(self):
-    if request.params.has_key("data") and len(request.params["data"]) > 0:
-      client = PlottingClient()
-      result = client.getPlot(data,title='',graph_size='normal')
-      if result["OK"]:
-        plots = result["Value"]
-        response.headers['Content-type'] = 'image/png'
-        response.headers['Content-Disposition'] = 'attachment; filename="%s"' % 'test.png'
-        response.headers['Content-Length'] = len(plots)
-        response.headers['Content-Transfer-Encoding'] = 'Binary'
-      else:
-        return
-    else:
-      return
-################################################################################
-  def __getPlotSrc(self,data):
-    client = getRPCClient("Framework/Plotting")
-    result = client.getPlot(data,metadata,fname='test_service.png')
-    if result["OK"]:
-      plots = result["Value"]
-      c.result = {"success":"true","result":plots}
-    else:
-      c.result = {"success":"false","error":result["Message"]}
-    gLogger.info("getPlotSrc:",c.result)
-    return c.result
-################################################################################
   @jsonify
   def submit(self):
     pagestart = time()
     RPC = getRPCClient("WorkloadManagement/JobMonitoring")
-    lhcbUser = str(credentials.getUsername())
+    user = str(credentials.getUsername())
     result = RPC.getOwners()
     if result["OK"]:
       defaultGroup = gConfig.getValue("/Registry/DefaultGroup")
@@ -80,19 +51,19 @@ class JobmonitorController(BaseController):
         try:
           defaultGroup = str(defaultGroup)
         except:
-          return {"success":"false","error":"Option /Registry/DefaultGroup is not a string, please set the default group as the string in the CS"} 
+          return {"success":"false","error":"Option /Registry/DefaultGroup is not a string, please set the default group as a string in the CS"} 
       else:
         return {"success":"false","error":"Option /Registry/DefaultGroup is undefined, please set the default group in the CS"}
-      lhcbGroup = credentials.getSelectedGroup()
-      if not lhcbGroup == "diracAdmin" and lhcbUser not in result["Value"]:
+      group = str(credentials.getSelectedGroup())
+      groupProperty = credentials.getProperties(group)
+      if user not in result["Value"] and ( "JobAdministrator" or "JobSharing" ) not in groupProperty:
         c.result = {"success":"false","error":"You don't have any jobs in the DIRAC system"}
         return c.result
-#      if lhcbGroup == defaultGroup:
     else:
       c.result = {"success":"false","error":result["Message"]}
       return c.result
-    result = self.__request()
-    result = RPC.getJobPageSummaryWeb(result,globalSort,pageNumber,numberOfJobs)
+    req = self.__request()
+    result = RPC.getJobPageSummaryWeb(req,globalSort,pageNumber,numberOfJobs)
     if result["OK"]:
       result = result["Value"]
       gLogger.info("ReS",result)
@@ -112,8 +83,10 @@ class JobmonitorController(BaseController):
                   c.result.append(tmp)
                 total = result["TotalRecords"]
                 if result.has_key("Extras"):
+                  st = self.__dict2string(req)
+                  print st
                   extra = result["Extras"]
-                  c.result = {"success":"true","result":c.result,"total":total,"extra":extra}
+                  c.result = {"success":"true","result":c.result,"total":total,"extra":extra,"request":st}
                 else:
                   c.result = {"success":"true","result":c.result,"total":total}
               else:
@@ -131,10 +104,21 @@ class JobmonitorController(BaseController):
     gLogger.info("\033[0;31mJOB SUBMIT REQUEST:\033[0m %s" % (time() - pagestart))
     return c.result
 ################################################################################
+  def __dict2string(self,req):
+    result = ""
+    try:
+      for key,value in req.iteritems():
+        result = result + str(key) + ": " + ", ".join(value) + "; "
+    except Exception, x:
+      gLogger.info("\033[0;31m Exception: \033[0m %s" % x)
+    result = result.strip()
+    result = result[:-1]
+    return result
+################################################################################
   def __getSelectionData(self):
     callback = {}
-    lhcbGroup = credentials.getSelectedGroup()
-    lhcbUser = str(credentials.getUsername())
+    group = credentials.getSelectedGroup()
+    user = str(credentials.getUsername())
     if len(request.params) > 0:
       tmp = {}
       for i in request.params:
@@ -145,7 +129,7 @@ class JobmonitorController(BaseController):
         if callback["extra"]["prod"] == "00000000":
           callback["extra"]["prod"] = ""
       gLogger.info(" - ",callback["extra"])
-    if lhcbUser == "Anonymous":
+    if user == "Anonymous":
       callback["prod"] = [["Insufficient rights"]]
     else:
       RPC = getRPCClient("WorkloadManagement/JobMonitoring")
@@ -242,6 +226,7 @@ class JobmonitorController(BaseController):
     if result["OK"]:
       app = []
       if len(result["Value"])>0:
+        result["Value"].reverse()
         app.append([str("All")])
         for i in result["Value"]:
           i = str(int(i))
@@ -253,11 +238,10 @@ class JobmonitorController(BaseController):
       app = [["Error during RPC call"]]
     callback["runNumber"] = app
 ###
-    if lhcbUser == "Anonymous":
+    groupProperty = credentials.getProperties(group)
+    if user == "Anonymous":
       callback["owner"] = [["Insufficient rights"]]
-    elif lhcbGroup == "lhcb":
-      callback["owner"] = [["All"],[str(credentials.getUsername())]]
-    elif lhcbGroup == "lhcb_user":
+    elif ( "JobAdministrator" or "JobSharing" ) not in groupProperty:
       callback["owner"] = [["All"],[str(credentials.getUsername())]]
     else:
       result = RPC.getOwners()
@@ -276,8 +260,8 @@ class JobmonitorController(BaseController):
 ################################################################################
   def __request(self):
     req = {}
-    lhcbGroup = credentials.getSelectedGroup()
-    lhcbUser = str(credentials.getUsername())
+    group = credentials.getSelectedGroup()
+    user = str(credentials.getUsername())
     global pageNumber
     global numberOfJobs
     global globalSort
@@ -322,6 +306,7 @@ class JobmonitorController(BaseController):
           rangeID = range(testI[0],testI[1])
           gLogger.info("RANGE:",rangeID)
     else:
+      groupProperty = credentials.getProperties(group)
       if request.params.has_key("prod") and len(request.params["prod"]) > 0:
         if str(request.params["prod"]) != "All":
           req["JobGroup"] = str(request.params["prod"]).split('::: ')
@@ -340,8 +325,8 @@ class JobmonitorController(BaseController):
       if request.params.has_key("app") and len(request.params["app"]) > 0:
         if str(request.params["app"]) != "All":
           req["ApplicationStatus"] = str(request.params["app"]).split('::: ')
-      if lhcbGroup == "lhcb" or lhcbGroup == "lhcb_user":
-        req["Owner"] = str(lhcbUser)
+      if ( "JobAdministrator" or "JobSharing" ) not in groupProperty:
+        req["Owner"] = str(user)
       else:
         if request.params.has_key("owner") and len(request.params["owner"]) > 0:
           if str(request.params["owner"]) != "All":
@@ -444,6 +429,8 @@ class JobmonitorController(BaseController):
       return self.__getPlotSrc(type,id,timeToSet,img)
     elif request.params.has_key("getPending") and len(request.params["getPending"]) > 0:
       return self.__getParams(request.params["getPending"])
+    elif request.params.has_key("canRunJobs") and request.params["canRunJobs"]:
+      return self.__canRunJobs()
     elif request.params.has_key("getProxyStatus") and len(request.params["getProxyStatus"]) > 0:
       if request.params["getProxyStatus"].isdigit():
         return self.__getProxyStatus(int(request.params["getProxyStatus"]))
@@ -453,17 +440,28 @@ class JobmonitorController(BaseController):
       c.result = {"success":"false","error":"DIRAC Job ID(s) is not defined"}
       return c.result
 ################################################################################
+  def __canRunJobs(self):
+    groupPropertie = credentials.getProperties( credentials.getSelectedGroup() )
+    if "NormalUser" in groupPropertie:
+      c.result = {"success":"true","result":"true"}
+    else:
+      c.result = {"success":"true","result":"false"}
+    return c.result
+################################################################################
   def __getProxyStatus( self, validSeconds = 0 ):
     from DIRAC.FrameworkSystem.Client.ProxyManagerClient import ProxyManagerClient
     proxyManager = ProxyManagerClient()
-    userGroup = str(credentials.getSelectedGroup())
-    if userGroup == "visitor":
+    group = str(credentials.getSelectedGroup())
+    if group == "visitor":
       return {"success":"false","error":"User not registered"}
     userDN = str(credentials.getUserDN())
-    gLogger.info("\033[0;31m userHasProxy(%s, %s, %s) \033[0m" % (userDN,userGroup,validSeconds))
-    result = proxyManager.userHasProxy(userDN,userGroup,validSeconds)
+    gLogger.info("\033[0;31m userHasProxy(%s, %s, %s) \033[0m" % (userDN,group,validSeconds))
+    result = proxyManager.userHasProxy(userDN,group,validSeconds)
     if result["OK"]:
-      c.result = {"success":"true","result":"true"}
+      if result["Value"]:
+        c.result = {"success":"true","result":"true"}
+      else:
+        c.result = {"success":"true","result":"false"}
     else:
       c.result = {"success":"false","error":"false"}
     gLogger.info("\033[0;31m PROXY: \033[0m",result)
