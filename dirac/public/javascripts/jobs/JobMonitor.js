@@ -226,7 +226,7 @@ function addMenu(){
       text:'Tools',
       menu:[
         {handler:function(){encodeChecker()},text:'Encode Decode'},
-//        {handler:function(){submitJobNew()},text:'Job Launchpad'},
+        {handler:function(){submitJobNew()},text:'Job Launchpad'},
 //        {handler:function(){launchJob()},text:'Launchpad in progress'},
         {handler:function(){showURL()},text:'Full URL'},
         {menu:{items:[
@@ -269,7 +269,6 @@ PR.setURLParams = function(opts) {
   return true;
 };
 */
-
 }
 function setMenuItems(selections){
   if(selections){
@@ -441,4 +440,3 @@ function afterDataLoad(){
     statPanel.store.loadData(msg);
   }
 }
-
