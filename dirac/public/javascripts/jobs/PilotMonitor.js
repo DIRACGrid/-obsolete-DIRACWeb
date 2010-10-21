@@ -105,6 +105,7 @@ function setMenuItems(selections){
   if(selections){
     var id = selections.PilotJobReference;
     var jobID = selections.CurrentJobID;
+    var status = selections.Status;
   }else{
     return
   }
@@ -112,11 +113,16 @@ function setMenuItems(selections){
     dirac.menu.add(
       {handler:function(){jump(jobID)},text:'Show Job'},
       {handler:function(){AJAXrequest('getPilotOutput',id)},text:'PilotOutput'},
+      {handler:function(){AJAXrequest('getPilotError',id)},text:'PilotError'},
       {handler:function(){AJAXrequest('getPilotLoggingInfo',id)},text:'LoggingInfo'}
     );
   }
   if(jobID == '-'){
     dirac.menu.items.items[0].disable();
+  }
+  if(status != 'Done'){
+    dirac.menu.items.items[1].disable();
+    dirac.menu.items.items[2].disable();
   }
 };
 function AJAXsuccess(value,id,response){
@@ -131,7 +137,10 @@ function AJAXsuccess(value,id,response){
   var result = jsonData.result;
   var panel = {};
   if(value == 'getPilotOutput'){
-    var html = '<pre>' + result.StdOut + '</pre>';
+    var html = '<pre>' + result + '</pre>';
+    panel = new Ext.Panel({border:0,autoScroll:true,html:html,layout:'fit'})
+  }else if(value == 'getPilotError'){
+    var html = '<pre>' + result + '</pre>';
     panel = new Ext.Panel({border:0,autoScroll:true,html:html,layout:'fit'})
   }else if(value == 'getPilotLoggingInfo'){
     var html = '<pre>' + result + '</pre>';
