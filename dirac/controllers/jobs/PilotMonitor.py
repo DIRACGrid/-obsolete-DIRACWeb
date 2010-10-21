@@ -231,6 +231,9 @@ class PilotmonitorController(BaseController):
     if request.params.has_key("getPilotOutput"):
       ref = str(request.params["getPilotOutput"])
       return self.__getPilotOutput(ref)
+    if request.params.has_key("getPilotError"):
+      ref = str(request.params["getPilotError"])
+      return self.__getPilotError(ref)
     if request.params.has_key("getPilotLoggingInfo"):
       ref = str(request.params["getPilotLoggingInfo"])
       return self.__getPilotLoggingInfo(ref)
@@ -239,8 +242,21 @@ class PilotmonitorController(BaseController):
     RPC = getRPCClient("WorkloadManagement/WMSAdministrator")
     result = RPC.getPilotOutput(pilotReference)
     if result["OK"]:
-      c.result = result["Value"]
+      c.result = result["Value"]["StdOut"]
       c.result = {"success":"true","result":c.result}
+    else:
+      c.result = {"success":"false","error":result["Message"]}
+    return c.result
+################################################################################
+  def __getPilotError(self,pilotReference):
+    RPC = getRPCClient("WorkloadManagement/WMSAdministrator")
+    result = RPC.getPilotOutput(pilotReference)
+    if result["OK"]:
+      c.result = result["Value"]["StdErr"]
+      if len(c.result) > 0:
+        c.result = {"success":"true","result":c.result}
+      else:
+        c.result = {"success":"false","error":"Pilot Error is empty"}
     else:
       c.result = {"success":"false","error":result["Message"]}
     return c.result
