@@ -21,6 +21,7 @@ function initProductionMonitor(reponseSelect){
           testObject[record.data.TransformationID] = {};
           testObject[record.data.TransformationID]['Jobs_Created'] = record.data['Jobs_Created'];
           testObject[record.data.TransformationID]['Jobs_Done'] = record.data['Jobs_Done'];
+          testObject[record.data.TransformationID]['Jobs_Completed'] = record.data['Jobs_Completed'];
           testObject[record.data.TransformationID]['Jobs_Failed'] = record.data['Jobs_Failed'];
           testObject[record.data.TransformationID]['Jobs_Running'] = record.data['Jobs_Running'];
           testObject[record.data.TransformationID]['Jobs_Stalled'] = record.data['Jobs_Stalled'];
@@ -106,6 +107,7 @@ function initRecord(){
     {name:'Jobs_Waiting'},
     {name:'Jobs_Running'},
     {name:'Jobs_Done'},
+    {name:'Jobs_Completed'},
     {name:'Jobs_Failed'},
     {name:'Jobs_Stalled'},
     {name:'TransformationFamily',type:'float'}
@@ -162,8 +164,9 @@ function initData(store){
     {header:'Created',sortable:true,dataIndex:'Jobs_Created',align:'left',renderer:diffValues},
     {header:'Submitted',sortable:true,dataIndex:'Jobs_Submitted',align:'left',renderer:diffValues},
     {header:'Waiting',sortable:true,dataIndex:'Jobs_Waiting',align:'left',renderer:diffValues},
-    {header:'Running',sortable:true,dataIndex:'Jobs_Running',align:'left',renderer:diffValues,hidden:true},
+    {header:'Running',sortable:true,dataIndex:'Jobs_Running',align:'left',renderer:diffValues},
     {header:'Done',sortable:true,dataIndex:'Jobs_Done',align:'left',renderer:diffValues},
+    {header:'Completed',sortable:true,dataIndex:'Jobs_Completed',align:'left',renderer:diffValues},
     {header:'Failed',sortable:true,dataIndex:'Jobs_Failed',align:'left',renderer:diffValues},
     {header:'Stalled',sortable:true,dataIndex:'Jobs_Stalled',align:'left',renderer:diffValues},
     {header:'InheritedFrom',sortable:true,dataIndex:'InheritedFrom',align:'left',hidden:true},
