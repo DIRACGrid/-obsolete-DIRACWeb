@@ -7,6 +7,13 @@ function initJobMonitor(reponseSelect){
   var record = initRecord();
   var store = initStore(record);
   Ext.onReady(function(){
+    Ext.override(Ext.PagingToolbar, {
+      onRender :  Ext.PagingToolbar.prototype.onRender.createSequence(function(ct, position){
+        this.loading.removeClass('x-btn-icon');
+        this.loading.setText('Refresh');
+        this.loading.addClass('x-btn-text-icon');
+      })
+    });
     renderData(store);
   });
 }
