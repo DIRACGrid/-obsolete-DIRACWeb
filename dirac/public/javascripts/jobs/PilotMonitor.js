@@ -8,6 +8,13 @@ function initPilotMonitor(reponseSelect){
   var record = initRecord();
   var store = initStore(record);
   Ext.onReady(function(){
+    Ext.override(Ext.PagingToolbar, {
+      onRender :  Ext.PagingToolbar.prototype.onRender.createSequence(function(ct, position){
+        this.loading.removeClass('x-btn-icon');
+        this.loading.setText('Refresh');
+        this.loading.addClass('x-btn-text-icon');
+      })
+    });
     renderData(store);
   });
 }
@@ -99,7 +106,7 @@ function renderData(store){
   var mainContent = initData(store);
   renderInMainViewport([ leftBar, mainContent ]);
   dataMngr = {'form':leftBar.items.items[0],'store':store}
-  addMenu();
+//  addMenu();
 }
 function setMenuItems(selections){
   if(selections){
