@@ -3,7 +3,7 @@ var dataMngr = ''; // Required to connect form and table. Object.
 var tableMngr = ''; // Required to handle configuration data for table. Object.
 // Main routine
 function initJobMonitor(reponseSelect){
-//  dataSelect = reponseSelect;
+  dataSelect = reponseSelect;
   var record = initRecord();
   var store = initStore(record);
   Ext.onReady(function(){
@@ -20,19 +20,33 @@ function initRecord(){
     {name:'Status'},
     {name:'OwnerDN'},
     {name:'OwnerGroup'},
+    {name:'Error'},
+    {name:'CreationTime'},
+    {name:'LastUpdateTime'},
     {name:'Operation'}
   ]);
   return record
 }
 // Initialisation of selection sidebar, all changes with selection items should goes here
 function initSidebar(){
+  var requestType = selectRequestTypeMenu();
+  var status = selectStatusMenu();
+  var operation = selectOperationMenu();
+  var owner = selectOwnerMenu();
+  var ownerGroup = selectOwnerGroupMenu();
   var id = selectID(); // Initialize field for JobIDs
   var reqId = selectRequestID();
+  var dateSelect = dateTimeWidget();
   var select = selectPanel(); // Initializing container for selection objects
-  select.buttons[2].hide(); // Remove refresh button
-  // Insert object to container BEFORE buttons:
-  select.insert(0,id);
-  select.insert(0,reqId);
+//  select.buttons[2].hide(); // Remove refresh button
+  select.insert(0,requestType);
+  select.insert(1,status);
+  select.insert(2,operation);
+  select.insert(3,owner);
+  select.insert(4,ownerGroup);
+  select.insert(5,id);
+  select.insert(6,reqId);
+  select.insert(7,dateSelect);
   var bar = sideBar();
   bar.insert(0,select);
   bar.setTitle('RequestMonitor');
@@ -48,7 +62,10 @@ function initData(store){
     {header:'Operation',sortable:true,dataIndex:'Operation',align:'left'},
     {header:'OwnerDN',sortable:true,dataIndex:'OwnerDN',align:'left'},
     {header:'OwnerGroup',sortable:true,dataIndex:'OwnerGroup',align:'left'},
-    {header:'RequestName',sortable:true,dataIndex:'RequestName',align:'left',hidden:true}
+    {header:'RequestName',sortable:true,dataIndex:'RequestName',align:'left',hidden:true},
+    {header:'Error',sortable:true,dataIndex:'Error',align:'left'},
+    {header:'CreationTime',sortable:true,dataIndex:'CreationTime',align:'left',hidden:true},
+    {header:'LastUpdateTime',sortable:true,dataIndex:'LastUpdateTime',align:'left',hidden:true}
   ];
   var tbar = [
     {
