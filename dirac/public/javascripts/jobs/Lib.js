@@ -110,41 +110,6 @@ function AJAXrequest(value,id){
     url:'action'
   });
 }
-function callBack(panel,success,response){
-  if(success){
-    var name = response.argument.params;
-    name = name.split('type=');
-    name = name[1];
-    var html = '';
-    var jsonData = Ext.util.JSON.decode(response.responseText);
-    var addres = location.protocol + '//' +  location.hostname + gURLRoot + '/';
-    var style = '';
-    var params = '';
-    if(response){
-      if(response.argument){
-        if(response.argument.params){
-          params = response.argument.params;
-        }
-      }
-    }
-    if(jsonData.error){
-      html = jsonData.error;
-      style = 'padding:5px';
-    }else if(jsonData.result){
-      var fullsize = jsonData.result;
-      fullsize = addres + 'systems/accountingPlots/getPlotImg?file=' + fullsize;
-      html = html + '<img style="cursor: pointer; cursor: hand;" src="' + fullsize;
-      html = html + '" onclick="showPlot(\'' + params + '\',\'' + name + '\')" />';
-      style = 'padding:0px';
-    }else{
-      html = 'Failed to read AJAX callback';
-      style = 'padding:5px';
-    }
-    panel.applyStyles(style);
-    panel.update(html);
-  }
-  return;
-}
 function chkBox(id){
   return '<input id="' + id + '" type="checkbox"/>';
 }
@@ -222,63 +187,7 @@ function displayWin(panel,title,modal){
   window.show();
   return window;
 }
-function imagePanel(){
-  var p0 = new Ext.Panel({
-    autoScroll:false,
-    collapsible:true,
-    layout:'fit',
-    name:'jobsBySite',
-    title:'Jobs by Site:'
-  });
-  p0.on('activate',function(){
-    alert('Yo!');
-  });
-  var p1 = new Ext.Panel({
-    autoScroll:false,
-    collapsible:true,
-    layout:'fit',
-    name:'jobCPUbySite',
-    title:'Jobs CPU by Site:'
-  });
-  var p2 = new Ext.Panel({
-    autoScroll:false,
-    collapsible:true,
-    layout:'fit',
-    name:'CPUUsedBySite',
-    title:'CPU used by Site:'
-  });
-  var panel = new Ext.Panel({
-    autoScroll:true,
-    border:false,
-    id:'imagePanel',
-    items:[p0,p1,p2],
-    labelAlign:'top',
-    split:true,
-    region:'west',
-    collapsible:true,
-    width: 200,
-    minWidth: 200,
-    margins:'2 0 2 0',
-    cmargins:'2 2 2 2',
-    bodyStyle:'padding: 5px',
-    buttonAlign:'left',
-    title:'Graphs'
-  });
-  panel.on('activate',function(){
-    var items = panel.items.items;
-    for(var i = 0; i < items.length; i++){
-      var name = items[i].name
-      items[i].load({
-        callback:function(panel,success,response){callBack(panel,success,response,name)},
-        params:paramsSite(name),
-        text:"Loading...",
-        url:'action'
-      });
-    }
-  });
-  return panel;
-}
-function initStore(record,options){
+function initStore(record,options,id){
   var reader = new Ext.data.JsonReader({
     root:'result',
     totalProperty:'total'
@@ -327,7 +236,7 @@ function initStore(record,options){
   }catch(e){
     auto = {params:{start:0,limit:25}};
   }
-  var id = Ext.id();
+  var id = 'mainDataStore';
   if(options){
     if(options.auto){
       auto = false;
@@ -405,6 +314,9 @@ function initStore(record,options){
         }
         if(store.reader.jsonData.extra){
           store.extra_msg = store.reader.jsonData.extra;
+        }
+        if(store.reader.jsonData.request){
+          store.request = store.reader.jsonData.request;
         }
         var value = store.baseParams.sort;
         try{
@@ -715,7 +627,7 @@ function selectPanel(newID){
     }
     var bbar = panel.getBottomToolbar();
     if(!bbar){
-      alert();
+      alert('Error: The bottom toolbar si missing');
       return
     }
     var start = bbar.cursor;
@@ -802,6 +714,32 @@ function selectPanel(newID){
       sideBar.body.unmask();
       alert('Error: Either selections.sort or selections.limit or selections.start are not defined');
     }
+//    var title = document.title + ' - ';
+    var title = '';
+    var addr = '?';
+    var tmpPanel = Ext.getCmp(panelID);
+    var tmpSelection = tmpPanel.form.getValues();
+    for(var k in tmpSelection){
+      if(tmpSelection[k]){
+        if((tmpSelection[k]!='YYYY-mm-dd')&&(tmpSelection[k]!='00:00')&&(tmpSelection[k]!='Select time span')){
+          tmpSelection[k] = tmpSelection[k].replace(/:::/g,',');
+//          title = title + ' ' + k + ': "' + tmpSelection[k] + '";';
+          title = title + '"' + tmpSelection[k] + '"+';
+          addr = addr + k + '=' + tmpSelection[k] + '&';
+        }
+      }
+    }
+    if(title.charAt(title.length-1) == '+'){
+      title = title.slice(0,title.length-1);
+    }
+    addr = addr.replace(/, /g,',');
+    addr = addr.replace(/All,/g,'');
+    title = title.replace(/All, /g,'');
+    if(addr.charAt(addr.length-1) == '&'){
+      addr = addr.slice(0,addr.length-1);
+    }
+    document.title = title;
+//    window.location.hash = addr; 
     if(tableMngr){
       if(tableMngr.bbar){
         panel.form.submit({
@@ -814,9 +752,10 @@ function selectPanel(newID){
             if(action.result.success == 'false'){
               alert('Error: ' + action.result.error);
             }else{
-              if(dataMngr.store){
-                store = dataMngr.store;
-                store.loadData(action.result);
+              var grid = Ext.getCmp('JobMonitoringTable');
+              var dataStore = grid.getStore();
+              if(dataStore){
+                dataStore.loadData(action.result);
               }else if(panelID == 'SiteSelectPanel'){
                 var siteTable = Ext.getCmp('SiteTab');
                 siteTable.store.loadData(action.result);
@@ -830,7 +769,7 @@ function selectPanel(newID){
                 var resTable = Ext.getCmp('StorageTab');
                 resTable.store.loadData(action.result);
               }else{
-                alert('Error: Unable to load data to the table dataMngr.store is absent');
+                alert('Error: Unable to load data to the table. Ext component mainDataStore is absent');
               }
             }
           },
@@ -1317,6 +1256,14 @@ function selectRunNumbers(){
   var menu = createMenu('runNumber','Run');
   return menu
 }
+function selectRequestTypeMenu(){
+  var menu = createMenu('requestType','RequestType');
+  return menu
+}
+function selectOperationMenu(){
+  var menu = createMenu('operation','Operation');
+  return menu
+}
 function selectGridSiteMenu(){
   var menu = createMenu('site','Site');
   return menu
@@ -1435,54 +1382,6 @@ function showMenu(mode,table,rowIndex,columnIndex){
     }
     dirac.menu.showAt(coords);
   }
-}
-function showPlot(params,plotName){
-  var panel = new Ext.Panel({
-    autoLoad:{
-      callback:function(panel,success,response){
-        if(success){
-          var html = '';
-          var jsonData = Ext.util.JSON.decode(response.responseText);
-          var addres = location.protocol + '//' +  location.hostname + gURLRoot + '/';
-          var style = '';
-          if(jsonData.error){
-            html = jsonData.error;
-            style = 'padding:5px';
-          }else if(jsonData.result){
-            var fullsize = jsonData.result;
-            fullsize = addres + 'systems/accountingPlots/getPlotImg?file=' + fullsize;
-            html = html + '<img src="' + fullsize + '" />';
-            style = 'padding:10px';
-          }else{
-            html = 'Failed to read AJAX callback';
-            style = 'padding:5px';
-          }
-          panel.applyStyles(style);
-          panel.update(html);
-          if(win){
-            win.syncSize();
-          }
-        }
-      },
-      params:params + '&img=True',
-      text:"Loading...",
-      url:'action'
-    },
-    autoScroll:true,
-    border:0,
-    layout:'fit',
-  });
-  panel.on('load',function(){
-    if(panel.body.dom.firstChild){
-    }
-  })
-  win = displayWin(panel,plotName);
-  win.on(('render','resize'),function(){
-    if(panel.body.dom.firstChild){
-      panel.body.dom.firstChild.width = panel.getInnerWidth() - 20;
-      panel.body.dom.firstChild.height = panel.getInnerHeight() - 20;
-    }
-  })
 }
 function showURL(){
   var url = location.protocol + '//' +  location.hostname + location.pathname + '?';
@@ -1680,6 +1579,42 @@ function statPanel(title,mode,id){
     minWidth: 200,
     title:title
   });
+  function plotButton(minWidth){
+    var id = Ext.id();
+    var button = new Ext.Button({
+      cls:"x-btn-text-icon",
+      handler:function(){
+        var data = '';
+        try{
+          title = Ext.getCmp('sideBar').title + ': '+ title;
+        }catch(e){}
+        try{
+          for(i=0;i<store.data.length;i++){
+            var name = store.data.items[i].json[0];
+            var value = store.data.items[i].json[1];
+            if(value >= 1){
+              data = data + name + '=' + value + '&';
+            }
+          }
+        }catch(e){
+          window.close();
+          alert('Error: '+e.description)
+          return
+        }
+        data = data.slice(0,data.length-1);
+        drawPlot(data,title);
+      },
+      icon:gURLRoot+'/images/iface/plot.gif',
+      id:id,
+      minWidth:minWidth,
+//      style:'padding-top:4px;padding-left:6px;',
+      text:'Plot',
+      tooltip:'Plot will be displayed in new window'
+    });
+    return button
+  }
+//  var pButton = plotButton(50);
+//  panel.addButton(pButton);
   if(mode == 'global'){
     panel.addButton({
       cls:"x-btn-text-icon",
@@ -1687,11 +1622,22 @@ function statPanel(title,mode,id){
         store.load({params:{globalStat:'true'}});
       },
       icon:gURLRoot+'/images/iface/refresh.gif',
-      minWidth:'150',
+      minWidth:'100',
       tooltip:'Refresh global statistics data',
       text:'Refresh'
     })
   }
+  panel.addButton(plotButton(50));
+/*
+  panel.addListener('resize',function(){
+    var tmpWidth = panel.getInnerWidth() - 6;
+    p.setWidth(tmpWidth);
+    panel.remove(panel.items.items[1]);
+    var pButton = plotButton(tmpWidth + 6);
+    panel.add(pButton);
+    panel.doLayout();
+  });
+*/
   return panel;
 }
 function table(tableMngr){
