@@ -159,6 +159,9 @@ p.footer {
 .refreshSplitButton {
   background-image:url("../images/iface/refresh.gif") !important;
 }
+.Refresh {
+  background-image:url("../images/iface/refresh.gif") !important;
+}
 .Save {
   background-image:url("../images/iface/save.gif") !important;
 }
@@ -173,4 +176,12 @@ p.footer {
 }
 .Act {
   background-image:url("../images/iface/gear.gif") !important;
+}
+.siteheader {
+  font-family:Tahoma, Arial, Helvetica, sans-serif;
+  font-size:21px;
+  text-align:center;
+}
+#site-main-panel table.x-table-layout {
+    width: 100%;
 }
