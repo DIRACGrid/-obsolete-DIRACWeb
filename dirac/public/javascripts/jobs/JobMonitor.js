@@ -2,18 +2,11 @@ var dataSelect = ''; // Required to store the data for filters fields. Object.
 var dataMngr = ''; // Required to connect form and table. Object.
 var tableMngr = ''; // Required to handle configuration data for table. Object.
 // Main routine
-function initJobMonitor(reponseSelect){
+function initLoop(reponseSelect){
   dataSelect = reponseSelect;
   var record = initRecord();
   var store = initStore(record);
   Ext.onReady(function(){
-    Ext.override(Ext.PagingToolbar, {
-      onRender :  Ext.PagingToolbar.prototype.onRender.createSequence(function(ct, position){
-        this.loading.removeClass('x-btn-icon');
-        this.loading.setText('Refresh');
-        this.loading.addClass('x-btn-text-icon');
-      })
-    })
     renderData(store);
   });
 }
@@ -57,8 +50,7 @@ function initRecord(){
     {name:'JobType'},
     {name:'JobIDcheckBox',mapping:'JobID'},
     {name:'StatusIcon',mapping:'Status'},
-    {name:'OwnerGroup'},
-    {name:'RunNumber'}
+    {name:'OwnerGroup'}
   ]);
   return record
 }
@@ -70,7 +62,6 @@ function initSidebar(){
   var statSelect = selectStatusMenu(); // Initializing JobStatus Menu
   var minSelect = selectMinorStatus(); // Initializing Minor Status Menu
   var prodSelect = selectProdMenu(); // Initializing JobGroup Menu
-  var runSelect = selectRunNumbers();
   var id = selectID(); // Initialize field for JobIDs
   var dateSelect = dateTimeWidget(); // Initializing date dialog
   var select = selectPanel(); // Initializing container for selection objects
@@ -81,9 +72,8 @@ function initSidebar(){
   select.insert(3,appSelect);
   select.insert(4,ownerSelect);
   select.insert(5,prodSelect);
-  select.insert(6,runSelect);
-  select.insert(7,id);
-  select.insert(8,dateSelect);
+  select.insert(6,id);
+  select.insert(7,dateSelect);
   var sortGlobal = sortGlobalPanel(); // Initializing the global sort panel
   var stat = statPanel('Current Statistics','current','statGrid');
   var glStat = statPanel('Global Statistics','global','glStatGrid');
@@ -105,7 +95,6 @@ function initData(store){
     {header:'ApplicationStatus',sortable:true,dataIndex:'ApplicationStatus',align:'left'},
     {header:'Site',sortable:true,dataIndex:'Site',align:'left'},
     {header:'JobName',sortable:true,dataIndex:'JobName',align:'left'},
-    {header:'RunNumber',sortable:true,dataIndex:'RunNumber',align:'left',hidden:true},
     {header:'LastUpdate [UTC]',sortable: true,renderer:Ext.util.Format.dateRenderer('Y-m-d H:i'),dataIndex:'LastUpdateTime'},
     {header:'LastSignOfLife [UTC]',sortable:true,renderer:Ext.util.Format.dateRenderer('Y-m-d H:i'),dataIndex:'LastSignOfLife'},
     {header:'SubmissionTime [UTC]',sortable:true,renderer:Ext.util.Format.dateRenderer('Y-m-d H:i'),dataIndex:'SubmissionTime'},
@@ -225,7 +214,6 @@ function addMenu(){
     var button = new Ext.Toolbar.Button({
       text:'Tools',
       menu:[
-        {handler:function(){encodeChecker()},text:'Encode Decode'},
         {handler:function(){submitJobNew()},text:'Job Launchpad'},
 //        {handler:function(){launchJob()},text:'Launchpad in progress'},
         {handler:function(){showURL()},text:'Full URL'},
@@ -236,39 +224,15 @@ function addMenu(){
         ]},text:'Show selected JobIDs'}
       ]
     });
-    topBar.insertButton(6,button);
-  }
-}
-function encodeChecker(){
-  Ext.Msg.prompt('Check', 'Please enter the encoded object:',function(btn,text){
-    if(btn == 'ok'){
-      if(text){
-        text = DEncode.decode( text );
-        Ext.Msg.alert( text.toString() );
+    var length = gPageDescription.userData.groupProperties.length;
+    for(i=0; i<length; i++){
+      if(gPageDescription.userData.groupProperties[i] == 'JobAdministrator'){
+        button.menu.items.items[0].disable();
       }
     }
-  },this,true);
-/*
-PR.getURLParams = function() {
-  var opts=parent.location.hash;
-  if(!opts)
-    return {};
-  opts = DEncode.decode( opts.substr(1) );
-  if(!opts)
-    return {};
-  return opts
-}
-
-PR.setURLParams = function(opts) {
-  var hash = DEncode.encode( opts );
-  if(!hash || hash == "de")
-    hash = "#";
-  if(parent.location.hash == hash)
-    return false;
-  parent.location.hash = hash;
-  return true;
-};
-*/
+    topBar.insertButton(3,button);
+//    topBar.addButton(button);
+  }
 }
 function setMenuItems(selections){
   if(selections){
@@ -289,25 +253,28 @@ function setMenuItems(selections){
       {handler:function(){AJAXrequest('LogURL',id)},text:'Get LogFile'},
       {handler:function(){AJAXrequest('getPending',id)},text:'Get PendingRequest'},
       {handler:function(){AJAXrequest('getStagerReport',id)},text:'Get StagerReport'},
-      {handler:function(){AJAXrequest('getSandBox',id)},text:'Get SandBox file'},
       '-',
       {text:'Actions',icon:gURLRoot + '/images/iface/action.gif',menu:({items:[
         {handler:function(){action('job','kill',id)},icon:gURLRoot + '/images/iface/close.gif',text:'Kill'},
         {handler:function(){action('job','delete',id)},icon:gURLRoot + '/images/iface/delete.gif',text:'Delete'}
       ]})},
-      {text:'Pilot', menu:({items:[
+      {text:'Pilot',menu:({items:[
         {handler:function(){AJAXrequest('pilotStdOut',id)},text:'Get StdOut'},
         {handler:function(){AJAXrequest('pilotStdErr',id)},text:'Get StdErr'}
+      ]})},
+      {text:'Sandbox',icon:gURLRoot + '/images/iface/addfile.gif',menu:({items:[
+        {handler:function(){getSandbox(id,'Input')},text:'Get input file(s)'},
+        {handler:function(){getSandbox(id,'Output')},text:'Get output file(s)'}
       ]})}
     );
     if(gPageDescription.userData.group != 'lhcb_prod'){
-      var reset = new Ext.menu.Item({handler:function(){action('job','reset',id)},icon:gURLRoot + '/images/iface/resetButton.gif',text:'Reset'});
       var reschedule = new Ext.menu.Item({handler:function(){action('job','reschedule',id)},icon:gURLRoot + '/images/iface/reschedule.gif',text:'Reschedule'});
       if(gPageDescription.userData.group == 'diracAdmin'){
-        dirac.menu.items.items[12].menu.insert(0,reset);
-        dirac.menu.items.items[12].menu.insert(1,reschedule);
+        var reset = new Ext.menu.Item({handler:function(){action('job','reset',id)},icon:gURLRoot + '/images/iface/resetButton.gif',text:'Reset'});
+        dirac.menu.items.items[11].menu.insert(0,reset);
+        dirac.menu.items.items[11].menu.insert(1,reschedule);
       }else{
-        dirac.menu.items.items[12].menu.insert(0,reschedule);
+        dirac.menu.items.items[11].menu.insert(0,reschedule);
       }
     }
     if((status == 'Done')||(status == 'Failed')){
@@ -420,10 +387,11 @@ function AJAXsuccess(value,id,response){
   id = setTitle(value,id);
   displayWin(panel,id);
 }
-function showInputSandbox(id,type){
+function getSandbox(id,type){
   var setup = gPageDescription.selectedSetup;
   var group = gPageDescription.userData.group;
-  window.open('https://volhcb12.cern.ch/DIRAC/'+setup+'/'+group+'/jobs/JobAdministrator/getSandbox?jobID='+id+'&sandbox='+type,'Input Sandbox file','width=400,height=200')
+  var url = 'https://' + location.host + '/DIRAC/' + setup + '/' + group + '/jobs/JobAdministrator/getSandbox?jobID=' + id + '&sandbox=' + type;
+  window.open(url,'Input Sandbox file','width=400,height=200');
 }
 function afterDataLoad(){
   var msg = [];
