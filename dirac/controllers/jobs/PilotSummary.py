@@ -7,7 +7,7 @@ from dirac.lib.base import *
 from dirac.lib.diset import getRPCClient
 from dirac.lib.credentials import authorizeAction
 #from dirac.lib.sessionManager import *
-from DIRAC import gLogger
+from DIRAC import gConfig, gLogger
 import dirac.lib.credentials as credentials
 
 log = logging.getLogger(__name__)
@@ -89,8 +89,15 @@ class PilotsummaryController(BaseController):
       RPC = getRPCClient("WorkloadManagement/JobMonitoring")
       result = RPC.getSites()
       if result["OK"]:
+        tier1 = gConfig.getValue("/Website/PreferredSites")
+        if tier1:
+          try:
+            tier1 = tier1.split(", ")
+          except:
+            tier1 = list()
+        else:
+          tier1 = list()
         site = []
-        tier1 = list(["LCG.CERN.ch","LCG.CNAF.it","LCG.GRIDKA.de","LCG.IN2P3.fr","LCG.NIKHEF.nl","LCG.PIC.es","LCG.RAL.uk"])
         if len(result["Value"])>0:
           s = list(result["Value"])
           site.append([str("All")])
