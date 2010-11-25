@@ -43,6 +43,7 @@ function initSidebar(){
   select.insert(0,siteSelect);
 //  select.insert(1,statSelect);
   var stat = statPanel('Statistics','current','statGrid');
+  stat.buttons[0].hide(); // Temp solution
   var bar = sideBar();
   bar.insert(0,select);
   bar.insert(1,stat);
@@ -119,7 +120,7 @@ function renderData(store){
   var mainContent = initData(store);
   renderInMainViewport([ leftBar, mainContent ]);
   dataMngr = {'form':leftBar.items.items[0],'store':store}
-  addMenu();
+//  addMenu();
 }
 function AJAXsuccess(value,id,response){
 }
