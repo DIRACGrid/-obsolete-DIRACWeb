@@ -435,18 +435,17 @@ class JobmonitorController(BaseController):
       if request.params["getProxyStatus"].isdigit():
         return self.__getProxyStatus(int(request.params["getProxyStatus"]))
       else:
-        return {"success":"false","error":"getProxyStatus not a number"}
+        return {"success":"false","error":"getProxyStatus value is not a number"}
     else:
-      c.result = {"success":"false","error":"DIRAC Job ID(s) is not defined"}
+      c.result = {"success":"false","error":"The request parameters can not be recognized or they are not defined"}
       return c.result
 ################################################################################
   def __canRunJobs(self):
     groupPropertie = credentials.getProperties( credentials.getSelectedGroup() )
     if "NormalUser" in groupPropertie:
-      c.result = {"success":"true","result":"true"}
+      return True
     else:
-      c.result = {"success":"true","result":"false"}
-    return c.result
+      return False
 ################################################################################
   def __getProxyStatus( self, validSeconds = 0 ):
     from DIRAC.FrameworkSystem.Client.ProxyManagerClient import ProxyManagerClient
@@ -750,6 +749,11 @@ class JobmonitorController(BaseController):
   @jsonify
   def jobSubmit(self):
     response.headers['Content-type'] = "text/html" # Otherwise the browser would offer you to download a JobSubmit file
+    if not self.__canRunJobs():
+      return {"success":"false","error":"You are not allowed to run the jobs"}
+    proxy = self.__getProxyStatus(86460)
+    if proxy["success"] == "false" or proxy["result"] == "false":
+      return {"success":"false","error":"You can not run a job: your proxy is valid less then 24 hours"}
     jdl = ""
     params = {}
     for tmp in request.params:
@@ -798,7 +802,9 @@ class JobmonitorController(BaseController):
     if exception_counter == 0:
       jdl = jdl + sndBox
       from DIRAC.WorkloadManagementSystem.Client.WMSClient import WMSClient
-      jobManager = WMSClient(getRPCClient("WorkloadManagement/JobManager"),getRPCClient("WorkloadManagement/SandboxStore"),getTransferClient("WorkloadManagement/SandboxStore"))
+      jobManager = WMSClient(getRPCClient("WorkloadManagement/JobManager"),
+                             getRPCClient("WorkloadManagement/SandboxStore"),
+                             getTransferClient("WorkloadManagement/SandboxStore"))
       jdl = str(jdl)
       gLogger.info("J D L : ",jdl)
       try:
