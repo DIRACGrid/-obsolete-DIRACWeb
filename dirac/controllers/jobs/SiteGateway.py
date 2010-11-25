@@ -6,7 +6,7 @@ from DIRAC.Core.Utilities import Time
 from dirac.lib.base import *
 from dirac.lib.diset import getRPCClient
 from dirac.lib.credentials import authorizeAction
-from DIRAC import gLogger
+from DIRAC import gConfig, gLogger
 from DIRAC.Core.Utilities.DictCache import DictCache
 import dirac.lib.credentials as credentials
 
@@ -181,8 +181,15 @@ class SitegatewayController(BaseController):
     RPC = getRPCClient("ResourceStatus/ResourceStatus")
     result = RPC.getSitesList()
     if result["OK"]:
+      tier1 = gConfig.getValue("/Website/PreferredSites")
+      if tier1:
+        try:
+          tier1 = tier1.split(", ")
+        except:
+          tier1 = list()
+      else:
+        tier1 = list()
       site = []
-      tier1 = list(["LCG.CERN.ch","LCG.CNAF.it","LCG.GRIDKA.de","LCG.IN2P3.fr","LCG.NIKHEF.nl","LCG.PIC.es","LCG.RAL.uk","LCG.SARA.nl"])
       if len(result["Value"])>0:
         s = list(result["Value"])
         site.append([str("All")])
@@ -202,8 +209,15 @@ class SitegatewayController(BaseController):
     RPC = getRPCClient("ResourceStatus/ResourceStatus")
     result = RPC.getSESitesList()
     if result["OK"]:
+      tier1 = gConfig.getValue("/Website/PreferredSites")
+      if tier1:
+        try:
+          tier1 = tier1.split(", ")
+        except:
+          tier1 = list()
+      else:
+        tier1 = list()
       site = []
-      tier1 = list(["LCG.CERN.ch","LCG.CNAF.it","LCG.GRIDKA.de","LCG.IN2P3.fr","LCG.NIKHEF.nl","LCG.PIC.es","LCG.RAL.uk","LCG.SARA.nl"])
       if len(result["Value"])>0:
         s = list(result["Value"])
         site.append([str("All")])
