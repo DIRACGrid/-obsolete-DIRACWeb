@@ -7,7 +7,7 @@ from dirac.lib.base import *
 from dirac.lib.diset import getRPCClient
 from dirac.lib.credentials import authorizeAction
 #from dirac.lib.sessionManager import *
-from DIRAC import gLogger
+from DIRAC import gConfig, gLogger
 from DIRAC.Core.Utilities.DictCache import DictCache
 import dirac.lib.credentials as credentials
 
@@ -126,12 +126,24 @@ class SitesummaryController(BaseController):
         maskstatus = [["Nothing to display"]]
       callback["maskstatus"] = maskstatus
       if result.has_key("Site") and len(result["Site"]) > 0:
+        tier1 = gConfig.getValue("/Website/PreferredSites")
+        if tier1:
+          try:
+            tier1 = tier1.split(", ")
+          except:
+            tier1 = list()
+        else:
+          tier1 = list()
         site = []
+        s = list(result["Site"])
         site.append([str("All")])
-        for i in result["Site"]:
+        for i in tier1:
           site.append([str(i)])
+        for i in s:
+          if i not in tier1:
+            site.append([str(i)])
       else:
-        site = [["Nothing to display"]]
+        site = [["Error during RPC call"]]
       callback["site"] = site
       if result.has_key("Country") and len(result["Country"]) > 0:
         country = []
