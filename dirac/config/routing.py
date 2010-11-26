@@ -55,7 +55,8 @@ def make_map():
   condDict = { 'function' : credentials.checkURL }
   reqs = { 'controller' : R"(\w+(?:/\w+)?)?" }
 
-  map.connect( '/', controller = 'info/general', action = "diracOverview" )
+  map.connect( '/', controller = 'info/External', action = 'display' )
+#  map.connect( '/', controller = 'info/general', action = "diracOverview" )
   map.connect( '/{dsetup}/{dgroup}/{controller}/{action}', conditions = condDict, requirements = reqs )
   map.connect( '/{dsetup}/{dgroup}/{controller}', action = 'index', conditions = condDict, requirements = reqs )
   map.connect( '/{dsetup}/{dgroup}/{controller}/{action}/{id}', conditions = condDict, requirements = reqs )
