@@ -59,7 +59,7 @@ class WebConfig:
     normControllerPath = "/".join( [ dir for dir in controllerPath.split("/") if not dir.strip() == "" ] )
     for page in self.getSchemaPages( parentSection ):
       pageData = self.getSchemaPageData( "%s/%s" % ( parentSection, page ) )
-      if pageData[0] == normControllerPath:
+      if page != "Delimiter" and pageData[0] == normControllerPath:
         return ( "%s/%s" % ( parentSection, page ), pageData )
     for subSection in self.getSchemaSections( parentSection ):
       res = self.__getSchemaPathFromController( normControllerPath , "%s/%s" % ( parentSection, subSection ) )
@@ -78,5 +78,17 @@ class WebConfig:
     if not res:
       return ""
     return res[0]
+
+  def getDocSection( self ):
+    docList = gConfig.getOptionsDict( "%s/Documentation" % self.webSection )
+    if not docList[ 'OK' ]:
+      return "'none'"
+    return docList[ 'Value' ]
+
+  def getHelpSection(self):
+    helpSection = gConfig.getOptionsDict( "%s/Help" % ( self.webSection) )
+    if not helpSection[ 'OK' ]:
+      return False
+    return helpSection[ 'Value' ]
 
 gWebConfig = WebConfig()
