@@ -65,7 +65,7 @@ def jsSchemaSection( area, section ):
       jsTxt += "{ text: '%s', submenu : { id: '%s', itemdata : %s } }, " % ( subSection, subSectionPath, subJSTxt )
   for page in gWebConfig.getSchemaPages( section ):
     pageData = gWebConfig.getSchemaPageData( "%s/%s" % ( section, page ) )
-    if len( pageData ) < 3 or 'all' in pageData[2:] or credentials.getSelectedGroup() in pageData[2:]:
+    if page != "Delimiter" or len( pageData ) < 3 or 'all' in pageData[2:] or credentials.getSelectedGroup() in pageData[2:]:
       if pageData[0].find( "http" ) == 0:
         pagePath = pageData[0]
       else:
@@ -147,6 +147,11 @@ def getUserData():
   else:
     userData.append( "username : '%s'" % username )
     userData.append( "group : '%s'" % credentials.getSelectedGroup() )
+    properties = credentials.getProperties( credentials.getSelectedGroup() )
+    if len(properties) > 0:
+      userData.append( "groupProperties : %s" % properties )
+    else:
+      userData.append( "groupProperties : []" )
     availableGroups = [ "{ text : '%s', url : '%s' }" % ( groupName,
                                                                         diracURL( controller = 'web/userdata',
                                                                                   action = 'changeGroup',
@@ -163,6 +168,24 @@ def getUserData():
   userData.append( "DN : '%s'" % dn )
   return "{%s}" % ",".join( userData )
 
+def getDoc():
+  return gWebConfig.getDocSection()
+
+def getHelpForPage(): #by Matvey
+  default = "http://marwww.in2p3.fr/~atsareg/Docs/DIRAC/build/html/diracindex.html"
+  controller = "%s" % request.environ[ 'pylons.routes_dict' ][ 'controller' ]
+  if controller.find('/') > 0:
+    prefix,controller = controller.split('/');
+  helpSection = gWebConfig.getHelpSection()
+  if not helpSection:
+    return default
+  else:
+    keys = helpSection.keys()
+    if controller in keys:
+      return "%s" % helpSection[controller]
+    else:
+      return default
+
 def getJSPageData():
   pageData = []
   pageData.append( "navMenu : %s" % getSchemaContents() )
@@ -170,6 +193,8 @@ def getJSPageData():
   pageData.append( "selectedSetup : '%s'" % credentials.getSelectedSetup() )
   pageData.append( "pagePath : %s" % pagePath() )
   pageData.append( "userData : %s" % getUserData() )
+  pageData.append( "docs : %s" % getDoc() ) # by Matvey
+  pageData.append( "helpURL : '%s'" % getHelpForPage() ) # by Matvey
   return "{%s}" % ",".join( pageData )
 
 ## DEFAULT REDIRECT
