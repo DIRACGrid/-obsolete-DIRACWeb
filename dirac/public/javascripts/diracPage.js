@@ -2,7 +2,6 @@ var gURLRoot = ''; // Required to set-up the proper path to the pictures.
                     // String.
 var gMainLayout = false; // Main Layout object
 var gPageDescription = {}; // Main object describing the page layout
-var portalVersion = '1.1.0'; // version counter
 
 function initDiracPage( urlRoot, pageDescription )
 {
@@ -59,6 +58,10 @@ function __addClickHandlerToMenuSubEntries( menuEntry )
     {
       menuEntry[i].handler = mainPageRedirectHandler;
     }
+//    if(menuEntry[i].text == 'Delimiter')
+//    {
+//      menuEntry[i] = '-';
+//    }
     hndlMenu.push( menuEntry[i] );
   }
   return hndlMenu;
@@ -68,9 +71,20 @@ function initTopFrame( pageDescription ){
   var navItems = [];
   for( var i in pageDescription[ 'navMenu' ] )
   {
-  	areaObject = pageDescription[ 'navMenu' ][i];
+    areaObject = pageDescription[ 'navMenu' ][i];
     if(areaObject.text)
     {
+      if(pageDescription['docs'] != 'none'){
+        for(i in pageDescription['docs']){
+          for(j = 0; j < areaObject.menu.length; j++){
+            if(areaObject.menu[j].text == i){
+              var stp = gPageDescription.selectedSetup;
+              var grp = gPageDescription.userData.group;
+              var tmpURL = location.protocol+'//'+location.host+'/DIRAC/'+stp+'/'+grp+'/info/External/display?site='+pageDescription['docs'][i];
+            }
+          }
+        }
+      }
       var handleredMenu = __addClickHandlerToMenuSubEntries( areaObject.menu );
       var cnfObj = { text : areaObject.text, menu : handleredMenu };
       if(areaObject.text == 'Info')
@@ -79,7 +93,7 @@ function initTopFrame( pageDescription ){
         cnfObj.icon = gURLRoot+'/images/iface/dlogo.gif';
         cnfObj.minWidth = '16';
       }
-	  	var menuEntry = new Ext.Toolbar.Button( cnfObj );
+      var menuEntry = new Ext.Toolbar.Button( cnfObj );
     }
     navItems.push( menuEntry );
   }
