@@ -16,6 +16,6 @@ ${ h.stylesheet_link( "/stylesheets/fileupload.css" ) }
 
 <%def name="body()">
 <script type="text/javascript">
-  initJobMonitor(${c.select});
+  initLoop(${c.select});
 </script>
 </%def>
