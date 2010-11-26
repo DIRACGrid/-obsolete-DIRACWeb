@@ -71,20 +71,9 @@ function initTopFrame( pageDescription ){
   var navItems = [];
   for( var i in pageDescription[ 'navMenu' ] )
   {
-    areaObject = pageDescription[ 'navMenu' ][i];
+        areaObject = pageDescription[ 'navMenu' ][i];
     if(areaObject.text)
     {
-      if(pageDescription['docs'] != 'none'){
-        for(i in pageDescription['docs']){
-          for(j = 0; j < areaObject.menu.length; j++){
-            if(areaObject.menu[j].text == i){
-              var stp = gPageDescription.selectedSetup;
-              var grp = gPageDescription.userData.group;
-              var tmpURL = location.protocol+'//'+location.host+'/DIRAC/'+stp+'/'+grp+'/info/External/display?site='+pageDescription['docs'][i];
-            }
-          }
-        }
-      }
       var handleredMenu = __addClickHandlerToMenuSubEntries( areaObject.menu );
       var cnfObj = { text : areaObject.text, menu : handleredMenu };
       if(areaObject.text == 'Info')
@@ -93,23 +82,18 @@ function initTopFrame( pageDescription ){
         cnfObj.icon = gURLRoot+'/images/iface/dlogo.gif';
         cnfObj.minWidth = '16';
       }
-      var menuEntry = new Ext.Toolbar.Button( cnfObj );
+                var menuEntry = new Ext.Toolbar.Button( cnfObj );
     }
     navItems.push( menuEntry );
   }
-  navItems.push( 
+  navItems.push(
     new Ext.Toolbar.Button({
       text : "Help",
       handler : function(){
-// var url = gPageDescription.pagePath.replace(/ /g,'').split('>');
-        var url = gPageDescription.pagePath.split(' ');
-	for(var i = 0; i < url.length; i++ ){
-          var j = url[i].substr(0,1);
-          url[i] = j.toUpperCase() + url[i].substr(1);
+        var url = 'http://marwww.in2p3.fr/~atsareg/Docs/DIRAC/build/html/diracindex.html';
+        if(gPageDescription.helpURL){
+          url = gPageDescription.helpURL
         }
-        url = url.join().replace(/,/g,'');
-        url = url.split('>');
-        url = 'https://twiki.cern.ch/twiki/bin/view/LHCb/DiracWebPortal' + url[url.length - 1] + '?cover=print';
         var html = '<iframe id="help_frame" src =' + url + '></iframe>';
         var panel = new Ext.Panel({border:0,autoScroll:false,html:html});
         panel.on('resize',function(){
@@ -121,7 +105,7 @@ function initTopFrame( pageDescription ){
         var window = new Ext.Window({
           iconCls:'icon-grid',
           closable:true,
-          width:600,
+          width:800,
           height:400,
           border:true,
           collapsible:false,
@@ -137,7 +121,7 @@ function initTopFrame( pageDescription ){
         });
         window.show();
       }
-    }) 
+    })
   );
   navItems.push( "->" );
   navItems.push( "Selected setup:" );
