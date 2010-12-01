@@ -36,7 +36,7 @@ function renderPage( plotsList, selectionData ){
   selWidgets.push( createMultiselect( "JobGroup", "Job Group", selectionData.JobGroup ) );
   selWidgets.push( createMultiselect( "JobType", "Job Type", selectionData.JobType ) );
   selWidgets.push( createMultiselect( "JobClass", "Job Class", selectionData.JobClass ) );
-  selWidgets.push( createMultiselect( "Site", "Site", orderSiteList( selectionData.Site ) ) );
+  selWidgets.push( createMultiselect( "Site", "Site", selectionData.Site ) );
   selWidgets.push( createMultiselect( "ProcessingType", "Processing Type", selectionData.ProcessingType ) );
   selWidgets.push( createMultiselect( "FinalMajorStatus", "Final major status", selectionData.FinalMajorStatus ) );
   selWidgets.push( createMultiselect( "FinalMinorStatus", "Final minor status", selectionData.FinalMinorStatus ) );

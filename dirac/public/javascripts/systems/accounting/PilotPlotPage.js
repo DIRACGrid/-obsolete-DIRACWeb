@@ -31,7 +31,7 @@ function renderPage( plotsList, selectionData ){
   if( selectionData.UserGroup.length > 0 )
   	 selWidgets.push( createMultiselect( "UserGroup", "User Group", selectionData.UserGroup ) );
 
-  selWidgets.push( createMultiselect( "Site", "Site", orderSiteList( selectionData.Site ) ) );
+  selWidgets.push( createMultiselect( "Site", "Site", selectionData.Site ) );
   selWidgets.push( createMultiselect( "GridCE", "Grid CE", selectionData.GridCE ) );
   selWidgets.push( createMultiselect( "GridMiddleware", "Grid Middleware", selectionData.GridMiddleware ) );
   selWidgets.push( createMultiselect( "GridResourceBroker", "Grid Resource Broker", selectionData.GridResourceBroker ) );

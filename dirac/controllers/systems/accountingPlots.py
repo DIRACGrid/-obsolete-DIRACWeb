@@ -11,7 +11,7 @@ from dirac.lib.base import *
 from dirac.lib.diset import getRPCClient, getTransferClient
 from dirac.lib.sessionManager import getUsername, getSelectedGroup, getSelectedSetup
 
-from DIRAC import S_OK, S_ERROR, gLogger
+from DIRAC import S_OK, S_ERROR, gLogger, gConfig
 from DIRAC.Core.Utilities import Time, List, DictCache
 from DIRAC.Core.Security import CS
 from DIRAC.AccountingSystem.Client.ReportsClient import ReportsClient
@@ -37,6 +37,20 @@ class AccountingplotsController( BaseController ):
         del( retVal[ 'rpcStub' ] )
       if not retVal[ 'OK' ]:
         return retVal
+
+      #Site ordering based on TierLevel / alpha
+      if 'Site' in retVal[ 'Value' ]:
+        siteLevel = {}
+        for siteName in retVal[ 'Value' ][ 'Site' ]:
+          sitePrefix = siteName.split( "." )[0].strip()
+          level = gConfig.getValue( "/Resources/Sites/%s/%s/MoUTierLevel" % ( sitePrefix, siteName ), 10 )
+          if level not in siteLevel:
+            siteLevel[ level ] = []
+          siteLevel[ level ].append( siteName )
+        orderedSites = []
+        for level in sorted( siteLevel ):
+          orderedSites.extend( sorted( siteLevel[ level ] ) )
+        retVal[ 'Value' ][ 'Site' ] = orderedSites
       data = retVal
       AccountingplotsController.__keysCache.add( cacheKey, 300, data )
     return data
