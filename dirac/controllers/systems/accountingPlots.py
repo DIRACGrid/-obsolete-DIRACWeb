@@ -9,9 +9,11 @@ except:
   from md5 import md5
 from dirac.lib.base import *
 from dirac.lib.diset import getRPCClient, getTransferClient
+from dirac.lib.sessionManager import getUsername, getSelectedGroup, getSelectedSetup
 
 from DIRAC import S_OK, S_ERROR, gLogger
-from DIRAC.Core.Utilities import Time, List
+from DIRAC.Core.Utilities import Time, List, DictCache
+from DIRAC.Core.Security import CS
 from DIRAC.AccountingSystem.Client.ReportsClient import ReportsClient
 from dirac.lib.webBase import defaultRedirect
 
@@ -19,12 +21,25 @@ log = logging.getLogger( __name__ )
 
 class AccountingplotsController( BaseController ):
 
+  __keysCache = DictCache()
+
   def __getUniqueKeyValues( self, typeName ):
-    rpcClient = getRPCClient( "Accounting/ReportGenerator" )
-    retVal = rpcClient.listUniqueKeyValues( typeName )
-    if 'rpcStub' in retVal:
-      del( retVal[ 'rpcStub' ] )
-    return retVal
+    userGroup = getSelectedGroup()
+    if 'NormalUser' in CS.getPropertiesForGroup( userGroup ):
+      cacheKey = ( getUserName(), userGroup, getSelectedSetup(), typeName )
+    else:
+      cacheKey = ( userGroup, getSelectedSetup(), typeName )
+    data = AccountingplotsController.__keysCache.get( cacheKey )
+    if not data:
+      rpcClient = getRPCClient( "Accounting/ReportGenerator" )
+      retVal = rpcClient.listUniqueKeyValues( typeName )
+      if 'rpcStub' in retVal:
+        del( retVal[ 'rpcStub' ] )
+      if not retVal[ 'OK' ]:
+        return retVal
+      data = retVal
+      AccountingplotsController.__keysCache.add( cacheKey, 300, data )
+    return data
 
   def index( self ):
     # Return a rendered template
@@ -48,19 +63,23 @@ class AccountingplotsController( BaseController ):
     return self.__showPlotPage( "SRMSpaceTokenDeployment", "/systems/accounting/SRMSpaceTokenDeployment.mako" )
 
   def __showPlotPage( self, typeName, templateFile ):
-    #TODO: This can be cached
+    #Get unique key values
     retVal = self.__getUniqueKeyValues( typeName )
     if not retVal[ 'OK' ]:
       c.error = retVal[ 'Message' ]
       return render ( "/error.mako" )
     c.selectionValues = simplejson.dumps( retVal[ 'Value' ] )
-    #TODO: This can be cached
-    repClient = ReportsClient( rpcClient = getRPCClient( "Accounting/ReportGenerator" ) )
-    retVal = repClient.listReports( typeName )
-    if not retVal[ 'OK' ]:
-      c.error = retVal[ 'Message' ]
-      return render ( "/error.mako" )
-    c.plotsList = simplejson.dumps( retVal[ 'Value' ] )
+    #Cache for plotsList?
+    data = AccountingplotsController.__keysCache.get( "reportsList:%s" % typeName )
+    if not data:
+      repClient = ReportsClient( rpcClient = getRPCClient( "Accounting/ReportGenerator" ) )
+      retVal = repClient.listReports( typeName )
+      if not retVal[ 'OK' ]:
+        c.error = retVal[ 'Message' ]
+        return render ( "/error.mako" )
+      data = simplejson.dumps( retVal[ 'Value' ] )
+      AccountingplotsController.__keysCache.add( "reportsList:%s" % typeName, 300, data )
+    c.plotsList = data
     return render ( templateFile )
 
   @jsonify
