@@ -6,7 +6,8 @@ from pylons import config
 from pylons.wsgiapp import PylonsApp
 from pylons.util import class_name_from_module_name
 
-from DIRAC import gConfig, rootPath, gLogger
+from DIRAC import rootPath, gLogger
+from DIRAC.ConfigurationSystem.Client.Helpers import getCSExtensions
 
 class DiracWebApp( PylonsApp ):
 
@@ -14,7 +15,7 @@ class DiracWebApp( PylonsApp ):
     super( DiracWebApp, self ).__init__( *args, **kwargs )
     #Find base modules path
     self.__baseControllerPaths = []
-    for module in gConfig.getValue( "/DIRAC/Extensions", [] ):
+    for module in getCSExtensions():
       module = "%sDIRAC" % module
       modulePath = os.path.join( rootPath, module )
       if os.path.isdir( os.path.join( modulePath, "Web", "controllers" ) ):
