@@ -56,13 +56,14 @@ def initDIRAC( rootPath, enableDebug = False ):
 
     from DIRAC import gMonitor, gConfig
     from DIRAC.Core.Utilities import CFG
+    from DIRAC.ConfigurationSystem.Client.Helpers import getCSExtensions
     gMonitor.setComponentType( gMonitor.COMPONENT_WEB )
     gMonitor.initialize()
     gMonitor.registerActivity( "pagesServed", "Pages served", "Framework", "pages", gMonitor.OP_SUM )
 
     gLogger.info( "DIRAC Initialized" )
 
-    extModules = [ '%sDIRAC' % module for module in gConfig.getValue( "/DIRAC/Extensions", [] ) ]
+    extModules = [ '%sDIRAC' % module for module in getCSExtensions() ]
     #Load web.cfg of modules
     cfgFilePaths = [ os.path.join( rootPath, "web.cfg" ) ]
     for extModule in extModules:
