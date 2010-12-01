@@ -119,7 +119,7 @@ class AccountingplotsController( BaseController ):
         extraParams[ 'lastSeconds' ] = pD[ 'timeSelector' ]
     else:
       if 'endTime' not in pD:
-        end = Time.dateTime()
+        end = False
       else:
         end = Time.fromString( pD[ 'endTime' ] )
         del( pD[ 'endTime' ] )
