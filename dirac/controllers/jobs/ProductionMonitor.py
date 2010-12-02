@@ -32,7 +32,6 @@ class ProductionmonitorController(BaseController):
     c.select = self.__getSelectionData()
     if not c.select.has_key("extra"):
       c.select["extra"] = {"prodStatus":"Active::: Stopped::: New"}
-    gLogger.info("\033[0;31mPRODUCTION INDEX REQUEST:\033[0m %s" % (time() - pagestart))
     return render("jobs/ProductionMonitor.mako")
 ################################################################################
   @jsonify
@@ -44,13 +43,11 @@ class ProductionmonitorController(BaseController):
       return c.result
     RPC = getRPCClient("ProductionManagement/ProductionManager")
     result = self.__request()
-    gLogger.info("\033[0;31m result: \033[0m %s" % result)
-    gLogger.info("getTransformationSummaryWeb(%s,%s,%s,%s)" % (result,globalSort,pageNumber,numberOfJobs))
     callstart = time()
     result = RPC.getTransformationSummaryWeb(result,globalSort,pageNumber,numberOfJobs)
-    gLogger.info("\033[0;31m PRODUCTION CALL: \033[0m %s" % (time() - callstart))
     if result["OK"]:
       result = result["Value"]
+      gLogger.info("\033[0;31m PRODUCTION CALL: \033[0m %s" % result["ParameterNames"])
       if result.has_key("TotalRecords") and  result["TotalRecords"] > 0:
         if result.has_key("ParameterNames") and result.has_key("Records"):
           if len(result["ParameterNames"]) > 0:
@@ -653,27 +650,31 @@ class ProductionmonitorController(BaseController):
       return {"success":"false","error":"Run status is not defined"}
     RPC = getRPCClient("ProductionManagement/ProductionManager")
     result = RPC.getTransformationRunsSummaryWeb({'TransformationID':id},[["RunNumber","DESC"]],start,limit)
-#.getTransformationFilesSummaryWeb({'TransformationID':id,'Status':status},[["FileID","ASC"]],start,limit)
     if not result['OK']:
       c.result = {"success":"false","error":result["Message"]}
     else:
       result = result["Value"]
       if result.has_key("TotalRecords") and  result["TotalRecords"] > 0:
+        total = result["TotalRecords"]
+        if result.has_key("Extras"):
+          extra = result["Extras"]
         if result.has_key("ParameterNames") and result.has_key("Records"):
-          if len(result["ParameterNames"]) > 0:
+          head = result["ParameterNames"]
+          if len(head) > 0:
+            headLength = len(head)
             if len(result["Records"]) > 0:
               c.result = []
               jobs = result["Records"]
-              head = result["ParameterNames"]
-              headLength = len(head)
               for i in jobs:
+                if len(i) != headLength:
+                  gLogger.info("Faulty record: %s" % i)
+                  c.result = {"success":"false","result":c.result,"total":total,"error":"One of the records in service response is corrupted"}
+                  return c.result
                 tmp = {}
                 for j in range(0,headLength):
                   tmp[head[j]] = i[j]
                 c.result.append(tmp)
-              total = result["TotalRecords"]
-              if result.has_key("Extras"):
-                extra = result["Extras"]
+              if extra:
                 c.result = {"success":"true","result":c.result,"total":total,"extra":extra}
               else:
                 c.result = {"success":"true","result":c.result,"total":total}
