@@ -1511,7 +1511,7 @@ function statusColor(value){
    return 'cccccc';
   }
 }
-function statPanel(title,mode,id){
+function statPanel(title,mode,id,initCombo){
   var msg = [];
   var reader = new Ext.data.ArrayReader({},[
     {name:'Status'},
@@ -1529,40 +1529,60 @@ function statPanel(title,mode,id){
       {header:'Numbers',sortable:true,dataIndex:'Number',align:'left'}
     ];
   }
-  if(mode == 'global'){
-    var store = new Ext.data.Store({
-      autoLoad:{params:{globalStat:'true'}},
-      proxy: new Ext.data.HttpProxy({
-        url:'action',
-        method:'POST',
-      }),
-      reader:reader
-    });
-  }else{
-    var store = new Ext.data.SimpleStore({
-      fields:['Status','Number'],
-      data:msg
-    });
+  if(!initCombo){
+    initCombo = 'Status'
   }
-/*
-  try{
-    store.on('beforeload',function(){
-      var sideBar = Ext.getCmp('sideBar');
-      sideBar.body.mask('Loading...');
-    });
-    store.on(('loadexception','load'),function(){
-      var sideBar = Ext.getCmp('sideBar');
-      sideBar.body.unmask();
-    });
-  }catch(e){}
-*/
-  var p = new Ext.grid.GridPanel({
+  var pageName = 'Undefined';
+  if(gPageDescription.pageName){
+    pageName = gPageDescription.pageName;
+  }
+  var selections = {};
+  if(mode != 'global'){
+    selections = {} // Selections dict here
+  }
+  var statsBy = 'Status';
+  var params = {'stats':'none','pageName':pageName};
+  var store = new Ext.data.Store({
+    autoLoad:{params:{'stats':statsBy,'pageName':pageName,'selections':selections}},
+    proxy: new Ext.data.HttpProxy({
+      url:'action',
+      method:'POST',
+    }),
+    reader:reader
+  });
+  store.on('load',function(){
+    try{
+      var tmpWidth = panel.getInnerWidth();
+      if(grid.getInnerHeight() > panel.getInnerHeight()){
+        tmpWidth = tmpWidth - 18;
+      }
+//      combo.setWidth(tmpWidth);
+      grid.setWidth(tmpWidth);
+    }catch(e){}
+  });
+  var setup = gPageDescription.selectedSetup;
+  var group = gPageDescription.userData.group;
+  var url = location.protocol + '//' + location.host + '/DIRAC/' + setup + '/' + group + '/jobs/Common/getSelections';
+  var readerSelect = new Ext.data.ArrayReader({},[
+    {name:'selections'}
+  ]);
+  var storeSelect = new Ext.data.Store({
+    autoLoad:true,
+    baseParams:{'selectionFor':pageName},
+    proxy: new Ext.data.HttpProxy({
+      method:'POST',
+      url:url
+    }),
+    reader:readerSelect
+  });
+  var grid = new Ext.grid.GridPanel({
     border:false,
     columns:columns,
     id:id,
     header:false,
     layout:'fit',
     loadMask:true,
+    monitorResize:true,
     store:store,
     stripeRows:true,
     viewConfig:{forceFit:true}
@@ -1572,12 +1592,22 @@ function statPanel(title,mode,id){
     border:false,
     buttonAlign:'center',
     id:id + 'Panel',
-    items:[p],
+    items:[grid],
     labelAlign:'top',
+    monitorResize:true,
     collapsible:true,
     width: 200,
     minWidth: 200,
     title:title
+  });
+  panel.addListener('resize',function(){
+    var tmpWidth = panel.getInnerWidth();
+    try{
+      if(grid.getInnerHeight() > panel.getInnerHeight()){
+        tmpWidth = tmpWidth - 18;
+      }
+    }catch(e){}
+    grid.setWidth(tmpWidth);
   });
   function plotButton(minWidth){
     var id = Ext.id();
@@ -1613,8 +1643,6 @@ function statPanel(title,mode,id){
     });
     return button
   }
-//  var pButton = plotButton(50);
-//  panel.addButton(pButton);
   if(mode == 'global'){
     panel.addButton({
       cls:"x-btn-text-icon",
@@ -1628,17 +1656,247 @@ function statPanel(title,mode,id){
     })
   }
   panel.addButton(plotButton(50));
+  return panel;
+}
+function plotButton(title,panel){
+  var id = Ext.id();
+  var button = new Ext.Button({
+    cls:"x-btn-text-icon",
+    handler:function(){
+      var data = '';
+      try{
+        var comboID = panel.id + 'Combo';
+        var value = Ext.getCmp(comboID).getRawValue();
+        title = panel.title + ': '+ value;
+        title = Ext.getCmp('sideBar').title + ': '+ title;
+      }catch(e){}
+      try{
+        var store = panel.getStore();
+        if(store){
+          for(i=0;i<store.data.length;i++){
+            var name = store.data.items[i].data['Key'];
+            var value = store.data.items[i].data['Value'];
+            if(value >= 1){
+              data = data + name + '=' + value + '&';
+            }
+          }
+        }
+      }catch(e){
+        window.close();
+        alert('Error: '+e.description)
+        return
+      }
+      data = data.slice(0,data.length-1);
+      drawPlot(data,title);
+    },
+    icon:gURLRoot+'/images/iface/plot.gif',
+    id:id,
+    minWidth:50,
+//    style:'padding-top:4px;padding-left:6px;',
+    text:'Plot',
+    tooltip:'Plot will be displayed in new window'
+  });
+  return button
+}
+function selectCombo(width,store,value,id){
+  var comboBox = new Ext.form.ComboBox({
+    allowBlank:false,
+    store:store,
+    displayField:'selections',
+    id:id + 'Combo',
+    typeAhead:true,
+    mode:'local',
+    forceSelection:true,
+    triggerAction:'all',
+    selectOnFocus:true,
+    width:width
+  });
+  comboBox.on('collapse',function(){
+    var selector = this.getRawValue();
+    var grid = Ext.getCmp(id);
+    var column = grid.getColumnModel();
+    var store = grid.store;
+    var selections = {}
+    if((store)&&(column)){
+      store.baseParams['getStat'] = selector;
+      store.load();
+      store.on('load',function(){
+        if(selector == 'Site'){
+          column.setRenderer(0,flag);
+        }else if(selector == 'Status'){
+          column.setRenderer(0,status);
+        }
+        if((selector == 'Status')||(selector == 'Site')){
+          column.setHidden(0,false);
+        }else{
+          column.setHidden(0,true);
+        }
+      });
+    }
+    var tt = 0
+  });
+  comboBox.setValue(value);
+  return comboBox
+}
+function sPanel(title,kind,initObject){
 /*
-  panel.addListener('resize',function(){
-    var tmpWidth = panel.getInnerWidth() - 6;
-    p.setWidth(tmpWidth);
-    panel.remove(panel.items.items[1]);
-    var pButton = plotButton(tmpWidth + 6);
-    panel.add(pButton);
-    panel.doLayout();
+kind - is a string and basically it's the name of a controller
+initObject - object with data used to restore\set the initial state
+  id - String/Int, custom id
+  columns - Array or objects, none standard columns model, not sure we need it
+  global - Boolean, actually used to display refresh button
+  selector - String, initial value for selector dropdown menu
+  initSelection - JSON object,if we need a specific selection to display initially
+  auto - Boolean, should the request be sent upon the panel load
+*/
+  if(!kind){
+    kind = 'Undefined';
+  }
+  var id = Ext.id();
+  if((initObject) && (initObject.id)){
+    id = initObject.id;
+  }
+  var record = new Ext.data.Record.create([
+    {name:'Key'},
+    {name:'Value'}
+  ]);
+  var readerGrid = new Ext.data.JsonReader({
+    root:'result',
+    totalProperty:'total'
+  },record);
+// columns can be choose based on kind
+  var columns = [
+    {header:'',width:26,sortable:false,dataIndex:'Key',renderer:status,hideable:true},
+    {header:'Key',width:60,sortable:true,dataIndex:'Key',align:'left'},
+    {header:'Value',sortable:true,dataIndex:'Value',align:'left'}
+  ];
+  if((initObject) && (initObject.columns)){
+    columns = initObject.columns;
+  }
+  var global = true
+  if((initObject) && (typeof(initObject.global) !== 'undefined')){
+    global = initObject.global;
+  }
+  var selector = 'Status';
+  if((initObject) && (initObject.selector)){
+    selector = initObject.selector;
+  }
+  var selections = {};
+  if((initObject) && (initObject.initSelection)){
+    selections = initObject.initSelection;
+  }
+  var auto = true;
+  if((initObject) && (typeof(initObject.auto) !== 'undefined')){
+    auto = initObject.auto;
+  }
+  var storeGrid = new Ext.data.Store({
+    autoLoad:auto,
+    baseParams:{'getStat':selector,'selections':selections},
+    proxy: new Ext.data.HttpProxy({
+      url:'action',
+      method:'POST',
+    }),
+    reader:readerGrid
+  });
+  var setup = gPageDescription.selectedSetup;
+  var group = gPageDescription.userData.group;
+  var url = location.protocol + '//' + location.host + '/DIRAC/' + setup + '/' + group + '/jobs/Common/getSelections';
+  var readerSelect = new Ext.data.ArrayReader({},[
+    {name:'selections'}
+  ]);
+  var storeSelect = new Ext.data.Store({
+    autoLoad:true,
+    baseParams:{'selectionFor':kind},
+    proxy: new Ext.data.HttpProxy({
+      method:'POST',
+      url:url
+    }),
+    reader:readerSelect
+  });
+  var combo = selectCombo(200,storeSelect,selector,id);
+  var grid = new Ext.grid.GridPanel({
+    autoScroll:true,
+    border:false,
+    buttonAlign:'center',
+    collapsible:true,
+    columns:columns,
+    id:id,
+    labelAlign:'top',
+    loadMask:true,
+    monitorResize:true,
+    minWidth: 200,
+    store:storeGrid,
+    stripeRows:true, 
+    tbar:[combo],
+    title:title,
+    viewConfig:{forceFit:true}
+  });
+/*
+  grid.addListener(('expand','resize'),function(){
+    var tmpWidth = grid.getInnerWidth();
+    var bar = grid.getTopToolbar();
+    var comboID = id + 'Combo';
+    var value = Ext.getCmp(comboID).getRawValue();
+    Ext.fly(bar.items.get(0).getEl()).remove();
+    bar.items.removeAt(0);
+    var combo = selectCombo(tmpWidth - 4,storeSelect,value,id);
+    bar.add(0,combo);
   });
 */
-  return panel;
+  grid.addListener({'expand':function(){
+    rr();
+  },'resize':function(){
+    rr();
+  }});
+  function rr(){
+    var tmpWidth = grid.getInnerWidth();
+    var bar = grid.getTopToolbar();
+    var comboID = id + 'Combo';
+    var value = Ext.getCmp(comboID).getRawValue();
+    Ext.fly(bar.items.get(0).getEl()).remove();
+    bar.items.removeAt(0);
+    var combo = selectCombo(tmpWidth - 4,storeSelect,value,id);
+    bar.add(0,combo);
+  }
+  if(global){
+    grid.addButton({
+      cls:"x-btn-text-icon",
+      handler:function(){
+        storeGrid.load();
+      },
+      icon:gURLRoot+'/images/iface/refresh.gif',
+      minWidth:'100',
+      tooltip:'Refresh global statistics data',
+      text:'Refresh'
+    });
+  }
+  var pButton = plotButton(title,grid);
+  grid.addButton(pButton);
+  return grid
+}
+function updateStats(id,formID){
+  var grid = Ext.getCmp(id);
+  var combo = Ext.getCmp(id + 'Combo');
+  if((grid)&&(combo)){
+    var pageName = 'Undefined';
+    if(gPageDescription.pageName){
+      pageName = gPageDescription.pageName;
+    }
+    var selector = combo.getRawValue();
+    var selections = '';
+    if(!formID){
+      formID = 'selectPanel';
+    }
+    var form = Ext.getCmp(formID);
+    if(form){
+      selections = form.getForm().getValues(); 
+    }
+    grid.store.baseParams = selections;//{'stats':value,'pageName':pageName,'selections':selections};
+    grid.store.baseParams['getStat'] = selector
+    grid.store.load();
+  }else{
+    var ttt = 0;
+  }
 }
 function table(tableMngr){
   if(tableMngr.store){
