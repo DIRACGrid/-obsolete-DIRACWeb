@@ -410,6 +410,9 @@ class JobmonitorController(BaseController):
       return self.__getSandBox(int(id))
     elif request.params.has_key("refreshSelection") and len(request.params["refreshSelection"]) > 0:
       return self.__getSelectionData()
+    elif request.params.has_key("getStat") and len(request.params["getStat"]) > 0:
+      selector = str(request.params["getStat"])
+      return self.__getStats(selector)
     elif request.params.has_key("globalStat"):
       return self.__globalStat()
     elif request.params.has_key("getPlotSrc") and len(request.params["getPlotSrc"]) > 0:
@@ -439,6 +442,48 @@ class JobmonitorController(BaseController):
     else:
       c.result = {"success":"false","error":"The request parameters can not be recognized or they are not defined"}
       return c.result
+################################################################################
+  def __getStats(self,selector):
+    req = self.__request()
+    gLogger.info("\033[0;31m R E Q: \033[0m",req)
+    selector = str(selector)
+    RPC = getRPCClient("WorkloadManagement/JobMonitoring")
+    if selector == "Minor status":
+      selector = "MinorStatus"
+    elif selector == "Application status":
+      selector = "ApplicationStatus"
+    result = RPC.getJobStats(selector,req)
+    if result["OK"]:
+      c.result = []
+      result = dict(result["Value"])
+      keylist = result.keys()
+      keylist.sort()
+      if selector == "Site":
+        tier1 = gConfig.getValue("/Website/PreferredSites")
+        if tier1:
+          try:
+            tier1 = tier1.split(", ")
+            tier1.sort()
+          except:
+            tier1 = False
+        else:
+          tier1 = False
+        if tier1 and len(tier1) > 0:
+          for i in tier1:
+            if result.has_key(i):
+              countryCode = i.rsplit(".",1)[1]
+              c.result.append({"Key":i,"Value":result[i],"code":countryCode})
+      for key in keylist:
+        if selector == "Site" and tier1 and len(tier1) > 0:
+          if key not in tier1:
+            countryCode = i.rsplit(".",1)[1]
+            c.result.append({"Key":key,"Value":result[key],"code":countryCode})
+        else:
+          c.result.append({"Key":key,"Value":result[key]})
+      c.result = {"success":"true","result":c.result}
+    else:
+      c.result = {"success":"false","error":result["Message"]}
+    return c.result
 ################################################################################
   def __canRunJobs(self):
     groupPropertie = credentials.getProperties( credentials.getSelectedGroup() )
