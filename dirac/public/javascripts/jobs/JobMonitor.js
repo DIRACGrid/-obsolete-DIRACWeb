@@ -75,13 +75,21 @@ function initSidebar(){
   select.insert(6,id);
   select.insert(7,dateSelect);
   var sortGlobal = sortGlobalPanel(); // Initializing the global sort panel
-  var stat = statPanel('Current Statistics','current','statGrid');
-  var glStat = statPanel('Global Statistics','global','glStatGrid');
+//  var stat = statPanel('Current Statistics','current','statGrid');
+/*
+  id - String/Int, custom id
+  global - Boolean, actually used to display refresh button
+  selector - String, initial value for selector dropdown menu
+  initSelection - JSON object,if we need a specific selection to display initially
+  auto - Boolean, should the request be sent upon the panel load
+*/
+  var stat = sPanel('Selected Statistics','JobMonitor',{'auto':false,'id':'csPanel','global':false});
+  var altStat = sPanel('Global Statistics','JobMonitor',{})
   var bar = sideBar();
   bar.insert(0,select);
   bar.insert(1,sortGlobal);
   bar.insert(2,stat);
-  bar.insert(3,glStat);
+  bar.insert(3,altStat);
   bar.setTitle('JobMonitoring');
   return bar
 }
@@ -394,17 +402,5 @@ function getSandbox(id,type){
   window.open(url,'Input Sandbox file','width=400,height=200');
 }
 function afterDataLoad(){
-  var msg = [];
-  if(dataMngr){
-    if(dataMngr.store){
-      if(dataMngr.store.extra_msg){
-         msg = dataMngr.store.extra_msg;
-      }
-    }
-  }
-  var statPanel = Ext.getCmp('statGrid');
-  if((statPanel)&&(msg)){
-    msg = createStateMatrix(msg);
-    statPanel.store.loadData(msg);
-  }
+  updateStats('csPanel');
 }
