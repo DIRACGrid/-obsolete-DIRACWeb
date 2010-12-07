@@ -1720,18 +1720,28 @@ function selectCombo(width,store,value,id){
     if((store)&&(column)){
       store.baseParams['getStat'] = selector;
       store.load();
-      store.on('load',function(){
+/*
+      store.on('beforeload',function(){
         if(selector == 'Site'){
+          column.setDataIndex(0,'Code');
           column.setRenderer(0,flag);
-        }else if(selector == 'Status'){
-          column.setRenderer(0,status);
+        }else{
+          column.setDataIndex(0,'Key');
+          if(selector == 'Status'){
+            column.setRenderer(0,status);
+          }else{
+            column.setRenderer(0,Ext.emptyFn);
+          }
         }
+      });
+      store.on('load',function(){
         if((selector == 'Status')||(selector == 'Site')){
           column.setHidden(0,false);
         }else{
           column.setHidden(0,true);
         }
       });
+*/
     }
     var tt = 0
   });
@@ -1757,6 +1767,7 @@ initObject - object with data used to restore\set the initial state
     id = initObject.id;
   }
   var record = new Ext.data.Record.create([
+    {name:'Code'},
     {name:'Key'},
     {name:'Value'}
   ]);
@@ -1797,6 +1808,30 @@ initObject - object with data used to restore\set the initial state
       method:'POST',
     }),
     reader:readerGrid
+  });
+  storeGrid.on('beforeload',function(){
+    var column = grid.getColumnModel();
+    var selector = this.baseParams['getStat'];
+    if(selector == 'Site'){
+      column.setDataIndex(0,'Code');
+      column.setRenderer(0,flag);
+    }else{
+      column.setDataIndex(0,'Key');
+      if(selector == 'Status'){
+        column.setRenderer(0,status);
+      }else{
+        column.setRenderer(0,Ext.emptyFn);
+      }
+    }
+  });
+  storeGrid.on('load',function(){
+    var column = grid.getColumnModel();
+    var selector = this.baseParams['getStat'];
+    if((selector == 'Status')||(selector == 'Site')){
+      column.setHidden(0,false);
+    }else{
+      column.setHidden(0,true);
+    }
   });
   var setup = gPageDescription.selectedSetup;
   var group = gPageDescription.userData.group;
