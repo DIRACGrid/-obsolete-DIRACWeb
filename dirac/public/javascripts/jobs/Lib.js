@@ -1713,37 +1713,11 @@ function selectCombo(width,store,value,id){
   });
   comboBox.on('collapse',function(){
     var selector = this.getRawValue();
-    var grid = Ext.getCmp(id);
-    var column = grid.getColumnModel();
-    var store = grid.store;
-    var selections = {}
-    if((store)&&(column)){
+    var store = Ext.getCmp(id).store;
+    if((store)&&(selector)){
       store.baseParams['getStat'] = selector;
       store.load();
-/*
-      store.on('beforeload',function(){
-        if(selector == 'Site'){
-          column.setDataIndex(0,'Code');
-          column.setRenderer(0,flag);
-        }else{
-          column.setDataIndex(0,'Key');
-          if(selector == 'Status'){
-            column.setRenderer(0,status);
-          }else{
-            column.setRenderer(0,Ext.emptyFn);
-          }
-        }
-      });
-      store.on('load',function(){
-        if((selector == 'Status')||(selector == 'Site')){
-          column.setHidden(0,false);
-        }else{
-          column.setHidden(0,true);
-        }
-      });
-*/
     }
-    var tt = 0
   });
   comboBox.setValue(value);
   return comboBox
@@ -1866,7 +1840,6 @@ initObject - object with data used to restore\set the initial state
     title:title,
     viewConfig:{forceFit:true}
   });
-/*
   grid.addListener(('expand','resize'),function(){
     var tmpWidth = grid.getInnerWidth();
     var bar = grid.getTopToolbar();
@@ -1877,13 +1850,12 @@ initObject - object with data used to restore\set the initial state
     var combo = selectCombo(tmpWidth - 4,storeSelect,value,id);
     bar.add(0,combo);
   });
-*/
   grid.addListener({'expand':function(){
-    rr();
+    resizeCombo();
   },'resize':function(){
-    rr();
+    resizeCombo();
   }});
-  function rr(){
+  function resizeCombo(){
     var tmpWidth = grid.getInnerWidth();
     var bar = grid.getTopToolbar();
     var comboID = id + 'Combo';
