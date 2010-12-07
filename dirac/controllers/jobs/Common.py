@@ -143,6 +143,20 @@ class CommonController(BaseController):
     else:
       return result["Message"]
 ################################################################################
+  @jsonify
+  def getSelections(self):
+    if request.params.has_key("selectionFor") and len(request.params["selectionFor"]) > 0:
+      selection = str(request.params["selectionFor"])
+      if selection == "JobMonitor":
+        c.result = [["Status"],["Site"],["Minor status"],["Application status"],["Owner"],["JobGroup"]]
+      elif selection == "ProductionMonitor":
+        c.result = [["Status"],["AgentType"],["Type"],["Group"],["Plugin"]]
+      else:
+        c.result = ["Unknown selection's request"]
+    else:
+      c.result = ["No Selections"]
+    return c.result
+################################################################################
   def matvey_cpu(self):
     data = self.parseFile(None,'cpu')
     return self.buildPlot(data,{"title":"CPU","limit_labels":300,"cumulate_data":False})
