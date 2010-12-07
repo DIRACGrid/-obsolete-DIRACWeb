@@ -472,12 +472,15 @@ class JobmonitorController(BaseController):
           for i in tier1:
             if result.has_key(i):
               countryCode = i.rsplit(".",1)[1]
-              c.result.append({"Key":i,"Value":result[i],"code":countryCode})
+              c.result.append({"Key":i,"Value":result[i],"Code":countryCode})
       for key in keylist:
         if selector == "Site" and tier1 and len(tier1) > 0:
           if key not in tier1:
-            countryCode = i.rsplit(".",1)[1]
-            c.result.append({"Key":key,"Value":result[key],"code":countryCode})
+            try:
+              countryCode = key.rsplit(".",1)[1]
+            except:
+              countryCode = "Unknown"
+            c.result.append({"Key":key,"Value":result[key],"Code":countryCode})
         else:
           c.result.append({"Key":key,"Value":result[key]})
       c.result = {"success":"true","result":c.result}
