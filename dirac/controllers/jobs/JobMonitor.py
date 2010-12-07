@@ -326,7 +326,8 @@ class JobmonitorController(BaseController):
         if str(request.params["app"]) != "All":
           req["ApplicationStatus"] = str(request.params["app"]).split('::: ')
       if ( "JobAdministrator" or "JobSharing" ) not in groupProperty:
-        req["Owner"] = str(user)
+        if not request.params.has_key("getStat") and not len(request.params["getStat"]) > 0:
+          req["Owner"] = str(user)
       else:
         if request.params.has_key("owner") and len(request.params["owner"]) > 0:
           if str(request.params["owner"]) != "All":
@@ -445,7 +446,6 @@ class JobmonitorController(BaseController):
 ################################################################################
   def __getStats(self,selector):
     req = self.__request()
-    gLogger.info("\033[0;31m R E Q: \033[0m",req)
     selector = str(selector)
     RPC = getRPCClient("WorkloadManagement/JobMonitoring")
     if selector == "Minor status":
