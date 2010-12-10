@@ -139,6 +139,15 @@ def pagePath():
   dirList = [ dir for dir in schemaPath.split( "/" ) if not dir.strip() == "" ]
   return "'%s'" % " > ".join( dirList )
 
+def pageName():
+  path = request.environ[ "pylons.routes_dict" ]
+  if path and path.has_key("controller") and path["controller"].find("/") > 0:
+    prefix,controller = path["controller"].split("/");
+    result = "'%s'" % controller
+  else:
+    result = "Undefined"
+  return result
+
 def getUserData():
   userData = []
   username = credentials.getUsername()
@@ -186,15 +195,20 @@ def getHelpForPage(): #by Matvey
     else:
       return default
 
+def getLogoForPortal():
+  return gWebConfig.getLogo()
+
 def getJSPageData():
   pageData = []
   pageData.append( "navMenu : %s" % getSchemaContents() )
   pageData.append( "setupMenu : %s" % getSetups() )
   pageData.append( "selectedSetup : '%s'" % credentials.getSelectedSetup() )
   pageData.append( "pagePath : %s" % pagePath() )
+  pageData.append( "pageName : %s" % pageName() )
   pageData.append( "userData : %s" % getUserData() )
   pageData.append( "docs : %s" % getDoc() ) # by Matvey
   pageData.append( "helpURL : '%s'" % getHelpForPage() ) # by Matvey
+  pageData.append( "logoURL : '%s'" % getLogoForPortal() ) # by Matvey
   return "{%s}" % ",".join( pageData )
 
 ## DEFAULT REDIRECT
