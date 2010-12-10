@@ -91,4 +91,10 @@ class WebConfig:
       return False
     return helpSection[ 'Value' ]
 
+  def getLogo(self):
+    url = gConfig.getValue( "%s/LogoURL" % self.webSection, "" )
+    if not url:
+      return "http://diracgrid.org/"
+    return url
+
 gWebConfig = WebConfig()
