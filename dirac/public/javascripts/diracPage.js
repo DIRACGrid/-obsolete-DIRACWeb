@@ -135,8 +135,9 @@ function initTopFrame( pageDescription ){
     menu : pageDescription[ 'setupMenu' ]
   });
   navItems.push( setupButton );
-  var lhcbImg = gURLRoot+'/images/iface/lhcb.jpg';
-  var lhcbLogo = '<a href="http://lhcb.cern.ch" target="_blank">'
+  var lhcbImg = gURLRoot+'/images/iface/logo.png';
+  var logoURL = pageDescription[ 'logoURL' ];
+  var lhcbLogo = '<a href=' + logoURL + ' target="_blank">'
   lhcbLogo = lhcbLogo + '<img alt="Official LHCb webpage" src="'+lhcbImg+'"/></a>'
   navItems.push( lhcbLogo )
   var topBar = new Ext.Toolbar({
