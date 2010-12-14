@@ -326,7 +326,7 @@ class JobmonitorController(BaseController):
         if str(request.params["app"]) != "All":
           req["ApplicationStatus"] = str(request.params["app"]).split('::: ')
       if ( "JobAdministrator" or "JobSharing" ) not in groupProperty:
-        if not request.params.has_key("getStat") and not len(request.params["getStat"]) > 0:
+        if not request.params.has_key("getStat"):
           req["Owner"] = str(user)
       else:
         if request.params.has_key("owner") and len(request.params["owner"]) > 0:
