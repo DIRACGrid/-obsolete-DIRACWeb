@@ -66,63 +66,70 @@ function __addClickHandlerToMenuSubEntries( menuEntry )
   }
   return hndlMenu;
 }
-
+function helpEntry(){
+  var url = 'http://marwww.in2p3.fr/~atsareg/Docs/DIRAC/build/html/diracindex.html';
+  if(gPageDescription.helpURL){
+    url = gPageDescription.helpURL
+  }
+  var html = '<iframe id="help_frame" src =' + url + '></iframe>';
+  var panel = new Ext.Panel({border:0,autoScroll:false,html:html});
+  panel.on('resize',function(){
+    var wwwFrame = document.getElementById('help_frame');
+    wwwFrame.height = panel.getInnerHeight() - 4;
+    wwwFrame.width = panel.getInnerWidth() - 4;
+  });
+  var title = 'Help for ' + gPageDescription.pagePath;
+  var window = new Ext.Window({
+    iconCls:'icon-grid',
+    closable:true,
+    width:800,
+    height:400,
+    border:true,
+    collapsible:false,
+    constrain:true,
+    constrainHeader:true,
+    maximizable:true,
+    modal:true,
+    layout:'fit',
+    plain:true,
+    shim:false,
+    title:title,
+    items:[panel]
+  });
+  window.show();
+}
 function initTopFrame( pageDescription ){
   var navItems = [];
-  for( var i in pageDescription[ 'navMenu' ] )
-  {
-        areaObject = pageDescription[ 'navMenu' ][i];
-    if(areaObject.text)
-    {
+  for( var i in pageDescription[ 'navMenu' ] ){
+    areaObject = pageDescription[ 'navMenu' ][i];
+    if(areaObject.text){
       var handleredMenu = __addClickHandlerToMenuSubEntries( areaObject.menu );
       var cnfObj = { text : areaObject.text, menu : handleredMenu };
-      if(areaObject.text == 'Info')
-      {
+      if(areaObject.text == 'Info'){
         cnfObj.cls = 'x-btn-icon';
         cnfObj.icon = gURLRoot+'/images/iface/dlogo.gif';
         cnfObj.minWidth = '16';
       }
-                var menuEntry = new Ext.Toolbar.Button( cnfObj );
+      if(cnfObj.text == 'Help'){
+        cnfObj.menu.reverse();
+        var tmp = new Array();
+        tmp.text = 'Context Help';
+        tmp.handler = helpEntry;
+        cnfObj.menu.push(tmp);
+        cnfObj.menu.reverse();
+      }
+      var menuEntry = new Ext.Toolbar.Button( cnfObj );
     }
     navItems.push( menuEntry );
   }
+/*
   navItems.push(
     new Ext.Toolbar.Button({
-      text : "Help",
-      handler : function(){
-        var url = 'http://marwww.in2p3.fr/~atsareg/Docs/DIRAC/build/html/diracindex.html';
-        if(gPageDescription.helpURL){
-          url = gPageDescription.helpURL
-        }
-        var html = '<iframe id="help_frame" src =' + url + '></iframe>';
-        var panel = new Ext.Panel({border:0,autoScroll:false,html:html});
-        panel.on('resize',function(){
-          var wwwFrame = document.getElementById('help_frame');
-          wwwFrame.height = panel.getInnerHeight() - 4;
-          wwwFrame.width = panel.getInnerWidth() - 4;
-        });
-        var title = 'Help for ' + gPageDescription.pagePath;
-        var window = new Ext.Window({
-          iconCls:'icon-grid',
-          closable:true,
-          width:800,
-          height:400,
-          border:true,
-          collapsible:false,
-          constrain:true,
-          constrainHeader:true,
-          maximizable:true,
-          modal:true,
-          layout:'fit',
-          plain:true,
-          shim:false,
-          title:title,
-          items:[panel]
-        });
-        window.show();
-      }
-    })
+      text:'Tools',
+      id:'mainTopbarToolsButton'
+    });
   );
+*/
   navItems.push( "->" );
   navItems.push( "Selected setup:" );
   // Set the handler
