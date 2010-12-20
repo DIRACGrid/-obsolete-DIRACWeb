@@ -76,6 +76,15 @@ class AccountingplotsController( BaseController ):
   def SRMSpaceTokenDeployment( self ):
     return self.__showPlotPage( "SRMSpaceTokenDeployment", "/systems/accounting/SRMSpaceTokenDeployment.mako" )
 
+  def plotPage( self ):
+    try:
+      typeName = str( request.params[ 'typeName' ] )
+    except:
+      c.errorMessage = "Oops. missing type"
+      return render( "/error.mako" )
+
+    return self.__showPlotPage( typeName , "/systems/accounting/%s.mako" % typeName )
+
   def __showPlotPage( self, typeName, templateFile ):
     #Get unique key values
     retVal = self.__getUniqueKeyValues( typeName )
