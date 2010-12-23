@@ -5,19 +5,22 @@ var gRefreshNotificationsFunction = false;
 
 function initNotificationsChecker()
 {
+	var refreshURL = getURL( 'getUserStats' );
+	
 	gRefreshNotificationsFunction = function(){
 		Ext.Ajax.request({
 				method : 'POST',
 				success : cbStatsReceived,
 				failure : cbMSGError,
-				url : getURL( 'getUserStats' ),
+				url : refreshURL,
 			});
 	};
-	var msgHeartbeat = {
-			run : gRefreshNotificationsFunction,
-    		interval:300000 // 5min
-		};
-	Ext.TaskMgr.start( msgHeartbeat );
+	//var msgHeartbeat = {
+	//		run : gRefreshNotificationsFunction,
+    //		interval:300000 // 5min
+	//	};
+	//Ext.TaskMgr.start( msgHeartbeat );
+	setTimeout( gRefreshNotificationsFunction, 300000 );
 }
 
 function getURL( action )
