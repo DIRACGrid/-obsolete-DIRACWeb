@@ -19,6 +19,7 @@ from dirac.lib.webBase import defaultRedirect
 
 log = logging.getLogger( __name__ )
 
+
 class AccountingplotsController( BaseController ):
 
   __keysCache = DictCache()
