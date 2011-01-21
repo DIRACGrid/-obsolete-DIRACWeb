@@ -403,4 +403,5 @@ function getSandbox(id,type){
 }
 function afterDataLoad(){
   updateStats('csPanel');
+// useless comment here
 }
