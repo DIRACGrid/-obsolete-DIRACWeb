@@ -50,9 +50,10 @@ def initDIRAC( rootPath, enableDebug = False ):
     from DIRAC.Core.Base import Script
     Script.registerSwitch( "r", "reload", "Reload for pylons" )
     Script.localCfg.addDefaultEntry( "/DIRAC/Security/UseServerCertificate", "yes" )
-    Script.parseCommandLine( script = "Website", ignoreErrors = True, initializeMonitor = False )
+    Script.initialize( script = "Website", ignoreErrors = True, initializeMonitor = False )
     gLogger._systemName = "Framework"
     gLogger.initialize( "Web", "/Website" )
+    gLogger.setLevel( "VERBOSE" )
 
     from DIRAC import gMonitor, gConfig
     from DIRAC.Core.Utilities import CFG
