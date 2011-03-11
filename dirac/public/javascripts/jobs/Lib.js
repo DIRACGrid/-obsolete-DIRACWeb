@@ -627,7 +627,7 @@ function selectPanel(newID){
     }
     var bbar = panel.getBottomToolbar();
     if(!bbar){
-      alert('Error: The bottom toolbar si missing');
+      alert('Error: The bottom toolbar is missing');
       return
     }
     var start = bbar.cursor;
@@ -1067,7 +1067,7 @@ function createMenu(dataName,menuName,altValue){
     data = [[0,'Nothing to display']];
   }else{
     try{
-      var length = data.length;
+    var length = data.length;
     }catch(e){
       data = [[0,'Error, can not get data.length']];
     }
@@ -1774,9 +1774,13 @@ initObject - object with data used to restore\set the initial state
   if((initObject) && (typeof(initObject.auto) !== 'undefined')){
     auto = initObject.auto;
   }
+  var params = {'getStat':selector,'selections':selections};
+  if(global){
+    params['globalStat'] = 'true';
+  }
   var storeGrid = new Ext.data.Store({
     autoLoad:auto,
-    baseParams:{'getStat':selector,'selections':selections},
+    baseParams:params,
     proxy: new Ext.data.HttpProxy({
       url:'action',
       method:'POST',
@@ -1839,16 +1843,6 @@ initObject - object with data used to restore\set the initial state
     tbar:[combo],
     title:title,
     viewConfig:{forceFit:true}
-  });
-  grid.addListener(('expand','resize'),function(){
-    var tmpWidth = grid.getInnerWidth();
-    var bar = grid.getTopToolbar();
-    var comboID = id + 'Combo';
-    var value = Ext.getCmp(comboID).getRawValue();
-    Ext.fly(bar.items.get(0).getEl()).remove();
-    bar.items.removeAt(0);
-    var combo = selectCombo(tmpWidth - 4,storeSelect,value,id);
-    bar.add(0,combo);
   });
   grid.addListener({'expand':function(){
     resizeCombo();

@@ -9,7 +9,7 @@ from DIRAC.Core.Utilities.List import sortList
 from DIRAC.AccountingSystem.Client.ReportsClient import ReportsClient
 from DIRAC.Core.Utilities.DictCache import DictCache
 import dirac.lib.credentials as credentials
-from DIRAC.Interfaces.API.Dirac import Dirac
+#from DIRAC.Interfaces.API.Dirac import Dirac
 
 log = logging.getLogger(__name__)
 
@@ -63,7 +63,9 @@ class JobmonitorController(BaseController):
       c.result = {"success":"false","error":result["Message"]}
       return c.result
     req = self.__request()
+    gLogger.always("getJobPageSummaryWeb(%s,%s,%s,%s)" % (req,globalSort,pageNumber,numberOfJobs))
     result = RPC.getJobPageSummaryWeb(req,globalSort,pageNumber,numberOfJobs)
+    gLogger.always(" - REZ: " %result)
     if result["OK"]:
       result = result["Value"]
       gLogger.info("ReS",result)
@@ -84,7 +86,6 @@ class JobmonitorController(BaseController):
                 total = result["TotalRecords"]
                 if result.has_key("Extras"):
                   st = self.__dict2string(req)
-                  print st
                   extra = result["Extras"]
                   c.result = {"success":"true","result":c.result,"total":total,"extra":extra,"request":st}
                 else:
@@ -259,6 +260,7 @@ class JobmonitorController(BaseController):
     return callback
 ################################################################################
   def __request(self):
+    gLogger.always("!!!  PARAMS: ",str(request.params))
     req = {}
     group = credentials.getSelectedGroup()
     user = str(credentials.getUsername())
@@ -307,6 +309,7 @@ class JobmonitorController(BaseController):
           gLogger.info("RANGE:",rangeID)
     else:
       groupProperty = credentials.getProperties(group)
+      gLogger.always("### groupProperty: ",str(groupProperty))
       if request.params.has_key("prod") and len(request.params["prod"]) > 0:
         if str(request.params["prod"]) != "All":
           req["JobGroup"] = str(request.params["prod"]).split('::: ')
@@ -326,7 +329,7 @@ class JobmonitorController(BaseController):
         if str(request.params["app"]) != "All":
           req["ApplicationStatus"] = str(request.params["app"]).split('::: ')
       if not "JobAdministrator" in groupProperty and not "JobSharing" in groupProperty:
-        if not request.params.has_key("getStat"):
+        if not request.params.has_key("globalStat"):
           req["Owner"] = str(user)
       else:
         if request.params.has_key("owner") and len(request.params["owner"]) > 0:
@@ -353,7 +356,7 @@ class JobmonitorController(BaseController):
         globalSort = [[str(key),str(value)]]
       else:
         globalSort = [["JobID","DESC"]]
-    gLogger.info("REQUEST:",req)
+    gLogger.always("REQUEST:",req)
     return req
 ################################################################################
   @jsonify
@@ -445,6 +448,9 @@ class JobmonitorController(BaseController):
       return c.result
 ################################################################################
   def __getStats(self,selector):
+    gLogger.always(" --- selector : %s" % selector)
+#    import sys
+#    sys.stdout.flush()
     req = self.__request()
     selector = str(selector)
     RPC = getRPCClient("WorkloadManagement/JobMonitoring")
@@ -452,6 +458,7 @@ class JobmonitorController(BaseController):
       selector = "MinorStatus"
     elif selector == "Application status":
       selector = "ApplicationStatus"
+    gLogger.always(" --- getJobStats(%s,%s) : " % (str(selector),str(req)))
     result = RPC.getJobStats(selector,req)
     if result["OK"]:
       c.result = []
