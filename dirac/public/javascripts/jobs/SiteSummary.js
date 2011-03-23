@@ -1,6 +1,8 @@
 var dataSelect = ''; // Required to store the data for filters fields. Object.
 var dataMngr = ''; // Required to connect form and table. Object.
 var tableMngr = ''; // Required to handle configuration data for table. Object.
+var refreshRate = 0; // autorefresh is off
+var refeshID = 0;
 // Main routine
 function initSiteSummary(reponseSelect){
   dataSelect = reponseSelect;
@@ -79,14 +81,43 @@ function initData(store){
     {header:'Stalled',sortable:true,dataIndex:'Stalled',align:'left'},
     {header:'Failed',sortable:true,dataIndex:'Failed',align:'left'}
   ];
-  dirac.tbar = ['->',{
+  var refresh = new Ext.Toolbar.Button({
     cls:"x-btn-text-icon",
-    handler:function(){store.load()},
-    icon:gURLRoot+'/images/iface/refresh.gif',
+    handler:function(){
+      refreshCycle();
+    },
+    iconCls:'Refresh',
     text:'Refresh',
-    tooltip:'Click to refresh the data in the table'
-  }];
-  dirac.tbar = '';
+    tooltip:'Click the button for manual refresh.'
+  });
+  var timeStamp = {
+    disabled:true,
+    disabledClass:'my-disabled',
+    hidden:true,
+    id:'timeStamp',
+    text:'Updated: '
+  };
+  var auto = new Ext.Toolbar.Button({
+    cls:"x-btn-text",
+    id:'autoButton',
+    menu:new Ext.menu.Menu({items:[
+      {checked:setChk(0),checkHandler:function(){refreshYO(0,true);},group:'refresh',text:'Disabled'},
+      {checked:setChk(900000),checkHandler:function(){refreshYO(900000,true,'Each 15m');},group:'refresh',text:'15 Minutes'},
+      {checked:setChk(3600000),checkHandler:function(){refreshYO(3600000,true,'Each Hour');},group:'refresh',text:'One Hour'},
+      {checked:setChk(86400000),checkHandler:function(){refreshYO(86400000,true,'Each Day');},group:'refresh',text:'One Day'},
+    ]}),
+    text:'Disabled',
+    tooltip:'Click to set the time for autorefresh'
+  });
+  auto.on('menuhide',function(button,menu){
+    var length = menu.items.getCount();
+    for(var i = 0; i < length; i++){
+      if(menu.items.items[i].checked){
+        button.setText(menu.items.items[i].text);
+      }
+    }
+  });
+  dirac.tbar = ['->',refresh,'-','Auto:',auto,timeStamp];
   var view = new Ext.grid.GroupingView({
     groupTextTpl: '<tpl if="dataMngr.store.groupField==\'FullCountry\'">{group}:</tpl><tpl if="dataMngr.store.groupField!=\'FullCountry\'">{text},</tpl> {[values.rs.length]} {[values.rs.length > 1 ? "Sites" : "Site"]}',
   })
@@ -94,12 +125,40 @@ function initData(store){
   tableMngr = {'store':store,'columns':columns,'tbar':dirac.tbar,'view':view};
   var t = table(tableMngr);
   t.addListener('cellclick',function(table,rowIndex,columnIndex){
-      showMenu('main',table,rowIndex,columnIndex);
+    showMenu('main',table,rowIndex,columnIndex);
   });
   var bar = t.getBottomToolbar();
   bar.hide();
   t.footer = false;
   return t
+}
+function setChk(value){
+  if(value == refreshRate){
+    return true
+  }else{
+    return false
+  }
+}
+function refreshYO(delay,start,text){
+  var select = Ext.getCmp('selectPanel');
+  if(select && select.form){
+    select.form.submit();
+  }
+  if(refeshID != 0){
+    clearTimeout(refeshID);
+  }
+  if(delay == 0){
+    clearTimeout(refeshID);
+  }else{
+    if(!start){
+      var select = Ext.getCmp('selectPanel');
+      if(select && select.form){
+        select.form.submit();
+      }
+    }
+    start = false;
+    refeshID = setTimeout('refreshYO(' + delay + ',false)',delay);
+  }
 }
 function setMenuItems(selections){
   if(selections){
@@ -112,34 +171,27 @@ function setMenuItems(selections){
       {handler:function(){jump('site',id)},text:'Show Job(s)'}
     );
   }
-};
+}
 function renderData(store){
   var leftBar = initSidebar();
   var mainContent = initData(store);
   renderInMainViewport([ leftBar, mainContent ]);
-  dataMngr = {'form':leftBar,'store':store}
+  dataMngr = {'form':leftBar,'store':store};
 }
 function afterDataLoad(store){
-  try{
-    var img = '<img src="getImg?name="'+store.reader.jsonData.plots+'>';
-  }catch(e){}
-  var last = 'Refresh it';
-  if(store){
-    if(store.reader){
-      if(store.reader.jsonData){
-        last = dataMngr.store.reader.jsonData.time;
-      }
+  var stamp = Ext.getCmp('timeStamp');
+  if(stamp){
+    var d = new Date();
+    var hh = d.getHours();
+    if(hh < 10){
+      hh = '0' + hh;
     }
-  }
-  last = 'Last update: ' + last
-  if(dirac){
-    if(dirac.tbar){
-      if(dirac.tbar.items){
-        if(dirac.tbar.items.items[1]){
-          dirac.tbar.items.items[1].setText(last);
-        }
-      }
+    var mm = d.getMinutes()
+    if(mm < 10){
+      mm = '0' + mm;
     }
+    stamp.setText('Updated: ' + hh + ":" + mm);
+    stamp.show();
   }
 }
 function jump(type,id){
