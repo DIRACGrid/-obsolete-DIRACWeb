@@ -46,9 +46,11 @@ class SitesummaryController(BaseController):
   def submit(self):
     pagestart = time()
     RPC = getRPCClient("WorkloadManagement/WMSAdministrator")
+    gLogger.info("!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!")
     result = self.__request()
+    gLogger.always( "getSiteSummaryWeb(%s,%s,%s,%s)" % (result,globalSort,pageNumber,numberOfJobs) )
     result = RPC.getSiteSummaryWeb(result,globalSort,pageNumber,numberOfJobs)
-    gLogger.info("\033[0;31m YO: \033[0m",result)
+    gLogger.always("\033[0;31m YO: \033[0m",result)
     if result["OK"]:
       result = result["Value"]
       if result.has_key("TotalRecords") and  result["TotalRecords"] > 0:
@@ -84,6 +86,7 @@ class SitesummaryController(BaseController):
       else:
         c.result = {"success":"false","result":"","error":"There were no data matching your selection"}
     else:
+      gLogger.always("- E R R O R -")
       c.result = {"success":"false","error":result["Message"]}
     gLogger.info("\033[0;31m SITESUMMARY INDEX REQUEST: \033[0m %s" % (time() - pagestart))
     return c.result
