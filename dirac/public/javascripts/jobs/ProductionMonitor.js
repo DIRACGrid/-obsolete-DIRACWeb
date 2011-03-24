@@ -94,8 +94,8 @@ function initRecord(){
     {name:'FileMask'},
     {name:'Description'},
     {name:'LongDescription'},
-    {name:'CreationDate',type:'date',dateFormat:'Y-n-j h:i:s'},
-    {name:'LastUpdate',type:'date',dateFormat:'Y-n-j h:i:s'},
+    {name:'CreationDate',type:'date',dateFormat:'Y-n-j H:i:s'},
+    {name:'LastUpdate',type:'date',dateFormat:'Y-n-j H:i:s'},
     {name:'Files_Total'},
     {name:'Files_PercentProcessed'},
     {name:'Files_Unused'},
@@ -179,8 +179,8 @@ function initData(store){
     {header:'AuthorGroup',sortable:true,dataIndex:'AuthorGroup',align:'left',hidden:true},
     {header:'Description',sortable:true,dataIndex:'Description',align:'left',hidden:true},
     {header:'LongDescription',sortable:true,dataIndex:'LongDescription',align:'left',hidden:true},
-    {header:'CreationDate [UTC]',sortable:true,renderer:Ext.util.Format.dateRenderer('Y-n-j h:i'),dataIndex:'CreationDate'},
-    {header:'LastUpdate [UTC]',sortable:true,renderer:Ext.util.Format.dateRenderer('Y-n-j h:i'),dataIndex:'LastUpdate'}
+    {header:'CreationDate [UTC]',sortable:true,renderer:Ext.util.Format.dateRenderer('Y-n-j H:i'),dataIndex:'CreationDate'},
+    {header:'LastUpdate [UTC]',sortable:true,renderer:Ext.util.Format.dateRenderer('Y-n-j H:i'),dataIndex:'LastUpdate'}
   ];
   var tbar = [
     {

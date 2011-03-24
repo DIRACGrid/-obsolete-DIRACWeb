@@ -1371,6 +1371,9 @@ function showMenu(mode,table,rowIndex,columnIndex){
   if(record.data){
     var selections = record.data;
     var value = record.get(fieldName);
+    try{
+      value = value.format('l, \\t\\he jS \\of F Y H:i [\\U\\TC]');
+    }catch(e){}
   }
   if((columnName != 'checkBox') && (columnName != 'expand')){ // column with checkboxes
     dirac.menu.removeAll();
