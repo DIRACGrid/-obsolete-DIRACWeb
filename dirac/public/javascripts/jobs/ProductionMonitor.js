@@ -395,12 +395,11 @@ function AJAXsuccess(value,id,response){
     reader = new Ext.data.ArrayReader({},[
       {name:'message'},
       {name:'author'},
-      {name:'date'}
+      {name:'date',type:'date',dateFormat:'Y-n-j H:i:s'}
     ]);
     columns = [
         {header:'Message',sortable:true,dataIndex:'message',align:'left'},
-        {header:'Date [UTC]',sortable:true,dataIndex:'date',align:'left'},
-//        {header:'Date [UTC]',sortable:true,renderer:Ext.util.Format.dateRenderer('Y-n-j h:i'),dataIndex:'date'},
+        {header:'Date [UTC]',sortable:true,renderer:Ext.util.Format.dateRenderer('Y-m-j h:i'),dataIndex:'date'},
         {header:'Author',sortable:true,dataIndex:'author',align:'left'}
     ];
     var store = new Ext.data.Store({
@@ -572,6 +571,9 @@ function showFileStat(stat,id){
   store.removeListener('beforeload',storeLoadFunction);
   var tableMngr = {'store':store,'columns':columns,'id':'fileStatusTable'};
   var panel = table(tableMngr);
+  panel.addListener('cellclick',function(table,rowIndex,columnIndex){
+    showMenu('nonMain',table,rowIndex,columnIndex);
+  });
   var win = displayWin(panel,title,true);
   win.setWidth(600);
 }
@@ -666,6 +668,9 @@ function runStatus(id){
     var fieldName = table.getColumnModel().getDataIndex(columnIndex); // Get field name for the column
     if(record.data){
       var v = record.get(fieldName);
+      try{
+        v = v.format('l, \\t\\he jS \\of F Y H:i [\\U\\TC]');
+      }catch(e){}
     }
     var coords = Ext.EventObject.xy;
     var menu = new Ext.menu.Menu();
