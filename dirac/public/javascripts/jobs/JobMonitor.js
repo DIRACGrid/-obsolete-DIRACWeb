@@ -374,7 +374,7 @@ function AJAXsuccess(value,id,response){
         {header:'Status',sortable:true,dataIndex:'status',align:'left'},
         {header:'MinorStatus',sortable:true,dataIndex:'minorstatus',align:'left'},
         {header:'ApplicationStatus',sortable:true,dataIndex:'applicationstatus',align:'left'},
-        {header:'DateTime',sortable:true,dataIndex:'datetime',align:'left'}
+        {header:'DateTime',sortable:true,dataIndex:'datetime',align:'left',renderer:Ext.util.Format.dateRenderer('Y-m-d H:i')}
       ];
     }
     var store = new Ext.data.Store({
