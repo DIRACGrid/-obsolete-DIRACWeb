@@ -90,8 +90,8 @@ function initData(store){
     {header:'OwnerGroup',sortable:true,dataIndex:'OwnerGroup',align:'left'},
     {header:'PilotID',sortable:true,dataIndex:'PilotID',align:'left',hidden:true},
     {header:'ParentID',sortable:true,dataIndex:'ParentID',align:'left',hidden:true},
-    {header:'LastUpdateTime',sortable:true,dataIndex:'LastUpdateTime',align:'left'},
-    {header:'SubmissionTime',sortable:true,dataIndex:'SubmissionTime',align:'left'},
+    {header:'LastUpdateTime [UTC]',sortable:true,dataIndex:'LastUpdateTime',align:'left',renderer:Ext.util.Format.dateRenderer('Y-m-j H:i')},
+    {header:'SubmissionTime [UTC]',sortable:true,dataIndex:'SubmissionTime',align:'left',renderer:Ext.util.Format.dateRenderer('Y-m-j H:i')},
   ];
   store.setDefaultSort('SubmissionTime','DESC'); // Default sorting
   tableMngr = {'store':store,'columns':columns,'tbar':''};

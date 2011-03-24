@@ -179,8 +179,8 @@ function initData(store){
     {header:'AuthorGroup',sortable:true,dataIndex:'AuthorGroup',align:'left',hidden:true},
     {header:'Description',sortable:true,dataIndex:'Description',align:'left',hidden:true},
     {header:'LongDescription',sortable:true,dataIndex:'LongDescription',align:'left',hidden:true},
-    {header:'CreationDate [UTC]',sortable:true,renderer:Ext.util.Format.dateRenderer('Y-n-j H:i'),dataIndex:'CreationDate'},
-    {header:'LastUpdate [UTC]',sortable:true,renderer:Ext.util.Format.dateRenderer('Y-n-j H:i'),dataIndex:'LastUpdate'}
+    {header:'CreationDate [UTC]',sortable:true,renderer:Ext.util.Format.dateRenderer('Y-m-j H:i'),dataIndex:'CreationDate'},
+    {header:'LastUpdate [UTC]',sortable:true,renderer:Ext.util.Format.dateRenderer('Y-m-j H:i'),dataIndex:'LastUpdate'}
   ];
   var tbar = [
     {
