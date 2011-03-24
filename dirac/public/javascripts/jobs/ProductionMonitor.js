@@ -553,8 +553,8 @@ function showFileStat(stat,id){
     {name:'TargetSE'},
     {name:'UsedSE'},
     {name:'ErrorCount'},
-    {name:'LastUpdate'},
-    {name:'InsertedTime'}
+    {name:'LastUpdate',type:'date',dateFormat:'Y-n-j H:i:s'},
+    {name:'InsertedTime',type:'date',dateFormat:'Y-n-j H:i:s'}
   ]);
   var columns = [
     {header:'LFN',sortable:true,dataIndex:'LFN',align:'left'},
@@ -565,8 +565,8 @@ function showFileStat(stat,id){
     {header:'TargetSE',sortable:true,dataIndex:'TargetSE',align:'left'},
     {header:'UsedSE',sortable:true,dataIndex:'UsedSE',align:'left'},
     {header:'ErrorCount',sortable:true,dataIndex:'ErrorCount',align:'left'},
-    {header:'LastUpdate',sortable:true,dataIndex:'LastUpdate',align:'left'},
-    {header:'InsertedTime',sortable:true,dataIndex:'InsertedTime',align:'left'}
+    {header:'LastUpdate',sortable:true,dataIndex:'LastUpdate',align:'left',renderer:Ext.util.Format.dateRenderer('Y-m-d H:i')},
+    {header:'InsertedTime',sortable:true,dataIndex:'InsertedTime',align:'left',renderer:Ext.util.Format.dateRenderer('Y-m-d H:i')}
   ];
   var store = initStore(record,{'url':'showFileStatus','params':params});
   store.removeListener('beforeload',storeLoadFunction);
@@ -582,7 +582,7 @@ function runStatus(id){
     {name:'Status'},
     {name:'StatusIcon',mapping:'Status'},
     {name:'TransformationID'},
-    {name:'LastUpdate'},
+    {name:'LastUpdate',type:'date',dateFormat:'Y-n-j H:i:s'},
     {name:'Files_PercentProcessed',type:'float'},
     {name:'Files_Total'},
     {name:'Files_Assigned'},
@@ -604,7 +604,7 @@ function runStatus(id){
     {header:'Assigned',sortable:true,dataIndex:'Files_Assigned',align:'left',renderer:diffRuns},
     {header:'Processed',sortable:true,dataIndex:'Files_Processed',align:'left',renderer:diffRuns},
     {header:'Problematic',sortable:true,dataIndex:'Files_Problematic',align:'left',renderer:diffRuns},
-    {header:'LastUpdate',sortable:true,dataIndex:'LastUpdate',align:'left'}
+    {header:'LastUpdate',sortable:true,dataIndex:'LastUpdate',align:'left',renderer:Ext.util.Format.dateRenderer('Y-m-d H:i')}
   ];
   var store = initStore(record,{'url':'showRunStatus','params':params});
   store.removeListener('beforeload',storeLoadFunction);
