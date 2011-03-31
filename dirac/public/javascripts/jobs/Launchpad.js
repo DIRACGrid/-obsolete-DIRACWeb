@@ -65,7 +65,7 @@ function submitJobNew(){
 // Periodic check for a user proxy
   var heartbeat = {
     run:proxyCheckerFunction,
-    interval:86400*1000 // 1 day
+    interval:3600*1000 // 1 hour
   };
   Ext.TaskMgr.start(heartbeat);
 // Returns proxy button
@@ -103,7 +103,7 @@ function submitJobNew(){
     bar.items.removeAt(0);
     bar.insertButton(0,button);
     var bButton = form.buttons[0];
-    if(mode == 'false'||mode == 'check'){
+    if(mode != 'true'){
       bButton.disable();
     }else{
       bButton.enable();
@@ -126,7 +126,7 @@ function submitJobNew(){
         success:function(form,action){
           gMainLayout.container.unmask();
           if(action.result.success == 'false'){
-             alert('Error: ' + action.result.error);
+             alert('Error: ' + action.result.result);
           }else{
             var warn = Ext.Msg.show({
               animEl: 'elId',
@@ -165,12 +165,12 @@ function submitJobNew(){
         'fileselected':function(fb,name){
           var panel = Ext.getCmp(fileID);
           if(!panel){
-            alert('Error: can not get component by fileID');
+            alert('Error: Can not get component by fileID');
             return
           }
           var inn = Ext.getCmp(innID);
           if(!inn){
-            alert('Error: can not get component by innID');
+            alert('Error: Can not get component by innID');
             return
           }
           var width = inn.getInnerWidth() - fileAnchor;
@@ -212,7 +212,7 @@ function submitJobNew(){
             if(bar.items.items[3].disabled){ // Last button in the top toolbar
               bar.items.items[3].enable();
             }
-          }catch(e){}          
+          }catch(e){}
           panel.setTitle(msg);
           panel.doLayout();
         }
@@ -234,25 +234,29 @@ function submitJobNew(){
 // Add or remove entries from the JDL panel
   function entryMagic(item,state){
     var data = [
+      ['InputData',''],
+      ['OutputData',''],
+      ['OutputSE','DIRAC-USER'],
+      ['OutputPath',''],
       ['CPUTime','86400'],
-      ['StdError','testJob.err'],
-      ['JobType','MPI'],
-      ['CPUNumber','2'],
-      ['InputDataType',''],
-      ['SystemConfig','slc4_ia32_gcc34'],
       ['Site',''],
       ['BannedSite',''],
-      ['OutputSE',''],
-      ['OutputData','']
+      ['SystemConfig','slc4_ia32_gcc34'],
+      ['Priority','5'],
+      ['StdError','std.err'],
+      ['StdOutput','std.out'],
+      ['Parameters','0'],
+      ['ParameterStart','0'],
+      ['ParameterStep','1']
     ];
     var panel = Ext.getCmp(jdlID);
     if(!panel){
-      alert('Error: ');
+      alert('Error: Can not get component by jdlID');
       return
     }
     var form = Ext.getCmp(formID);
     if(!form){
-      alert('Error: ');
+      alert('Error: Can not get component by formID');
       return
     }
     var text = item.text;
@@ -391,16 +395,24 @@ function submitJobNew(){
     cls:"x-btn-text-icon",
     icon:gURLRoot+'/images/iface/advanced.gif',
     menu:[
+      checkedMenu('InputData'),
+      checkedMenu('OutputData'),
+      checkedMenu('OutputSE'),
+      checkedMenu('OutputPath'),
+      '-',
       checkedMenu('CPUTime'),
-      checkedMenu('StdError'),
-      checkedMenu('JobType'),
-      checkedMenu('CPUNumber'),
-      checkedMenu('InputDataType'),
-      checkedMenu('SystemConfig'),
       checkedMenu('Site'),
       checkedMenu('BannedSite'),
-      checkedMenu('OutputSE'),
-      checkedMenu('OutputData')
+      checkedMenu('SystemConfig'),
+      '-',
+      checkedMenu('Priority'),
+      '-',
+      checkedMenu('StdError'),
+      checkedMenu('StdOutput'),
+      '-',
+      checkedMenu('Parameters'),
+      checkedMenu('ParameterStart'),
+      checkedMenu('ParameterStep')
     ],
     text:'Add Parameters',
     tooltip:'Click to add more parameters to the JDL'
