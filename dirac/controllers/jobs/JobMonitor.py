@@ -21,6 +21,18 @@ globalSort = [["JobID","DESC"]]
 class JobmonitorController(BaseController):
   __imgCache = DictCache()
 ################################################################################
+  @jsonify
+  def layoutUser(self):
+    return {"success":"true","result":[{"name":"User1"},{"name":"User2"},{"name":"User3"},{"name":"User4"},{"name":"User5"},{"name":"User6"}],"total":"5"}
+################################################################################
+  @jsonify
+  def layoutGroup(self):
+    return {"success":"true","result":[{"name":"Grp1"},{"name":"Grp2"},{"name":"Grp3"},{"name":"Grp4"},{"name":"Grp5"},{"name":"Grp6"}],"total":"5"}
+################################################################################
+  @jsonify
+  def layoutAvailable(self):
+    return {"success":"true","result":[{"name":"Test1","owner":"msapunov","description":"Testing message"},{"name":"Test2","owner":"msapunov","description":"Testing message"}],"total":"5"}
+################################################################################
   def display(self):
     pagestart = time()
     group = credentials.getSelectedGroup()
@@ -826,6 +838,24 @@ class JobmonitorController(BaseController):
     for item in params:
       if item == "OutputSandbox":
         jdl = jdl + str(item) + " = {" + str(params[item]) + "};"
+      if item == "Parameters":
+        try:
+          parameters = int(params[item])
+          if parameters > 20:
+            return {"success":"false","error":"Exceeded Parameters limit. Must be less then 20"}
+          else:
+            jdl = jdl + str(item) + " = \"" + str(parameters) + "\";"
+        except:
+          parameters = str(params[item])
+          if parameters.find("{") >= 0 and parameters.find("}") >= 0:
+            parameters = parameters.rstrip("}")
+            parameters = parameters.lstrip("{")
+            if len(parameters) > 0:
+              jdl = jdl + str(item) + " = {" + parameters + "};"
+            else:
+              return {"success":"false","error":"Parameters vector has zero length"}
+          else:
+            return {"success":"false","error":"Parameters must be an integer or a vector. Example: 4 or {1,2,3,4}"}
       else:
         jdl = jdl + str(item) + " = \"" + str(params[item]) + "\";"
     store = []
