@@ -7,6 +7,13 @@ function initLoop(reponseSelect){
   var record = initRecord();
   var store = initStore(record);
   Ext.onReady(function(){
+    Ext.override(Ext.PagingToolbar, {
+      onRender :  Ext.PagingToolbar.prototype.onRender.createSequence(function(ct, position){
+        this.loading.removeClass('x-btn-icon');
+        this.loading.setText('Refresh');
+        this.loading.addClass('x-btn-text-icon');
+      })
+    });
     renderData(store);
   });
 }
@@ -217,29 +224,34 @@ function renderData(store){
   addMenu();
 }
 function addMenu(){
-  var topBar = Ext.getCmp('diracTopBar');
-  if(topBar){
-    var button = new Ext.Toolbar.Button({
-      text:'Tools',
-      menu:[
-        {handler:function(){submitJobNew()},text:'Job Launchpad'},
-//        {handler:function(){launchJob()},text:'Launchpad in progress'},
-        {handler:function(){showURL()},text:'Full URL'},
-        {menu:{items:[
-          {handler:function(){showJobID(' ')},text:'Space separated'},
-          {handler:function(){showJobID(', ')},text:'Comma separated'},
-          {handler:function(){showJobID('; ')},text:'Semicolon separated'}
-        ]},text:'Show selected JobIDs'}
-      ]
-    });
-    var length = gPageDescription.userData.groupProperties.length;
-    for(i=0; i<length; i++){
-      if(gPageDescription.userData.groupProperties[i] == 'JobAdministrator'){
-        button.menu.items.items[0].disable();
-      }
+  var menu = new Ext.menu.Menu({
+    items:[
+      {handler:function(){submitJobNew()},text:'Job Launchpad'},
+      {handler:function(){showURL()},text:'Full URL'},
+      {menu:{items:[
+        {handler:function(){showJobID(' ')},text:'Space separated'},
+        {handler:function(){showJobID(', ')},text:'Comma separated'},
+        {handler:function(){showJobID('; ')},text:'Semicolon separated'}
+      ]},text:'Show selected JobIDs'}
+//      ,'-'
+    ]
+  });
+  var length = gPageDescription.userData.groupProperties.length;
+  for(i=0; i<length; i++){
+    if(gPageDescription.userData.groupProperties[i] == 'JobAdministrator'){
+      menu.items.items[0].disable();
     }
-    topBar.insertButton(3,button);
-//    topBar.addButton(button);
+  }
+  var button = Ext.getCmp('mainTopbarToolsButton');
+  if(button){
+    var originalMenu = button.menu;
+    var length = menu.items.items.length;
+    for(i=0; i<length; i++){
+      originalMenu.insert(i,menu.items.items[i]);
+    }
+    var originalMenu = button.menu;
+    originalMenu.add(menu);
+    button.menu = originalMenu;
   }
 }
 function setMenuItems(selections){
