@@ -88,6 +88,10 @@ def initDIRAC( rootPath, enableDebug = False ):
         else:
           webCFG = webCFG.mergeWith( modCFG )
     gConfig.loadCFG( webCFG )
+    gLogger.showHeaders( True )
+    gLogger._gLogger__initialized = False
+    gLogger.initialize( "Web", "/Website" )
+
     #Define the controllers, templates and public directories
     for type in ( 'controllers', 'templates', 'public' ):
       configDict[ type ] = []
