@@ -265,7 +265,7 @@ class AccountingplotsController( BaseController ):
     response.headers['Content-Disposition'] = 'attachment; filename="%s.png"' % md5( plotImageFile ).hexdigest()
     response.headers['Content-Length'] = len( data )
     response.headers['Content-Transfer-Encoding'] = 'Binary'
-    response.headers['Cache-Control'] = "no-cache"
+    response.headers['Cache-Control'] = "no-cache, no-store, max-age=0"
     response.headers['Pragma'] = "no-cache"
     response.headers['Expires'] = "0"
     return data
