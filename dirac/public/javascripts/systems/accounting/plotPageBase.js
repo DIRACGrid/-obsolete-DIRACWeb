@@ -255,7 +255,9 @@ function cbPlotAutoRefreshHandler( menuItem, clickEvent )
 
 function cbPlotRefreshHandler( submitButton, clickEvent )
 {
-	var plotTab = submitButton.plotTab
+	var plotTab = submitButton.plotTab;
+	var plotParams = submitButton.plotParams;
+	plotParams[ 'nocache' ] = ( new Date() ).getTime();
 	plotTab.body.dom.innerHTML = "<h3>Requesting image...</h3>";
 	Ext.Ajax.request( {
 		timeout : 60000,
@@ -337,4 +339,5 @@ function appendAdvancedSettingsWidget()
 	advWidgets.push( createCheckBox( "ex_staticUnits", "Do not scale units", "true" ) );
 	appendToLeftPanel( createPanel( "Advanced options", advWidgets ) );	
 }
+
 
