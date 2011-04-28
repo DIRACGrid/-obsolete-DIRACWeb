@@ -288,7 +288,7 @@ function cbQuarterSelected( el, checked )
 			currentYear = currentYear - 1;
 		}
 	} 
-	while( records.length < 5 )
+	while( records.length < 8 )
 	store.add( records );
 }
 
