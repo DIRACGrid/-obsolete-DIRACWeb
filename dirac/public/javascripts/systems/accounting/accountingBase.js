@@ -188,6 +188,13 @@ function appendTimeSelectorToLeftPanel()
 //	timePanel.getComponent(0).setValue( true );
 	timePanel.getComponent(3).on( 'check', cbManualTimeSelected );
 	timePanel.getComponent(3).manualTimeSelectors = [ startSel, endSel ];
+	var quarterRadio = createRadioBox( "timeSelector", 'By Quarter', '-2', false );
+	quarterRadio.on( 'check', cbQuarterSelected );
+	timePanel.add( quarterRadio );
+	var quarterSelector = createMultiselect( "quartersSelector", "", [ '', '', '', '', ''] );
+	quarterRadio.quarterSelector = quarterSelector;
+	quarterSelector.hide();
+	timePanel.add( quarterSelector );
 	appendToLeftPanel( timePanel );
 }
 
@@ -199,13 +206,109 @@ function cbManualTimeSelected( el, checked )
 		if( checked )
 			tiSel.enable();
 		else
+		{
+			tiSel.reset();
 			tiSel.disable();
+		}
 	}
+}
+
+function cbQuarterSelected( el, checked )
+{
+	el.quarterSelector.reset();
+	if( ! checked )
+	{
+		el.quarterSelector.hide();
+		return
+	}
+	el.quarterSelector.show();
+	var store = el.quarterSelector.store;
+	store.removeAll();
+	
+	var now = new Date();
+	var currentQ;
+	switch( now.getUTCMonth() )
+	{
+		case 0:
+		case 1:
+		case 2:
+			currentQ = 1;
+			break;
+		case 3:
+		case 4:
+		case 5:
+			currentQ = 2;
+			break;
+		case 6:
+		case 7:
+		case 8:
+			currentQ = 3;
+			break;
+		case 9:
+		case 10:
+		case 11:
+			currentQ = 4;
+			break;
+	}
+	var currentYear = now.getUTCFullYear();
+	var records = new Array();
+	do
+	{
+		var recLabel = ""+currentYear+" Q" + currentQ;
+		var startD;
+		var endD;
+		switch( currentQ )
+		{
+			case 1:
+				startD = new Date( currentYear, 0, 1, 0, 0, 0, 0);
+				endD = new Date( currentYear, 2, 31, 0, 0, 0, 0);
+				break;
+			case 2:
+				startD = new Date( currentYear, 3, 1, 0, 0, 0, 0);
+				endD = new Date( currentYear, 5, 30, 0, 0, 0, 0);
+				break;
+			case 3:
+				startD = new Date( currentYear, 6, 1, 0, 0, 0, 0);
+				endD = new Date( currentYear, 8, 31, 0, 0, 0, 0);
+				break;
+			case 4:
+				startD = new Date( currentYear, 9, 1, 0, 0, 0, 0);
+				endD = new Date( currentYear, 11, 31, 0, 0, 0, 0);
+				break;
+		}
+		records.push( new Ext.data.Record( { 
+			id : recLabel,
+			desc : recLabel,
+			data : [ startD, endD ]
+			} ) );
+		currentQ = currentQ - 1;
+		if( currentQ == 0 )
+		{
+			currentQ = 4;
+			currentYear = currentYear - 1;
+		}
+	} 
+	while( records.length < 5 )
+	store.add( records );
 }
 
 /* == END OF LEFT PANEL MAGIC == */
 
 /* == SELECTION TO JSON == */
+
+function dateToString( dateObj )
+{
+	var dateStr = dateObj.getFullYear()+"-";
+ 	var month = ( dateObj.getMonth() + 1 ) + "";
+ 	if( month.length == 1 )
+ 		dateStr += "0";
+ 	dateStr += month + "-";
+	var day = dateObj.getDate() + "";
+ 	if( day.length == 1 )
+ 		dateStr += "0";
+ 	dateStr += day;
+ 	return dateStr;
+}
 
 function parseLeftPanelSelections( rootElement )
 {
@@ -235,22 +338,54 @@ function parseLeftPanelSelections( rootElement )
 		else if( currentEl.checked )
 			// + "" hack to ensure value is converted to string
 			contents[ "_" + currentEl.name ] = currentEl.value + "";
+		else if( currentEl.getName && currentEl.getName() == "quartersSelector" )
+		{
+			var selectedIds = currentEl.getValue();
+			if( ! selectedIds )
+				continue;
+			selectedIds = selectedIds.split( "," );
+			var startDate = false;
+			var endDate = false;
+			var store = currentEl.store;
+			for( var i = 0; i < selectedIds.length ; i++ )
+			{
+				var recData = false;
+				for( var j = 0; j < store.getCount(); j++ )
+				{
+					var record = store.getAt( j );
+					if( record.data.id == selectedIds[i] )
+					{
+						recData = record.data.data;
+						break;
+					}
+				}
+				if( ! recData )
+					continue
+				if( i == 0 )
+				{
+					startDate = recData[0];
+					endDate = recData[1];
+				}
+				else
+				{
+					if( startDate.getTime() > recData[0].getTime() )
+						startDate = recData[0];
+					if( endDate.getTime() < recData[1].getTime() )
+						endDate = recData[1];
+				}
+				if( startDate )
+					contents[ '_startTime' ] = dateToString( startDate );
+				if( endDate )
+					contents[ '_endDate' ] = dateToString( endDate );
+			}
+		}
 		else if( currentEl.isDirty() )
 		{
 			var value = currentEl.getValue();
 			//Pad properly
 			if( value.getFullYear )
 			{
-			 	var valueStr = value.getFullYear()+"-";
-			 	var month = ( value.getMonth() + 1 ) + "";
-			 	if( month.length == 1 )
-			 		valueStr += "0";
-			 	valueStr += month + "-";
-				var day = value.getDate() + "";
-			 	if( day.length == 1 )
-			 		valueStr += "0";
-			 	valueStr += day;
-			 	value = valueStr;
+			 	value = dateToString( value );
 			}
 			contents[ "_" + currentEl.name ] = value;
 		}
@@ -494,12 +629,16 @@ function createMultiselect( elName, elLabel, elValues )
 		selectHeigth = 200;
 	if( selectHeigth < 50 )
 		selectHeigth = 50;
+	
+	var labelHidden = true;
+	if( elLabel )
+		labelHidden = false;
 
 	var multiSelect = new Ext.ux.Multiselect( {
 		anchor : '90%',
 		allowBlank : true,
  		emptyText : "",
-//		hideLabel : true,
+		hideLabel : labelHidden,
 		fieldLabel : elLabel,
 		mode : 'local',
 		name : elName,
