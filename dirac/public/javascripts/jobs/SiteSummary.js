@@ -40,12 +40,12 @@ function initRecord(){
 }
 // Initialisation of selection sidebar, all changes with selection items should goes here
 function initSidebar(){
-  var selectStatusSiteSummary = selectStatusSiteSummaryMenu(); // Initializing Owner Menu
-  var selectGridType = selectGridTypeMenu(); // Initializing Application status Menu
-  var selectMaskStatus = selectMaskStatusMenu(); // Initializing JobStatus Menu
-  var selectCountry = selectCountryMenu(); // Initializing JobGroup Menu
+  var selectStatusSiteSummary = createMenu('status','Status'); // Initializing Owner Menu
+  var selectGridType = createMenu('gridtype','GridType'); // Initializing Application status Menu
+  var selectMaskStatus = createMenu('maskstatus','MaskStatus'); // Initializing JobStatus Menu
+  var selectCountry = createMenu('country','Country',true); // Initializing JobGroup Menu
   var dateSelect = dateSelectMenu(); // Initializing date dialog
-  var id = selectID(); // Initialize field for JobIDs
+  var id = genericID('id','JobID'); // Initialize field for JobIDs
   var select = selectPanel(); // Initializing container for selection objects
 //  select.buttons[2].hide(); // Remove refresh button
   // Insert object to container BEFORE buttons:

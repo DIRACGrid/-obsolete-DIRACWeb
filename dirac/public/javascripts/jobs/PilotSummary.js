@@ -35,7 +35,8 @@ function initRecord(){
 }
 // Initialisation of selection sidebar, all changes with selection items should goes here
 function initSidebar(){
-  var siteSelect = selectSiteMenu(); // Initializing Site Menu
+  var siteSelect = createMenu('site','Site');
+//  var siteSelect = selectSiteMenu(); // Initializing Site Menu
 //  var statSelect = selectPilotStatusMenu(); // Initializing Owner Menu
   var select = selectPanel(); // Initializing container for selection objects
   select.buttons[2].hide(); // Remove refresh button

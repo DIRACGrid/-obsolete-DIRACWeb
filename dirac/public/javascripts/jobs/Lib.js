@@ -142,7 +142,7 @@ function createStateMatrix(msg){
 }
 function dateSelectMenu(){
   var date = new Ext.form.DateField({
-    anchor:'90%',
+    anchor:'-15',
     allowBlank:true,
     emptyText:'YYYY-mm-dd',
     fieldLabel:'Date',
@@ -858,57 +858,6 @@ function selectPanel(newID){
   });
   return panel;
 }
-function selectAgentTypeMenu(){
-  var data = [
-    [0,'All'],
-    [1,'Automatic'],
-    [2,'Manual']
-  ];
-  var disabled = false;
-  var store = new Ext.data.SimpleStore({
-    id:0,
-    fields:[{name:'id',type:'int'},'status'],
-    data:data
-  });
-  var combo = new Ext.ux.form.LovCombo({
-    anchor:'90%',
-    disabled:disabled,
-    displayField:'status',
-    emptyText:data[0][1],
-    fieldLabel:'AgentType',
-    hiddenName:'agentType',
-    hideOnSelect:false,
-    id:'agentTypeMenu',
-    mode:'local',
-    resizable:true,
-    store:store,
-    triggerAction:'all',
-    typeAhead:true,
-    valueField:'id'
-  });
-  combo.on({
-    'render':function(){
-      try{
-        var agentType = dataSelect.extra.agentType.split('::: ');
-        var newValue = '';
-        for(var j = 0; j < agentType.length; j++){
-          for(var i = 0; i < store.totalLength; i++){
-            if(store.data.items[i].data.status == agentType[j]){
-              if(newValue.length === 0){
-                newValue = i;
-              }else{
-                newValue = newValue + ':::' + i;
-              }
-            }
-          }
-        }
-        combo.setValue(newValue);
-        delete dataSelect.extra.agentType;
-      }catch(e){}
-    }
-  });
-  return combo;
-};
 function selectAll(selection){
   var inputs = document.getElementsByTagName('input');
   var ch = 0;
@@ -929,76 +878,12 @@ function selectAll(selection){
     }
   }
 }
-function selectAppMenu(){
-  var data = [['']];
-  if(dataSelect.app){
-    data = dataSelect.app;
-  }
-  var disabled = true;
-  if(data == 'Nothing to display'){
-    data = [[0,'Nothing to display']];
-  }else{
-    for (var i = 0; i < data.length; i++) {
-      data[i] = [i ,data[i][0]];
-    }
-    disabled = false;
-  }
-  var store = new Ext.data.SimpleStore({
-    id:0,
-    fields:[{name:'id',type:'int'},'app'],
-    data:data
-  });
-
-  var combo = new Ext.ux.form.LovCombo({
-    anchor:'90%',
-    disabled:disabled,
-    displayField:'app',
-    emptyText:data[0][1],
-    fieldLabel:'Application status',
-    hiddenName:'app',
-    hideOnSelect:false,
-    id:'appMenu',
-    mode:'local',
-    resizable:true,
-    store:store,
-    triggerAction:'all',
-    typeAhead:true,
-    valueField:'id'
-  });
-  combo.on({
-    'render':function(){
-      if(dataSelect.extra){
-        if(dataSelect.extra.app){
-          var appList = dataSelect.extra.app.split('::: ');
-          if(store){
-            var newValue = '';
-            for(var j = 0; j < appList.length; j++){
-              for(var i = 0; i < store.totalLength; i++){
-                if(store.data.items[i].data.app == appList[j]){
-                  if(newValue.length === 0){
-                    newValue = i;
-                  }else{
-                    newValue = newValue + ':::' + i;
-                  }
-                }
-              }
-            }
-            combo.setValue(newValue);
-          }
-        }
-        delete dataSelect.extra.app;
-      }
-    }
-  });
-  return combo;
-}
-function genericID(name,fieldLabel,altRegex,altRegexText){
+function genericID(name,fieldLabel,altRegex,altRegexText,hide){
   var value = '';
+// Checking if value is exists for this field
   try{
     value = dataSelect.extra[name];
     delete dataSelect.extra[name];
-//    value = dataSelect.extra.id;
-//    delete dataSelect.extra.id;
   }catch(e){}
   var regex = new RegExp( /^[0-9, ]+$/);
   var regexText = 'Only digits separated by semicolons are allowed';
@@ -1012,8 +897,11 @@ function genericID(name,fieldLabel,altRegex,altRegexText){
       regexText = altRegexText;
     }
   }catch(e){}
+  if((hide == null) || (hide == '')){
+    hide = true;
+  }
   var textField = new Ext.form.TextField({
-    anchor:'90%',
+    anchor:'-15',
     allowBlank:true,
     enableKeyEvents:true,
     fieldLabel:fieldLabel,
@@ -1025,37 +913,50 @@ function genericID(name,fieldLabel,altRegex,altRegexText){
     selectOnFocus:true,
     value:value
   });
-  textField.on({
-    'render':function(){
-      if(textField.value !== ''){
+  if(hide){
+    textField.on({
+      'render':function(){
+        if(textField.value !== ''){
+          hideControls(textField);
+        }
+      },
+      'blur':function(){
+        hideControls(textField);
+      },
+      'keyup':function(){
         hideControls(textField);
       }
-    },
-    'blur':function(){
-      hideControls(textField);
-    },
-    'keyup':function(){
-      hideControls(textField);
-    }
-  });
+    });
+  }
   return textField;
 }
-function selectID(){
-  return genericID('id','JobID');
-}
-function selectProductionID(){
-  return genericID('productionID','ProductionID');
-}
-function selectRequestID(){
-  return genericID('reqId','RequestID');
-}
-function selectPilotID(){
-  var regex = new RegExp( /.+/);
-  return genericID('pilotId','PilotJobReference',regex,'Test');
-}
-function selectTaskQueueID(){
-  var regex = new RegExp( /.+/);
-  return genericID('taskQueueID','TaskQueueID',regex,'Test');
+function createRemoteMenu(item){
+  try{
+    baseParams = {'meta':item.text};
+    url = '/getmeta';
+    fieldLabel = item.text;
+    emptyText = 'Select value from menu';
+  }catch(e){
+    alert('Error: ' + e.name + ': ' + e.message);
+  }
+  var store = new Ext.data.JsonStore({
+    baseParams:baseParams,
+    fields:['name'],
+    root:'result',
+    url:url
+  });
+  var combo = new Ext.form.ComboBox({
+    anchor:'-15',
+    store:store,
+    displayField:'name',
+    typeAhead:true,
+    fieldLabel:fieldLabel,
+    forceSelection:true,
+    triggerAction:'all',
+    emptyText:emptyText,
+    selectOnFocus:true,
+  });
+  return combo
 }
 function createMenu(dataName,menuName,altValue){
   var data = [['']];
@@ -1088,7 +989,7 @@ function createMenu(dataName,menuName,altValue){
     data:data
   });
   var combo = new Ext.ux.form.LovCombo({
-    anchor:'90%',
+    anchor:'-15',
     disabled:disabled,
     displayField:dataName,
     emptyText:data[0][1],
@@ -1122,210 +1023,6 @@ function createMenu(dataName,menuName,altValue){
         combo.setValue(newValue);
         delete dataSelect.extra[dataName];
       }catch(e){}
-    }
-  });
-  return combo;
-}
-function selectMinorStatus(){
-  var data = [['']];
-  if(dataSelect.minorstat){
-    data = dataSelect.minorstat;
-  }
-  var disabled = true;
-  if(data == 'Nothing to display'){
-    data = [[0,'Nothing to display']];
-  }else{
-    for (var i = 0; i < data.length; i++) {
-      data[i] = [i ,data[i][0]];
-    }
-    disabled = false;
-  }
-  var store = new Ext.data.SimpleStore({
-    id:0,
-    fields:[{name:'id',type:'int'},'minorstat'],
-    data:data
-  });
-  var combo = new Ext.ux.form.LovCombo({
-    anchor:'90%',
-    disabled:disabled,
-    displayField:'minorstat',
-    emptyText:data[0][1],
-    fieldLabel:'Minor status',
-    hiddenName:'minorstat',
-    hideOnSelect:false,
-    id:'minorstatMenu',
-    mode:'local',
-    resizable:true,
-    store:store,
-    triggerAction:'all',
-    typeAhead:true,
-    valueField:'id'
-  });
-  combo.on({
-    'render':function(){
-      if(dataSelect.extra){
-        if(dataSelect.extra.minorstat){
-          var minorstatList = dataSelect.extra.minorstat.split('::: ');
-          if(store){
-            var newValue = '';
-            for(var j = 0; j < minorstatList.length; j++){
-              for(var i = 0; i < store.totalLength; i++){
-                if(store.data.items[i].data.minorstat == minorstatList[j]){
-                  if(newValue.length === 0){
-                    newValue = i;
-                  }else{
-                    newValue = newValue + ':::' + i;
-                  }
-                }
-              }
-            }
-            combo.setValue(newValue);
-          }
-        }
-        delete dataSelect.extra.minorstat;
-      }
-    }
-  });
-  return combo;
-}
-function selectOwnerMenu(){
-  var menu = createMenu('owner','Owner');
-  return menu
-}
-function selectProdMenu(){
-  var menu = createMenu('prod','JobGroup');
-  return menu
-}
-function selectProdAgentMenu(){
-  var menu = createMenu('agentType','AgentType');
-  return menu
-}
-function selectProdStatusMenu(){
-  var menu = createMenu('prodStatus','Status');
-  return menu
-}
-function selectProdTypeMenu(){
-  var menu = createMenu('productionType','Type');
-  return menu
-}
-function selectTransGroupMenu(){
-  var menu = createMenu('transformationGroup','Group');
-  return menu
-}
-function selectPluginMenu(){
-  var menu = createMenu('plugin','Plugin');
-  return menu
-}
-function selectCountryMenu(){
-  var menu = createMenu('country','Country',true);
-  return menu
-}
-function selectMaskStatusMenu(){
-  var menu = createMenu('maskstatus','MaskStatus');
-  return menu
-}
-function selectGridTypeMenu(){
-  var menu = createMenu('gridtype','GridType');
-  return menu
-}
-function selectStatusSiteSummaryMenu(){
-  var menu = createMenu('status','Status');
-  return menu
-}
-function selectSiteSummaryMenu(){
-  var menu = createMenu('site','Site');
-  return menu
-}
-function selectOwnerGroupMenu(){
-  var menu = createMenu('ownerGroup','OwnerGroup');
-  return menu
-}
-function selectCEMenu(){
-  var menu = createMenu('ce','ComputingElement');
-  return menu
-}
-function selectStatusMenu(){
-  var menu = createMenu('status','Status');
-  return menu
-}
-function selectBrokerMenu(){
-  var menu = createMenu('broker','Broker');
-  return menu
-}
-function selectRunNumbers(){
-  var menu = createMenu('runNumber','Run');
-  return menu
-}
-function selectRequestTypeMenu(){
-  var menu = createMenu('requestType','RequestType');
-  return menu
-}
-function selectOperationMenu(){
-  var menu = createMenu('operation','Operation');
-  return menu
-}
-function selectGridSiteMenu(){
-  var menu = createMenu('site','Site');
-  return menu
-}
-function selectSiteMenu(){
-  var data = [['']];
-  if(dataSelect.site){
-    data = dataSelect.site;
-  }
-  var disabled = true;
-  if(data == 'Nothing to display'){
-    data = [[0,'Nothing to display']];
-  }else{
-    for (var i = 0; i < data.length; i++) {
-      data[i] = [i ,data[i][0]];
-    }
-    disabled = false;
-  }
-  var store = new Ext.data.SimpleStore({
-    id:0,
-    fields:[{name:'id',type:'int'},'site'],
-    data:data
-  });
-  var combo = new Ext.ux.form.LovCombo({
-    anchor:'90%',
-    disabled:disabled,
-    displayField:'site',
-    emptyText:data[0][1],
-    fieldLabel:'Site',
-    hiddenName:'site',
-    hideOnSelect:false,
-    id:'siteMenu',
-    mode:'local',
-    resizable:true,
-    store:store,
-    triggerAction:'all',
-    typeAhead:true,
-    valueField:'id'
-  });
-  combo.on({
-    'render':function(){
-      if(dataSelect.extra){
-        if(dataSelect.extra.site){
-          var siteList = dataSelect.extra.site.split('::: ');
-          if(store){
-            var newValue = '';
-            for(var j = 0; j < siteList.length; j++){
-              for(var i = 0; i < store.totalLength; i++){
-                if(store.data.items[i].data.site == siteList[j]){
-                  if(newValue.length === 0){
-                    newValue = i;
-                  }else{
-                    newValue = newValue + ':::' + i;
-                  }
-                }
-              }
-            }
-            combo.setValue(newValue);
-          }
-        }
-        delete dataSelect.extra.site;
-      }
     }
   });
   return combo;
@@ -1727,8 +1424,11 @@ function selectCombo(width,store,value,id){
 }
 function sPanel(title,kind,initObject){
 /*
-kind - is a string and basically it's the name of a controller
-initObject - object with data used to restore\set the initial state
+  This function is used to represent key-value pairs data. Returns a grid with a selector in top bar.
+  Selector is used to make a switch between different data sources. Primary goal is to show various statistics.
+
+  kind - is a string and basically it's the name of a controller
+  initObject - object with data used to restore\set the initial state
   id - String/Int, custom id
   columns - Array or objects, none standard columns model, not sure we need it
   global - Boolean, actually used to display refresh button

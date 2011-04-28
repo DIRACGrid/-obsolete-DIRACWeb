@@ -63,13 +63,16 @@ function initRecord(){
 }
 // Initialisation of selection sidebar, all changes with selection items should goes here
 function initSidebar(){
-  var siteSelect = selectSiteMenu(); // Initializing Site Menu
-  var ownerSelect = selectOwnerMenu(); // Initializing Owner Menu
-  var appSelect = selectAppMenu(); // Initializing Application status Menu
-  var statSelect = selectStatusMenu(); // Initializing JobStatus Menu
-  var minSelect = selectMinorStatus(); // Initializing Minor Status Menu
-  var prodSelect = selectProdMenu(); // Initializing JobGroup Menu
-  var id = selectID(); // Initialize field for JobIDs
+/*
+  createMenu(dataIndex or dataName,Text label) same for genericID
+*/
+  var siteSelect = createMenu('site','Site'); // Initializing Site Menu
+  var ownerSelect = createMenu('owner','Owner'); // Initializing Owner Menu
+  var appSelect = createMenu('app','Application status'); // Initializing Application status Menu
+  var statSelect = createMenu('status','Status'); // Initializing JobStatus Menu
+  var minSelect = createMenu('minorstat','Minor status'); // Initializing Minor Status Menu
+  var prodSelect = createMenu('prod','JobGroup'); // Initializing JobGroup Menu
+  var id = genericID('id','JobID'); // Initialize field for JobIDs
   var dateSelect = dateTimeWidget(); // Initializing date dialog
   var select = selectPanel(); // Initializing container for selection objects
   // Insert object to container BEFORE buttons:
@@ -232,8 +235,9 @@ function addMenu(){
         {handler:function(){showJobID(' ')},text:'Space separated'},
         {handler:function(){showJobID(', ')},text:'Comma separated'},
         {handler:function(){showJobID('; ')},text:'Semicolon separated'}
-      ]},text:'Show selected JobIDs'}
-//      ,'-'
+      ]},text:'Show selected JobIDs'},
+      {handler:function(){showCSV()},text:'Show data as CSV list'},
+      '-'
     ]
   });
   var length = gPageDescription.userData.groupProperties.length;
@@ -412,6 +416,51 @@ function getSandbox(id,type){
   var group = gPageDescription.userData.group;
   var url = 'https://' + location.host + '/DIRAC/' + setup + '/' + group + '/jobs/JobAdministrator/getSandbox?jobID=' + id + '&sandbox=' + type;
   window.open(url,'Input Sandbox file','width=400,height=200');
+}
+function showCSV(){
+  var result = new Array();;
+  var columns = tableMngr['columns'];
+  var selected = new Array();
+  try{
+    var length = columns.length;
+    for(var i = 0; i < columns.length; i++){
+      if((!columns[i].hidden)&&(columns[i].dataIndex != 'JobIDcheckBox')&&(columns[i].dataIndex != 'StatusIcon')){
+        selected.push(columns[i].dataIndex);
+      }
+    }
+    columns = selected.join(',');
+    result.push(columns);
+  }catch(e){
+    alert('Error: '+e.description)
+    return
+  }
+  var store = tableMngr['store'];
+  try{
+    var length = store.getCount();
+    for(var j = 0; j < length; j++){
+      var rec = store.getAt(j);
+      var tmpArray = new Array();
+      for(k in selected){
+        if(rec.data[selected[k]]){
+          if((selected[k].search('Time') > 0)||(selected[k] == 'LastSignOfLife')){
+            tmpArray.push(rec.data[selected[k]].format('Y-m-d H:i'));
+          }else{
+            tmpArray.push(rec.data[selected[k]]);
+          }
+        }
+      }
+      tmpArray = tmpArray.join(',');
+      result.push(tmpArray);;
+    }
+  }catch(e){
+    alert('Error: '+e.description)
+    return
+  }
+  result = result.join('\n');
+  var html = '<pre>' + result + '</pre>';
+  var panel = new Ext.Panel({border:0,autoScroll:true,html:html,layout:'fit'});
+  displayWin(panel,'CSV data list');
+  return
 }
 function afterDataLoad(){
   updateStats('csPanel');

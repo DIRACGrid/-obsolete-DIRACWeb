@@ -28,21 +28,21 @@ function initRecord(){
     {name:'OwnerDN'},
     {name:'OwnerGroup'},
     {name:'Error'},
-    {name:'CreationTime'},
-    {name:'LastUpdateTime'},
+    {name:'CreationTime',type:'date',dateFormat:'Y-n-j H:i:s'},
+    {name:'LastUpdateTime',type:'date',dateFormat:'Y-n-j H:i:s'},
     {name:'Operation'}
   ]);
   return record
 }
 // Initialisation of selection sidebar, all changes with selection items should goes here
 function initSidebar(){
-  var requestType = selectRequestTypeMenu();
-  var status = selectStatusMenu();
-  var operation = selectOperationMenu();
-  var owner = selectOwnerMenu();
-  var ownerGroup = selectOwnerGroupMenu();
-  var id = selectID(); // Initialize field for JobIDs
-  var reqId = selectRequestID();
+  var requestType = createMenu('requestType','RequestType');
+  var status = createMenu('status','Status');
+  var operation = createMenu('operation','Operation');
+  var owner = createMenu('owner','Owner');
+  var ownerGroup = createMenu('ownerGroup','OwnerGroup');
+  var id = genericID('id','JobID'); // Initialize field for JobIDs
+  var reqId = genericID('reqId','RequestID');
   var dateSelect = dateTimeWidget();
   var select = selectPanel(); // Initializing container for selection objects
 //  select.buttons[2].hide(); // Remove refresh button
@@ -71,8 +71,8 @@ function initData(store){
     {header:'OwnerGroup',sortable:true,dataIndex:'OwnerGroup',align:'left'},
     {header:'RequestName',sortable:true,dataIndex:'RequestName',align:'left',hidden:true},
     {header:'Error',sortable:true,dataIndex:'Error',align:'left'},
-    {header:'CreationTime',sortable:true,dataIndex:'CreationTime',align:'left',hidden:true},
-    {header:'LastUpdateTime',sortable:true,dataIndex:'LastUpdateTime',align:'left',hidden:true}
+    {header:'CreationTime [UTC]',sortable:true,dataIndex:'CreationTime',align:'left',hidden:true,renderer:Ext.util.Format.dateRenderer('Y-m-j H:i')},
+    {header:'LastUpdateTime [UTC]',sortable:true,dataIndex:'LastUpdateTime',align:'left',hidden:true,renderer:Ext.util.Format.dateRenderer('Y-m-j H:i')}
   ];
   var tbar = [
     {

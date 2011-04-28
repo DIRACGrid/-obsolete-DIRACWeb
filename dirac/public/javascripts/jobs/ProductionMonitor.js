@@ -116,13 +116,13 @@ function initRecord(){
 }
 // Initialisation of selection sidebar, all changes with selection items should goes here
 function initSidebar(){
-  var prodSelect = selectProdStatusMenu(); // Initializing Production Status Menu
-  var agentSelect = selectProdAgentMenu(); // Initializing Agent Type Menu
-  var prodType = selectProdTypeMenu();
-  var transGroup = selectTransGroupMenu();
-  var plugin = selectPluginMenu();
+  var prodSelect = createMenu('prodStatus','Status'); // Initializing Production Status Menu
+  var agentSelect = createMenu('agentType','AgentType'); // Initializing Agent Type Menu
+  var prodType = createMenu('productionType','Type');
+  var transGroup = createMenu('transformationGroup','Group');
+  var plugin = createMenu('plugin','Plugin');
   var dateSelect = dateSelectMenu(); // Initializing date dialog
-  var id = selectProductionID(); // Initialize field for JobIDs
+  var id = genericID('productionID','ProductionID'); // Initialize field for JobIDs
   var requestID = genericID('requestID','RequestID');
   var select = selectPanel(); // Initializing container for selection objects
 //  select.buttons[2].hide(); // Remove refresh button

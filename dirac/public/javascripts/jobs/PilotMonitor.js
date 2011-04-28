@@ -42,14 +42,15 @@ function initRecord(){
 }
 // Initialisation of selection sidebar, all changes with selection items should goes here
 function initSidebar(){
-  var siteSelect = selectGridSiteMenu(); // Initializing Site Menu
-  var owner = selectOwnerMenu();
-  var ownerGrp = selectOwnerGroupMenu();
-  var ce = selectCEMenu();
-  var pilotStatus = selectStatusMenu();
-  var broker = selectBrokerMenu();
-  var taskQueue = selectTaskQueueID();
-  var id = selectPilotID(); // Initialize field for JobIDs
+  var siteSelect = createMenu('site','Site');
+  var owner = createMenu('owner','Owner');
+  var ownerGrp = createMenu('ownerGroup','OwnerGroup');
+  var ce = createMenu('ce','ComputingElement');
+  var pilotStatus = createMenu('status','Status');
+  var broker = createMenu('broker','Broker');
+  var taskQueue = genericID('taskQueueID','TaskQueueID');
+  var regex = new RegExp( /.+/); // Alternative regexp to allow not only digits
+  var id = genericID('pilotId','PilotJobReference',regex,'All symbols');
   var dateSelect = dateTimeWidget();
   var select = selectPanel(); // Initializing container for selection objects
   select.buttons[2].hide(); // Remove refresh button
@@ -220,7 +221,7 @@ function AJAXsuccess(value,id,response){
         {header:'Status',sortable:true,dataIndex:'status',align:'left'},
         {header:'MinorStatus',sortable:true,dataIndex:'minorstatus',align:'left'},
         {header:'ApplicationStatus',sortable:true,dataIndex:'applicationstatus',align:'left'},
-        {header:'DateTime',sortable:true,dataIndex:'datetime',align:'left'}
+        {header:'DateTime',sortable:true,dataIndex:'datetime',align:'left',renderer:Ext.util.Format.dateRenderer('Y-m-d H:i')}
       ];
     }
     var store = new Ext.data.Store({
