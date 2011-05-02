@@ -378,6 +378,7 @@ function parseLeftPanelSelections( rootElement )
 				if( endDate )
 					contents[ '_endTime' ] = dateToString( endDate );
 			}
+			contents[ '_quarters' ] = selectedIds;
 		}
 		else if( currentEl.isDirty() )
 		{

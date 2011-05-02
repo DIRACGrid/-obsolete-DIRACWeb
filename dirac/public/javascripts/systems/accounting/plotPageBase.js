@@ -75,6 +75,12 @@ function fillSelectionPanel( plotRequest )
 		timeSel = gLeftSidebarPanel.find( "name", "endTime" )[0];
 		timeSel.setValue( plotRequest._endTime );
 	}
+	if( plotRequest._timeSelector == -2 )
+	{
+		var quartersSel = gLeftSidebarPanel.find( "name", "quartersSelector" )[0];
+		quartersSel.setValue( plotRequest._quarters );
+		quartersSel.show();
+	}
 	//Restrictions Magic!
 	var selections = gLeftSidebarPanel.find( "name", "Selection conditions" )[0].items.items;
 	for( var i = 0; i< selections.length; i++ )
