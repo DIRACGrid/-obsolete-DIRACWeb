@@ -55,7 +55,7 @@ DEncode.encodeList = function( lValue )
 {
   var eList = [ "l" ];
   for( var i = 0; i < lValue.length; i++ )
-    eList.push( DEncode.encode( object ) );
+    eList.push( DEncode.encode( lValue[i] ) );
   eList.push( "e" );
   return eList.join("");
 }
