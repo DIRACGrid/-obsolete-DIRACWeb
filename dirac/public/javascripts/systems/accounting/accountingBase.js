@@ -376,7 +376,7 @@ function parseLeftPanelSelections( rootElement )
 				if( startDate )
 					contents[ '_startTime' ] = dateToString( startDate );
 				if( endDate )
-					contents[ '_endDate' ] = dateToString( endDate );
+					contents[ '_endTime' ] = dateToString( endDate );
 			}
 		}
 		else if( currentEl.isDirty() )
