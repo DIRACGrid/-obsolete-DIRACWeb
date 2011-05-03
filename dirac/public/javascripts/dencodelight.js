@@ -99,13 +99,12 @@ DEncode.decodeDict = function( buffer, i )
   i += 1;
   while( buffer[ i ] != "e" )
   {
-	DEncode.debug( " dict key is [" + buffer[i] +"]" );
     var res = DEncode.g_dDecodeFunctions[ buffer[ i ] ]( buffer, i );
     var k = res[0];
     i = res[1];
-    DEncode.debug( " dict value is [" + buffer[i] +"]" );
     res = DEncode.g_dDecodeFunctions[ buffer[ i ] ]( buffer, i );
     oD[ k ] = res[0];
+    DEncode.debug( " dict value is [" + oD[ k ] +"] type [" + buffer[i] +"]" );
     i = res[1];
   }
   return [ oD, i + 1 ];
@@ -119,6 +118,7 @@ DEncode.encode = function( uObject )
 	if( typeof uObject == "number" )
 		return DEncode.g_dEncodeFunctions[ 'int' ]( uObject );
 	//For firefox encode deterministically with toSource function
+	DEncode.debug( "Encoding " + uObject.toSource() );
 	if( uObject.toSource )
 	{
 		var source = uObject.toSource();
@@ -128,6 +128,8 @@ DEncode.encode = function( uObject )
 			return DEncode.g_dEncodeFunctions[ 'dict' ]( uObject );
 		if( source.indexOf( "(new String" ) == 0 )
 			return DEncode.g_dEncodeFunctions[ 'string' ]( uObject );
+		if( source.indexOf( "[" ) == 0 )
+			return DEncode.g_dEncodeFunctions[ 'list' ]( uObject );
 	}
 	//For the rest do a loose dirty match hack because they don't support
 	//standards
