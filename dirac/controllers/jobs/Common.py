@@ -5,12 +5,14 @@ from dirac.lib.base import *
 from dirac.lib.diset import getRPCClient, getTransferClient
 from dirac.lib.credentials import authorizeAction
 from DIRAC import gConfig, gLogger
-from DIRAC.Core.Utilities.List import sortList
+from DIRAC.Core.Utilities.List import uniqueElements
 from DIRAC.AccountingSystem.Client.ReportsClient import ReportsClient
 from DIRAC.Core.Utilities.DictCache import DictCache
 import dirac.lib.credentials as credentials
 from DIRAC.Interfaces.API.Dirac import Dirac
 from DIRAC.FrameworkSystem.Client.PlottingClient  import PlottingClient
+from DIRAC.FrameworkSystem.Client.UserProfileClient import UserProfileClient
+
 
 log = logging.getLogger(__name__)
 
@@ -257,3 +259,72 @@ class CommonController(BaseController):
       return plot
     else:
       return result["Message"]
+################################################################################
+  @jsonify
+  def layoutUser(self):
+    if request.params.has_key("profile") and len(request.params["profile"]) > 0:
+      try:
+        profileName = str(request.params["profile"])
+      except:
+        gLogger.error("Can not convert profile name to string")
+        return {"success":"false","error":"Can not convert profile name to string"}
+    else:
+      gLogger.error("Failed to get profile name from the request")
+      return {"success":"false","error":"Failed to get profile name from the request"}
+    upc = UserProfileClient( profileName, getRPCClient )
+    result = upc.listAvailableVars()
+    if result["OK"]:
+      result = result["Value"]
+      userList = []
+      for i in result:
+        userList.append(i[0])
+      userList = uniqueElements(userList)
+      resultList = []
+      for j in userList:
+        resultList.append({'name':j})
+      total = len(resultList)
+      resultList.sort()
+      resultList.insert(0,{'name':'All'})
+      c.result = {"success":"true","result":resultList,"total":total}
+    else:
+      c.result = {"success":"false","error":result["Message"]}
+    return c.result
+################################################################################
+  @jsonify
+  def layoutAvailable(self):
+    if request.params.has_key("profile") and len(request.params["profile"]) > 0:
+      try:
+        profileName = str(request.params["profile"])
+      except Exception, x:
+        gLogger.error(x)
+        return {"success":"false","error":x}
+    else:
+      gLogger.error("Failed to get profile name from the request")
+      return {"success":"false","error":"Failed to get profile name from the request"}
+    user = "All"
+    if request.params.has_key("user") and len(request.params["user"]) > 0:
+      try:
+        user = str(request.params["user"])
+      except Exception, x:
+        gLogger.error(x)
+        return {"success":"false","error":x}
+    upc = UserProfileClient( profileName, getRPCClient )
+    result = upc.listAvailableVars()
+    if result["OK"]:
+      result = result["Value"]
+      resultList = []
+      if user == "All":
+        for i in result:
+          resultList.append({'name':i[3],'owner':i[0]})
+        total = len(resultList)
+        c.result = {"success":"true","result":resultList,"total":total}
+      else:
+        for i in result:
+          if i[0] == user:
+            resultList.append({'name':i[3],'owner':i[0]})
+        total = len(resultList)
+        c.result = {"success":"true","result":resultList,"total":total}
+    else:
+      c.result = {"success":"false","error":result["Message"]}
+    return c.result
+################################################################################
