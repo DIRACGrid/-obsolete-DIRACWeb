@@ -26,5 +26,9 @@ pip-log.txt
 #ext and yui
 dirac/public/ext
 dirac/public/yui
+
 #Pylons data dir
 data
+
+#Debug.cfg
+dirac/debug.cfg
