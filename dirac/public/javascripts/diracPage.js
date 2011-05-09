@@ -109,6 +109,7 @@ function initTopFrame( pageDescription ){
         cnfObj.cls = 'x-btn-icon';
         cnfObj.icon = gURLRoot+'/images/iface/dlogo.gif';
         cnfObj.minWidth = '16';
+        cnfObj.text = '';
       }
       if(cnfObj.text == 'Help'){
         cnfObj.menu.reverse();
@@ -122,14 +123,36 @@ function initTopFrame( pageDescription ){
     }
     navItems.push( menuEntry );
   }
-/*
-  navItems.push(
-    new Ext.Toolbar.Button({
-      text:'Tools',
-      id:'mainTopbarToolsButton'
-    });
-  );
-*/
+  var help = new Ext.Toolbar.Button({
+	text:'Help',
+	id:'mainTopbarHelpButton',
+	menu:[{
+	  text:'Context Help',
+	  handler:helpEntry
+	}]
+  });
+  var tools = new Ext.Toolbar.Button({
+	text:'Tools',
+	id:'mainTopbarToolsButton',
+	menu:[{
+	  text:'Layout',
+	  menu:{items:[
+	    {menu:{items:[
+	      {text:'Personal',menu:{items:[{text:'Test 1'},{text:'Test 1'},{text:'Test 1'},{text:'Test 1'}]} },
+	      {text:'Group',menu:{items:[{text:'Test 2'},{text:'Test 2'},{text:'Test 2'},{text:'Test 2'}]} },
+	      {text:'Global',menu:{items:[{text:'Test 3'},{text:'Test 3'},{text:'Test 3'},{text:'Test 3'}]} }
+	    ]},text:'Load',icon:gURLRoot + '/images/iface/reschedule.gif'},
+	    {handler:function(){testMenuHandler('save')},text:'Save',icon:gURLRoot + '/images/iface/save.gif'},
+	    {handler:function(){testMenuHandler('import')},text:'Import',icon:gURLRoot + '/images/iface/import.gif'},
+	    {handler:function(){testMenuHandler('edit')},text:'Edit',icon:gURLRoot + '/images/iface/gear.gif'},
+	    '-',
+	    {handler:function(){testMenuHandler('delete')},icon:gURLRoot + '/images/iface/close.gif',text:'Delete'},
+	    {handler:function(){testMenuHandler('deleteAll')},icon:gURLRoot + '/images/iface/delete.gif',text:'Delete All'}
+	  ]}
+	}]
+  });
+  navItems.push(tools);
+  navItems.push(help);
   navItems.push( "->" );
   navItems.push( "Selected setup:" );
   // Set the handler
@@ -186,13 +209,11 @@ function initBottomFrame( pageDescription )
   return bottomBar;
 }
 
-function mainPageRedirectHandler( item, a, b )
-{
+function mainPageRedirectHandler( item, a, b ){
   window.location = item.url;
 }
 
-function redirectWithHashHandler( item )
-{
+function redirectWithHashHandler( item ){
 	var newLocation = item.url;
 	var queryString = window.location.search.substring(1);
 	if( queryString )
@@ -211,10 +232,8 @@ function redirectWithHashHandler( item )
 	window.location = newLocation;
 }
 
-
 // Cookie utilities
-function setCookie( cookieName, value, expirationDate, path, domain, secure )
-{
+function setCookie( cookieName, value, expirationDate, path, domain, secure ){
   var cookie_string = cookieName + "=" + escape ( value );
 
   if ( expirationDate )
@@ -234,9 +253,7 @@ function setCookie( cookieName, value, expirationDate, path, domain, secure )
   document.cookie = cookie_string;
 }
 
-
-function getCookie( cookieName )
-{
+function getCookie( cookieName ){
   var matchResults = document.cookie.match ( '(^|;) ?' + cookieName + '=([^;]*)(;|$)' );
   if ( matchResults )
     return ( unescape ( matchResults[2] ) );
@@ -244,7 +261,28 @@ function getCookie( cookieName )
     return null;
 }
 
-function deleteCooke( cookieName )
-{
+function deleteCooke( cookieName ){
   document.cookie = cookieName + '=;expires=Thu, 01-Jan-1970 00:00:01 GMT';
+}
+
+function testMenuHandler(mode,name){
+  try{
+	if(mode == 'load'){
+	  loadProfile(name);
+	}else if(mode == 'save'){
+	  saveProfile();
+	}else if(mode == 'import'){
+	  importProfile();
+	}else if(mode == 'edit'){
+	  editProfile();
+	}else if(mode == 'delete'){
+	  deleteProfile();
+	}else if(mode == 'deleteAll'){
+	  deleteProfile('All');
+	}else{
+	  alert('Wrong argument for function - \'' + mode + '\'');
+	}
+  }catch(e){
+	alert('This action is not supported by page');
+  }
 }
