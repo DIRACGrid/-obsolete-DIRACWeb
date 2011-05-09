@@ -267,22 +267,8 @@ function deleteCooke( cookieName ){
 
 function testMenuHandler(mode,name){
   try{
-	if(mode == 'load'){
-	  loadProfile(name);
-	}else if(mode == 'save'){
-	  saveProfile();
-	}else if(mode == 'import'){
-	  importProfile();
-	}else if(mode == 'edit'){
-	  editProfile();
-	}else if(mode == 'delete'){
-	  deleteProfile();
-	}else if(mode == 'deleteAll'){
-	  deleteProfile('All');
-	}else{
-	  alert('Wrong argument for function - \'' + mode + '\'');
-	}
+	UP(mode,name);
   }catch(e){
-	alert('This action is not supported by page');
+	alert('Action \'' + mode + '\' is not supported by page');
   }
 }
