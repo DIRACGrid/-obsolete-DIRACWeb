@@ -58,5 +58,9 @@ if not os.path.isfile( extFilePath ):
 print "Installing ExtJS 4"
 zFile = zipfile.ZipFile( extFilePath )
 zFile.extractall( publicDir )
+locationPath = os.path.join( publicDir, "ext4" )
+if os.path.isdir( locationPath ):
+  shutil.rmtree( locationPath )
+os.rename( os.path.join( publicDir, "ext-4.0.0" ), locationPath )
 
 
