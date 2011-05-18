@@ -6,6 +6,8 @@ import re
 import sys
 import pprint
 
+#This is horribly out of date 
+
 #passwd = getpass.getpass( "Your CVS password" )
 
 versionTag = "webd\d\d\d\d\d\d\d\dr\d\d|webnextrelease"
