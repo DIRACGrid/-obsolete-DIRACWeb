@@ -377,6 +377,13 @@ function setMenuItems(selections){
   if((type != 'DataReconstruction')&&(type != 'DataStripping')&&(type != 'Replication')&&( type != 'Merge') ){
     dirac.menu.items.items[3].disable();
   }
+  menu.items.items[0].disable();
+  var length = gPageDescription.userData.groupProperties.length;
+  for(i=0; i<length; i++){
+    if((gPageDescription.userData.groupProperties[i] == 'JobAdministrator')&&(gPageDescription.userData.groupProperties[i] == 'ProductionManagement')){
+      menu.items.items[0].enable();
+    }
+  }
 };
 
 function AJAXsuccess(value,id,response){
