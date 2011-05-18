@@ -45,7 +45,6 @@ class ProductionmonitorController(BaseController):
     result = self.__request()
     callstart = time()
     result = RPC.getTransformationSummaryWeb(result,globalSort,pageNumber,numberOfJobs)
-    gLogger.info("\033[0;31m WHOLE CALL: \033[0m %s" % RPC.ping())
     if result["OK"]:
       result = result["Value"]
       gLogger.info("\033[0;31m PRODUCTION CALL: \033[0m %s" % result["ParameterNames"])
