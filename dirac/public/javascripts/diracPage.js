@@ -109,6 +109,7 @@ function initTopFrame( pageDescription ){
         cnfObj.cls = 'x-btn-icon';
         cnfObj.icon = gURLRoot+'/images/iface/dlogo.gif';
         cnfObj.minWidth = '16';
+        delete cnfObj.text;
       }
       if(cnfObj.text == 'Help'){
         cnfObj.menu.reverse();
@@ -142,11 +143,16 @@ function initTopFrame( pageDescription ){
     menu : pageDescription[ 'setupMenu' ]
   });
   navItems.push( setupButton );
-  var lhcbImg = gURLRoot+'/images/iface/logo.png';
-  var logoURL = pageDescription[ 'logoURL' ];
-  var lhcbLogo = '<a href=' + logoURL + ' target="_blank">'
-  lhcbLogo = lhcbLogo + '<img alt="Official LHCb webpage" src="'+lhcbImg+'"/></a>'
-  navItems.push( lhcbLogo )
+  if( 'voIcon' in pageDescription && pageDescription[ 'voIcon' ] )
+  {
+	  var iconLogo = '<a href=' + pageDescription[ 'voURL' ]  + ' target="_blank">'
+	  var iconLocation = pageDescription[ 'voIcon' ]
+	  while( iconLocation[0 ] == "/" )
+		  iconLocation = iconLocation.substring( 1, iconLocation.length );
+	  var iconLocation = gURLRoot+"/"+iconLocation;
+	  iconLogo = iconLogo + '<img src="' + iconLocation + '"/></a>'
+	  navItems.push( iconLogo )
+  }
   var topBar = new Ext.Toolbar({
     id:'diracTopBar',
     region:'north',

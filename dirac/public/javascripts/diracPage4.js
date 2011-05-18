@@ -122,9 +122,12 @@ function initTopFrame( pageDescription ){
   navItems.push( setupButton );
   
   if( 'voIcon' in pageDescription )
+	  var iconLocation = pageDescription[ 'voIcon' ];
+	  while( iconLocation[0 ] == "/" )
+		  iconLocation = iconLocation.substring( 1, iconLocation.length );
 	  navItems.push( Ext.create( 'Ext.button.Button', {
 		  cls : 'x-btn-icon',
-	      icon : pageDescription[ 'voIcon' ],
+	      icon : gURLRoot + "/" + iconLocation,
 	      listeners : {
 	    	  click : function(){ window.open( pageDescription[ 'voURL' ], '_newtab' ) }
 	      },
