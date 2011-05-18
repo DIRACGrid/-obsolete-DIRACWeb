@@ -41,10 +41,11 @@ class ProductionmonitorController(BaseController):
     if lhcbGroup == "visitor":
       c.result = {"success":"false","error":"You are not authorised"}
       return c.result
-    RPC = getRPCClient("ProductionManagement/ProductionManager")
+    RPC = getRPCClient("Transformation/TransformationManager")
     result = self.__request()
     callstart = time()
     result = RPC.getTransformationSummaryWeb(result,globalSort,pageNumber,numberOfJobs)
+    gLogger.info("\033[0;31m WHOLE CALL: \033[0m %s" % RPC.ping())
     if result["OK"]:
       result = result["Value"]
       gLogger.info("\033[0;31m PRODUCTION CALL: \033[0m %s" % result["ParameterNames"])
@@ -181,7 +182,7 @@ class ProductionmonitorController(BaseController):
       for i in request.params:
         tmp[i] = str(request.params[i])
       callback["extra"] = tmp
-    RPC = getRPCClient("ProductionManagement/ProductionManager")
+    RPC = getRPCClient("Transformation/TransformationManager")
 #    result = RPC.getTransformationSummaryWeb()
 #    if result["OK"]:
 #      prod = []
@@ -351,7 +352,7 @@ class ProductionmonitorController(BaseController):
       site = str(site)
     except Exception,x:
       return {"success":"false","error":str(x)}
-    RPC = getRPCClient("ProductionManagement/ProductionManager")
+    RPC = getRPCClient("Transformation/TransformationManager")
     gLogger.info("\033[0;31m setTransformationRunsSite(%s, %s, %s) \033[0m" % (transID,runID,site))
     result = RPC.setTransformationRunsSite(transID,runID,site)
     if result["OK"]:
@@ -367,7 +368,7 @@ class ProductionmonitorController(BaseController):
       status = str(status)
     except Exception,x:
       return {"success":"false","error":str(x)}
-    RPC = getRPCClient("ProductionManagement/ProductionManager")
+    RPC = getRPCClient("Transformation/TransformationManager")
     gLogger.info("\033[0;31m setTransformationRunStatus(%s, %s, %s) \033[0m" % (transID,runID,status))
     result = RPC.setTransformationRunStatus(transID,runID,status)
     if result["OK"]:
@@ -386,7 +387,7 @@ class ProductionmonitorController(BaseController):
 ################################################################################
   def __logProduction(self,prodid):
     id = int(prodid)
-    RPC = getRPCClient("ProductionManagement/ProductionManager")
+    RPC = getRPCClient("Transformation/TransformationManager")
     result = RPC.getTransformationLogging(id)
     if result["OK"]:
       result = result["Value"]
@@ -419,7 +420,7 @@ class ProductionmonitorController(BaseController):
 ################################################################################
   def __transformationFileStatus(self,prodid):
     id = int(prodid)
-    RPC = getRPCClient('ProductionManagement/ProductionManager')
+    RPC = getRPCClient('Transformation/TransformationManager')
     res = RPC.getTransformationFilesCount(prodid,"Status")
     if not res['OK']:
       c.result = {"success":"false","error":res["Message"]}
@@ -443,7 +444,7 @@ class ProductionmonitorController(BaseController):
     tasks = int(tasks)
     id = int(id)
     gLogger.info("extend %s" % id)
-    RPC = getRPCClient('ProductionManagement/ProductionManager')
+    RPC = getRPCClient('Transformation/TransformationManager')
     gLogger.info("extendTransformation(%s,%s)" % (id,tasks))
     res = RPC.extendTransformation(id,tasks)
     if res["OK"]:
@@ -457,7 +458,7 @@ class ProductionmonitorController(BaseController):
 ################################################################################
   def __elogProduction(self,prodid):
     id = int(prodid)
-    RPC = getRPCClient('ProductionManagement/ProductionManager')
+    RPC = getRPCClient('Transformation/TransformationManager')
     res = RPC.getTransformationParameters(id,['DetailedInfo'])
     if not res["OK"]:
       c.result = {"success":"false","error":res["Message"]}
@@ -473,7 +474,7 @@ class ProductionmonitorController(BaseController):
 ################################################################################
   def __actProduction(self,prodid,cmd):
     prodid = prodid.split(",")
-    RPC = getRPCClient("ProductionManagement/ProductionManager")
+    RPC = getRPCClient("Transformation/TransformationManager")
     agentType = 'Manual'
     if cmd == 'clean':
       status = 'Cleaning'
@@ -511,7 +512,7 @@ class ProductionmonitorController(BaseController):
 
 ################################################################################
   def __globalStat(self):
-    RPC = getRPCClient("ProductionManagement/ProductionManager")
+    RPC = getRPCClient("Transformation/TransformationManager")
     result = RPC.getTransformationStatusCounters()
     if result["OK"]:
       result = result["Value"]
@@ -522,7 +523,7 @@ class ProductionmonitorController(BaseController):
 ################################################################################
   def __fileRetry(self,prodid,mode):
     id = int(prodid)
-    RPC = getRPCClient('ProductionManagement/ProductionManager')
+    RPC = getRPCClient('Transformation/TransformationManager')
     if mode == "proc":
       res = RPC.getTransformationFilesCount(prodid,"ErrorCount",{'Status':'Processed'})
     elif mode == "not":
@@ -550,7 +551,7 @@ class ProductionmonitorController(BaseController):
 ################################################################################
   def __additionalParams(self,prodid):
     id = int(prodid)
-    RPC = getRPCClient('ProductionManagement/ProductionManager')
+    RPC = getRPCClient('Transformation/TransformationManager')
     res = RPC.getAdditionalParameters(id)
     if not res['OK']:
       c.result = {"success":"false","error":res["Message"]}
@@ -564,7 +565,7 @@ class ProductionmonitorController(BaseController):
 ################################################################################
   def __dataQuery(self,prodid):
     id = int(prodid)
-    RPC = getRPCClient("ProductionManagement/ProductionManager")
+    RPC = getRPCClient("Transformation/TransformationManager")
     res = RPC.getBookkeepingQueryForTransformation(id)
     gLogger.info("-= #######",res)
     if not res['OK']:
@@ -597,7 +598,7 @@ class ProductionmonitorController(BaseController):
       status = str(request.params["getFileStatus"])
     else:
       return {"success":"false","error":"Files status is not defined"}
-    RPC = getRPCClient("ProductionManagement/ProductionManager")
+    RPC = getRPCClient("Transformation/TransformationManager")
     result = RPC.getTransformationFilesSummaryWeb({'TransformationID':id,'Status':status},[["FileID","ASC"]],start,limit)
     if not result['OK']:
       c.result = {"success":"false","error":result["Message"]}
@@ -648,7 +649,7 @@ class ProductionmonitorController(BaseController):
       id = int(request.params["getRunStatus"])
     else:
       return {"success":"false","error":"Run status is not defined"}
-    RPC = getRPCClient("ProductionManagement/ProductionManager")
+    RPC = getRPCClient("Transformation/TransformationManager")
     result = RPC.getTransformationRunsSummaryWeb({'TransformationID':id},[["RunNumber","DESC"]],start,limit)
     if not result['OK']:
       c.result = {"success":"false","error":result["Message"]}
