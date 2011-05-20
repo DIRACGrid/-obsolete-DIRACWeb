@@ -9,7 +9,7 @@ function initDiracPage( urlRoot, pageDescription )
     urlRoot = urlRoot.substring( 0, urlRoot.length -1 );
   gURLRoot = urlRoot;
   gPageDescription = pageDescription;
-  Ext.QuickTips.init();
+  //Ext.QuickTips.init();
   Ext.namespace('dirac');
   //Check for lastLocationHash
   var lastHash = getCookie( "lastLocationHash" );
@@ -29,6 +29,7 @@ function initDiracPage( urlRoot, pageDescription )
 function renderInMainViewport( componentsList )
 {
   var topFrame = initTopFrame( gPageDescription );
+  console.log( "TOP FRAME OK" );
   var bottomFrame = initBottomFrame( gPageDescription );
   var viewportItems = [ topFrame ];
   for( var iPos = 0; iPos < componentsList.length; iPos++ )
@@ -36,13 +37,13 @@ function renderInMainViewport( componentsList )
     viewportItems.push( componentsList[ iPos ] );
   }
   viewportItems.push( bottomFrame );
-  gMainLayout = new Ext.Viewport( {
+  gMainLayout = Ext.create( 'Ext.container.Viewport', {
       layout : 'border',
-      plain : true,
+      renderTo: Ext.getBody(),
       items : viewportItems
     }
   );
-  initNotificationsChecker();
+  //initNotificationsChecker();
 }
 
 function __addClickHandlerToMenuSubEntries( menuEntry )
@@ -66,94 +67,73 @@ function __addClickHandlerToMenuSubEntries( menuEntry )
   }
   return hndlMenu;
 }
-function helpEntry(){
-  var url = 'http://marwww.in2p3.fr/~atsareg/Docs/DIRAC/build/html/diracindex.html';
-  if(gPageDescription.helpURL){
-    url = gPageDescription.helpURL
-  }
-  var html = '<iframe id="help_frame" src =' + url + '></iframe>';
-  var panel = new Ext.Panel({border:0,autoScroll:false,html:html});
-  panel.on('resize',function(){
-    var wwwFrame = document.getElementById('help_frame');
-    wwwFrame.height = panel.getInnerHeight() - 4;
-    wwwFrame.width = panel.getInnerWidth() - 4;
-  });
-  var title = 'Help for ' + gPageDescription.pagePath;
-  var window = new Ext.Window({
-    iconCls:'icon-grid',
-    closable:true,
-    width:800,
-    height:400,
-    border:true,
-    collapsible:false,
-    constrain:true,
-    constrainHeader:true,
-    maximizable:true,
-    modal:true,
-    layout:'fit',
-    plain:true,
-    shim:false,
-    title:title,
-    items:[panel]
-  });
-  window.show();
-}
+
 function initTopFrame( pageDescription ){
+	
   var navItems = [];
   for( var i in pageDescription[ 'navMenu' ] ){
+	  
     areaObject = pageDescription[ 'navMenu' ][i];
+    
     if(areaObject.text){
+    	
       var handleredMenu = __addClickHandlerToMenuSubEntries( areaObject.menu );
-      var cnfObj = { text : areaObject.text, menu : handleredMenu };
+
+      var cnfObj = { text : areaObject.text, 
+    		         menu : handleredMenu,
+    		       };
+      
       if(areaObject.text == 'Info'){
+    	  
         cnfObj.cls = 'x-btn-icon';
         cnfObj.icon = gURLRoot+'/images/iface/dlogo.gif';
-        cnfObj.minWidth = '16';
         delete cnfObj.text;
+        
       }
-      if(cnfObj.text == 'Help'){
+      else if(cnfObj.text == 'Help'){
+    	  
         cnfObj.menu.reverse();
         var tmp = new Array();
         tmp.text = 'Context Help';
-        tmp.handler = helpEntry;
+        //tmp.handler = helpEntry;
         cnfObj.menu.push(tmp);
         cnfObj.menu.reverse();
+        
       }
-      var menuEntry = new Ext.Toolbar.Button( cnfObj );
+      var menuEntry = Ext.create( 'Ext.button.Split', cnfObj );
     }
+    
     navItems.push( menuEntry );
   }
-/*
-  navItems.push(
-    new Ext.Toolbar.Button({
-      text:'Tools',
-      id:'mainTopbarToolsButton'
-    });
-  );
-*/
+
   navItems.push( "->" );
   navItems.push( "Selected setup:" );
-  // Set the handler
+
   for( var i = 0; i< pageDescription[ 'setupMenu' ].length; i++ )
   {
 	  pageDescription[ 'setupMenu' ][i].handler = redirectWithHashHandler;
   }
-  var setupButton = new Ext.Toolbar.Button({
+  console.log( pageDescription );
+  
+  var setupButton = Ext.create( 'Ext.button.Button' ,{
     text : pageDescription[ 'selectedSetup' ],
     menu : pageDescription[ 'setupMenu' ]
-  });
+  } );
   navItems.push( setupButton );
-  if( 'voIcon' in pageDescription && pageDescription[ 'voIcon' ] )
-  {
-	  var iconLogo = '<a href=' + pageDescription[ 'voURL' ]  + ' target="_blank">'
-	  var iconLocation = pageDescription[ 'voIcon' ]
+  
+  if( 'voIcon' in pageDescription )
+	  var iconLocation = pageDescription[ 'voIcon' ];
 	  while( iconLocation[0 ] == "/" )
 		  iconLocation = iconLocation.substring( 1, iconLocation.length );
-	  var iconLocation = gURLRoot+"/"+iconLocation;
-	  iconLogo = iconLogo + '<img src="' + iconLocation + '"/></a>'
-	  navItems.push( iconLogo )
-  }
-  var topBar = new Ext.Toolbar({
+	  navItems.push( Ext.create( 'Ext.button.Button', {
+		  cls : 'x-btn-icon',
+	      icon : gURLRoot + "/" + iconLocation,
+	      listeners : {
+	    	  click : function(){ window.open( pageDescription[ 'voURL' ], '_newtab' ) }
+	      },
+	  } ) );
+
+  var topBar = Ext.create( 'Ext.toolbar.Toolbar', {
     id:'diracTopBar',
     region:'north',
     items : navItems
@@ -163,7 +143,12 @@ function initTopFrame( pageDescription ){
 
 function initBottomFrame( pageDescription )
 {
-  var navItems = [ pageDescription['pagePath'], '->', { 'id' : 'mainNotificationStats', 'text' : '' }, "-" ];
+  var navItems = [];
+  if( 'pagePath' in pageDescription && pageDescription['pagePath'] )
+	  navItems.push( pageDescription['pagePath'] );
+  navItems.push( '->' );
+  navItems.push( { 'id' : 'mainNotificationStats', 'text' : '' } );
+  navItems.push( "-" );
   var userObject = pageDescription[ 'userData' ];
   if( userObject.group )
   {
@@ -173,7 +158,7 @@ function initBottomFrame( pageDescription )
   	{
   		userObject.groupMenu[i].handler = redirectWithHashHandler;
   	}
-    var userGroupMenu = new Ext.Toolbar.Button({
+    var userGroupMenu = Ext.create( 'Ext.button.Button', {
       text : userObject.group,
       menu : userObject.groupMenu
       });
@@ -184,13 +169,17 @@ function initBottomFrame( pageDescription )
   	navItems.push( userObject[ 'username' ] );
   }
   navItems.push( "("+userObject.DN+")" );
-  var bottomBar = new Ext.Toolbar({
+  
+  console.log(navItems);
+  var bottomBar = Ext.create( 'Ext.toolbar.Toolbar' , {
     region:'south',
     id:'diracBottomBar',
     items : navItems
   });
+  
   return bottomBar;
 }
+
 
 function mainPageRedirectHandler( item, a, b )
 {
