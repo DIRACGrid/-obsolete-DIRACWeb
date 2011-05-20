@@ -145,7 +145,7 @@ def pageName():
     prefix,controller = path["controller"].split("/");
     result = "'%s'" % controller
   else:
-    result = "Undefined"
+    result = "'somewhere'"
   return result
 
 def getUserData():
