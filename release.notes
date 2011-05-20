@@ -2,4 +2,5 @@
 [integration]
 
 * Move Presenter to Web Core from LHCbWebDIRAC
-
+BUGFIX: https://github.com/DIRACGrid/DIRACWeb/issues/5
+CHANGE: Action related controls are available only for the users with ProductionManagement property
