@@ -6,8 +6,18 @@ var heartbeat = '';
 var refreshRate = 0;
 var tableID = 'tmpID';
 var idObject = new Array();
+var transAdmin = false;
 // Main routine
 function initProductionMonitor(reponseSelect){
+  try{
+    for(var i = 0; i < gPageDescription.userData.groupProperties.length; i++){
+      if(gPageDescription.userData.groupProperties[i] == 'ProductionManagement'){
+    	transAdmin = true;
+  	  }
+    }
+  }catch(e){
+	alert('Error: '+e.description);
+  }
   dataSelect = reponseSelect;
   dataSelect.globalSort = '';
   var record = initRecord();
@@ -203,6 +213,11 @@ function initData(store){
     {handler:function(){action('production','complete')},text:'Complete',tooltip:'Click to set selected production(s) as complete'},
     {handler:function(){action('production','clean')},text:'Clean',tooltip:'Click to clean selected production(s)'}
   ];
+  if(!transAdmin){
+	for(var i=3;i<8;i++){
+	  tbar[i].hidden = true;
+	}
+  }
   var view = new Ext.grid.GroupingView({
     groupTextTpl:'<tpl>{text}</tpl>'
   })
@@ -377,8 +392,10 @@ function setMenuItems(selections){
   if((type != 'DataReconstruction')&&(type != 'DataStripping')&&(type != 'Replication')&&( type != 'Merge') ){
     dirac.menu.items.items[3].disable();
   }
-};
-
+  if(!transAdmin){
+	dirac.menu.items.items[10].disable();
+  }
+}
 function AJAXsuccess(value,id,response){
   try{
     gMainLayout.container.unmask();
