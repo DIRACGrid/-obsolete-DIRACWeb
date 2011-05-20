@@ -1,6 +1,9 @@
 
 [integration]
 
-* Move Presenter to Web Core from LHCbWebDIRAC
 BUGFIX: https://github.com/DIRACGrid/DIRACWeb/issues/5
 CHANGE: Action related controls are available only for the users with ProductionManagement property
+
+* Move Presenter to Web Core from LHCbWebDIRAC
+* Created a base page to use ExyJS 4
+CHANGE: voIcon and voURL can be defined via the CS
