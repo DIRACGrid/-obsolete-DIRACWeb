@@ -1,6 +1,8 @@
 
 [integration]
 
+[web2011052001]
+
 BUGFIX: https://github.com/DIRACGrid/DIRACWeb/issues/5
 CHANGE: Action related controls are available only for the users with ProductionManagement property
 
