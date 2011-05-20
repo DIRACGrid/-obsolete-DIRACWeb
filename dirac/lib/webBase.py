@@ -141,8 +141,8 @@ def pagePath():
 
 def pageName():
   path = request.environ[ "pylons.routes_dict" ]
-  if path and path.has_key("controller") and path["controller"].find("/") > 0:
-    prefix,controller = path["controller"].split("/");
+  if path and path.has_key( "controller" ) and path["controller"].find( "/" ) > 0:
+    prefix, controller = path["controller"].split( "/" );
     result = "'%s'" % controller
   else:
     result = "Undefined"
@@ -157,7 +157,7 @@ def getUserData():
     userData.append( "username : '%s'" % username )
     userData.append( "group : '%s'" % credentials.getSelectedGroup() )
     properties = credentials.getProperties( credentials.getSelectedGroup() )
-    if len(properties) > 0:
+    if len( properties ) > 0:
       userData.append( "groupProperties : %s" % properties )
     else:
       userData.append( "groupProperties : []" )
@@ -183,8 +183,8 @@ def getDoc():
 def getHelpForPage(): #by Matvey
   default = "http://marwww.in2p3.fr/~atsareg/Docs/DIRAC/build/html/diracindex.html"
   controller = "%s" % request.environ[ 'pylons.routes_dict' ][ 'controller' ]
-  if controller.find('/') > 0:
-    prefix,controller = controller.split('/');
+  if controller.find( '/' ) > 0:
+    prefix, controller = controller.split( '/' );
   helpSection = gWebConfig.getHelpSection()
   if not helpSection:
     return default
@@ -194,9 +194,6 @@ def getHelpForPage(): #by Matvey
       return "%s" % helpSection[controller]
     else:
       return default
-
-def getLogoForPortal():
-  return gWebConfig.getLogo()
 
 def getJSPageData():
   pageData = []
@@ -208,7 +205,10 @@ def getJSPageData():
   pageData.append( "userData : %s" % getUserData() )
   pageData.append( "docs : %s" % getDoc() ) # by Matvey
   pageData.append( "helpURL : '%s'" % getHelpForPage() ) # by Matvey
-  pageData.append( "logoURL : '%s'" % getLogoForPortal() ) # by Matvey
+  voIcon = gWebConfig.getIconLocation()
+  if voIcon:
+    pageData.append( "voIcon : '%s'" % voIcon )
+    pageData.append( "voURL : '%s'" % gWebConfig.getIconURL() )
   return "{%s}" % ",".join( pageData )
 
 ## DEFAULT REDIRECT
