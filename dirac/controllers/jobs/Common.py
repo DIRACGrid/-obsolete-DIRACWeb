@@ -292,9 +292,9 @@ class CommonController(BaseController):
 ################################################################################
   @jsonify
   def layoutAvailable(self):
-    if request.params.has_key("profile") and len(request.params["profile"]) > 0:
+    if request.params.has_key("page") and len(request.params["page"]) > 0:
       try:
-        profileName = str(request.params["profile"])
+        profileName = str(request.params["page"]).lower()
       except Exception, x:
         gLogger.error(x)
         return {"success":"false","error":x}
@@ -324,6 +324,39 @@ class CommonController(BaseController):
             resultList.append({'name':i[3],'owner':i[0]})
         total = len(resultList)
         c.result = {"success":"true","result":resultList,"total":total}
+    else:
+      c.result = {"success":"false","error":result["Message"]}
+    return c.result
+################################################################################
+  @jsonify
+  def getAvailable(self):
+    if request.params.has_key("page") and len(request.params["page"]) > 0:
+      try:
+        profileName = str(request.params["page"]).lower()
+        profileName = 'Summary'
+      except Exception, x:
+        gLogger.error(x)
+        return {"success":"false","error":x}
+    else:
+      gLogger.error("Failed to get profile name from the request")
+      return {"success":"false","error":"Failed to get profile name from the request"}
+    user = "All"
+    if request.params.has_key("user") and len(request.params["user"]) > 0:
+      try:
+        user = str(request.params["user"])
+      except Exception, x:
+        gLogger.error(x)
+        return {"success":"false","error":x}
+    upc = UserProfileClient( profileName, getRPCClient )
+    result = upc.listAvailableVars()
+    if result["OK"]:
+      result = result["Value"]
+      resultList = []
+      for i in result:
+        if i[0] == user:
+          resultList.append(i[3])
+      total = len(resultList)
+      c.result = {"success":"true","result":resultList,"total":total}
     else:
       c.result = {"success":"false","error":result["Message"]}
     return c.result
