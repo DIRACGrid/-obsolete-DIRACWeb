@@ -135,22 +135,20 @@ function initTopFrame( pageDescription ){
 	text:'Tools',
 	id:'mainTopbarToolsButton',
 	menu:[{
-	  text:'Layout',
+	  id:'layoutUPTopbarMenu',
 	  menu:{items:[
-	    {menu:{items:[
-	      {text:'Personal',menu:{items:[{text:'Test 1'},{text:'Test 1'},{text:'Test 1'},{text:'Test 1'}]} },
-	      {text:'Group',menu:{items:[{text:'Test 2'},{text:'Test 2'},{text:'Test 2'},{text:'Test 2'}]} },
-	      {text:'Global',menu:{items:[{text:'Test 3'},{text:'Test 3'},{text:'Test 3'},{text:'Test 3'}]} }
-	    ]},text:'Load',icon:gURLRoot + '/images/iface/reschedule.gif'},
-	    {handler:function(){testMenuHandler('save')},text:'Save',icon:gURLRoot + '/images/iface/save.gif'},
+	    {text:'Load',icon:gURLRoot + '/images/iface/reschedule.gif'},
+	    {text:'Save',icon:gURLRoot + '/images/iface/save.gif'},
 	    {handler:function(){testMenuHandler('import')},text:'Import',icon:gURLRoot + '/images/iface/import.gif'},
 	    {handler:function(){testMenuHandler('edit')},text:'Edit',icon:gURLRoot + '/images/iface/gear.gif'},
 	    '-',
 	    {handler:function(){testMenuHandler('delete')},icon:gURLRoot + '/images/iface/close.gif',text:'Delete'},
 	    {handler:function(){testMenuHandler('deleteAll')},icon:gURLRoot + '/images/iface/delete.gif',text:'Delete All'}
-	  ]}
+	  ]},
+	  text:'Layout'
 	}]
   });
+  addProfileMenuItems();
   navItems.push(tools);
   navItems.push(help);
   navItems.push( "->" );
@@ -269,6 +267,52 @@ function testMenuHandler(mode,name){
   try{
 	UP(mode,name);
   }catch(e){
-	alert('Action \'' + mode + '\' is not supported by page');
+	alert('Error: Action \'' + mode + '\' is not supported by this page');
   }
+}
+
+function addProfileMenuItems(){
+  var menu = Ext.getCmp('layoutUPTopbarMenu').menu;
+  if(!menu){
+	return
+  }
+  var resultL = new Ext.menu.Menu();
+  var resultS = new Ext.menu.Menu();
+  resultS.add({handler:function(){testMenuHandler('saveNew')},text:'Save as new',icon:gURLRoot + '/images/iface/save.gif'});
+  var params = {'page':pageDescription['pageName'],'user':gPageDescription.userData.username};
+  var setup = gPageDescription.selectedSetup;
+  var group = gPageDescription.userData.group;
+  var url = location.protocol + '//' + location.host + '/' + setup + '/' + group + '/jobs/Common/getAvailable';
+  Ext.Ajax.request({
+	failure:function(response){
+	  var jsonData = Ext.util.JSON.decode(response.responseText);
+	  if(jsonData){
+	    alert('Error: ' + jsonData['error']);
+	  }else{
+		alert('Recived data: ' + jsonData.toSource() + '\nError: Service response has wrong data structure');
+	  }
+	  return
+	},
+	method:'POST',
+	params:params,
+	success:function(response){
+	  var jsonData = Ext.util.JSON.decode(response.responseText);
+	  if(jsonData['success'] == 'false'){
+	    alert('Error: ' + jsonData['error']);
+	    return
+	  }else{
+		var items = jsonData['result'];
+        if(items){
+          for(var i = 0; i < items.length; i++){
+        	var j = items[i];
+        	resultL.add({text:j,handler:function(){testMenuHandler('load',j)}});
+        	resultS.add({text:j,handler:function(){testMenuHandler('save',j)}});
+          }
+        }
+		menu.items.items[0].menu = resultL;
+		menu.items.items[1].menu = resultS;
+	  }
+	},
+	url:url
+  });
 }
