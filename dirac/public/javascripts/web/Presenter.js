@@ -1125,32 +1125,6 @@ function AJAXerror(response){
   }
 }
 function addMenu(){
-/*
-  var get = new Ext.Toolbar.Button({
-    cls:"x-btn-text-icon",
-    iconCls:'Restore',
-    id:'getLayoutButton',
-    menu:createMenu('get',initValues),
-    tooltip:'Download your saved layout and apply it',
-    text:'Load'
-  });
-  var act = new Ext.Toolbar.Button({
-    cls:"x-btn-text-icon",
-    iconCls:'Act',
-    id:'actLayoutButton',
-    menu:[
-      {handler:function(){exportLayout();},icon:gURLRoot + '/images/iface/export.gif',text:'Export'},
-      {handler:function(){importLayout()},icon:gURLRoot + '/images/iface/import.gif',text:'Import'},
-      {handler:function(){deleteLayout()},icon:gURLRoot + '/images/iface/close.gif',text:'Delete'},
-      {handler:function(){deleteLayout('All')},icon:gURLRoot + '/images/iface/delete.gif',text:'Delete All'}
-    ],
-    tooltip:'',
-    text:'Actions'
-  });
-*/
-
-//  if(gPageDescription.userData.username != 'Anonymous'){
-//  }
   var menu = new Ext.menu.Menu({
     items:[
       {handler:function(){addPanel()},icon:gURLRoot + '/images/iface/advanced.gif',text:'Add'},
@@ -1174,5 +1148,29 @@ function addMenu(){
     var originalMenu = button.menu;
     originalMenu.add(menu);
     button.menu = originalMenu;
+  }
+}
+function UP(mode,name){
+  if(mode == 'saveNew'){
+    saveAs();
+  }else if(mode == 'save'){
+	if(name){
+	  saveLayout(name);
+	}else{
+	  alert('Error: name is absent');
+	  return
+	}
+  }else if(mode == 'import'){
+	  
+  }else if(mode == 'edit'){
+	  
+  }else if(mode == 'delete'){
+	  
+  }else if(mode == 'deleteAll'){
+	  
+  }else if(mode == 'load'){
+	  
+  }else{
+	alert('Error: Available');  
   }
 }
