@@ -20,6 +20,7 @@ pageTitle = "%s as %s@%s" % ( pageTitle, selectedGroup, selectedSetup )
   ${ h.javascript_link( "/ext/ext-all-debug.js" ) }
   ${ h.javascript_link( "/ext/Multiselect.js" ) }
   ${ h.javascript_link( "/ext/DDView.js" ) }
+  ${ h.javascript_link( "/javascripts/web/userProfile.js" ) }
   ${ h.javascript_link( "/javascripts/web/userNotifications.js" ) }
   ${ h.javascript_link( "/javascripts/diracPage.js" ) }
   ${ h.stylesheet_link( "/stylesheets/dirac.css" ) }
