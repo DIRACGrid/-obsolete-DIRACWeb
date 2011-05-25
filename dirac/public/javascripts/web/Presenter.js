@@ -1163,7 +1163,7 @@ function UP(mode,name){
   }else if(mode == 'import'){
 	  
   }else if(mode == 'edit'){
-	  
+    return layout
   }else if(mode == 'delete'){
 	  
   }else if(mode == 'deleteAll'){
