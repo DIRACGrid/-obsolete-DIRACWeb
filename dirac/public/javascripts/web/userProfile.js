@@ -1,16 +1,16 @@
 function initUserProfile(){
   var menu = [{
     id:'layoutUPTopbarMenu',
-	menu:{items:[
-	  {text:'Load',icon:gURLRoot + '/images/iface/reschedule.gif'},
-	  {text:'Save',icon:gURLRoot + '/images/iface/save.gif'},
-	  {handler:function(){importUPD()},text:'Import',icon:gURLRoot + '/images/iface/import.gif'},
+	  menu:{items:[
+	    {text:'Load',icon:gURLRoot + '/images/iface/reschedule.gif'},
+	    {text:'Save',icon:gURLRoot + '/images/iface/save.gif'},
+	    {handler:function(){importUPD()},text:'Import',icon:gURLRoot + '/images/iface/import.gif'},
       {handler:function(){changeUPD()},text:'Edit',icon:gURLRoot + '/images/iface/gear.gif'},
-	  '-',
-	  {handler:function(){testMenuHandler('delete')},icon:gURLRoot + '/images/iface/close.gif',text:'Delete'},
-	  {handler:function(){testMenuHandler('deleteAll')},icon:gURLRoot + '/images/iface/delete.gif',text:'Delete All'}
-	]},
-	text:'Layout'
+  	  '-',
+	    {handler:function(){testMenuHandler('delete')},icon:gURLRoot + '/images/iface/close.gif',text:'Delete'},
+	    {handler:function(){testMenuHandler('deleteAll')},icon:gURLRoot + '/images/iface/delete.gif',text:'Delete All'}
+	  ]},
+	  text:'Layout'
   }];
   return menu
 }
@@ -21,7 +21,7 @@ function addProfileMenuItems(){
     menu = Ext.getCmp('layoutUPTopbarMenu').menu;
   }catch(e){}
   if(!menu){
-	return
+  	return
   }
   var resultL = new Ext.menu.Menu();
   var resultS = new Ext.menu.Menu();
@@ -29,38 +29,38 @@ function addProfileMenuItems(){
   var params = {'page':pageDescription['pageName'],'user':gPageDescription.userData.username};
   var setup = gPageDescription.selectedSetup;
   var group = gPageDescription.userData.group;
-  var url = location.protocol + '//' + location.host + '/' + setup + '/' + group + '/jobs/Common/getAvailable';
+  var url = location.protocol + '//' + location.host + '/' + setup + '/' + group + '/jobs/Common/getLayoutList';
   Ext.Ajax.request({
-	failure:function(response){
-	  var jsonData = Ext.util.JSON.decode(response.responseText);
-	  if(jsonData){
-	    alert('Error: ' + jsonData['error']);
-	  }else{
-		alert('Recived data: ' + jsonData.toSource() + '\nError: Service response has wrong data structure');
-	  }
-	  return
-	},
-	method:'POST',
-	params:params,
-	success:function(response){
-	  var jsonData = Ext.util.JSON.decode(response.responseText);
-	  if(jsonData['success'] == 'false'){
-	    alert('Error: ' + jsonData['error']);
-	    return
-	  }else{
-		var items = jsonData['result'];
+  	failure:function(response){
+  	  var jsonData = Ext.util.JSON.decode(response.responseText);
+  	  if(jsonData){
+  	    alert('Error: ' + jsonData['error']);
+  	  }else{
+    		alert('Recived data: ' + jsonData.toSource() + '\nError: Service response has wrong data structure');
+  	  }
+  	  return
+  	},
+  	method:'POST',
+  	params:params,
+  	success:function(response){
+  	  var jsonData = Ext.util.JSON.decode(response.responseText);
+  	  if(jsonData['success'] == 'false'){
+  	    alert('Error: ' + jsonData['error']);
+  	    return
+  	  }else{
+    		var items = jsonData['result'];
         if(items){
           for(var i = 0; i < items.length; i++){
-        	var j = items[i];
-        	resultL.add({text:j,handler:function(){testMenuHandler('load',j)}});
-        	resultS.add({text:j,handler:function(){testMenuHandler('save',j)}});
+          	var j = items[i];
+          	resultL.add({text:j,handler:function(){testMenuHandler('load',j)}});
+          	resultS.add({text:j,handler:function(){testMenuHandler('save',j)}});
           }
         }
-		menu.items.items[0].menu = resultL;
-		menu.items.items[1].menu = resultS;
-	  }
-	},
-	url:url
+    		menu.items.items[0].menu = resultL;
+	    	menu.items.items[1].menu = resultS;
+	    }
+  	},
+	  url:url
   });
 }
 function importUPD(){
@@ -139,7 +139,7 @@ function importUPD(){
       }catch(e){
         alert('Error: ' + e.name + ': ' + e.message);
       }
-	},
+	  },
     icon:gURLRoot+'/images/iface/close.gif',
     minWidth:'70',
     tooltip:'Alternatively, you can close the dialogue by pressing the [X] button on the top of the window',
@@ -152,13 +152,13 @@ function importUPD(){
     baseParams:{'profile':'Summary'},
     fields:['name'],
     root:'result',
-    url:url+'layoutUser'
+    url:url+'getLayoutUserList'
   });
   var store = new Ext.data.JsonStore({
     baseParams:{'user':'All','profile':'Summary'},
     fields:['name','description','owner'],
     root:'result',
-    url:url+'layoutAvailable'
+    url:url+'getLayoutAndOwner'
   });
   store.load();
   var user = userSel(200,storeUser,store);
@@ -219,13 +219,13 @@ function importUPD(){
     }
   });
   table.addListener('resize',function(){
-	var tmpWidth = table.getInnerWidth() - 26;
-	var list = userSel(tmpWidth,storeUser,store);
-	var bar = table.getTopToolbar();
-	Ext.fly(bar.items.get(1).getEl()).remove();
-	bar.items.removeAt(1);
-	bar.add(list);
-	table.doLayout();
+	  var tmpWidth = table.getInnerWidth() - 26;
+	  var list = userSel(tmpWidth,storeUser,store);
+	  var bar = table.getTopToolbar();
+	  Ext.fly(bar.items.get(1).getEl()).remove();
+	  bar.items.removeAt(1);
+  	bar.add(list);
+	  table.doLayout();
   });
   var window = displayWin(table,{'title':'Import Data','modal':true,'buttons':[submit,close],'collapsible':false,'id':winID});
   window.center();
@@ -236,14 +236,14 @@ function changeUPD(){
   var pageID = Ext.id();
   var layout = UP('edit');
   if(!layout){
-	alert('Can not get the definition of layout');
-	return
+	  alert('Can not get the definition of layout');
+	  return
   }
   var submit = new Ext.Button({
     cls:"x-btn-text-icon",
     disabled:true,
     handler:function(){
-	  testMenuHandler('save',layout);
+	    testMenuHandler('save',layout);
     },
     icon:gURLRoot+'/images/iface/submit.gif',
     id:'layoutEditButton',
@@ -270,7 +270,7 @@ function changeUPD(){
       }catch(e){
         alert('Error: ' + e.name + ': ' + e.message);
       }
-	},
+	  },
     icon:gURLRoot+'/images/iface/close.gif',
     minWidth:'70',
     tooltip:'Alternatively, you can close the dialogue by pressing the [X] button on the top of the window',
@@ -286,17 +286,14 @@ function changeUPD(){
     url:url+'layoutAvailable'
   });
   store.load();
-  var checkBox = new Ext.form.Checkbox( {
+  var checkBox = new Ext.form.Checkbox({
     boxLabel:'Read available for everyone',
-    checked:false,
-    checkHandler:function(){
-//      try{
-        Ext.getCmp('layoutEditButton').enable();
-//      }catch(e){}	  
-    },
     name:'readEverybody',
-    selectOnFocus:true,
-    triggerAction:'all'
+  });
+  checkBox.addListener('change',function(){
+  	try{
+	    Ext.getCmp('layoutEditButton').enable();
+	  }catch(e){} 
   });
   var table = new Ext.grid.GridPanel({
     anchor:'100%',
