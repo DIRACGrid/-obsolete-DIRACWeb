@@ -261,7 +261,7 @@ class CommonController(BaseController):
       return result["Message"]
 ################################################################################
   @jsonify
-  def layoutUser(self):
+  def getLayoutUserList(self):
     if request.params.has_key("profile") and len(request.params["profile"]) > 0:
       try:
         profileName = str(request.params["profile"])
@@ -287,77 +287,281 @@ class CommonController(BaseController):
       resultList.insert(0,{'name':'All'})
       c.result = {"success":"true","result":resultList,"total":total}
     else:
+      gLogger.error(result["Message"])
       c.result = {"success":"false","error":result["Message"]}
     return c.result
 ################################################################################
-  @jsonify
-  def layoutAvailable(self):
+  def __preRequest(self):
     if request.params.has_key("page") and len(request.params["page"]) > 0:
       try:
         profileName = str(request.params["page"]).lower()
       except Exception, x:
         gLogger.error(x)
-        return {"success":"false","error":x}
+        profileName = False
     else:
       gLogger.error("Failed to get profile name from the request")
-      return {"success":"false","error":"Failed to get profile name from the request"}
+      profileName = False
     user = "All"
     if request.params.has_key("user") and len(request.params["user"]) > 0:
       try:
         user = str(request.params["user"])
       except Exception, x:
         gLogger.error(x)
-        return {"success":"false","error":x}
-    upc = UserProfileClient( profileName, getRPCClient )
+        user = False
+    return profileName, user
+################################################################################
+  def __returnLayout(self,kind):
+    profileName,user = self.__preRequest()
+    if not profileName:
+      return {"success":"false","error":"Failed to get layout name from the request"}
+    elif not user:
+      return {"success":"false","error":"Failed to get user name from the request"}
+    upc = UserProfileClient(profileName,getRPCClient)
     result = upc.listAvailableVars()
     if result["OK"]:
       result = result["Value"]
       resultList = []
       if user == "All":
         for i in result:
-          resultList.append({'name':i[3],'owner':i[0]})
+          if kind == 'list':
+            resultList.append(i[3])
+          elif kind == 'with_owner':
+            resultList.append({'name':i[3],'owner':i[0]})
         total = len(resultList)
         c.result = {"success":"true","result":resultList,"total":total}
       else:
         for i in result:
           if i[0] == user:
-            resultList.append({'name':i[3],'owner':i[0]})
+            if kind == 'list':
+              resultList.append(i[3])
+            elif kind == 'with_owner':
+              resultList.append({'name':i[3],'owner':i[0]})
         total = len(resultList)
         c.result = {"success":"true","result":resultList,"total":total}
     else:
+      gLogger.error(result["Message"])
       c.result = {"success":"false","error":result["Message"]}
     return c.result
 ################################################################################
   @jsonify
-  def getAvailable(self):
-    if request.params.has_key("page") and len(request.params["page"]) > 0:
-      try:
-        profileName = str(request.params["page"]).lower()
-        profileName = 'Summary'
-      except Exception, x:
-        gLogger.error(x)
-        return {"success":"false","error":x}
+  def getLayoutAndOwner(self):
+    return self.__returnLayouts('with_owner')
+################################################################################
+  @jsonify
+  def getLayoutList(self):
+    return self.__returnLayouts('list')
+################################################################################
+  @jsonify
+  def action(self):
+    pagestart = time()
+    if request.params.has_key("getBookmarks") > 0:
+      name = str(request.params["getBookmarks"])
+      return self.__getBookmarks(name)
+    elif request.params.has_key("setBookmarks") and len(request.params["setBookmarks"]) > 0:
+      name = str(request.params["setBookmarks"])
+      return self.__setBookmarks(name)
+    elif request.params.has_key("delBookmarks") and len(request.params["delBookmarks"]) > 0:
+      name = str(request.params["delBookmarks"])
+      return self.__delBookmarks(name)
+    elif request.params.has_key("delAllBookmarks") and len(request.params["delAllBookmarks"]) > 0:
+      return self.__delAllBookmarks()
     else:
-      gLogger.error("Failed to get profile name from the request")
-      return {"success":"false","error":"Failed to get profile name from the request"}
-    user = "All"
-    if request.params.has_key("user") and len(request.params["user"]) > 0:
-      try:
-        user = str(request.params["user"])
-      except Exception, x:
-        gLogger.error(x)
-        return {"success":"false","error":x}
-    upc = UserProfileClient( profileName, getRPCClient )
+      c.result = {"success":"false","error":"Action is not defined"}
+      return c.result
+################################################################################
+'''
+  @jsonify
+  def layoutUser(self):
+    upProfileName = "Summary"
+    upc = UserProfileClient( "Summary", getRPCClient )
     result = upc.listAvailableVars()
     if result["OK"]:
       result = result["Value"]
-      resultList = []
+      userList = []
       for i in result:
-        if i[0] == user:
-          resultList.append(i[3])
+        userList.append(i[0])
+      userList = uniqueElements(userList)
+      resultList = []
+      for j in userList:
+        resultList.append({'name':j})
       total = len(resultList)
+      resultList.sort()
+      resultList.insert(0,{'name':'All'})
       c.result = {"success":"true","result":resultList,"total":total}
     else:
       c.result = {"success":"false","error":result["Message"]}
     return c.result
 ################################################################################
+  @jsonify
+  def layoutAvailable(self):
+    upProfileName = "Summary"
+    upc = UserProfileClient( "Summary", getRPCClient )
+    result = upc.listAvailableVars()
+    gLogger.info("\033[0;31m listAvailableVars: \033[0m",result)
+    if result["OK"]:
+      result = result["Value"]
+      resultList = []
+      for i in result:
+        resultList.append({'name':i[3],'owner':i[0]})
+    return {"success":"true","result":resultList,"total":"55"}
+################################################################################
+  def __getSelections(self):
+    if request.params.has_key("layout") > 0:
+      name = str(request.params["layout"])
+      return self.__getBookmarks(name)
+    else:
+      return False
+###############################################################################
+  @jsonify
+  def action(self):
+    pagestart = time()
+    if request.params.has_key("getBookmarks") > 0:
+      name = str(request.params["getBookmarks"])
+      return self.__getBookmarks(name)
+    elif request.params.has_key("setBookmarks") and len(request.params["setBookmarks"]) > 0:
+      name = str(request.params["setBookmarks"])
+      return self.__setBookmarks(name)
+    elif request.params.has_key("delBookmarks") and len(request.params["delBookmarks"]) > 0:
+      name = str(request.params["delBookmarks"])
+      return self.__delBookmarks(name)
+    elif request.params.has_key("delAllBookmarks") and len(request.params["delAllBookmarks"]) > 0:
+      return self.__delAllBookmarks()
+    else:
+      c.result = {"success":"false","error":"Action is not defined"}
+      return c.result
+################################################################################
+
+# width - value
+# time - value
+# defaultLayout - value
+# layouts - dict {name:src}
+
+################################################################################
+  def __getBookmarks(self,name=""):
+    if name == "columns" or name == "refresh" or name == "defaultLayout" or name == "layouts":
+      return {"success":"false","error":"The name \"" + name + "\" is reserved, operation failed"}
+    upc = UserProfileClient( "Summary", getRPCClient )
+    result = upc.retrieveVar( "Bookmarks" )
+    gLogger.info("\033[0;31m UserProfile getBookmarks response: \033[0m",result)
+    if result["OK"]:
+      result = result["Value"]
+      if name != "":
+        result["defaultLayout"] = name
+        save = upc.storeVar( "Bookmarks", result )
+        gLogger.info("\033[0;31m saving new default layout \033[0m",name)
+        if not save["OK"]:
+          return {"success":"false","error":save["Message"]}
+      elif name == "" and not result.has_key("defaultLayout"):
+        result["defaultLayout"] = ""
+      if result.has_key("layouts"):
+        layouts = ""
+        for i in result["layouts"]:
+          layouts = layouts + str(i) + ";"
+        result["layoutNames"] = layouts
+      c.result = {"success":"true","result":result}
+    else:
+      if result['Message'].find("No data for") != -1:
+        c.result = {"success":"true","result":{}}
+      else:
+        c.result = {"success":"false","error":result["Message"]}
+    return c.result
+################################################################################
+  def __setBookmarks(self,name):
+    if name == "columns" or name == "refresh" or name == "defaultLayout" or name == "layouts":
+      return {"success":"false","error":"The name \"" + name + "\" is reserved, operation failed"}
+    if not request.params.has_key("columns") and len(request.params["columns"]) <= 0:
+      return {"success":"false","error":"Parameter 'Columns' is absent"}
+    if not request.params.has_key("refresh") and len(request.params["refresh"]) <= 0:
+      return {"success":"false","error":"Parameter 'Refresh' is absent"}
+    upc = UserProfileClient( "Summary", getRPCClient )
+    result = upc.retrieveVar( "Bookmarks" )
+    if result["OK"]:
+      data = result["Value"]
+    else:
+      data = {}
+    data["defaultLayout"] = name
+    if not data.has_key("layouts"):
+      data["layouts"] =  {}
+    data["layouts"][name] = {}
+    if request.params.has_key("plots") and len(request.params["plots"]) > 0:
+      data["layouts"][name]["url"] = str(request.params["plots"])
+    else:
+      data["layouts"][name]["url"] = ""
+    data["layouts"][name]["columns"] = str(request.params["columns"])
+    data["layouts"][name]["refresh"] = str(request.params["refresh"])
+    gLogger.info("\033[0;31m Data to save: \033[0m",data)
+    result = upc.storeVar( "Bookmarks", data )
+    gLogger.info("\033[0;31m UserProfile response: \033[0m",result)
+    if result["OK"]:
+      return self.__getBookmarks()
+    else:
+      return {"success":"false","error":result["Message"]}
+'''      
+################################################################################
+  def __delBookmarks(self,name):
+    if name == "columns" or name == "refresh" or name == "defaultLayout" or name == "layouts":
+      return {"success":"false","error":"The name \"" + name + "\" is reserved, please choose another name. Operation failed"}
+    upc = UserProfileClient( "Summary", getRPCClient )
+    result = upc.retrieveVar( "Bookmarks" )
+    if result["OK"]:
+      data = result["Value"]
+    else:
+      data = {}
+    gLogger.info("\033[0;31m data: \033[0m",data)
+    if data.has_key("layouts"):
+      if name in data["layouts"]:
+        del data["layouts"][name]
+      else:
+        return {"success":"false","error":"Can't delete not existing layout: \"" + name + "\""}
+    else:
+      return {"success":"false","error":"Can't read existing layouts, operation failed"}
+    if len(data["layouts"]) > 0:
+      data["defaultLayout"] = data["layouts"].keys()[0]
+    else:
+      data["defaultLayout"] = ""
+    gLogger.info("\033[0;31m data: \033[0m",data)
+    result = upc.storeVar( "Bookmarks", data )
+    gLogger.info("\033[0;31m result: \033[0m",result)
+    if result["OK"]:
+      return self.__getBookmarks()
+    else:
+      return {"success":"false","error":result["Message"]}
+################################################################################
+  def __delLayout(self,name):
+    profileName,user = self.__preRequest()
+    if not profileName:
+      return {"success":"false","error":"Failed to get layout name from the request"}
+    elif not user:
+      return {"success":"false","error":"Failed to get user name from the request"}
+    upc = UserProfileClient(profileName,getRPCClient)
+    result = upc.deleteVar(name)
+    if result["OK"]:
+# Need to set defaultLayout at this point        
+#      if self.__
+      return self.__getLayout()
+    else:
+      gLogger.error(result["Message"])
+      return {"success":"false","error":result["Message"]}
+  
+#    if len(data["layouts"]) > 0:
+#      data["defaultLayout"] = data["layouts"].keys()[0]
+#    else:
+#      data["defaultLayout"] = ""
+
+################################################################################
+  def __delAllBookmarks(self):
+    profileName,user = self.__preRequest()
+    if not profileName:
+      return {"success":"false","error":"Failed to get layout name from the request"}
+    elif not user:
+      return {"success":"false","error":"Failed to get user name from the request"}
+    upc = UserProfileClient(profileName,getRPCClient)
+    result = upc.listAvailableVars()
+    if result["OK"]:
+      result = result["Value"]
+      for i in result:
+        self.__delLayout(i[3])
+      return self.__getLayout()
+    else:
+      gLogger.error(result["Message"])
+      return {"success":"false","error":result["Message"]}
