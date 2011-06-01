@@ -73,6 +73,7 @@ function initSidebar(){
   var minSelect = createMenu('minorstat','Minor status'); // Initializing Minor Status Menu
   var prodSelect = createMenu('prod','JobGroup'); // Initializing JobGroup Menu
   var id = genericID('id','JobID'); // Initialize field for JobIDs
+  var runid = genericID('runNumber','RunID','','','None'); // Initialize field for JobIDs
   var dateSelect = dateTimeWidget(); // Initializing date dialog
   var select = selectPanel(); // Initializing container for selection objects
   // Insert object to container BEFORE buttons:
@@ -83,7 +84,8 @@ function initSidebar(){
   select.insert(4,ownerSelect);
   select.insert(5,prodSelect);
   select.insert(6,id);
-  select.insert(7,dateSelect);
+  select.insert(7,runid);
+  select.insert(8,dateSelect);
   var sortGlobal = sortGlobalPanel(); // Initializing the global sort panel
 //  var stat = statPanel('Current Statistics','current','statGrid');
 /*
