@@ -6,16 +6,17 @@ from DIRAC.FrameworkSystem.Client.UserProfileClient import UserProfileClient
 class PresenterController(BaseController):
 ################################################################################
   def display(self):
-    self.__convert('Presenter')
-    default_values = 'ZGVmYXVsdA==' # Var to store default layout
-    upc = UserProfileClient('Presenter',getRPCClient )
-    result = upc.retrieveVar(default_values)
+    name = 'Presenter'
+    self.__convert(name)
+#    default_values = 'ZGVmYXVsdA==' # Var to store default layout
+    upc = UserProfileClient(name,getRPCClient )
+#    result = upc.retrieveVar(default_values)
+    result = upc.retrieveAllVars()
     if result["OK"]:
-      result = result["Value"]          
+      c.select = result["Value"]          
     else:
       gLogger.error(result["Message"])
-      result = ''
-    c.select = result
+      c.select = ''
     return render("web/Presenter.mako")
 ################################################################################
   def __convert(self,profile):
@@ -29,7 +30,7 @@ class PresenterController(BaseController):
       gLogger.error(result)
       gLogger.error("************")
       if result.has_key('Bookmarks') and result['Bookmarks'].has_key('defaultLayout'):
-        ups_new.storeVar('ZGVmYXVsdA==',result['Bookmarks']['defaultLayout'])
+        upc_new.storeVar('ZGVmYXVsdA==',result['Bookmarks']['defaultLayout'])
       if result.has_key('Bookmarks') and result['Bookmarks'].has_key('layouts'):
         for i in result['Bookmarks']['layouts'].keys():
           new_profile = {}
@@ -45,7 +46,7 @@ class PresenterController(BaseController):
                       index = index + 1
             else:
               new_profile[j] = result['Bookmarks']['layouts'][i][j]
-          ups_new.storeVar(i,new_profile)      
+          upc_new.storeVar(i,new_profile)      
       c.result = True
     else:
       gLogger.error(result["Message"])

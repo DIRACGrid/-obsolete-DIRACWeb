@@ -4,14 +4,18 @@ var refeshID = 0;
 var layout = 'default';
 var heartbeat = '';
 var contextMenu = '';
+var url_common = '';
 function initLoop(initValues){
   Ext.onReady(function(){
     if(window.location.hash){
       var test = window.location.hash.split('#layout=');
       if(test.length == 2 && initValues){
-        initValues.defaultLayout = test[1];
+        initValues['ZGVmYXVsdA=='] = test[1];
       }
     }
+    var setup = gPageDescription.selectedSetup;
+    var group = gPageDescription.userData.group;
+    url_common = location.protocol + '//' + location.host + '/' + setup + '/' + group + '/jobs/Common/';
     var mainContent = mainPanel(initValues);
     renderInMainViewport([ mainContent ]);
   });
@@ -397,7 +401,7 @@ function syncLayout(){
         redoLayout(jsonData['result'],'sync');
       }
     },
-    url:'action'
+    url:url_common+'action'
   });
 }
 function saveAs(){
@@ -435,7 +439,7 @@ function saveAs(){
                 }
               }
             },
-            url:'action'
+            url:url_common+'action'
           });
         }
       }
@@ -476,13 +480,13 @@ function saveLayout(name){
               }
             }
           },
-          url:'action'
+          url:url_common+'action'
         });
       }
     });
   }
 }
-function loadProfile(name,user){
+function loadProfile(name){
   var title = 'Load Data';
   try{
     var button = Ext.getCmp('getLayoutButton');
@@ -522,7 +526,7 @@ function loadProfile(name,user){
             }
           }
         },
-        url:'action'
+        url:url_common+'action'
       });
     }
   });
@@ -576,7 +580,7 @@ function action(params,mode){
         }
       }
     },
-    url:'action'
+    url:url_common+'action'
   });
 }
 function exportLayout(){
@@ -639,16 +643,16 @@ function redoLayout(result,mode){
     return
   }
   if(mode != 'import'){
-    resetMenu(result);
+    resetMenu(result); // ! 30.05.2011 Check that !
   }
   if(mode == 'sync'){
     return // just to update the menues
   }
-  if(result.defaultLayout){
-    if(result.defaultLayout == ''){
+  if(result['ZGVmYXVsdA==']){
+    if(result['ZGVmYXVsdA=='] == ''){
       layout = 'default';
     }else{
-      layout = result.defaultLayout;
+      layout = result['ZGVmYXVsdA=='];
     }
   }else if(mode == 'import'){
     layout = layout + '*';
@@ -662,23 +666,29 @@ function redoLayout(result,mode){
     document.title = layout;
   }
   updateTimestamp();
-  if(result.layouts){
-    for(var i in result.layouts){
+  if(result){
+    for(var i in result){
       if(i == layout){
-        var plotSrc = result.layouts[i]['url'];
-        plotSrc = plotSrc.replace(/\[ampersand\]/g,'&');
-        var plots = plotSrc.split(';');
-        for(var j = 0; j < plots.length; j++){
-          if(plots[j].search(/&dummythingforrefresh/i) > 0){
-            plots[j] = plots[j].split('&dummythingforrefresh')[0];
+        var tmpLayout = result[i];
+        var plots = new Array();
+        for(var j in tmpLayout){
+          var isImage = j.search(/img/i);
+          if(j == 'columns'){
+            columnWidth = tmpLayout[j];
+          }else if(j == 'refresh'){
+            refreshRate = tmpLayout['refresh'];
+          }else if( isImage != -1){
+            var tmpSrc = tmpLayout[j].replace(/\[ampersand\]/g,'&');
+            if(tmpSrc.search(/&dummythingforrefresh/i) > 0){
+              tmpSrc = tmpSrc.split('&dummythingforrefresh')[0];
+            }
+            plots.push(tmpSrc);
           }
         }
-        columnWidth = result.layouts[i]['columns'];
-        refreshRate = result.layouts[i]['refresh'];
       }
     }
   }else if(mode == 'import'){
-    if(result.plots){
+    if(result.plots){ // ! 30.05 What da fuck is that? !
       var plots = result.plots.split(';');
     }
   }
@@ -969,7 +979,6 @@ function changeURL(id,url){
     var path = Ext.getCmp(pathID);
     path.setHeight(newHeight);
   })
-
   win.show();
 }
 function addPanel(){
@@ -1169,7 +1178,7 @@ function UP(mode,name){
   }else if(mode == 'deleteAll'){
 	  
   }else if(mode == 'load'){
-	  
+    loadProfile(name);
   }else{
 	alert('Error: Available');  
   }
