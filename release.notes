@@ -1,5 +1,9 @@
+[web2011060101]
 
-[integration]
+BUGFIX: Conflicts in .gitignore
+BUGFIX: When it's a 404 code give the page a proper title
+CHANGE: By default set the home page as diracgrid.org
+BUGFIX: http://savannah.cern.ch/bugs/?82807
 
 [web2011052001]
 
