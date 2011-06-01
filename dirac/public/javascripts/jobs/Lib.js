@@ -913,7 +913,7 @@ function genericID(name,fieldLabel,altRegex,altRegexText,hide){
     selectOnFocus:true,
     value:value
   });
-  if(hide){
+  if(hide == true){
     textField.on({
       'render':function(){
         if(textField.value !== ''){
