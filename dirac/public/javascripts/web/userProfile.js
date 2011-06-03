@@ -56,7 +56,12 @@ function addProfileMenuItems(){
           	resultS.add({text:j,handler:function(){testMenuHandler('save',j)}});
           }
         }
-    		menu.items.items[0].menu = resultL;
+        var lll = resultL.items.getCount();
+        if(resultL.items.getCount() > 0){
+          menu.items.items[0].menu = resultL;
+        }else{
+          menu.items.items[0].disable();
+        }  		
 	    	menu.items.items[1].menu = resultS;
 	    }
   	},
