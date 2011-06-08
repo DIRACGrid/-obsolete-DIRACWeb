@@ -189,6 +189,9 @@ function initData(store){
     }
   }catch(e){}
   store.setDefaultSort('JobID','DESC'); // Default sorting
+  if(gPageDescription.userData && gPageDescription.userData.username && gPageDescription.userData.username == 'Anonymous'){
+    tbar.hidden = '';
+  }
   tableMngr = {'store':store,'columns':columns,'tbar':tbar};
   var t = table(tableMngr);
   t.addListener('cellclick',function(table,rowIndex,columnIndex){
@@ -276,7 +279,7 @@ function setMenuItems(selections){
   }else{
     return
   }
-  if(dirac.menu){
+  if(gPageDescription && gPageDescription.userData && gPageDescription.userData.username && gPageDescription.userData.username != 'Anonymous' && dirac.menu){
     dirac.menu.add(
       {handler:function(){AJAXrequest('getJDL',id)},text:'JDL'},
       '-',
