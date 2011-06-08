@@ -122,15 +122,17 @@ function initTopFrame( pageDescription ){
     }
     navItems.push( menuEntry );
   }
-  if((gPageDescription.pageName == 'JobMonitor')||(gPageDescription.pageName == 'Presenter')){
-    var upmenu = new Ext.menu.Menu();
-    var tools = new Ext.Toolbar.Button({
-    	text:'Tools',
-	    id:'mainTopbarToolsButton',
-    	menu:upmenu
-    });
+  if(gPageDescription.userData && gPageDescription.userData.username && gPageDescription.userData.username != 'Anonymous'){
+    if((gPageDescription.pageName == 'JobMonitor')||(gPageDescription.pageName == 'Presenter')){
+      var upmenu = new Ext.menu.Menu();
+      var tools = new Ext.Toolbar.Button({
+    	  text:'Tools',
+	      id:'mainTopbarToolsButton',
+      	menu:upmenu
+      });
+      navItems.push(tools);
+    }
   }
-  navItems.push(tools);
   navItems.push( "->" );
   navItems.push( "Selected setup:" );
   // Set the handler
