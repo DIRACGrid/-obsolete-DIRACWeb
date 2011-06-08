@@ -249,12 +249,19 @@ function addMenu(){
   var button = Ext.getCmp('mainTopbarToolsButton');
   if(button){
     var originalMenu = button.menu;
-    var length = menu.items.items.length;
-    for(i=0; i<length; i++){
-      originalMenu.insert(i,menu.items.items[i]);
+    if(originalMenu){
+      var originalLength = originalMenu.items.items.length;
+      var length = menu.items.items.length;
+      if(length > 0 && !originalLength > 0){
+        menu.remove(menu.items.items[length-1]);
+      }
+      length = menu.items.items.length;
+      if(length > 0){
+        for(i=0; i<length; i++){
+          originalMenu.insert(i,menu.items.items[i]);
+        }
+      }
     }
-    var originalMenu = button.menu;
-    originalMenu.add(menu);
     button.menu = originalMenu;
   }
 }
