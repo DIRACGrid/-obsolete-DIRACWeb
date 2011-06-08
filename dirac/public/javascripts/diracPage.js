@@ -122,14 +122,15 @@ function initTopFrame( pageDescription ){
     }
     navItems.push( menuEntry );
   }
-/*
-  navItems.push(
-    new Ext.Toolbar.Button({
-      text:'Tools',
-      id:'mainTopbarToolsButton'
+  if((gPageDescription.pageName == 'JobMonitor')||(gPageDescription.pageName == 'Presenter')){
+    var upmenu = new Ext.menu.Menu();
+    var tools = new Ext.Toolbar.Button({
+    	text:'Tools',
+	    id:'mainTopbarToolsButton',
+    	menu:upmenu
     });
-  );
-*/
+  }
+  navItems.push(tools);
   navItems.push( "->" );
   navItems.push( "Selected setup:" );
   // Set the handler
