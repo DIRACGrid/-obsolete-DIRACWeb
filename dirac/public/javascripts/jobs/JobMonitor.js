@@ -240,11 +240,15 @@ function addMenu(){
       '-'
     ]
   });
-  var length = gPageDescription.userData.groupProperties.length;
-  for(i=0; i<length; i++){
-    if(gPageDescription.userData.groupProperties[i] == 'JobAdministrator'){
-      menu.items.items[0].disable();
+  if(gPageDescription && gPageDescription.userData && gPageDescription.userData.groupProperties){
+    var length = gPageDescription.userData.groupProperties.length;
+    for(i=0; i<length; i++){
+      if(gPageDescription.userData.groupProperties[i] == 'JobAdministrator'){
+        menu.items.items[0].disable();
+      }
     }
+  }else{
+    menu.items.items[0].disable();  
   }
   var button = Ext.getCmp('mainTopbarToolsButton');
   if(button){
