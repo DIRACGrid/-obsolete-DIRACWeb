@@ -1,3 +1,9 @@
+[web2011060901]
+
+CHANGE: Rewritten security model for JobMonitor based on user properties
+CHANGE: Previous version of Presenter page as new is not ready yet
+BUGFIX: Show tool button in top menu only for jobmonitor and disable it from anonymous
+
 [web2011060101]
 
 BUGFIX: Conflicts in .gitignore
