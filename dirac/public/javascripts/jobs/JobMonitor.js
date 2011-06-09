@@ -191,6 +191,9 @@ function initData(store){
     }
   }catch(e){}
   store.setDefaultSort('JobID','DESC'); // Default sorting
+  if(gPageDescription.userData && gPageDescription.userData.username && gPageDescription.userData.username == 'Anonymous'){
+ 	  tbar.hidden = '';
+ 	}
   tableMngr = {'store':store,'columns':columns,'tbar':tbar};
   var t = table(tableMngr);
   t.addListener('cellclick',function(table,rowIndex,columnIndex){
@@ -242,21 +245,32 @@ function addMenu(){
       '-'
     ]
   });
-  var length = gPageDescription.userData.groupProperties.length;
-  for(i=0; i<length; i++){
-    if(gPageDescription.userData.groupProperties[i] == 'JobAdministrator'){
-      menu.items.items[0].disable();
+  if(gPageDescription && gPageDescription.userData && gPageDescription.userData.groupProperties){
+    var length = gPageDescription.userData.groupProperties.length;
+    for(i=0; i<length; i++){
+      if(gPageDescription.userData.groupProperties[i] == 'JobAdministrator'){
+        menu.items.items[0].disable();
+      }
     }
+  }else{
+    menu.items.items[0].disable();  
   }
   var button = Ext.getCmp('mainTopbarToolsButton');
   if(button){
     var originalMenu = button.menu;
-    var length = menu.items.items.length;
-    for(i=0; i<length; i++){
-      originalMenu.insert(i,menu.items.items[i]);
+    if(originalMenu){
+      var originalLength = originalMenu.items.items.length;
+      var length = menu.items.items.length;
+      if(length > 0 && !originalLength > 0){
+        menu.remove(menu.items.items[length-1]);
+      }
+      length = menu.items.items.length;
+      if(length > 0){
+        for(i=0; i<length; i++){
+          originalMenu.insert(i,menu.items.items[i]);
+        }
+      }
     }
-    var originalMenu = button.menu;
-    originalMenu.add(menu);
     button.menu = originalMenu;
   }
 }
@@ -267,7 +281,10 @@ function setMenuItems(selections){
   }else{
     return
   }
-  if(dirac.menu){
+  if(!gPageDescription && !gPageDescription.userData && !gPageDescription.userData.username){
+    return
+  }
+  if(gPageDescription.userData.username != 'Anonymous' && dirac.menu){
     dirac.menu.add(
       {handler:function(){AJAXrequest('getJDL',id)},text:'JDL'},
       '-',
