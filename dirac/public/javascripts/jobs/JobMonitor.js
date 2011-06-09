@@ -1,12 +1,31 @@
 var dataSelect = ''; // Required to store the data for filters fields. Object.
 var dataMngr = ''; // Required to connect form and table. Object.
 var tableMngr = ''; // Required to handle configuration data for table. Object.
+var user = false; // user treated as anonymous
 // Main routine
 function initLoop(reponseSelect){
   dataSelect = reponseSelect;
   var record = initRecord();
   var store = initStore(record);
   Ext.onReady(function(){
+    if(gPageDescription && gPageDescription.userData && gPageDescription.userData.groupProperties && gPageDescription.userData.username){
+      if(gPageDescription.userData.username != 'Anonymous'){
+        user = true;
+        var length = gPageDescription.userData.groupProperties.length;
+        for(i=0; i<length; i++){
+          if(gPageDescription.userData.groupProperties[i] == 'ProductionManagement'){
+            user = 'prod';
+          }
+        }
+        for(i=0; i<length; i++){
+          if(gPageDescription.userData.groupProperties[i] == 'JobAdministrator'){
+            user = 'admin';
+          }
+        }
+      }
+    }else{
+      alert('Error: Cannot distinguish your username or group. You will be treated as anonymous');
+    }
     Ext.override(Ext.PagingToolbar, {
       onRender :  Ext.PagingToolbar.prototype.onRender.createSequence(function(ct, position){
         this.loading.removeClass('x-btn-icon');
@@ -87,7 +106,6 @@ function initSidebar(){
   select.insert(7,runid);
   select.insert(8,dateSelect);
   var sortGlobal = sortGlobalPanel(); // Initializing the global sort panel
-//  var stat = statPanel('Current Statistics','current','statGrid');
 /*
   id - String/Int, custom id
   global - Boolean, actually used to display refresh button
@@ -157,41 +175,33 @@ function initData(store){
       tooltip:'Click to delete selected job(s)'
     }
   ];
-  try{
-    if(gPageDescription.userData.group == 'diracAdmin'){
-      var resetButton = {
-        cls:"x-btn-text-icon",
-        handler:function(){action('job','reset')},
-        icon:gURLRoot+'/images/iface/resetButton.gif',
-        text:'Reset',
-        tooltip:'Click to reset selected job(s)'
-      };
-      var a = tbar.slice(), b = a.splice( 3 );
-      a[3] = resetButton;
-      tbar = a.concat( b );
-    }
-  }catch(e){}
-  try{
-    if(gPageDescription.userData.group != 'lhcb_prod'){
-      var rescheduleButton = {
-        cls:"x-btn-text-icon",
-        handler:function(){action('job','reschedule')},
-        icon:gURLRoot+'/images/iface/reschedule.gif',
-        text:'Reschedule',
-        tooltip:'Click to reschedule selected job(s)'
-      };
-      if(gPageDescription.userData.group == 'diracAdmin'){
-        var a = tbar.slice(), b = a.splice( 4 );
-        a[4] = rescheduleButton;
-      }else{
-        var a = tbar.slice(), b = a.splice( 3 );
-        a[3] = rescheduleButton;
-      }
-      tbar = a.concat( b );
-    }
-  }catch(e){}
+
+  if(user && user != 'prod'){
+    var rescheduleButton = {
+      cls:"x-btn-text-icon",
+      handler:function(){action('job','reschedule')},
+      icon:gURLRoot+'/images/iface/reschedule.gif',
+      text:'Reschedule',
+      tooltip:'Click to reschedule selected job(s)'
+    };
+    var a = tbar.slice(), b = a.splice( 3 );
+    a[3] = rescheduleButton;
+    tbar = a.concat( b );  
+  }
+  if(user && user == 'admin'){
+    var resetButton = {
+      cls:"x-btn-text-icon",
+      handler:function(){action('job','reset')},
+      icon:gURLRoot+'/images/iface/resetButton.gif',
+      text:'Reset',
+      tooltip:'Click to reset selected job(s)'
+    };
+    var a = tbar.slice(), b = a.splice( 3 );
+    a[3] = resetButton;
+    tbar = a.concat( b );
+  }
   store.setDefaultSort('JobID','DESC'); // Default sorting
-  if(gPageDescription.userData && gPageDescription.userData.username && gPageDescription.userData.username == 'Anonymous'){
+  if(!user){
  	  tbar.hidden = '';
  	}
   tableMngr = {'store':store,'columns':columns,'tbar':tbar};
@@ -245,15 +255,8 @@ function addMenu(){
       '-'
     ]
   });
-  if(gPageDescription && gPageDescription.userData && gPageDescription.userData.groupProperties){
-    var length = gPageDescription.userData.groupProperties.length;
-    for(i=0; i<length; i++){
-      if(gPageDescription.userData.groupProperties[i] == 'JobAdministrator'){
-        menu.items.items[0].disable();
-      }
-    }
-  }else{
-    menu.items.items[0].disable();  
+  if((!user)||(user && user == 'admin')){
+    menu.items.items[0].disable();
   }
   var button = Ext.getCmp('mainTopbarToolsButton');
   if(button){
@@ -281,10 +284,7 @@ function setMenuItems(selections){
   }else{
     return
   }
-  if(!gPageDescription && !gPageDescription.userData && !gPageDescription.userData.username){
-    return
-  }
-  if(gPageDescription.userData.username != 'Anonymous' && dirac.menu){
+  if(user && dirac.menu){
     dirac.menu.add(
       {handler:function(){AJAXrequest('getJDL',id)},text:'JDL'},
       '-',
@@ -310,9 +310,9 @@ function setMenuItems(selections){
         {handler:function(){getSandbox(id,'Output')},text:'Get output file(s)'}
       ]})}
     );
-    if(gPageDescription.userData.group != 'lhcb_prod'){
+    if(user && user != 'prod'){
       var reschedule = new Ext.menu.Item({handler:function(){action('job','reschedule',id)},icon:gURLRoot + '/images/iface/reschedule.gif',text:'Reschedule'});
-      if(gPageDescription.userData.group == 'diracAdmin'){
+      if(user == 'admin'){
         var reset = new Ext.menu.Item({handler:function(){action('job','reset',id)},icon:gURLRoot + '/images/iface/resetButton.gif',text:'Reset'});
         dirac.menu.items.items[11].menu.insert(0,reset);
         dirac.menu.items.items[11].menu.insert(1,reschedule);
