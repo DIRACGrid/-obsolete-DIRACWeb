@@ -143,11 +143,9 @@ function mainPanel(initValues){
     margins:'2 0 2 0',
     monitorResize:true,
     region:'center',
-    tbar:[current,'->',refresh,'-','Auto:',auto,timeStamp]
-//    tbar:[current,'->',add,'-',get,set,act,'-',refresh,'-','Auto:',auto,timeStamp,'-',column]
+    tbar:[current,'->',add,'-',get,set,act,'-',refresh,'-','Auto:',auto,timeStamp,'-',column]
   });
   panel.on('render',function(){
-    addMenu();
     if(initValues){
       redoLayout(initValues,'load');
     }
@@ -482,8 +480,8 @@ function saveLayout(name){
     });
   }
 }
-function loadProfile(name,user){
-  var title = 'Load Data';
+function loadLayout(name){
+  var title = 'Load Layout';
   try{
     var button = Ext.getCmp('getLayoutButton');
     var length = button.menu.items.getCount();
@@ -495,8 +493,7 @@ function loadProfile(name,user){
     alert('Error: ' + e.name + ': ' + e.message);
     return
   }
-  var msg = 'Are you sure that you want to load \'' + layout + '\' data?';
-  msg = msg + '<br>' + 'Caution. All unsaved data will be lost';
+  var msg = 'Load the layout: ' + name + ' ?';
   Ext.Msg.confirm(title,msg,function(btn){
     if(btn == 'yes'){
       changeIcon('getLayoutButton','load');
@@ -1122,57 +1119,5 @@ function AJAXerror(response){
   }catch(e){
     alert('Error: ' + e.name + ': ' + e.message);
     return
-  }
-}
-function addMenu(){
-/*
-  var get = new Ext.Toolbar.Button({
-    cls:"x-btn-text-icon",
-    iconCls:'Restore',
-    id:'getLayoutButton',
-    menu:createMenu('get',initValues),
-    tooltip:'Download your saved layout and apply it',
-    text:'Load'
-  });
-  var act = new Ext.Toolbar.Button({
-    cls:"x-btn-text-icon",
-    iconCls:'Act',
-    id:'actLayoutButton',
-    menu:[
-      {handler:function(){exportLayout();},icon:gURLRoot + '/images/iface/export.gif',text:'Export'},
-      {handler:function(){importLayout()},icon:gURLRoot + '/images/iface/import.gif',text:'Import'},
-      {handler:function(){deleteLayout()},icon:gURLRoot + '/images/iface/close.gif',text:'Delete'},
-      {handler:function(){deleteLayout('All')},icon:gURLRoot + '/images/iface/delete.gif',text:'Delete All'}
-    ],
-    tooltip:'',
-    text:'Actions'
-  });
-*/
-
-//  if(gPageDescription.userData.username != 'Anonymous'){
-//  }
-  var menu = new Ext.menu.Menu({
-    items:[
-      {handler:function(){addPanel()},icon:gURLRoot + '/images/iface/advanced.gif',text:'Add'},
-      {menu:{items:[
-        {checked:setChk('.98'),checkHandler:function(){setColumn('.98');},group:'column',text:'1 Column'},
-        {checked:setChk('.49'),checkHandler:function(){setColumn('.49');},group:'column',text:'2 Columns'},
-        {checked:setChk('.33'),checkHandler:function(){setColumn('.33');},group:'column',text:'3 Columns'},
-        {checked:setChk('.24'),checkHandler:function(){setColumn('.24');},group:'column',text:'4 Columns'},
-        {checked:setChk('.19'),checkHandler:function(){setColumn('.19');},group:'column',text:'5 Columns'}
-      ]},text:'Columns',icon:gURLRoot + '/images/iface/columns.gif'}
-      ,'-'
-    ]
-  });
-  var button = Ext.getCmp('mainTopbarToolsButton');
-  if(button){
-    var originalMenu = button.menu;
-    var length = menu.items.items.length;
-    for(i=0; i<length; i++){
-      originalMenu.insert(i,menu.items.items[i]);
-    }
-    var originalMenu = button.menu;
-    originalMenu.add(menu);
-    button.menu = originalMenu;
   }
 }
