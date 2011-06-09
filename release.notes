@@ -1,3 +1,7 @@
+[web2011060902]
+CHANGE: More rational menu schema for web portal
+BUGFIX: extractall is only available for newer python versions
+
 [web2011060901]
 
 CHANGE: Rewritten security model for JobMonitor based on user properties
