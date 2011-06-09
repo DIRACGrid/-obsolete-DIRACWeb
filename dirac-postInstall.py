@@ -9,6 +9,7 @@ import os
 import sys
 import urllib2
 import zipfile
+import shutil
 
 basedir = sys.path[0]
 dataDir = os.path.join( basedir, 'data', 'production' )
@@ -57,7 +58,22 @@ if not os.path.isfile( extFilePath ):
 
 print "Installing ExtJS 4"
 zFile = zipfile.ZipFile( extFilePath )
-zFile.extractall( publicDir )
+spinner = ".:|\-=-/|:"
+count = 0
+biggest = 40
+for entryName in zFile.namelist():
+  biggest = max( biggest, len( entryName ) )
+  print " %s %s\r" % ( spinner[count%len(spinner)], entryName.ljust( biggest, " " ) ),
+  count += 1
+  entryDir = os.path.join( publicDir, os.path.dirname( entryName ) )
+  if not os.path.isdir( entryDir ):
+    os.makedirs( entryDir )
+  entryPath = os.path.join( publicDir, entryName )
+  if os.path.isdir( entryPath ):
+    continue
+  localFile = open( entryPath, "w" )
+  localFile.write( zFile.read( entryName ) )
+  localFile.close()
 locationPath = os.path.join( publicDir, "ext4" )
 if os.path.isdir( locationPath ):
   shutil.rmtree( locationPath )
