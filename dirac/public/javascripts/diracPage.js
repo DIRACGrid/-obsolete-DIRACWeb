@@ -124,7 +124,7 @@ function initTopFrame( pageDescription ){
     navItems.push( menuEntry );
   }
   if(gPageDescription.userData && gPageDescription.userData.username && gPageDescription.userData.username != 'Anonymous'){
-    if((gPageDescription.pageName == 'JobMonitor')||(gPageDescription.pageName == 'Presenter')){
+    if(gPageDescription.pageName == 'JobMonitor'){
       var upmenu = new Ext.menu.Menu();
       var tools = new Ext.Toolbar.Button({
     	  text:'Tools',
