@@ -1,3 +1,7 @@
+[web2011062301]
+*CHANGE: Update Ext4 to 4.0.2a
+CHANGE: Add new type DataReprocessing to be available in RunStatus context menu
+
 [web2011060902]
 CHANGE: More rational menu schema for web portal
 BUGFIX: extractall is only available for newer python versions
