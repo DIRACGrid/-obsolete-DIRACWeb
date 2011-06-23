@@ -35,11 +35,12 @@ if not os.path.isdir( downDir ):
   os.makedirs( downDir )
 
 #Get Ext 4.0
-extFilePath = os.path.join( downDir, "ext-4.0.0-gpl.zip" )
+extVersion="4.0.2a"
+extFilePath = os.path.join( downDir, "ext-%s-gpl.zip" % extVersion )
 if not os.path.isfile( extFilePath ):
   print "Downloading ExtJS4..."
   try:
-    remFile = urllib2.urlopen( "http://extjs.cachefly.net/ext-4.0.0-gpl.zip", "rb" )
+    remFile = urllib2.urlopen( "http://extjs.cachefly.net/ext-%s-gpl.zip" % extVersion , "rb" )
   except Exception, excp:
     print "Cannot download extjs 4!", excp
     sys.exit( 1 )
@@ -77,6 +78,6 @@ for entryName in zFile.namelist():
 locationPath = os.path.join( publicDir, "ext4" )
 if os.path.isdir( locationPath ):
   shutil.rmtree( locationPath )
-os.rename( os.path.join( publicDir, "ext-4.0.0" ), locationPath )
+os.rename( os.path.join( publicDir, "ext-%s" % extVersion ), locationPath )
 
 
