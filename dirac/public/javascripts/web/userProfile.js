@@ -99,6 +99,11 @@ function importUPD(){
         user.enable();
       }catch(e){}
     });
+    storeUser.on('loadexception',function(){
+      try{
+        user.enable();
+      }catch(e){}
+    });    
     user.on('collapse',function(){
       var value = this.getRawValue();
       if(value != ''){
@@ -132,7 +137,7 @@ function importUPD(){
     },
     icon:gURLRoot+'/images/iface/refresh.gif',
     minWidth:'20',
-    tooltip:'Refresh data in the selection boxes',
+    tooltip:'Refresh data in the Select Owner menu',
     width:'100%'
   });
   var close = new Ext.Button({
@@ -153,18 +158,34 @@ function importUPD(){
   var setup = gPageDescription.selectedSetup;
   var group = gPageDescription.userData.group;
   var url = location.protocol + '//' + location.host + '/' + setup + '/' + group + '/jobs/Common/';
+//  var pageName = pageDescription['pageName'];
+  var pageName = 'Summary';
   var storeUser = new Ext.data.JsonStore({
-    baseParams:{'profile':'Summary'},
+    baseParams:{'page':pageName},
     fields:['name'],
     root:'result',
     url:url+'getLayoutUserList'
   });
+  storeUser.on('loadexception',function(store,resp){
+    if((resp)&&(resp.reader)&&(resp.reader.jsonData)&&(resp.reader.jsonData.error)){
+      alert('Error: ' + resp.reader.jsonData.error);
+    }else{
+      alert('Error loading data');
+    }
+  });
   var store = new Ext.data.JsonStore({
-    baseParams:{'user':'All','profile':'Summary'},
+    baseParams:{'user':'All','page':pageName},
     fields:['name','description','owner'],
     root:'result',
     url:url+'getLayoutAndOwner'
   });
+  store.on('loadexception',function(store,resp){
+    if((resp)&&(resp.reader)&&(resp.reader.jsonData)&&(resp.reader.jsonData.error)){
+      alert('Error: ' + resp.reader.jsonData.error);
+    }else{
+      alert('Error loading data');
+    }
+  });  
   store.load();
   var user = userSel(200,storeUser,store);
   var table = new Ext.grid.GridPanel({
@@ -259,6 +280,7 @@ function changeUPD(){
   var reset = new Ext.Button({
     cls:"x-btn-text-icon",
     handler:function(){
+//!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!    
       storeUser.load();
     },
     icon:gURLRoot+'/images/iface/refresh.gif',
