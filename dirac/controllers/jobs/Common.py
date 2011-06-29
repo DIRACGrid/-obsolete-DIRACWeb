@@ -4,7 +4,7 @@ from time import time, gmtime, strftime
 from dirac.lib.base import *
 from dirac.lib.diset import getRPCClient, getTransferClient
 from dirac.lib.credentials import authorizeAction
-from DIRAC import gConfig, gLogger
+from DIRAC import gLogger, gConfig, S_OK, S_ERROR
 from DIRAC.Core.Utilities.List import uniqueElements
 from DIRAC.AccountingSystem.Client.ReportsClient import ReportsClient
 from DIRAC.Core.Utilities.DictCache import DictCache
@@ -261,198 +261,220 @@ class CommonController(BaseController):
       return result["Message"]
 ################################################################################
   @jsonify
-  def getLayoutUserList(self):
-    if request.params.has_key("profile") and len(request.params["profile"]) > 0:
-      try:
-        profileName = str(request.params["profile"])
-      except:
-        gLogger.error("Can not convert profile name to string")
-        return {"success":"false","error":"Can not convert profile name to string"}
-    else:
-      gLogger.error("Failed to get profile name from the request")
-      return {"success":"false","error":"Failed to get profile name from the request"}
-    upc = UserProfileClient( profileName, getRPCClient )
-    result = upc.listAvailableVars()
-    if result["OK"]:
-      result = result["Value"]
-      userList = []
-      for i in result:
-        userList.append(i[0])
-      userList = uniqueElements(userList)
-      resultList = []
-      for j in userList:
-        resultList.append({'name':j})
-      total = len(resultList)
-      resultList.sort()
-      resultList.insert(0,{'name':'All'})
-      c.result = {"success":"true","result":resultList,"total":total}
-    else:
-      gLogger.error(result["Message"])
-      c.result = {"success":"false","error":result["Message"]}
-    return c.result
-################################################################################
-  def __preRequest(self):
-    if request.params.has_key("page") and len(request.params["page"]) > 0:
-      try:
-        profileName = str(request.params["page"]).lower()
-      except Exception, x:
-        gLogger.error(x)
-        profileName = False
-    else:
-      gLogger.error("Failed to get profile name from the request")
-      profileName = False
-    user = "All"
-    if request.params.has_key("user") and len(request.params["user"]) > 0:
-      try:
-        user = str(request.params["user"])
-      except Exception, x:
-        gLogger.error(x)
-        user = False
-    return profileName, user
-################################################################################
-  def __returnLayouts(self,kind):
-    profileName,user = self.__preRequest()
-    if not profileName:
-      return {"success":"false","error":"Failed to get layout name from the request"}
-    elif not user:
-      return {"success":"false","error":"Failed to get user name from the request"}
-    upc = UserProfileClient(profileName,getRPCClient)
-    result = upc.listAvailableVars()
-    if result["OK"]:
-      result = result["Value"]
-      gLogger.error(result)
-      resultList = []
-      if user == "All":
-        for i in result:
-          if i[3] != 'ZGVmYXVsdA==':
-            if kind == 'list':
-              resultList.append(i[3])
-            elif kind == 'with_owner':
-              resultList.append({'name':i[3],'owner':i[0]})
-        total = len(resultList)
-        c.result = {"success":"true","result":resultList,"total":total}
-      else:
-        for i in result:
-          gLogger.error("*** ",i)
-          if i[0] == user:
-            if i[3] != 'ZGVmYXVsdA==':
-              if kind == 'list':
-                resultList.append(i[3])
-              elif kind == 'with_owner':
-                resultList.append({'name':i[3],'owner':i[0]})
-        total = len(resultList)
-        c.result = {"success":"true","result":resultList,"total":total}
-    else:
-      gLogger.error(result["Message"])
-      c.result = {"success":"false","error":result["Message"]}
-    return c.result
-################################################################################
-  @jsonify
   def getLayoutAndOwner(self):
-    return self.__returnLayouts('with_owner')
+    result = self.__returnListLayouts('with_owners')
+    if not result["OK"]:
+      return {"success":"false","error":result["Message"]}
+    result = result["Value"]
+    return {"success":"true","result":result,"total":len(result)} 
 ################################################################################
   @jsonify
   def getLayoutList(self):
-    return self.__returnLayouts('list')
+    result = self.__returnListLayouts('no_owners')
+    if not result["OK"]:
+      return {"success":"false","error":result["Message"]}
+    result = result["Value"]
+    return {"success":"true","result":result,"total":len(result)}
+################################################################################
+  @jsonify
+  def getLayoutUserList(self):
+    result = self.__returnListLayouts('just_owners')
+    if not result["OK"]:
+      return {"success":"false","error":result["Message"]}
+    result = result["Value"]
+    return {"success":"true","result":result,"total":len(result)}
 ################################################################################
   @jsonify
   def action(self):
-    pagestart = time()
-    if request.params.has_key("getLayout") > 0:
-      name = str(request.params["getLayout"])
-      return self.__getLayout(name)
-    elif request.params.has_key("setLayout") and len(request.params["setLayout"]) > 0:
-      name = str(request.params["setLayout"])
-      return self.__setLayout(name)
-    elif request.params.has_key("delLayout") and len(request.params["delLayout"]) > 0:
-      name = str(request.params["delLayout"])
-      return self.__delLayout(name)
-    elif request.params.has_key("delAllLayouts") and len(request.params["delAllLayouts"]) > 0:
-      return self.__delAllLayouts()
-    else:
-      c.result = {"success":"false","error":"Action is not defined"}
-      return c.result
-#      if name != "":
-#        result["ZGVmYXVsdA=="] = name
-#        save = upc.storeVar("ZGVmYXVsdA==",name )
-#        if not save["OK"]:
-#          gLogger.error(save["Message"])
-#          return {"success":"false","error":save["Message"]}
-#      elif name == "" and not result.has_key("ZGVmYXVsdA=="):
-#        result["ZGVmYXVsdA=="] = ""
+    try:
+      if request.params.has_key("getLayout") > 0:
+        name = str(request.params["getLayout"])
+        result = self.__getLayout(name)
+      elif request.params.has_key("setLayout") and len(request.params["setLayout"]) > 0:
+        name = str(request.params["setLayout"])
+        result = self.__setLayout(name)
+      elif request.params.has_key("delLayout") and len(request.params["delLayout"]) > 0:
+        name = str(request.params["delLayout"])
+        result = self.__delLayout(name)
+      elif request.params.has_key("delAllLayouts") and len(request.params["delAllLayouts"]) > 0:
+        result = self.__delAllLayouts()
+      elif request.params.has_key("test"):
+        result = self.__testLayout()
+      else:
+        return {"success":"false","error":"Action is not defined"}
+      if not result["OK"]:
+        return {"success":"false","error":result["Message"]}
+      return {"success":"true","result":result["Value"]}
+    except Exception, x:
+      gLogger.error(x)
+      return {"success":"false","error":x}
 ################################################################################
   def __getLayout(self,name=None):
     if name and name == "ZGVmYXVsdA==":
-      return {"success":"false","error":"The name \"" + name + "\" is reserved, operation failed"}
-    profileName,user = self.__preRequest()
-    if not profileName:
-      return {"success":"false","error":"Failed to get profile name from the request"}
-    elif not user:
-      return {"success":"false","error":"Failed to get user name from the request"}
-    upc = UserProfileClient(profileName,getRPCClient)
-    self.__setDefaultLayout(upc,name)
-    if not user == "All":
-      result = upc.retrieveVarFromUser(user,g,name)
+      return S_ERROR("The name \"" + name + "\" is reserved, operation failed")
+    if not name:
+      return S_ERROR("Can not load none existing profile")
+#    result = self.__delLayout("ZGVmYXVsdA==")
+    result = self.__preRequest()
+    if not result["OK"]:
+      return S_ERROR(result["Message"])
     else:
-      if name:
-        result = upc.retrieveVar(name)
-      else:
-        result = upc.retrieveAllVars()
-    if result:
-      if result["OK"]:
-        result = result["Value"]
-        c.result = {"success":"true","result":result}
-      else:
-        if result['Message'].find("No data for") != -1:
-          c.result = {"success":"true","result":{}}
-        else:
-          c.result = {"success":"false","error":result["Message"]}
-    else:
-      c.result = {"success":"false","error":"Client failed to return any value"}
-    return c.result
+      upc = result["Value"]["UPC"]
+      user = result["Value"]["User"]
+      group = result["Value"]["Group"]
+    result = self.__checkDefaultLayout(upc)
+    if not result["OK"]:
+      owner = str(credentials.getUsername())
+      result = self.__setDefaultLayout(upc," ",owner)
+      if not result["OK"]:
+        return S_ERROR(result["Message"])
+    gLogger.info("retrieveVarFromUser(%s,%s,%s)" % (user,group,name))
+    result = upc.retrieveVarFromUser(user,group,name)
+    if not result["OK"]:
+      return S_ERROR(result["Message"])
+    layout = result["Value"]
+    result = self.__setDefaultLayout(upc,name,user)
+    if not result["OK"]:
+        gLogger.error(result["Message"])
+    return S_OK(layout)
 ################################################################################
-  def __delLayout(self,name):
-    profileName,user = self.__preRequest()
-    if not profileName:
-      return {"success":"false","error":"Failed to get layout name from the request"}
-    elif not user:
-      return {"success":"false","error":"Failed to get user name from the request"}
-    upc = UserProfileClient(profileName,getRPCClient)
-    result = upc.deleteVar(name)
-    if result["OK"]:
-      self.__setDefaultLayout(upc)
-      return self.__getLayout()
+  def __delLayout(self,name=None):
+    if not name:
+      return S_ERROR("Name of a layout to delete is absent in request")
+    result = self.__preRequest()
+    if not result["OK"]:
+      return S_ERROR(result["Message"])
     else:
-      gLogger.error(result["Message"])
-      return {"success":"false","error":result["Message"]}
+      upc = result["Value"]["UPC"]
+      user = result["Value"]["User"]
+      group = result["Value"]["Group"]
+    result = upc.deleteVar(name)
+    if not result["OK"]:
+      return S_ERROR(result["Message"])
+    result = self.__checkDefaultLayout(upc)
+    if not result["OK"]:
+      result = self.__setFirstDefaultLayout(upc,user,group)
+    result = name + ": deleted"      
+    return S_OK(result)
 ################################################################################
   def __delAllLayouts(self):
-    profileName,user = self.__preRequest()
-    if not profileName:
-      return {"success":"false","error":"Failed to get layout name from the request"}
-    elif not user:
-      return {"success":"false","error":"Failed to get user name from the request"}
-    upc = UserProfileClient(profileName,getRPCClient)
-    result = upc.listAvailableVars()
-    if result["OK"]:
-      result = result["Value"]
-      for i in result:
-        self.__delLayout(i[3])
-      self.__setDefaultLayout(upc)
-      return self.__getLayout()
+    result = self.__preRequest()
+    if not result["OK"]:
+      return S_ERROR(result["Message"])
     else:
-      gLogger.error(result["Message"])
-      return {"success":"false","error":result["Message"]}
+      upc = result["Value"]["UPC"]
+      user = result["Value"]["User"]
+      group = result["Value"]["Group"]
+    result = self.__returnListLayouts("with_owners")
+    if not result["OK"]:
+      return S_ERROR(result["Message"])
+    available = result["Value"]
+    report = []
+    for i in available:
+      if i["owner"] == user and i["group"] == group:
+        name = i[3]
+        gLogger.error("MATCH!")
+        result = upc.deleteVar(name)
+        if not result["OK"]:
+          result = name + ": " + str(result["Message"])
+        else:
+          result = name + ": deleted"
+        report.append(result)
+    if not len(report) > 0:
+      return S_ERROR("User: %s with group: %s has nothing to delete." % (user,group))
+    report.join("\n")
+    return S_OK(report)
 ################################################################################
-  def __setDefaultLayout(self,upc,name=None):
+  def __checkDefaultLayout(self,upc=None):
+    """
+    If the layout with name and owner stored in default value is exists
+    the function returns dict with name and owner
+    """
     if not upc:
-      return False
-    if name:
-      upc.storeVar("ZGVmYXVsdA==",name)
-    else:        
-      available = self.__returnLayouts('list')
-      gLogger.error(available)
-'''
+      return S_ERROR("Failed to get UserProfile client")
+    result = upc.retrieveVar("ZGVmYXVsdA==")
+    if not result["OK"]:
+      gLogger.error(result["Message"])
+      return S_ERROR(result["Message"])
+    value = result["Value"]
+    gLogger.error(value)
+    if value["name"] and value["owner"]:
+      name = value["name"]
+      owner = value["owner"] 
+    else:
+      gLogger.error("Either name or user is absent in default layout value")
+      return S_ERROR("Either name or user is absent in default layout value")    
+    result = self.__returnListLayouts('with_owners',"All")
+    if not result["OK"]:
+      return S_ERROR(result["Message"])
+    available = result["Value"]
+    exists = False
+    for i in available:
+      if i["name"] == name and i["owner"] == owner:
+        gLogger.error("MATCH!")
+        exists = True
+    if not exists:
+      return S_ERROR("Layout '%s' of user '%s' does not exists or you have no rights to read it" % (name,owner))
+    result = {"name":name,"owner":owner}        
+    return S_OK(result)
+################################################################################
+  def __setDefaultLayout(self,upc=None,name=None,user=None):
+    if not upc:
+      return S_ERROR("Failed to get UserProfile client")
+    if not name:
+      return S_ERROR("Profile name should be a valid string")
+    if not user:
+      return S_ERROR("Owner name should be a valid string")
+    value = {"name":name,"owner":user}
+    result = upc.storeVar("ZGVmYXVsdA==",value)
+    if not result["OK"]:
+      gLogger.error(result["Message"])
+      return S_ERROR(result["Message"])
+    return S_OK(value)
+################################################################################
+  def __setFirstDefaultLayout(self,upc=None,user=None,group=None):
+    """
+    Check for available profiles for given user and group. If there are some takes the last
+    profile name and set it as default
+    Return a dict of profile name and owner 
+    """
+    if not upc:
+      return S_ERROR("Failed to get UserProfile client")
+    if not group:
+      return S_ERROR("Owner group should be a valid string")
+    if not user:
+      return S_ERROR("Owner name should be a valid string")    
+    result = self.__returnListLayouts('with_owners',"All")
+    if not result["OK"]:
+      return S_ERROR(result["Message"])
+    available = result["Value"]
+    candidats = []
+    for i in available:
+      if i["group"] == group and i["owner"] == user:
+        gLogger.error("MATCH!")
+        candidats.append(i["name"])
+    if not len(candidats) > 0:
+      return S_ERROR("User '%s' with group '%s' have not layouts to be set as default" % (user,group))
+    name = candidats.pop()
+    result = self.__setDefaultLayout(upc,name,user)
+    if not result["OK"]:
+      gLogger.error(result["Message"])
+      return S_ERROR(result["Message"])
+    result = result["Value"]
+    return S_OK(value)
+################################################################################
+  def __testLayout(self):
+    result = self.__preRequest()
+    if not result["OK"]:
+      return {"success":"false","error":result["Message"]}
+    else:
+      upc = result["Value"]["UPC"]
+      user = result["Value"]["User"]
+    name = "Bookmarks"
+#    self.__setDefaultLayout(upc, name, user)
+    #gLogger.error(credentials.getUsername())
+    return self.__getLayout()
+  '''
 ################################################################################
   def __setBookmarks(self,name):
     if name == "columns" or name == "refresh" or name == "defaultLayout" or name == "layouts":
@@ -485,8 +507,7 @@ class CommonController(BaseController):
     else:
       return {"success":"false","error":result["Message"]}
 
-'''
-'''
+
   @jsonify
   def layoutUser(self):
     upProfileName = "Summary"
@@ -613,4 +634,89 @@ class CommonController(BaseController):
       return self.__getBookmarks()
     else:
       return {"success":"false","error":result["Message"]}
-'''
+  '''
+################################################################################
+  def __preRequest(self):
+    """
+    Parse the HTTP request and returns UP client and username, if provided
+    """
+    if request.params.has_key("page") and len(request.params["page"]) > 0:
+      try:
+        profileName = str(request.params["page"]).lower()
+      except Exception, x:
+        gLogger.error(x)
+        return S_ERROR(x)
+    else:
+      gLogger.error("Failed to get profile name from the request")
+      return S_ERROR("Failed to get profile name from the request")
+    upc = UserProfileClient( profileName, getRPCClient )
+    if not upc:
+      gLogger.error("Failed to initialise User Profile client")
+      return S_ERROR("Failed to initialise User Profile client, please ask your DIRAC administrator for details")
+    group = str(credentials.getSelectedGroup())
+    user = str(credentials.getUsername())
+    if request.params.has_key("user") and len(request.params["user"]) > 0:
+      try:
+        user = str(request.params["user"])
+      except Exception, x:
+        gLogger.error(x)
+        return S_ERROR(x)
+    return S_OK({"UPC":upc,"User":user,"Group":group})
+################################################################################
+  def __returnListLayouts(self,kind,user_override=None):
+    """
+    Returns a list of layouts depending of the kind variable
+      with_owners - List of layouts with owners included
+      no_owners - Just a list of layouts
+      just_owners - List of owners of layouts
+    """
+    if not kind in ["with_owners","no_owners","just_owners"]:
+      gLogger.error("Parameter \"%s\" is not supported" % str(kind))
+      return S_ERROR("Parameter \"%s\" is not supported" % str(kind))
+    result = self.__preRequest()
+    if not result["OK"]:
+      gLogger.error(result["Message"])
+      return S_ERROR(result["Message"])
+    else:
+      upc = result["Value"]["UPC"]
+      user = result["Value"]["User"]
+    if user_override:
+      user = user_override
+    result = upc.listAvailableVars()
+    if result["OK"]:
+      gLogger.error("--- USER",user)
+      gLogger.error("--- KIND",kind)
+      result = result["Value"]
+      gLogger.error(result)
+      resultList = []
+      if user == "All":
+        for i in result:
+          if i[3] != "ZGVmYXVsdA==":
+            if kind == "no_owners":
+              resultList.append(i[3])
+            elif kind == "with_owners":
+              resultList.append({"name":i[3],"owner":i[0]})
+            elif kind == "just_owners":
+              resultList.append(i[0])
+        if kind == "just_owners":
+          resultList = uniqueElements(resultList)
+          resultList.sort()
+          resultList.insert(0,"All")
+          resultList = [{"name":i} for i in resultList]
+      else:
+        for i in result:
+          if i[0] == user:
+            if i[3] != "ZGVmYXVsdA==":
+              if kind == "no_owners":
+                resultList.append(i[3])
+              elif kind == "with_owners":
+                resultList.append({"name":i[3],"owner":i[0]})
+        if kind == "just_owners":
+          resultList.append({"name":user})
+      if not len(resultList) > 0:
+        gLogger.error("There are no layouts corresponding your criteria")
+        return S_ERROR("There are no layouts corresponding your criteria")
+      return S_OK(resultList)
+    else:
+      gLogger.error(result["Message"])
+      return S_ERROR(result["Message"])
