@@ -292,7 +292,24 @@ class CommonController(BaseController):
         result = self.__getLayout(name)
       elif request.params.has_key("setLayout") and len(request.params["setLayout"]) > 0:
         name = str(request.params["setLayout"])
-        result = self.__setLayout(name)
+        value = None
+        if request.params.has_key("value") and len(request.params["value"]) > 0:
+          value = str(request.params["value"])
+        if request.params.has_key("access") and len(request.params["access"]) > 0:
+          access = str(request.params["access"])
+          result = self.__setLayout(name,value,access)
+        else:
+          result = self.__setLayout(name,value)
+      elif request.params.has_key("changeLayout") and len(request.params["changeLayout"]) > 0:
+        name = str(request.params["changeLayout"])
+        value = None
+        if request.params.has_key("value") and len(request.params["value"]) > 0:
+          value = str(request.params["value"])
+        if request.params.has_key("access") and len(request.params["access"]) > 0:
+          access = str(request.params["access"])
+          result = self.__changeLayout(name,value,access)
+        else:
+          result = self.__changeLayout(name,value)
       elif request.params.has_key("delLayout") and len(request.params["delLayout"]) > 0:
         name = str(request.params["delLayout"])
         result = self.__delLayout(name)
@@ -309,9 +326,82 @@ class CommonController(BaseController):
       gLogger.error(x)
       return {"success":"false","error":x}
 ################################################################################
+  def __changeLayout(self,name=None,value=None,access="USER"):
+    """
+    """
+    if name and name == "ZGVmYXVsdA==":
+      gLogger.error("The name '%s' is reserved, operation failed" % name)
+      return S_ERROR("The name '%s' is reserved, operation failed" % name)
+    if not name:
+      gLogger.error("Provide a name for changed profile")
+      return S_ERROR("Provide a name for changed profile")
+    if not value:
+      gLogger.error("Value to be save in profile '%s' is absent" % name)
+      return S_ERROR("Value to be save in profile '%s' is absent" % name)
+    if not access in ['USER','GROUP','ALL']:
+      gLogger.error("Provided access option '%s' is not valid" % access)
+      return S_ERROR("Provided access option '%s' is not valid" % access)
+    result = self.__preRequest()
+    if not result["OK"]:
+      gLogger.error(result["Message"])
+      return S_ERROR(result["Message"])
+    else:
+      upc = result["Value"]["UPC"]
+      user = result["Value"]["User"]
+      group = result["Value"]["Group"]
+    access = {"ReadAccess":access}
+    gLogger.info("storeVar(%s,%s,%s)" % (name,value,access))
+    result = upc.storeVar(name,value,access)
+    if not result["OK"]:
+      gLogger.error(result["Message"])
+      return S_ERROR(result["Message"])
+    layout = result["Value"]
+    return S_OK(layout)
+################################################################################
+  def __setLayout(self,name=None,value=None,access="USER"):
+    """
+    """
+    if name and name == "ZGVmYXVsdA==":
+      gLogger.error("The name '%s' is reserved, operation failed" % name)
+      return S_ERROR("The name '%s' is reserved, operation failed" % name)
+    if not name:
+      gLogger.error("Provide a name under which you want to save profile")
+      return S_ERROR("Provide a name under which you want to save profile")
+    if not value:
+      gLogger.error("Value to be save in profile '%s' is absent" % name)
+      return S_ERROR("Value to be save in profile '%s' is absent" % name)
+    if not access in ['USER','GROUP','ALL']:
+      gLogger.error("Provided access option '%s' is not valid" % access)
+      return S_ERROR("Provided access option '%s' is not valid" % access)
+    result = self.__preRequest()
+    if not result["OK"]:
+      gLogger.error(result["Message"])
+      return S_ERROR(result["Message"])
+    else:
+      upc = result["Value"]["UPC"]
+      user = result["Value"]["User"]
+      group = result["Value"]["Group"]
+    result = self.__checkDefaultLayout(upc)
+    if not result["OK"]:
+      owner = str(credentials.getUsername())
+      result = self.__setDefaultLayout(upc," ",owner)
+      if not result["OK"]:
+        gLogger.error(result["Message"])
+    access = {"ReadAccess":access}
+    gLogger.info("storeVar(%s,%s,%s)" % (name,value,access))
+    result = upc.storeVar(name,value,access)
+    if not result["OK"]:
+      gLogger.error(result["Message"])
+      return S_ERROR(result["Message"])
+    layout = result["Value"]
+    result = self.__setDefaultLayout(upc,name,user)
+    if not result["OK"]:
+        gLogger.error(result["Message"])
+    return S_OK(layout)
+################################################################################
   def __getLayout(self,name=None):
     if name and name == "ZGVmYXVsdA==":
-      return S_ERROR("The name \"" + name + "\" is reserved, operation failed")
+      return S_ERROR("The name '%s' is reserved, operation failed" % name)
     if not name:
       return S_ERROR("Can not load none existing profile")
 #    result = self.__delLayout("ZGVmYXVsdA==")
@@ -327,7 +417,7 @@ class CommonController(BaseController):
       owner = str(credentials.getUsername())
       result = self.__setDefaultLayout(upc," ",owner)
       if not result["OK"]:
-        return S_ERROR(result["Message"])
+        gLogger.error(result["Message"])
     gLogger.info("retrieveVarFromUser(%s,%s,%s)" % (user,group,name))
     result = upc.retrieveVarFromUser(user,group,name)
     if not result["OK"]:
@@ -419,6 +509,8 @@ class CommonController(BaseController):
     return S_OK(result)
 ################################################################################
   def __setDefaultLayout(self,upc=None,name=None,user=None):
+    """
+    """
     if not upc:
       return S_ERROR("Failed to get UserProfile client")
     if not name:
@@ -530,26 +622,6 @@ class CommonController(BaseController):
       c.result = {"success":"false","error":result["Message"]}
     return c.result
 ################################################################################
-  @jsonify
-  def layoutAvailable(self):
-    upProfileName = "Summary"
-    upc = UserProfileClient( "Summary", getRPCClient )
-    result = upc.listAvailableVars()
-    gLogger.info("\033[0;31m listAvailableVars: \033[0m",result)
-    if result["OK"]:
-      result = result["Value"]
-      resultList = []
-      for i in result:
-        resultList.append({'name':i[3],'owner':i[0]})
-    return {"success":"true","result":resultList,"total":"55"}
-################################################################################
-  def __getSelections(self):
-    if request.params.has_key("layout") > 0:
-      name = str(request.params["layout"])
-      return self.__getBookmarks(name)
-    else:
-      return False
-###############################################################################
   @jsonify
   def action(self):
     pagestart = time()
