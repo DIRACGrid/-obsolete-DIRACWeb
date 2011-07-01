@@ -244,13 +244,8 @@ function AJAXsuccess(value,id,response){
 }
 function jump(id){
   var url = document.location.protocol + '//' + document.location.hostname + gURLRoot + '/' + gPageDescription.selectedSetup;
-  url = url + '/' + gPageDescription.userData.group + '/jobs/JobMonitor/display';
-  var post_req = '<form id="redirform" action="' + url + '" method="POST" >';
-  post_req = post_req + '<input type="hidden" name="id" value="' + id + '">';
-  post_req = post_req + '</form>';
-  document.body.innerHTML = document.body.innerHTML + post_req;
-  var form = document.getElementById('redirform');
-  form.submit();
+  url = url + '/' + gPageDescription.userData.group + '/jobs/JobMonitor/display?id=' + id;
+  window.open(url)
 }
 function afterDataLoad(){
   var msg = [];
