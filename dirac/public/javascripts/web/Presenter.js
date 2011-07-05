@@ -405,7 +405,6 @@ function syncLayout(){
   });
 }
 function saveAs(){
-  var params = gatherInfo();
   var title = 'Save Layout';
   var welcome = Ext.getCmp('welcomeMessage');
   if(welcome){
@@ -415,7 +414,14 @@ function saveAs(){
     Ext.Msg.prompt(title,msg,function(btn,text){
       if(btn == 'ok'){
         if(text){
-          params['setBookmarks'] = text;
+          var params = {};
+          params['setLayout'] = text;
+          params['page'] = gPageDescription['pageName'];
+          var tmpParams = gatherInfo();
+          for( i in tmpParams){
+            var tmpName = 'value[' + i +']';
+            params[tmpName] = tmpParams[i];
+          }
           changeIcon('setLayoutButton','load');
           Ext.Ajax.request({
             failure:function(response){
