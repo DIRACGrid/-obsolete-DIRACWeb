@@ -292,24 +292,10 @@ class CommonController(BaseController):
         result = self.__getLayout(name)
       elif request.params.has_key("setLayout") and len(request.params["setLayout"]) > 0:
         name = str(request.params["setLayout"])
-        value = None
-        if request.params.has_key("value") and len(request.params["value"]) > 0:
-          value = str(request.params["value"])
-        if request.params.has_key("access") and len(request.params["access"]) > 0:
-          access = str(request.params["access"])
-          result = self.__setLayout(name,value,access)
-        else:
-          result = self.__setLayout(name,value)
+        result = self.__setLayout(name)
       elif request.params.has_key("changeLayout") and len(request.params["changeLayout"]) > 0:
         name = str(request.params["changeLayout"])
-        value = None
-        if request.params.has_key("value") and len(request.params["value"]) > 0:
-          value = str(request.params["value"])
-        if request.params.has_key("access") and len(request.params["access"]) > 0:
-          access = str(request.params["access"])
-          result = self.__changeLayout(name,value,access)
-        else:
-          result = self.__changeLayout(name,value)
+        result = self.__changeLayout(name)
       elif request.params.has_key("delLayout") and len(request.params["delLayout"]) > 0:
         name = str(request.params["delLayout"])
         result = self.__delLayout(name)
@@ -368,8 +354,12 @@ class CommonController(BaseController):
       gLogger.error("Provide a name under which you want to save profile")
       return S_ERROR("Provide a name under which you want to save profile")
     if not value:
-      gLogger.error("Value to be save in profile '%s' is absent" % name)
-      return S_ERROR("Value to be save in profile '%s' is absent" % name)
+      result = self.__getValueFromRequest()
+      if not result["OK"]:
+        gLogger.error("Value to be save in profile '%s' is absent" % name)
+        return S_ERROR("Value to be save in profile '%s' is absent" % name)
+      else:
+        value = result["Value"]
     if not access in ['USER','GROUP','ALL']:
       gLogger.error("Provided access option '%s' is not valid" % access)
       return S_ERROR("Provided access option '%s' is not valid" % access)
@@ -382,12 +372,15 @@ class CommonController(BaseController):
       user = result["Value"]["User"]
       group = result["Value"]["Group"]
     result = self.__checkDefaultLayout(upc)
+    gLogger.error("!")
     if not result["OK"]:
       owner = str(credentials.getUsername())
-      result = self.__setDefaultLayout(upc," ",owner)
+      result = self.__setDefaultLayout(upc," ",user)
       if not result["OK"]:
         gLogger.error(result["Message"])
+    gLogger.error("!")
     access = {"ReadAccess":access}
+    gLogger.error("!")
     gLogger.info("storeVar(%s,%s,%s)" % (name,value,access))
     result = upc.storeVar(name,value,access)
     if not result["OK"]:
@@ -487,13 +480,17 @@ class CommonController(BaseController):
       gLogger.error(result["Message"])
       return S_ERROR(result["Message"])
     value = result["Value"]
-    gLogger.error(value)
-    if value["name"] and value["owner"]:
+#    gLogger.error("Default layout name: %s" % value)
+    if value.has_key("name"):
       name = value["name"]
-      owner = value["owner"] 
     else:
-      gLogger.error("Either name or user is absent in default layout value")
-      return S_ERROR("Either name or user is absent in default layout value")    
+      gLogger.error("name is absent in default layout value")
+      return S_ERROR("name is absent in default layout value")
+    if value.has_key("owner"):
+      owner = value["owner"]
+    else:
+      gLogger.error("owner is absent in default layout value")
+      return S_ERROR("owner is absent in default layout value")    
     result = self.__returnListLayouts('with_owners',"All")
     if not result["OK"]:
       return S_ERROR(result["Message"])
@@ -553,6 +550,18 @@ class CommonController(BaseController):
       gLogger.error(result["Message"])
       return S_ERROR(result["Message"])
     result = result["Value"]
+    return S_OK(value)
+################################################################################
+  def __getValueFromRequest(self):
+    value = dict()
+    for i in request.params:
+      if len(request.params[i]) > 0:
+        if not i.find('value',0,5) == -1:
+          name = i[5:len(i)-1] # remove unwanted [] characters
+          name = name.replace('[','')
+          value[name] = request.params[i]
+    if not len(value) > 0:
+      return S_ERROR("The value keywords are absent in the request") 
     return S_OK(value)
 ################################################################################
   def __testLayout(self):
@@ -710,7 +719,7 @@ class CommonController(BaseController):
 ################################################################################
   def __preRequest(self):
     """
-    Parse the HTTP request and returns UP client and username, if provided
+    Parse the HTTP request and returns UP client and username.
     """
     if request.params.has_key("page") and len(request.params["page"]) > 0:
       try:
