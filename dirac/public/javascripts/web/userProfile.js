@@ -52,11 +52,23 @@ function addProfileMenuItems(){
         if(items){
           for(var i = 0; i < items.length; i++){
           	var j = items[i];
-          	resultL.add({text:j,handler:function(){testMenuHandler('load',j)}});
-          	resultS.add({text:j,handler:function(){testMenuHandler('save',j)}});
+          	var loadItem = {
+          	  text:j,
+          	  handler:function(item){
+          	    testMenuHandler('load',item['text'])
+          	  }
+          	};
+          	var saveItem = {
+          	  text:j,
+          	  handler:function(item){
+          	    testMenuHandler('save',item['text'])
+          	  }
+          	};
+          	resultL.add(loadItem);
+          	resultS.add(saveItem);
           }
         }
-        var lll = resultL.items.getCount();
+//        var lll = resultL.items.getCount();
         if(resultL.items.getCount() > 0){
           menu.items.items[0].menu = resultL;
         }else{
@@ -67,6 +79,7 @@ function addProfileMenuItems(){
   	},
 	  url:url
   });
+ 	return;
 }
 function importUPD(){
   var formID = Ext.id(); // from panel
