@@ -43,7 +43,7 @@ function submitJobNew(){
         return false
       },
       method:'POST',
-      params:{'getProxyStatus':86460},
+      params:{'getProxyStatus':true},
       success:function(response){
         var jsonData = Ext.util.JSON.decode(response.responseText);
         if(jsonData['success'] == 'false'){
