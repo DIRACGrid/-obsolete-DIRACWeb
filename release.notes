@@ -1,3 +1,6 @@
+[web2011070501]
+CHANGE: In __getProxyStatus() function, proxy lifetime is taken from CS if not provided
+
 [web2011070101]
 CHANGE: PilotMonitor's jump() function has been rewritten to follow the same style as ProductionMonitor. Thank you, Stephane for pointing this out
 
