@@ -21,18 +21,6 @@ globalSort = [["JobID","DESC"]]
 class JobmonitorController(BaseController):
   __imgCache = DictCache()
 ################################################################################
-  @jsonify
-  def layoutUser(self):
-    return {"success":"true","result":[{"name":"User1"},{"name":"User2"},{"name":"User3"},{"name":"User4"},{"name":"User5"},{"name":"User6"}],"total":"5"}
-################################################################################
-  @jsonify
-  def layoutGroup(self):
-    return {"success":"true","result":[{"name":"Grp1"},{"name":"Grp2"},{"name":"Grp3"},{"name":"Grp4"},{"name":"Grp5"},{"name":"Grp6"}],"total":"5"}
-################################################################################
-  @jsonify
-  def layoutAvailable(self):
-    return {"success":"true","result":[{"name":"Test1","owner":"msapunov","description":"Testing message"},{"name":"Test2","owner":"msapunov","description":"Testing message"}],"total":"5"}
-################################################################################
   def display(self):
     pagestart = time()
     group = credentials.getSelectedGroup()
@@ -451,10 +439,7 @@ class JobmonitorController(BaseController):
     elif request.params.has_key("canRunJobs") and request.params["canRunJobs"]:
       return self.__canRunJobs()
     elif request.params.has_key("getProxyStatus") and len(request.params["getProxyStatus"]) > 0:
-      if request.params["getProxyStatus"].isdigit():
-        return self.__getProxyStatus(int(request.params["getProxyStatus"]))
-      else:
-        return {"success":"false","error":"getProxyStatus value is not a number"}
+      return self.__getProxyStatus()
     else:
       c.result = {"success":"false","error":"The request parameters can not be recognized or they are not defined"}
       return c.result
@@ -520,13 +505,20 @@ class JobmonitorController(BaseController):
     else:
       return False
 ################################################################################
-  def __getProxyStatus( self, validSeconds = 0 ):
+  def __getProxyStatus(self,secondsOverride = None):
+      
     from DIRAC.FrameworkSystem.Client.ProxyManagerClient import ProxyManagerClient
+    
     proxyManager = ProxyManagerClient()
     group = str(credentials.getSelectedGroup())
     if group == "visitor":
-      return {"success":"false","error":"User not registered"}
+      return {"success":"false","error":"User is anonymous or is not registered in the system"}
     userDN = str(credentials.getUserDN())
+    if secondsOverride and secondsOverride.isdigit():
+      validSeconds = secondsOverride
+    else:
+      defaultSeconds = 24 * 3600 + 60 # 24H + 1min
+      validSeconds = gConfig.getValue("/Registry/DefaultProxyLifeTime",defaultSeconds)
     gLogger.info("\033[0;31m userHasProxy(%s, %s, %s) \033[0m" % (userDN,group,validSeconds))
     result = proxyManager.userHasProxy(userDN,group,validSeconds)
     if result["OK"]:
