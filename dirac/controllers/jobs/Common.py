@@ -1,20 +1,14 @@
-import logging, datetime, tempfile
-from time import time, gmtime, strftime
+import dirac.lib.credentials as credentials
+
+from time import time
 
 from dirac.lib.base import *
-from dirac.lib.diset import getRPCClient, getTransferClient
-from dirac.lib.credentials import authorizeAction
-from DIRAC import gLogger, gConfig, S_OK, S_ERROR
+from dirac.lib.diset import getRPCClient
+from dirac.lib.credentials import getUsername, getSelectedGroup
+from DIRAC import gLogger, S_OK, S_ERROR
 from DIRAC.Core.Utilities.List import uniqueElements
-from DIRAC.AccountingSystem.Client.ReportsClient import ReportsClient
-from DIRAC.Core.Utilities.DictCache import DictCache
-import dirac.lib.credentials as credentials
-from DIRAC.Interfaces.API.Dirac import Dirac
 from DIRAC.FrameworkSystem.Client.PlottingClient  import PlottingClient
 from DIRAC.FrameworkSystem.Client.UserProfileClient import UserProfileClient
-
-
-log = logging.getLogger(__name__)
 
 class CommonController(BaseController):
 ################################################################################
@@ -315,6 +309,7 @@ class CommonController(BaseController):
   def __changeLayout(self,name=None,value=None,access="USER"):
     """
     """
+    gLogger.info("* Start changeLayout()")
     if name and name == "ZGVmYXVsdA==":
       gLogger.error("The name '%s' is reserved, operation failed" % name)
       return S_ERROR("The name '%s' is reserved, operation failed" % name)
@@ -342,11 +337,13 @@ class CommonController(BaseController):
       gLogger.error(result["Message"])
       return S_ERROR(result["Message"])
     layout = result["Value"]
+    gLogger.info("+ End of changeLayout(): %s" % layout)
     return S_OK(layout)
 ################################################################################
   def __setLayout(self,name=None,value=None,access="USER"):
     """
     """
+    gLogger.info("* Start setLayout()")
     if name and name == "ZGVmYXVsdA==":
       gLogger.error("The name '%s' is reserved, operation failed" % name)
       return S_ERROR("The name '%s' is reserved, operation failed" % name)
@@ -372,27 +369,26 @@ class CommonController(BaseController):
       user = result["Value"]["User"]
       group = result["Value"]["Group"]
     result = self.__checkDefaultLayout(upc)
-    gLogger.error("!")
     if not result["OK"]:
-      owner = str(credentials.getUsername())
-      result = self.__setDefaultLayout(upc," ",user)
+      owner = str(getUsername())
+      result = self.__setDefaultLayout(upc," ",user,group)
       if not result["OK"]:
         gLogger.error(result["Message"])
-    gLogger.error("!")
     access = {"ReadAccess":access}
-    gLogger.error("!")
     gLogger.info("storeVar(%s,%s,%s)" % (name,value,access))
     result = upc.storeVar(name,value,access)
     if not result["OK"]:
       gLogger.error(result["Message"])
       return S_ERROR(result["Message"])
     layout = result["Value"]
-    result = self.__setDefaultLayout(upc,name,user)
+    result = self.__setDefaultLayout(upc,name,user,group)
     if not result["OK"]:
         gLogger.error(result["Message"])
+    gLogger.info("+ End of setLayout(): %s" % layout)
     return S_OK(layout)
 ################################################################################
   def __getLayout(self,name=None):
+    gLogger.info("* Start getLayout()")
     if name and name == "ZGVmYXVsdA==":
       return S_ERROR("The name '%s' is reserved, operation failed" % name)
     if not name:
@@ -407,8 +403,8 @@ class CommonController(BaseController):
       group = result["Value"]["Group"]
     result = self.__checkDefaultLayout(upc)
     if not result["OK"]:
-      owner = str(credentials.getUsername())
-      result = self.__setDefaultLayout(upc," ",owner)
+      owner = str(getUsername())
+      result = self.__setDefaultLayout(upc," ",owner,group)
       if not result["OK"]:
         gLogger.error(result["Message"])
     gLogger.info("retrieveVarFromUser(%s,%s,%s)" % (user,group,name))
@@ -416,12 +412,14 @@ class CommonController(BaseController):
     if not result["OK"]:
       return S_ERROR(result["Message"])
     layout = result["Value"]
-    result = self.__setDefaultLayout(upc,name,user)
+    result = self.__setDefaultLayout(upc,name,user,group)
     if not result["OK"]:
         gLogger.error(result["Message"])
+    gLogger.info("+ End of getLayout(): %s" % layout)
     return S_OK(layout)
 ################################################################################
   def __delLayout(self,name=None):
+    gLogger.info("* Start delLayout()")
     if not name:
       return S_ERROR("Name of a layout to delete is absent in request")
     result = self.__preRequest()
@@ -437,10 +435,12 @@ class CommonController(BaseController):
     result = self.__checkDefaultLayout(upc)
     if not result["OK"]:
       result = self.__setFirstDefaultLayout(upc,user,group)
-    result = name + ": deleted"      
+    result = name + ": deleted"
+    gLogger.info("+ End of delLayout(): %s" % result)      
     return S_OK(result)
 ################################################################################
   def __delAllLayouts(self):
+    gLogger.info("* Start delAllLayouts()")
     result = self.__preRequest()
     if not result["OK"]:
       return S_ERROR(result["Message"])
@@ -466,6 +466,7 @@ class CommonController(BaseController):
     if not len(report) > 0:
       return S_ERROR("User: %s with group: %s has nothing to delete." % (user,group))
     report.join("\n")
+    gLogger.info("+ End of delAllLayouts(): %s" % report)
     return S_OK(report)
 ################################################################################
   def __checkDefaultLayout(self,upc=None):
@@ -473,6 +474,7 @@ class CommonController(BaseController):
     If the layout with name and owner stored in default value is exists
     the function returns dict with name and owner
     """
+    gLogger.info("* Start checkDefaultLayout()")
     if not upc:
       return S_ERROR("Failed to get UserProfile client")
     result = upc.retrieveVar("ZGVmYXVsdA==")
@@ -480,45 +482,53 @@ class CommonController(BaseController):
       gLogger.error(result["Message"])
       return S_ERROR(result["Message"])
     value = result["Value"]
-#    gLogger.error("Default layout name: %s" % value)
-    if value.has_key("name"):
+    if type(value) is dict and value.has_key("name") and value.has_key("owner") and value.has_key("group"):
       name = value["name"]
-    else:
-      gLogger.error("name is absent in default layout value")
-      return S_ERROR("name is absent in default layout value")
-    if value.has_key("owner"):
       owner = value["owner"]
-    else:
-      gLogger.error("owner is absent in default layout value")
-      return S_ERROR("owner is absent in default layout value")    
+      group = value["group"]
+    else: 
+      try:
+        name = str(value)
+        owner = str(getUsername())
+        group = str(getSelectedGroup())
+      except Exception, x:
+        gLogger.error(x)
+        return S_ERROR(x)          
     result = self.__returnListLayouts('with_owners',"All")
     if not result["OK"]:
       return S_ERROR(result["Message"])
     available = result["Value"]
     exists = False
     for i in available:
-      if i["name"] == name and i["owner"] == owner:
-        gLogger.error("MATCH!")
+      if i["name"] == name and i["owner"] == owner and i["group"] == group:
+        gLogger.info("MATCH!")
         exists = True
     if not exists:
-      return S_ERROR("Layout '%s' of user '%s' does not exists or you have no rights to read it" % (name,owner))
-    result = {"name":name,"owner":owner}        
+      message = "Layout \"%s\" of user \"%s\" with group \"%s\" does not exists or you have no rights to read it" % (name,owner,group)
+      gLogger.error(message)
+      return S_ERROR(message)
+    result = {"name":name,"owner":owner,"group":group}
+    gLogger.info("+ End of checkDefaultLayout(): %s" % result)
     return S_OK(result)
 ################################################################################
-  def __setDefaultLayout(self,upc=None,name=None,user=None):
+  def __setDefaultLayout(self,upc=None,name=None,user=None,group=None):
     """
     """
+    gLogger.info("* Start setDefaultLayout()")
     if not upc:
       return S_ERROR("Failed to get UserProfile client")
     if not name:
       return S_ERROR("Profile name should be a valid string")
     if not user:
       return S_ERROR("Owner name should be a valid string")
-    value = {"name":name,"owner":user}
+    if not group:
+      return S_ERROR("Group name should be a valid string")
+    value = {"name":name,"owner":user,"group":group}
     result = upc.storeVar("ZGVmYXVsdA==",value)
     if not result["OK"]:
       gLogger.error(result["Message"])
       return S_ERROR(result["Message"])
+    gLogger.info("+ End of setDefaultLayout(): %s" % value)
     return S_OK(value)
 ################################################################################
   def __setFirstDefaultLayout(self,upc=None,user=None,group=None):
@@ -527,6 +537,7 @@ class CommonController(BaseController):
     profile name and set it as default
     Return a dict of profile name and owner 
     """
+    gLogger.info("* Start setFirstDefaultLayout()")
     if not upc:
       return S_ERROR("Failed to get UserProfile client")
     if not group:
@@ -540,41 +551,32 @@ class CommonController(BaseController):
     candidats = []
     for i in available:
       if i["group"] == group and i["owner"] == user:
-        gLogger.error("MATCH!")
+        gLogger.info("MATCH!")
         candidats.append(i["name"])
     if not len(candidats) > 0:
-      return S_ERROR("User '%s' with group '%s' have not layouts to be set as default" % (user,group))
+      return S_ERROR("User \"%s\" with group \"%s\" have not layouts to be set as default" % (user,group))
     name = candidats.pop()
-    result = self.__setDefaultLayout(upc,name,user)
+    result = self.__setDefaultLayout(upc,name,user,group)
     if not result["OK"]:
       gLogger.error(result["Message"])
       return S_ERROR(result["Message"])
-    result = result["Value"]
+    value = result["Value"]
+    gLogger.info("+ End of setFirstDefaultLayout(): %s" % value)
     return S_OK(value)
 ################################################################################
   def __getValueFromRequest(self):
+    gLogger.info("* Start getValueFromRequest()")
     value = dict()
     for i in request.params:
       if len(request.params[i]) > 0:
-        if not i.find('value',0,5) == -1:
+        if not i.find("value",0,5) == -1:
           name = i[5:len(i)-1] # remove unwanted [] characters
-          name = name.replace('[','')
+          name = name.replace("[","")
           value[name] = request.params[i]
     if not len(value) > 0:
-      return S_ERROR("The value keywords are absent in the request") 
+      return S_ERROR("The value keywords are absent in the request")
+    gLogger.info("+ End of getValueFromRequest(): %s" % value) 
     return S_OK(value)
-################################################################################
-  def __testLayout(self):
-    result = self.__preRequest()
-    if not result["OK"]:
-      return {"success":"false","error":result["Message"]}
-    else:
-      upc = result["Value"]["UPC"]
-      user = result["Value"]["User"]
-    name = "Bookmarks"
-#    self.__setDefaultLayout(upc, name, user)
-    #gLogger.error(credentials.getUsername())
-    return self.__getLayout()
   '''
 ################################################################################
   def __setBookmarks(self,name):
@@ -630,24 +632,6 @@ class CommonController(BaseController):
     else:
       c.result = {"success":"false","error":result["Message"]}
     return c.result
-################################################################################
-  @jsonify
-  def action(self):
-    pagestart = time()
-    if request.params.has_key("getBookmarks") > 0:
-      name = str(request.params["getBookmarks"])
-      return self.__getBookmarks(name)
-    elif request.params.has_key("setBookmarks") and len(request.params["setBookmarks"]) > 0:
-      name = str(request.params["setBookmarks"])
-      return self.__setBookmarks(name)
-    elif request.params.has_key("delBookmarks") and len(request.params["delBookmarks"]) > 0:
-      name = str(request.params["delBookmarks"])
-      return self.__delBookmarks(name)
-    elif request.params.has_key("delAllBookmarks") and len(request.params["delAllBookmarks"]) > 0:
-      return self.__delAllBookmarks()
-    else:
-      c.result = {"success":"false","error":"Action is not defined"}
-      return c.result
 ################################################################################
 
 # width - value
@@ -734,8 +718,8 @@ class CommonController(BaseController):
     if not upc:
       gLogger.error("Failed to initialise User Profile client")
       return S_ERROR("Failed to initialise User Profile client, please ask your DIRAC administrator for details")
-    group = str(credentials.getSelectedGroup())
-    user = str(credentials.getUsername())
+    group = str(getSelectedGroup())
+    user = str(getUsername())
     if request.params.has_key("user") and len(request.params["user"]) > 0:
       try:
         user = str(request.params["user"])
@@ -751,6 +735,7 @@ class CommonController(BaseController):
       no_owners - Just a list of layouts
       just_owners - List of owners of layouts
     """
+    gLogger.info("* Start returnListLayouts()")
     if not kind in ["with_owners","no_owners","just_owners"]:
       gLogger.error("Parameter \"%s\" is not supported" % str(kind))
       return S_ERROR("Parameter \"%s\" is not supported" % str(kind))
@@ -765,38 +750,46 @@ class CommonController(BaseController):
       user = user_override
     result = upc.listAvailableVars()
     if result["OK"]:
-      gLogger.error("--- USER",user)
-      gLogger.error("--- KIND",kind)
+      gLogger.info("returnListLayouts() parameter user: %s" % user)
+      gLogger.info("returnListLayouts() parameter kind: %s" % kind)
       result = result["Value"]
-      gLogger.error(result)
       resultList = []
       if user == "All":
-        for i in result:
-          if i[3] != "ZGVmYXVsdA==":
-            if kind == "no_owners":
-              resultList.append(i[3])
-            elif kind == "with_owners":
-              resultList.append({"name":i[3],"owner":i[0]})
-            elif kind == "just_owners":
-              resultList.append(i[0])
+        try:
+          for i in result:
+            if i[3] != "ZGVmYXVsdA==":
+              if kind == "no_owners":
+                resultList.append(i[3])
+              elif kind == "with_owners":
+                resultList.append({"name":i[3],"owner":i[0],"group":i[1],"vo":i[2]})
+              elif kind == "just_owners":
+                resultList.append(i[0])
+        except Exception, x:
+          gLogger.error(x)
+          return S_ERROR(x)
         if kind == "just_owners":
           resultList = uniqueElements(resultList)
           resultList.sort()
           resultList.insert(0,"All")
           resultList = [{"name":i} for i in resultList]
       else:
-        for i in result:
-          if i[0] == user:
-            if i[3] != "ZGVmYXVsdA==":
-              if kind == "no_owners":
-                resultList.append(i[3])
-              elif kind == "with_owners":
-                resultList.append({"name":i[3],"owner":i[0]})
+        try:
+          for i in result:
+            if i[0] == user:
+              if i[3] != "ZGVmYXVsdA==":
+                if kind == "no_owners":
+                  resultList.append(i[3])
+                elif kind == "with_owners":
+                  resultList.append({"name":i[3],"owner":i[0],"group":i[1],"vo":i[2]})
+        except Exception, x:
+          gLogger.error(x)
+          return S_ERROR(x)
         if kind == "just_owners":
           resultList.append({"name":user})
       if not len(resultList) > 0:
         gLogger.error("There are no layouts corresponding your criteria")
         return S_ERROR("There are no layouts corresponding your criteria")
+      gLogger.info("+ End of returnListLayouts(): %s" % resultList)
       return S_OK(resultList)
     else:
       gLogger.error(result["Message"])

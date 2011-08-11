@@ -505,26 +505,30 @@ function loadProfile(name){
     alert('Error: ' + e.name + ': ' + e.message);
     return
   }
-  var msg = 'Are you sure that you want to load \'' + layout + '\' data?';
+  var msg = 'Are you sure that you want to load \'' + name + '\' data?';
   msg = msg + '<br>' + 'Caution. All unsaved data will be lost';
   Ext.Msg.confirm(title,msg,function(btn){
     if(btn == 'yes'){
-      changeIcon('getLayoutButton','load');
+      var params = {};
+      params['getLayout'] = name;
+      params['page'] = gPageDescription['pageName'];
+//      changeIcon('getLayoutButton','load');
       Ext.Ajax.request({
         failure:function(response){
-          changeIcon('getLayoutButton','normal');
+//          changeIcon('getLayoutButton','normal');
           AJAXerror(response.responseText);
           return false
         },
         method:'POST',
-        params:{'getBookmarks':name},
+        params:params,
         success:function(response){
-          changeIcon('getLayoutButton','normal');
+//          changeIcon('getLayoutButton','normal');
           var jsonData = Ext.util.JSON.decode(response.responseText);
           if(jsonData['success'] == 'false'){
             AJAXerror(response.responseText);
             return false
           }else{
+            layout = name;
             redoLayout(jsonData['result'],'load');
             var mainPanel = Ext.getCmp('mainConteiner');
             if(mainPanel){
@@ -1180,7 +1184,7 @@ function UP(mode,name){
   }else if(mode == 'edit'){
     return layout
   }else if(mode == 'delete'){
-	  
+	  deleteLayout(layout)
   }else if(mode == 'deleteAll'){
 	  
   }else if(mode == 'load'){

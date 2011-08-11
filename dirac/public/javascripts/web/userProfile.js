@@ -68,7 +68,6 @@ function addProfileMenuItems(){
           	resultS.add(saveItem);
           }
         }
-//        var lll = resultL.items.getCount();
         if(resultL.items.getCount() > 0){
           menu.items.items[0].menu = resultL;
         }else{

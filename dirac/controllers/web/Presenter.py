@@ -8,15 +8,26 @@ class PresenterController(BaseController):
   def display(self):
     name = 'Presenter'
     self.__convert(name)
-#    default_values = 'ZGVmYXVsdA==' # Var to store default layout
     upc = UserProfileClient(name,getRPCClient )
-#    result = upc.retrieveVar(default_values)
     result = upc.retrieveAllVars()
     if result["OK"]:
-      c.select = result["Value"]          
+      result  = result["Value"]
+      c.select = {}
+      c.select["layoutNames"] = ""
+      c.select["defaultLayout"] = ""
+      c.select["layouts"] = {}
+      for key,value in result.items():
+        if key == "ZGVmYXVsdA==":
+          c.select["defaultLayout"] = result["ZGVmYXVsdA=="]
+          del result["ZGVmYXVsdA=="]
+        else:
+          if not key == "test layout":
+            c.select["layoutNames"] = c.select["layoutNames"] + str(key) + ";"
+            c.select["layouts"][key] = value    
+      c.select["layoutNames"] = c.select["layoutNames"][:-1]
     else:
       gLogger.error(result["Message"])
-      c.select = ''
+      c.select = ""
     return render("web/Presenter.mako")
 ################################################################################
   def __convert(self,profile):
