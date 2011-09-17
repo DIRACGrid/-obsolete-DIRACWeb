@@ -310,31 +310,36 @@ class JobmonitorController(BaseController):
     else:
       groupProperty = credentials.getProperties(group)
       gLogger.always("### groupProperty: ",str(groupProperty))
+      result = gConfig.getOption("/Website/ListSeparator")
+      if result["OK"]:
+        separator = result["Value"]
+      else:
+        separator = ":::"
       if request.params.has_key("prod") and len(request.params["prod"]) > 0:
         if str(request.params["prod"]) != "All":
-          req["JobGroup"] = str(request.params["prod"]).split('::: ')
+          req["JobGroup"] = str(request.params["prod"]).split(separator)
       if request.params.has_key("site") and len(request.params["site"]) > 0:
         if str(request.params["site"]) != "All":
-          req["Site"] = str(request.params["site"]).split('::: ')
+          req["Site"] = [x.strip() for x in str(request.params["site"]).split(separator)]
       if request.params.has_key("status") and len(request.params["status"]) > 0:
         if str(request.params["status"]) != "All":
-          req["Status"] = str(request.params["status"]).split('::: ')
+          req["Status"] = str(request.params["status"]).split(separator)
       if request.params.has_key("runNumber") and len(request.params["runNumber"]) > 0:
         if str(request.params["runNumber"]) != "All":
-          req["runNumber"] = str(request.params["runNumber"]).split('::: ')
+          req["runNumber"] = str(request.params["runNumber"]).split(separator)
       if request.params.has_key("minorstat") and len(request.params["minorstat"]) > 0:
         if str(request.params["minorstat"]) != "All":
-          req["MinorStatus"] = str(request.params["minorstat"]).split('::: ')
+          req["MinorStatus"] = str(request.params["minorstat"]).split(separator)
       if request.params.has_key("app") and len(request.params["app"]) > 0:
         if str(request.params["app"]) != "All":
-          req["ApplicationStatus"] = str(request.params["app"]).split('::: ')
+          req["ApplicationStatus"] = str(request.params["app"]).split(separator)
       if not "JobAdministrator" in groupProperty and not "JobSharing" in groupProperty:
         if not request.params.has_key("globalStat"):
           req["Owner"] = str(user)
       else:
         if request.params.has_key("owner") and len(request.params["owner"]) > 0:
           if str(request.params["owner"]) != "All":
-            req["Owner"] = str(request.params["owner"]).split('::: ')
+            req["Owner"] = str(request.params["owner"]).split(separator)
       if request.params.has_key("startDate") and len(request.params["startDate"]) > 0:
         if str(request.params["startDate"]) != "YYYY-mm-dd":
           if request.params.has_key("startTime") and len(request.params["startTime"]) > 0:
@@ -440,9 +445,51 @@ class JobmonitorController(BaseController):
       return self.__canRunJobs()
     elif request.params.has_key("getProxyStatus") and len(request.params["getProxyStatus"]) > 0:
       return self.__getProxyStatus()
+    elif request.params.has_key("getLaunchpadOpts") and len(request.params["getLaunchpadOpts"]) > 0:
+      return self.__getLaunchpadOpts()
+    elif request.params.has_key("isLaunchpadOptsExists") and len(request.params["isLaunchpadOptsExists"]) > 0:
+      return self.__isLaunchpadOptsExists()
     else:
       c.result = {"success":"false","error":"The request parameters can not be recognized or they are not defined"}
       return c.result
+################################################################################
+  def __isLaunchpadOptsExists(self):
+    gLogger.info("isLaunchpadOptsExists")
+    result = {}
+    options = gConfig.getOptions("/Website/Launchpad/Options")
+    if options["OK"]:
+      result["options"] = "true"
+    else:
+      result["options"] = "false"
+    overwrite = gConfig.getOption("/Website/Launchpad/OptionsOverwrite")
+    if overwrite["OK"]:
+      result["overwrite"] = "true"
+    else:
+      result["overwrite"] = "false"
+    return {"success":"true","result":result}
+################################################################################
+  def __getDataFromCS(self,path="/Website/Launchpad/Options"):
+    result = gConfig.getOptionsDict(path)
+    if result["OK"]:
+      options = result["Value"]
+    result = gConfig.getSections(path)
+    if result["OK"]:
+      sections = result["Value"]    
+    if len(sections) > 0:
+      for i in sections:
+        gLogger.always(" itter: %s" % i)
+        options[i] = self.__getDataFromCS(path + '/' + i)
+    return options
+################################################################################
+  def __getLaunchpadOpts(self):
+    gLogger.always("getLaunchpadOpts")
+    c.result = self.__getDataFromCS()
+    result = gConfig.getOption("/Website/Launchpad/ListSeparator")
+    if result["OK"]:
+      separator = result["Value"]
+    else:
+      separator = "false"
+    return {"success":"true","result":c.result,"separator":separator}
 ################################################################################
   def __getStats(self,selector):
     gLogger.always(" --- selector : %s" % selector)
@@ -514,8 +561,8 @@ class JobmonitorController(BaseController):
     if group == "visitor":
       return {"success":"false","error":"User is anonymous or is not registered in the system"}
     userDN = str(credentials.getUserDN())
-    if secondsOverride and secondsOverride.isdigit():
-      validSeconds = secondsOverride
+    if secondsOverride and str(secondsOverride).isdigit():
+      validSeconds = int(secondsOverride)
     else:
       defaultSeconds = 24 * 3600 + 60 # 24H + 1min
       validSeconds = gConfig.getValue("/Registry/DefaultProxyLifeTime",defaultSeconds)
