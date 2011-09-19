@@ -2,6 +2,10 @@ var dataSelect = ''; // Required to store the data for filters fields. Object.
 var dataMngr = ''; // Required to connect form and table. Object.
 var tableMngr = ''; // Required to handle configuration data for table. Object.
 var user = false; // user treated as anonymous
+var isLaunchpadOpts = false; // Used in launchpad.js shows is there any custom options for launchpad
+var isLaunchpadOptsOverwrite = false; // Used in launchpad.js if true the default LP options menu should be overwritten by new from CS
+var launchpadOptsSeparator = false; // Used in launchpad.js to separate values if they are list of values
+var proxy = false; // Used in launchpad.js storing proxy status
 // Main routine
 function initLoop(reponseSelect){
   dataSelect = reponseSelect;
@@ -32,6 +36,21 @@ function initLoop(reponseSelect){
         this.loading.setText('Refresh');
         this.loading.addClass('x-btn-text-icon');
       })
+    });
+    Ext.Ajax.request({
+      method:'POST',
+      params:{'isLaunchpadOptsExists':true},
+      success:function(response){
+        var response = Ext.util.JSON.decode(response.responseText).result;
+        if(response['options'] == 'true'){
+          isLaunchpadOpts = true;
+        }
+        if(isLaunchpadOpts && response['overwrite'] == 'true'){
+          isLaunchpadOptsOverwrite = true;
+        }
+      },
+      timeout:60000, // 1min
+      url:'action'
     });
     renderData(store);
   });
