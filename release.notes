@@ -1,3 +1,7 @@
+[web2011091901]
+NEW: JobLaunchpad AddParameter menu can be described in the CS and the list type of selector is introduced
+CHANGE: lovCombo is supporting new option visualseparator used to separate values onRender
+
 [web2011070501]
 CHANGE: In __getProxyStatus() function, proxy lifetime is taken from CS if not provided
 
