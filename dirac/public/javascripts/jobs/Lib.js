@@ -958,68 +958,55 @@ function createRemoteMenu(item){
   });
   return combo
 }
-function createMenu(dataName,menuName,altValue){
-  var data = [['']];
+function createMenu(dataName,title,altValue){
+  var data = 'Nothing to display';
   try{
-    data = dataSelect[dataName];
+    if(!altValue){
+      data = dataSelect[dataName];
+    }else{
+      data = altValue;
+    }
   }catch(e){}
   var disabled = true;
   if(data == 'Nothing to display'){
-    data = [[0,'Nothing to display']];
+    data = [['Nothing to display']];
   }else{
-    try{
-    var length = data.length;
-    }catch(e){
-      data = [[0,'Error, can not get data.length']];
-    }
-    if(altValue){
-      for (var i = 0; i < length; i++) {
-        data[i] = [i ,data[i][0],data[i][1]];
-      }
-    }else{
-      for (var i = 0; i < length; i++) {
-        data[i] = [i ,data[i][0]];
-      }
-    }
     disabled = false;
   }
   var store = new Ext.data.SimpleStore({
-    id:0,
-    fields:[{name:'id',type:'int'},dataName],
+    fields:['value'],
     data:data
   });
   var combo = new Ext.ux.form.LovCombo({
     anchor:'-15',
     disabled:disabled,
-    displayField:dataName,
-    emptyText:data[0][1],
-    fieldLabel:menuName,
-    hiddenName:dataName,
+    displayField:'value',
+    emptyText:data[0],
+    fieldLabel:title,
+    hiddenName:dataName ? dataName : title,
     hideOnSelect:false,
-    id:menuName,
+    id:title,
     mode:'local',
     resizable:true,
+    separator:':::',
     store:store,
     triggerAction:'all',
     typeAhead:true,
-    valueField:'id'
+    valueField:'value',
+    visualseparator:', '
   });
   combo.on({
     'render':function(){
       try{
-        var nameList = dataSelect.extra[dataName].split('::: ');
-        var newValue = '';
+        var nameList = dataSelect.extra[dataName].split(this.separator);
+        var newValue = new Array();
         for(var j = 0; j < nameList.length; j++){
-          for(var i = 0; i < store.totalLength; i++){
-            if(store.data.items[i].data[dataName] == nameList[j]){
-              if(newValue.length == 0){
-                newValue = i;
-              }else{
-                newValue = newValue + ':::' + i;
-              }
-            }
+          var re = new RegExp(nameList[j], "g");
+          if(store.find('value',re) != -1){
+            newValue.push(nameList[j]);
           }
         }
+        newValue = newValue.join(this.separator);
         combo.setValue(newValue);
         delete dataSelect.extra[dataName];
       }catch(e){}

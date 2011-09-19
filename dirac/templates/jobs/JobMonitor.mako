@@ -12,6 +12,7 @@ ${ h.javascript_link( "/javascripts/jobs/Launchpad.js" ) }
 ${ h.javascript_link( "/javascripts/jobs/JobMonitor.js" ) }
 ${ h.stylesheet_link( "/stylesheets/lovCombo.css" ) }
 ${ h.stylesheet_link( "/stylesheets/fileupload.css" ) }
+
 </%def>
 
 <%def name="body()">
