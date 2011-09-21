@@ -1,3 +1,6 @@
+[web2011092101]
+NEW: JobType selector for JobMonitoring page
+
 [web2011091901]
 NEW: JobLaunchpad AddParameter menu can be described in the CS and the list type of selector is introduced
 CHANGE: lovCombo is supporting new option visualseparator used to separate values onRender
