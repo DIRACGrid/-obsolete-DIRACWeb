@@ -392,8 +392,7 @@ class CommonController(BaseController):
     if name and name == "ZGVmYXVsdA==":
       return S_ERROR("The name '%s' is reserved, operation failed" % name)
     if not name:
-      return S_ERROR("Can not load none existing profile")
-#    result = self.__delLayout("ZGVmYXVsdA==")
+      return S_ERROR("The name of a profile to load is not provided")
     result = self.__preRequest()
     if not result["OK"]:
       return S_ERROR(result["Message"])
@@ -419,6 +418,9 @@ class CommonController(BaseController):
     return S_OK(layout)
 ################################################################################
   def __delLayout(self,name=None):
+    """
+    Deletes a layout with provided name which belongs to a current user only
+    """
     gLogger.info("* Start delLayout()")
     if not name:
       return S_ERROR("Name of a layout to delete is absent in request")
@@ -434,12 +436,15 @@ class CommonController(BaseController):
       return S_ERROR(result["Message"])
     result = self.__checkDefaultLayout(upc)
     if not result["OK"]:
-      result = self.__setFirstDefaultLayout(upc,user,group)
+      result = self.__setLastDefaultLayout(upc,user,group)
     result = name + ": deleted"
     gLogger.info("+ End of delLayout(): %s" % result)      
     return S_OK(result)
 ################################################################################
   def __delAllLayouts(self):
+    """
+    Deletes all the layouts belongs to a current user only
+    """
     gLogger.info("* Start delAllLayouts()")
     result = self.__preRequest()
     if not result["OK"]:
@@ -471,7 +476,7 @@ class CommonController(BaseController):
 ################################################################################
   def __checkDefaultLayout(self,upc=None):
     """
-    If the layout with name and owner stored in default value is exists
+    If the layout with name and owner stored in default value "ZGVmYXVsdA==" is exists
     the function returns dict with name and owner
     """
     gLogger.info("* Start checkDefaultLayout()")
@@ -513,6 +518,7 @@ class CommonController(BaseController):
 ################################################################################
   def __setDefaultLayout(self,upc=None,name=None,user=None,group=None):
     """
+    Just save the layout to "ZGVmYXVsdA==" variable which stands for default
     """
     gLogger.info("* Start setDefaultLayout()")
     if not upc:
@@ -531,13 +537,13 @@ class CommonController(BaseController):
     gLogger.info("+ End of setDefaultLayout(): %s" % value)
     return S_OK(value)
 ################################################################################
-  def __setFirstDefaultLayout(self,upc=None,user=None,group=None):
+  def __setLastDefaultLayout(self,upc=None,user=None,group=None):
     """
-    Check for available profiles for given user and group. If there are some takes the last
+    Check for available profiles for given user and group. If there are some, takes the last
     profile name and set it as default
     Return a dict of profile name and owner 
     """
-    gLogger.info("* Start setFirstDefaultLayout()")
+    gLogger.info("* Start setLastDefaultLayout()")
     if not upc:
       return S_ERROR("Failed to get UserProfile client")
     if not group:
@@ -561,7 +567,7 @@ class CommonController(BaseController):
       gLogger.error(result["Message"])
       return S_ERROR(result["Message"])
     value = result["Value"]
-    gLogger.info("+ End of setFirstDefaultLayout(): %s" % value)
+    gLogger.info("+ End of setLastDefaultLayout(): %s" % value)
     return S_OK(value)
 ################################################################################
   def __getValueFromRequest(self):
@@ -703,7 +709,7 @@ class CommonController(BaseController):
 ################################################################################
   def __preRequest(self):
     """
-    Parse the HTTP request and returns UP client and username.
+    Parse the HTTP request and returns an UP dict with UP client, username and group
     """
     if request.params.has_key("page") and len(request.params["page"]) > 0:
       try:
@@ -730,10 +736,13 @@ class CommonController(BaseController):
 ################################################################################
   def __returnListLayouts(self,kind,user_override=None):
     """
-    Returns a list of layouts depending of the kind variable
+    Returns a list of layouts depending of the kind variable.
+    Kind could be:
       with_owners - List of layouts with owners included
       no_owners - Just a list of layouts
       just_owners - List of owners of layouts
+    user_override is replacing the current user in the request.
+    Used to show layouts which belongs to different user
     """
     gLogger.info("* Start returnListLayouts()")
     if not kind in ["with_owners","no_owners","just_owners"]:
