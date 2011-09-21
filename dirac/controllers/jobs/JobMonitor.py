@@ -223,6 +223,20 @@ class JobmonitorController(BaseController):
       app = [["Error during RPC call"]]
     callback["app"] = app
 ###
+    result = RPC.getJobTypes()
+    if result["OK"]:
+      types = []
+      if len(result["Value"])>0:
+        types.append([str("All")])
+        for i in result["Value"]:
+          i = i.replace(",",";")
+          types.append([i])
+      else:
+        types = [["Nothing to display"]]
+    else:
+      types = [["Error during RPC call"]]
+    callback["types"] = types
+###
     result = RPC.getRunNumbers()
     if result["OK"]:
       app = []
@@ -333,6 +347,9 @@ class JobmonitorController(BaseController):
       if request.params.has_key("app") and len(request.params["app"]) > 0:
         if str(request.params["app"]) != "All":
           req["ApplicationStatus"] = str(request.params["app"]).split(separator)
+      if request.params.has_key("types") and len(request.params["types"]) > 0:
+        if str(request.params["types"]) != "All":
+          req["JobType"] = str(request.params["types"]).split(separator)
       if not "JobAdministrator" in groupProperty and not "JobSharing" in groupProperty:
         if not request.params.has_key("globalStat"):
           req["Owner"] = str(user)

@@ -110,6 +110,7 @@ function initSidebar(){
   var statSelect = createMenu('status','Status'); // Initializing JobStatus Menu
   var minSelect = createMenu('minorstat','Minor status'); // Initializing Minor Status Menu
   var prodSelect = createMenu('prod','JobGroup'); // Initializing JobGroup Menu
+  var typesSelect = createMenu('types','JobType');
   var id = genericID('id','JobID'); // Initialize field for JobIDs
   var runid = genericID('runNumber','RunID','','','None'); // Initialize field for JobIDs
   var dateSelect = dateTimeWidget(); // Initializing date dialog
@@ -121,9 +122,10 @@ function initSidebar(){
   select.insert(3,appSelect);
   select.insert(4,ownerSelect);
   select.insert(5,prodSelect);
-  select.insert(6,id);
-  select.insert(7,runid);
-  select.insert(8,dateSelect);
+  select.insert(6,typesSelect);
+  select.insert(7,id);
+  select.insert(8,runid);
+  select.insert(9,dateSelect);
   var sortGlobal = sortGlobalPanel(); // Initializing the global sort panel
 /*
   id - String/Int, custom id
