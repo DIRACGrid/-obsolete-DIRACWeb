@@ -342,6 +342,8 @@ class CommonController(BaseController):
 ################################################################################
   def __setLayout(self,name=None,value=None,access="USER"):
     """
+    Saving the data to a layout with provided name and set it as a default layout
+    "ZGVmYXVsdA==" name is reserved to store user's default layout
     """
     gLogger.info("* Start setLayout()")
     if name and name == "ZGVmYXVsdA==":
@@ -388,6 +390,9 @@ class CommonController(BaseController):
     return S_OK(layout)
 ################################################################################
   def __getLayout(self,name=None):
+    """
+    Returns data stored in given profile and save the profile name as the default
+    """
     gLogger.info("* Start getLayout()")
     if name and name == "ZGVmYXVsdA==":
       return S_ERROR("The name '%s' is reserved, operation failed" % name)
@@ -476,8 +481,8 @@ class CommonController(BaseController):
 ################################################################################
   def __checkDefaultLayout(self,upc=None):
     """
-    If the layout with name and owner stored in default value "ZGVmYXVsdA==" is exists
-    the function returns dict with name and owner
+    If the layout with name, owner and group stored in default value "ZGVmYXVsdA==" is exists
+    the function returns dict with there data
     """
     gLogger.info("* Start checkDefaultLayout()")
     if not upc:
@@ -518,7 +523,8 @@ class CommonController(BaseController):
 ################################################################################
   def __setDefaultLayout(self,upc=None,name=None,user=None,group=None):
     """
-    Just save the layout to "ZGVmYXVsdA==" variable which stands for default
+    Just save the dict of name,user,group of a layout to "ZGVmYXVsdA==" variable
+    which stands for a user default layout
     """
     gLogger.info("* Start setDefaultLayout()")
     if not upc:
@@ -571,6 +577,9 @@ class CommonController(BaseController):
     return S_OK(value)
 ################################################################################
   def __getValueFromRequest(self):
+    """
+    Get data which describing a layout from the request
+    """
     gLogger.info("* Start getValueFromRequest()")
     value = dict()
     for i in request.params:
@@ -583,129 +592,6 @@ class CommonController(BaseController):
       return S_ERROR("The value keywords are absent in the request")
     gLogger.info("+ End of getValueFromRequest(): %s" % value) 
     return S_OK(value)
-  '''
-################################################################################
-  def __setBookmarks(self,name):
-    if name == "columns" or name == "refresh" or name == "defaultLayout" or name == "layouts":
-      return {"success":"false","error":"The name \"" + name + "\" is reserved, operation failed"}
-    if not request.params.has_key("columns") and len(request.params["columns"]) <= 0:
-      return {"success":"false","error":"Parameter 'Columns' is absent"}
-    if not request.params.has_key("refresh") and len(request.params["refresh"]) <= 0:
-      return {"success":"false","error":"Parameter 'Refresh' is absent"}
-    upc = UserProfileClient( "Summary", getRPCClient )
-    result = upc.retrieveVar( "Bookmarks" )
-    if result["OK"]:
-      data = result["Value"]
-    else:
-      data = {}
-    data["defaultLayout"] = name
-    if not data.has_key("layouts"):
-      data["layouts"] =  {}
-    data["layouts"][name] = {}
-    if request.params.has_key("plots") and len(request.params["plots"]) > 0:
-      data["layouts"][name]["url"] = str(request.params["plots"])
-    else:
-      data["layouts"][name]["url"] = ""
-    data["layouts"][name]["columns"] = str(request.params["columns"])
-    data["layouts"][name]["refresh"] = str(request.params["refresh"])
-    gLogger.info("\033[0;31m Data to save: \033[0m",data)
-    result = upc.storeVar( "Bookmarks", data )
-    gLogger.info("\033[0;31m UserProfile response: \033[0m",result)
-    if result["OK"]:
-      return self.__getBookmarks()
-    else:
-      return {"success":"false","error":result["Message"]}
-
-
-  @jsonify
-  def layoutUser(self):
-    upProfileName = "Summary"
-    upc = UserProfileClient( "Summary", getRPCClient )
-    result = upc.listAvailableVars()
-    if result["OK"]:
-      result = result["Value"]
-      userList = []
-      for i in result:
-        userList.append(i[0])
-      userList = uniqueElements(userList)
-      resultList = []
-      for j in userList:
-        resultList.append({'name':j})
-      total = len(resultList)
-      resultList.sort()
-      resultList.insert(0,{'name':'All'})
-      c.result = {"success":"true","result":resultList,"total":total}
-    else:
-      c.result = {"success":"false","error":result["Message"]}
-    return c.result
-################################################################################
-
-# width - value
-# time - value
-# defaultLayout - value
-# layouts - dict {name:src}
-
-################################################################################
-  def __getBookmarks(self,name=""):
-    if name == "columns" or name == "refresh" or name == "defaultLayout" or name == "layouts":
-      return {"success":"false","error":"The name \"" + name + "\" is reserved, operation failed"}
-    upc = UserProfileClient( "Summary", getRPCClient )
-    result = upc.retrieveVar( "Bookmarks" )
-    gLogger.info("\033[0;31m UserProfile getBookmarks response: \033[0m",result)
-    if result["OK"]:
-      result = result["Value"]
-      if name != "":
-        result["defaultLayout"] = name
-        save = upc.storeVar( "Bookmarks", result )
-        gLogger.info("\033[0;31m saving new default layout \033[0m",name)
-        if not save["OK"]:
-          return {"success":"false","error":save["Message"]}
-      elif name == "" and not result.has_key("defaultLayout"):
-        result["defaultLayout"] = ""
-      if result.has_key("layouts"):
-        layouts = ""
-        for i in result["layouts"]:
-          layouts = layouts + str(i) + ";"
-        result["layoutNames"] = layouts
-      c.result = {"success":"true","result":result}
-    else:
-      if result['Message'].find("No data for") != -1:
-        c.result = {"success":"true","result":{}}
-      else:
-        c.result = {"success":"false","error":result["Message"]}
-    return c.result
-################################################################################
-  def __setBookmarks(self,name):
-    if name == "columns" or name == "refresh" or name == "defaultLayout" or name == "layouts":
-      return {"success":"false","error":"The name \"" + name + "\" is reserved, operation failed"}
-    if not request.params.has_key("columns") and len(request.params["columns"]) <= 0:
-      return {"success":"false","error":"Parameter 'Columns' is absent"}
-    if not request.params.has_key("refresh") and len(request.params["refresh"]) <= 0:
-      return {"success":"false","error":"Parameter 'Refresh' is absent"}
-    upc = UserProfileClient( "Summary", getRPCClient )
-    result = upc.retrieveVar( "Bookmarks" )
-    if result["OK"]:
-      data = result["Value"]
-    else:
-      data = {}
-    data["defaultLayout"] = name
-    if not data.has_key("layouts"):
-      data["layouts"] =  {}
-    data["layouts"][name] = {}
-    if request.params.has_key("plots") and len(request.params["plots"]) > 0:
-      data["layouts"][name]["url"] = str(request.params["plots"])
-    else:
-      data["layouts"][name]["url"] = ""
-    data["layouts"][name]["columns"] = str(request.params["columns"])
-    data["layouts"][name]["refresh"] = str(request.params["refresh"])
-    gLogger.info("\033[0;31m Data to save: \033[0m",data)
-    result = upc.storeVar( "Bookmarks", data )
-    gLogger.info("\033[0;31m UserProfile response: \033[0m",result)
-    if result["OK"]:
-      return self.__getBookmarks()
-    else:
-      return {"success":"false","error":result["Message"]}
-  '''
 ################################################################################
   def __preRequest(self):
     """
@@ -738,7 +624,7 @@ class CommonController(BaseController):
     """
     Returns a list of layouts depending of the kind variable.
     Kind could be:
-      with_owners - List of layouts with owners included
+      with_owners - List of layouts with owner names included
       no_owners - Just a list of layouts
       just_owners - List of owners of layouts
     user_override is replacing the current user in the request.
