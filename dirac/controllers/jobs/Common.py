@@ -306,40 +306,6 @@ class CommonController(BaseController):
       gLogger.error(x)
       return {"success":"false","error":x}
 ################################################################################
-  def __changeLayout(self,name=None,value=None,access="USER"):
-    """
-    """
-    gLogger.info("* Start changeLayout()")
-    if name and name == "ZGVmYXVsdA==":
-      gLogger.error("The name '%s' is reserved, operation failed" % name)
-      return S_ERROR("The name '%s' is reserved, operation failed" % name)
-    if not name:
-      gLogger.error("Provide a name for changed profile")
-      return S_ERROR("Provide a name for changed profile")
-    if not value:
-      gLogger.error("Value to be save in profile '%s' is absent" % name)
-      return S_ERROR("Value to be save in profile '%s' is absent" % name)
-    if not access in ['USER','GROUP','ALL']:
-      gLogger.error("Provided access option '%s' is not valid" % access)
-      return S_ERROR("Provided access option '%s' is not valid" % access)
-    result = self.__preRequest()
-    if not result["OK"]:
-      gLogger.error(result["Message"])
-      return S_ERROR(result["Message"])
-    else:
-      upc = result["Value"]["UPC"]
-      user = result["Value"]["User"]
-      group = result["Value"]["Group"]
-    access = {"ReadAccess":access}
-    gLogger.info("storeVar(%s,%s,%s)" % (name,value,access))
-    result = upc.storeVar(name,value,access)
-    if not result["OK"]:
-      gLogger.error(result["Message"])
-      return S_ERROR(result["Message"])
-    layout = result["Value"]
-    gLogger.info("+ End of changeLayout(): %s" % layout)
-    return S_OK(layout)
-################################################################################
   def __setLayout(self,name=None,value=None,access="USER"):
     """
     Saving the data to a layout with provided name and set it as a default layout
