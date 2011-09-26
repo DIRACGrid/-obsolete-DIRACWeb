@@ -389,7 +389,7 @@ function setMenuItems(selections){
     dirac.menu.items.items[5].disable();
     dirac.menu.items.items[6].disable();
   }
-  if((type!='DataReconstruction')&&(type!='DataStripping')&&(type!='Replication')&&(type!='Merge')&&(type!='DataReprocessing')){
+  if((type!='DataReconstruction')&&(type!='DataStripping')&&(type!='Replication')&&(type!='Merge')){
     dirac.menu.items.items[3].disable();
   }
   if(!transAdmin){
