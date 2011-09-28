@@ -1899,10 +1899,5 @@ function dateTimeWidget(pin){
       panel.insert(8,datePin);
     }
   }catch(e){}
-  panel.on({
-    'render':function(){
-
-    }
-  });
   return panel
 }
