@@ -1795,7 +1795,7 @@ function dateTimeWidget(pin){
     },
     'valid':function(){
       var currentTime = new Date();
-      var hoursToSet = currentTime.getHours();
+      var hoursToSet = currentTime.getUTCHours();
       if(hoursToSet < 10){
         hoursToSet = '0' + hoursToSet;
       }
@@ -1806,7 +1806,7 @@ function dateTimeWidget(pin){
       timeToSet = hoursToSet + ':' + minutesToSet;
       var value = timeSpan.getValue();
       if(value == 'Last hour'){
-        var minHour = currentTime.add(Date.HOUR,-1).getHours()
+        var minHour = currentTime.add(Date.HOUR,-1).getUTCHours()
         if(minHour < 10){
           minHour = '0' + minHour;
         }
@@ -1899,24 +1899,10 @@ function dateTimeWidget(pin){
       panel.insert(8,datePin);
     }
   }catch(e){}
+  panel.on({
+    'render':function(){
+
+    }
+  });
   return panel
 }
-/*
-    var date = new Ext.form.DateField({
-      anchor:'90%',
-      allowBlank:true,
-      emptyText:'YYYY-mm-dd',
-//      enableKeyEvents:true,
-      fieldLabel:fieldLabel,
-//      fireKey:function(e){
-//        manualSelection();
-//      },
-      format:'Y-m-d',
-      name:name,
-      selectOnFocus:true,
-      startDay:1,
-      value:'',
-      width:98
-    });
-*/
-
