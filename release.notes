@@ -1,3 +1,6 @@
+[web2011092801]
+CHANGE: getHours -> getUTCHours fix of last hour update bug
+
 [web2011092601]
 CHANGE: Add RunStatus report for DataReprocessing
 
