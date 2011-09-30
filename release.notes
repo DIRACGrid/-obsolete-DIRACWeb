@@ -1,3 +1,6 @@
+[web2011093001]
+NEW: Correct RunStatuses for the context menu in transformation monitoring page are taken from CS
+
 [web2011092801]
 CHANGE: getHours -> getUTCHours fix of last hour update bug
 
