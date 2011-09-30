@@ -7,6 +7,7 @@ var refreshRate = 0;
 var tableID = 'tmpID';
 var idObject = new Array();
 var transAdmin = false;
+var runStatusMenu = false; // Array, used in context menu to enable/disable this action for certain type of productions
 // Main routine
 function initProductionMonitor(reponseSelect){
   try{
@@ -57,6 +58,16 @@ function initProductionMonitor(reponseSelect){
       })
     });
     renderData(store);
+    Ext.Ajax.request({
+      method:'POST',
+      params:{'getRunStatus':true},
+      success:function(response){
+        runStatusMenu = Ext.util.JSON.decode(response.responseText).result;
+        runStatusMenu = runStatusMenu.split(', ');
+      },
+      timeout:60000, // 1min
+      url:'action'
+    });    
   });
 }
 function diffValues(value,metaData,record,rowIndex,colIndex,store){
@@ -389,8 +400,14 @@ function setMenuItems(selections){
     dirac.menu.items.items[5].disable();
     dirac.menu.items.items[6].disable();
   }
+  // RegExp is used to test is type in runStatusMenu array: if (/^(?:bob|sue|smith)$/.test(name))
+  if((runStatusMenu)&&(new RegExp('^(' + runStatusMenu.join('|') + ')$').test(type))){
+      dirac.menu.items.items[3].enable();
+  }else{
+    dirac.menu.items.items[3].disable();  
+  }
   if((type!='DataReconstruction')&&(type!='DataStripping')&&(type!='Replication')&&(type!='Merge')){
-    dirac.menu.items.items[3].disable();
+
   }
   if(!transAdmin){
 	dirac.menu.items.items[10].disable();
