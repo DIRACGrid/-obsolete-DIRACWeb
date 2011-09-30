@@ -406,11 +406,8 @@ function setMenuItems(selections){
   }else{
     dirac.menu.items.items[3].disable();  
   }
-  if((type!='DataReconstruction')&&(type!='DataStripping')&&(type!='Replication')&&(type!='Merge')){
-
-  }
   if(!transAdmin){
-	dirac.menu.items.items[10].disable();
+  	dirac.menu.items.items[10].disable();
   }
 }
 function AJAXsuccess(value,id,response){
