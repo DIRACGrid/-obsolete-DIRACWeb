@@ -373,12 +373,10 @@ function itemsNumber(mainStore,id){
     data:[[25],[50],[100],[200],[500],[1000]]
   });
   var value = 25;
-  if(dataSelect){
-    if(dataSelect.extra){
+  if(dataSelect && dataSelect.extra){
       if(dataSelect.extra.limit){ // Will be deleted in table function
         value = dataSelect.extra.limit/1;
       }
-    }
   }
   var combo = new Ext.form.ComboBox({
     allowBlank:false,
@@ -968,7 +966,8 @@ function createMenu(dataName,title,altValue){
     }
   }catch(e){}
   var disabled = true;
-  if(data == 'Nothing to display'){
+  var tt = Ext.isEmpty(data);
+  if((data == 'Nothing to display')||(Ext.isEmpty(data))){
     data = [['Nothing to display']];
   }else{
     disabled = false;
