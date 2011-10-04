@@ -1,10 +1,38 @@
 var gMainGrid = false;
+var dataSelect = ''; // Required to store the data for filters fields. Object.
 
 function initManageProxies(){
 
   Ext.onReady(function(){
+    Ext.override(Ext.PagingToolbar, {
+      onRender :  Ext.PagingToolbar.prototype.onRender.createSequence(function(ct, position){
+        this.loading.removeClass('x-btn-icon');
+        this.loading.setText('Refresh');
+        this.loading.addClass('x-btn-text-icon');
+      })
+    });
     renderPage();
   });
+}
+
+function initSidebar(){
+/*
+  createMenu(dataIndex or dataName,Text label) same for genericID
+*/
+  var userSelect = createMenu('owner','User'); // Initializing Owner Menu
+  var groupSelect = createMenu('app','Group'); // Initializing Application status Menu
+  var expiredSelect = createMenu('status','Expiration'); // Initializing JobStatus Menu
+  var persistentSelect = createMenu('minorstat','Persistent'); // Initializing Minor Status Menu
+  var select = selectPanel(); // Initializing container for selection objects
+  // Insert object to container BEFORE buttons:
+  select.insert(0,userSelect);
+  select.insert(1,groupSelect);
+  select.insert(2,expiredSelect);
+  select.insert(3,persistentSelect);
+  var bar = sideBar();
+  bar.insert(0,select);
+  bar.setTitle('ProxyManagement');
+  return bar
 }
 
 function renderPage()
@@ -24,41 +52,50 @@ function renderPage()
             groupField : 'username',
             listeners : { beforeload : cbStoreBeforeLoad },
         		});
-
-	gMainGrid = new Ext.grid.GridPanel( {
-		store : store,
-		view: new Ext.grid.GroupingView({
-            groupTextTpl: '{text} ({[values.rs.length]} {[values.rs.length > 1 ? "Items" : "Item"]})',
-            emptyText: 'No data',
-            startCollapsed : false,
-        }),
-		columns: [
+  var columns = [
             { id : 'check', header : '', width : 30, dataIndex: 'proxyid', renderer : renderSelect },
             { header: "User", width: 100, sortable: false, dataIndex: 'username'},
             { header: "DN", width: 350, sortable: true, dataIndex: 'UserDN'},
             { header: "Group", width: 100, sortable: true, dataIndex: 'UserGroup'},
             { header: "Expiration date (UTC)", width: 150, sortable: true, dataIndex: 'ExpirationTime', renderer : renderExpirationDate },
             { header: "Persistent", width: 100, sortable: true, dataIndex: 'PersistentFlag' },
-        ],
-      region : 'center',
-   	tbar : [
-   				{ handler:function(){ toggleAll(true) }, text:'Select all', width:150, tooltip:'Click to select all rows' },
-    				{ handler:function(){ toggleAll(false) }, text:'Select none', width:150, tooltip:'Click to select all rows' },
-    				'->',
-      			{ handler:function(){ cbDeleteSelected() }, text:'Delete', width:150, tooltip:'Click to delete all selected proxies' },
-   			],
-		bbar: new Ext.PagingToolbar({
-					pageSize: 25,
-					store: store,
-					displayInfo: true,
-					displayMsg: 'Displaying entries {0} - {1} of {2}',
-					emptyMsg: "No entries to display",
-					items:['-','Items displaying per page: ', createNumItemsSelector() ],
-	        }),
-	   listeners : { sortchange : cbMainGridSortChange },
-
-		} );
-	renderInMainViewport( [gMainGrid] );
+        ];
+        
+  var view = new Ext.grid.GroupingView({
+            groupTextTpl: '{text} ({[values.rs.length]} {[values.rs.length > 1 ? "Items" : "Item"]})',
+            emptyText: 'No data',
+            startCollapsed : false,
+        });
+        
+  var tbar = [
+   				{ 
+   				  handler:function(){ toggleAll(true) }, 
+   				  text:'Select all', 
+   				  width:150, 
+   				  tooltip:'Click to select all rows', 
+   				  cls:"x-btn-text-icon", 
+   				  icon:gURLRoot+'/images/iface/checked.gif'
+   				},{
+   				  handler:function(){ toggleAll(false) }, 
+   				  text:'Select none', 
+   				  width:150, 
+   				  tooltip:'Click to select all rows', 
+   				  cls:"x-btn-text-icon", 
+   				  icon:gURLRoot+'/images/iface/unchecked.gif'
+   				},'->',{
+   				  handler:function(){ cbDeleteSelected() },
+   				  text:'Delete', 
+   				  width:150, 
+   				  tooltip:'Click to delete all selected proxies', 
+   				  cls:"x-btn-text-icon", 
+   				  icon:gURLRoot+'/images/iface/delete.gif'
+   				}
+   			];
+   			
+  gMainGrid = table({'store':store,'columns':columns,'tbar':tbar,'view':view});
+  gMainGrid.addListener('sortchange',cbMainGridSortChange );  
+	var selectors = initSidebar();
+	renderInMainViewport( [selectors, gMainGrid] );
 }
 
 function renderSelect( value, metadata, record, rowIndex, colIndex, store )
@@ -112,14 +149,14 @@ function cbMainGridSortChange( mainGrid, params )
 function createNumItemsSelector(){
 	var store = new Ext.data.SimpleStore({
 		fields:['number'],
-		data:[[25],[50],[100],[150]]
+		data:[[25],[50],[100],[200],[500],[1000]]
 	});
 	var combo = new Ext.form.ComboBox({
 		allowBlank:false,
 		displayField:'number',
 		editable:false,
-		maxLength:3,
-		maxLengthText:'The maximum value for this field is 999',
+		maxLength:4,
+		maxLengthText:'The maximum value for this field is 9999',
 		minLength:1,
 		minLengthText:'The minimum value for this field is 1',
 		mode:'local',
@@ -148,8 +185,12 @@ function createNumItemsSelector(){
 
 function cbDeleteSelected()
 {
-	var selIds = getSelectedCheckboxes()
-	if( window.confirm( "Are you sure you want to delete selected proxies?" ) )
+	var selIds = getSelectedCheckboxes();
+	var msg = 'proxy';
+	if(selIds && selIds.length > 1){
+	  msg = 'proxies';
+	}
+	if( window.confirm( "Are you sure you want to delete selected " + msg + "?" ) )
 		Ext.Ajax.request({
 			url : "deleteProxies",
 			success : ajaxCBServerDeleteSelected,
