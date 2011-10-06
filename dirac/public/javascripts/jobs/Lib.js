@@ -704,13 +704,18 @@ function selectPanel(newID){
       sideBar.body = gMainLayout.container;
     }
     sideBar.body.mask('Sending data...');
+    selections.start = 0;
     try{
       selections.sort = dataSelect.globalSort;
-      selections.limit = tableMngr.bbar.pageSize;
-      selections.start = 0;
     }catch(e){
       sideBar.body.unmask();
-      alert('Error: Either selections.sort or selections.limit or selections.start are not defined');
+      alert('Error: selections.sort is not defined');
+    }
+    try{
+      selections.limit = tableMngr.bbar.pageSize;
+    }catch(e){
+      sideBar.body.unmask();
+      alert('Error: selections.limit is not defined');
     }
 //    var title = document.title + ' - ';
     var title = '';
@@ -958,6 +963,7 @@ function createRemoteMenu(item){
 }
 function createMenu(dataName,title,altValue){
   var data = 'Nothing to display';
+// test for dataSelect existence  
   try{
     if(!altValue){
       data = dataSelect[dataName];
@@ -966,7 +972,6 @@ function createMenu(dataName,title,altValue){
     }
   }catch(e){}
   var disabled = true;
-  var tt = Ext.isEmpty(data);
   if((data == 'Nothing to display')||(Ext.isEmpty(data))){
     data = [['Nothing to display']];
   }else{
@@ -1012,6 +1017,60 @@ function createMenu(dataName,title,altValue){
     }
   });
   return combo;
+}
+function createDropdownMenu(dataName,title,altValue){
+  var data = 'Nothing to display';
+  if(altValue && altValue.constructor == Array){
+    data = altValue;  
+  }else{
+    if(dataSelect && dataSelect[dataName].constructor == Array){
+      data = dataSelect[dataName];
+    }
+  }
+  var disabled = true;
+  if(data == 'Nothing to display'){
+    data = [['Nothing to display']];
+  }else{
+    disabled = false;
+  }
+  var fields = ['value'];
+  var valueField = 'value';
+  if(data[0].constructor == Array){
+    fields = []
+    var tmp = data[0];
+    if(tmp.length > 1){
+      for(var i=0; i< tmp.length; i++){
+        fields.push('tmp_value_' + i);
+      }
+      fields.pop();
+      valueField = 'tmp_value_0';
+    }
+    fields.push('value');
+  }
+  var store = new Ext.data.SimpleStore({
+    fields:fields,
+    data:data
+  });
+  var comboBox = new Ext.form.ComboBox({
+    allowBlank:true,
+    anchor:'-15',
+    disabled:disabled,
+    displayField:'value',
+    emptyText:'All',
+    fieldLabel:title,
+    hiddenName:dataName ? dataName : title,
+    hideOnSelect:false,
+    id:title + 'DropdownMenu',
+    resizable:true,
+    store:store,
+    valueField:valueField,
+    typeAhead:true,
+    mode:'local',
+    forceSelection:true,
+    triggerAction:'all',
+    selectOnFocus:true,
+  });
+  return comboBox
 }
 function showJobID(separator){
   var url = 'No JobID found';
