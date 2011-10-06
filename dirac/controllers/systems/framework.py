@@ -5,7 +5,7 @@ from dirac.lib.diset import getRPCClient
 from dirac.lib.credentials import authorizeAction
 import simplejson
 
-from DIRAC import S_OK, S_ERROR
+from DIRAC import S_OK, S_ERROR, gConfig, gLogger
 from DIRAC.Core.Security import CS
 
 log = logging.getLogger(__name__)
@@ -19,12 +19,94 @@ class FrameworkController(BaseController):
     return redirect_to( h.url_for( controller="info/general", action ="diracOverview" ) )
 
   def manageProxies(self):
+    if not authorizeAction():
+      return render("/login.mako")
+    c.select = self.__getSelectionData()
     return render(  "/systems/framework/manageProxies.mako" )
 
   def showProxyActionLogs(self):
     if not authorizeAction():
       return render( "/error.mako" )
     return render(  "/systems/framework/showProxyActionLog.mako" )
+
+  def __humanize_time(self, sec=False):
+    if not sec:
+      return "Time span is not specified"
+    try:
+      sec = int(sec)
+    except:
+      return "Value from CS is not integer"
+    month, week = divmod(sec,2592000)
+    if month > 0:
+      if month > 12:
+        return "More then a year"
+      elif month > 1:
+        return str(month) + " months"
+      else:
+        return "One month"
+    week, day = divmod(sec,604800)
+    if week > 0:
+      if week == 1:
+        return "One week"
+      else:
+        return str(week) + " weeks"
+    day, hours = divmod(sec,86400)
+    if day > 0:
+      if day == 1:
+        return "One day"
+      else:
+        return str(day) + " days"
+
+  def __getSelectionData(self):
+    callback = {}
+    if not authorizeAction():
+      return {"success":"false","error":"You are not authorize to access these data"}
+    if len(request.params) > 0:
+      tmp = {}
+      for i in request.params:
+        tmp[i] = str(request.params[i])
+      callback["extra"] = tmp
+    result = gConfig.getSections("/Registry/Users")
+    if result["OK"]:
+      users = result["Value"]
+      if len(users)>0:
+        users.sort()
+        users = map(lambda x: [x], users)
+        users.insert(0,["All"])
+        users.append(["unknown"])
+      else:
+        users = [["Nothing to display"]]
+    else:
+      users = [["Error during RPC call"]]
+    callback["username"] = users
+    result = gConfig.getSections("/Registry/Groups")
+    if result["OK"]:
+      groups = result["Value"]
+      if len(groups)>0:
+        groups.sort()
+        groups = map(lambda x: [x], groups)
+        groups.insert(0,["All"])
+      else:
+        groups = [["Nothing to display"]]
+    else:
+      groups = [["Error during RPC call"]]
+    callback["usergroup"] = groups
+    result = gConfig.getOption("/Website/ProxyManagementMonitoring/TimeSpan")
+    if result["OK"]:
+      tmp = result["Value"]
+      tmp = tmp.split(", ")
+      if len(tmp)>0:
+        timespan = []
+        for i in tmp:
+          human_readable = self.__humanize_time(i)
+          timespan.append([i, human_readable])
+      else:
+        timespan = [["Nothing to display"]]
+    else:
+      timespan = [["Error during RPC call"]]
+    callback["expiredBefore"] = timespan
+    callback["expiredAfter"] = timespan
+    return callback
 
   @jsonify
   def getProxiesList(self):
