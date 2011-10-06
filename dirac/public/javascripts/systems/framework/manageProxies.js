@@ -1,8 +1,9 @@
 var gMainGrid = false;
 var dataSelect = ''; // Required to store the data for filters fields. Object.
+var tableMngr = ''; // Required to handle configuration data for table. Object.
 
-function initManageProxies(){
-
+function initManageProxies(initSelections){
+  dataSelect = initSelections;
   Ext.onReady(function(){
     Ext.override(Ext.PagingToolbar, {
       onRender :  Ext.PagingToolbar.prototype.onRender.createSequence(function(ct, position){
@@ -17,18 +18,21 @@ function initManageProxies(){
 
 function initSidebar(){
 /*
-  createMenu(dataIndex or dataName,Text label) same for genericID
+  createMenu(dataIndex or dataName,Text label, alternative data) same for createDropdownMenu
 */
-  var userSelect = createMenu('owner','User'); // Initializing Owner Menu
-  var groupSelect = createMenu('app','Group'); // Initializing Application status Menu
-  var expiredSelect = createMenu('status','Expiration'); // Initializing JobStatus Menu
-  var persistentSelect = createMenu('minorstat','Persistent'); // Initializing Minor Status Menu
+  var userSelect = createMenu('username','User');
+  var groupSelect = createMenu('usergroup','Group');
+  var expiredBefore = createDropdownMenu('expiredBefore','Expired Before'); // Initializing JobStatus Menu
+  var expiredAfter = createDropdownMenu('expiredAfter','Expired After'); // Initializing JobStatus Menu
+  var pers = [['True'],['False']];
+  var persistentSelect = createDropdownMenu('persistent','Persistent',pers); // Initializing Minor Status Menu
   var select = selectPanel(); // Initializing container for selection objects
   // Insert object to container BEFORE buttons:
   select.insert(0,userSelect);
   select.insert(1,groupSelect);
-  select.insert(2,expiredSelect);
-  select.insert(3,persistentSelect);
+  select.insert(2,expiredBefore);
+  select.insert(3,expiredAfter);
+  select.insert(4,persistentSelect);
   var bar = sideBar();
   bar.insert(0,select);
   bar.setTitle('ProxyManagement');
@@ -91,8 +95,8 @@ function renderPage()
    				  icon:gURLRoot+'/images/iface/delete.gif'
    				}
    			];
-   			
-  gMainGrid = table({'store':store,'columns':columns,'tbar':tbar,'view':view});
+  tableMngr = {'store':store,'columns':columns,'tbar':tbar,'view':view};
+  gMainGrid = table( tableMngr );
   gMainGrid.addListener('sortchange',cbMainGridSortChange );  
 	var selectors = initSidebar();
 	renderInMainViewport( [selectors, gMainGrid] );
@@ -137,51 +141,16 @@ function cbStoreBeforeLoad( store, params )
 							   'sortDirection' : sortState.direction,
 							   'limit' : bb.pageSize,
 							 };
+	dataSelect.globalSort = sortState.field + ' ' + sortState.direction;
 }
 
 function cbMainGridSortChange( mainGrid, params )
 {
 	var store = mainGrid.getStore();
 	store.setDefaultSort( params.field, params.direction );
+	dataSelect.globalSort = params.field + ' ' + params.direction;
 	store.reload();
 }
-
-function createNumItemsSelector(){
-	var store = new Ext.data.SimpleStore({
-		fields:['number'],
-		data:[[25],[50],[100],[200],[500],[1000]]
-	});
-	var combo = new Ext.form.ComboBox({
-		allowBlank:false,
-		displayField:'number',
-		editable:false,
-		maxLength:4,
-		maxLengthText:'The maximum value for this field is 9999',
-		minLength:1,
-		minLengthText:'The minimum value for this field is 1',
-		mode:'local',
-		name:'number',
-		selectOnFocus:true,
-		store:store,
-		triggerAction:'all',
-		typeAhead:true,
-		value:25,
-		width:50
-	});
-	combo.on({
-		'collapse':function() {
-			var bb = gMainGrid.getBottomToolbar();
-			if( bb.pageSize != combo.value )
-			{
-				bb.pageSize = combo.value;
-				var store = gMainGrid.getStore()
-				store.load( { params : { start : 0, limit : bb.pageSize } } );
-			}
-		}
- 	});
-	return combo;
-}
-
 
 function cbDeleteSelected()
 {
