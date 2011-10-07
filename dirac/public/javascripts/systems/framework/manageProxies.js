@@ -27,6 +27,7 @@ function initSidebar(){
   var pers = [['True'],['False']];
   var persistentSelect = createDropdownMenu('persistent','Persistent',pers); // Initializing Minor Status Menu
   var select = selectPanel(); // Initializing container for selection objects
+  select.buttons[2].hide(); // Remove refresh button
   // Insert object to container BEFORE buttons:
   select.insert(0,userSelect);
   select.insert(1,groupSelect);
