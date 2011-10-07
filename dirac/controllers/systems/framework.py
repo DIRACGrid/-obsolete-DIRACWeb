@@ -30,6 +30,10 @@ class FrameworkController(BaseController):
     return render(  "/systems/framework/showProxyActionLog.mako" )
 
   def __humanize_time(self, sec=False):
+    """
+    Converts number of seconds to human readble values. Max return value is 
+    "More then a year" year and min value is "One day"
+    """
     if not sec:
       return "Time span is not specified"
     try:
@@ -107,25 +111,19 @@ class FrameworkController(BaseController):
     callback["expiredBefore"] = timespan
     callback["expiredAfter"] = timespan
     return callback
-
+    
+  @jsonify
+  def submit(self):
+    gLogger.always("Submit")    
+    return self.getProxiesList()
+    
   @jsonify
   def getProxiesList(self):
-    try:
-      start = int( request.params[ 'start' ] )
-    except:
-      start = 0
-    try:
-      limit = int( request.params[ 'limit' ] )
-    except:
-      limit = 0
-    try:
-      sortField = str( request.params[ 'sortField' ] )
-      sortDir = str( request.params[ 'sortDirection' ] )
-      sort = [ ( sortField, sortDir ) ]
-    except:
-      sort = []
+    if not authorizeAction():
+      return {"success":"false","error":"You are not authorize to access these data"}
+    start, limit, sort, req = self.__request()
     rpcClient = getRPCClient( "Framework/ProxyManager" )
-    retVal = rpcClient.getContents( {}, sort, start, limit )
+    retVal = rpcClient.getContents( req, sort, start, limit )
     if not retVal[ 'OK' ]:
       return retVal
     svcData = retVal[ 'Value' ]
@@ -217,3 +215,65 @@ class FrameworkController(BaseController):
         dd[ svcData[ 'ParameterNames' ][i] ] = str( record[i] )
       data[ 'actions' ].append( dd )
     return data
+
+  def __request(self):
+    gLogger.info("!!!  PARAMS: ",str(request.params))
+    req = {}
+    try:
+      start = int( request.params[ 'start' ] )
+    except:
+      start = 0
+    try:
+      limit = int( request.params[ 'limit' ] )
+    except:
+      limit = 25
+    try:
+      sort = str( request.params[ 'sort' ] )
+      sortField, sortDir = sort.split(" ")
+      sort = [ ( sortField, sortDir ) ]
+    except:
+      sort = []
+    result = gConfig.getOption("/Website/ListSeparator")
+    if result["OK"]:
+      separator = result["Value"]
+    else:
+      separator = ":::"
+    if request.params.has_key("username") and len(request.params["username"]) > 0:
+      if str(request.params["username"]) != "All":
+        username = str(request.params["username"]).split(separator)
+        req['UserDN'] = []
+        for i in username:
+          result = CS.getDNForUsername(i)
+          if result["OK"]:
+            dns = result['Value']
+            for j in dns:
+              req['UserDN'].append(j)
+    if request.params.has_key("usergroup") and len(request.params["usergroup"]) > 0:
+      if str(request.params["usergroup"]) != "All":
+        req["UserGroup"] = str(request.params["usergroup"]).split(separator)
+    if request.params.has_key("persistent") and len(request.params["persistent"]) > 0:
+      if str(request.params["persistent"]) in ["True","False"]:
+        req["PersistentFlag"] = str(request.params["persistent"])
+    before = False
+    after = False
+    if request.params.has_key("expiredBefore") and len(request.params["expiredBefore"]) > 0:
+      try:
+        before = int(request.params["expiredBefore"])
+      except:
+        pass
+    if request.params.has_key("expiredAfter") and len(request.params["expiredAfter"]) > 0:
+      try:
+        after = int(request.params["expiredAfter"])
+      except:
+        pass
+    if before and after:
+      if before > after:
+        req["beforeDate"] = before      
+        req["afterDate"] = after
+    else:
+      if before:
+        req["beforeDate"] = before
+      if after:
+        req["afterDate"] = after
+    gLogger.always("REQUEST:",req)
+    return (start, limit, sort, req)
