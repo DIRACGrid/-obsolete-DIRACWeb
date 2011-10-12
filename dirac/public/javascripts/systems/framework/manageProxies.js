@@ -24,7 +24,7 @@ function initSidebar(){
   var groupSelect = createMenu('usergroup','Group');
   var expiredBefore = createDropdownMenu('expiredBefore','Expired Before'); // Initializing JobStatus Menu
   var expiredAfter = createDropdownMenu('expiredAfter','Expired After'); // Initializing JobStatus Menu
-  var pers = [['True'],['False']];
+  var pers = [['All'],['True'],['False']];
   var persistentSelect = createDropdownMenu('persistent','Persistent',pers); // Initializing Minor Status Menu
   var select = selectPanel(); // Initializing container for selection objects
   select.buttons[2].hide(); // Remove refresh button
@@ -43,8 +43,8 @@ function initSidebar(){
 function renderPage()
 {
 	var reader = new Ext.data.JsonReader({
-		root : 'proxies',
-		totalProperty : 'numProxies',
+		root : 'result',
+		totalProperty : 'total',
 		id : 'proxyid',
 		fields : [ 'username', 'UserDN', 'UserGroup', 'ExpirationTime', 'PersistentFlag' ]
     });
@@ -53,7 +53,7 @@ function renderPage()
 				reader: reader,
 				url : "getProxiesList",
 				autoLoad : true,
-				sortInfo: { field: 'UserDN', direction: 'ASC' },
+				sortInfo: { field: 'ExpirationTime', direction: 'ASC' },
             groupField : 'username',
             listeners : { beforeload : cbStoreBeforeLoad },
         		});
