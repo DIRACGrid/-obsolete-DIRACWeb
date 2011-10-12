@@ -1,13 +1,3 @@
-#import logging, string
-#from time import time, gmtime, strftime
-
-#from dirac.lib.base import *
-#from dirac.lib.diset import getRPCClient
-#from DIRAC import S_OK, S_ERROR, gConfig
-#from DIRAC.Core.Utilities import Time, List
-#from DIRAC.AccountingSystem.Client.ReportsClient import ReportsClient
-#from dirac.lib.webBase import defaultRedirect
-
 import logging, string
 from time import time, gmtime, strftime
 
@@ -217,7 +207,6 @@ class ProductionmonitorController(BaseController):
     result = RPC.getDistinctAttributeValues("Status",{})
     if result["OK"]:
       status = []
-#    status = [["New"],["Active"],["ValidatingInput"],["ValidatingOuptut"],["WaitingIntegrity"],["ValidatedOutputs"],["RemovingFiles"],["RemovedFiles"],["Completed"],["Archived"],["Cleaning"],["Stopped"]]
       if len(result["Value"])>0:
         status.append([str("All")])
         for i in result["Value"]:
