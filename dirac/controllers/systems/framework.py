@@ -112,9 +112,7 @@ class FrameworkController(BaseController):
     callback["expiredAfter"] = timespan
     return callback
     
-  @jsonify
   def submit(self):
-    gLogger.always("Submit")    
     return self.getProxiesList()
     
   @jsonify
@@ -125,10 +123,11 @@ class FrameworkController(BaseController):
     rpcClient = getRPCClient( "Framework/ProxyManager" )
     retVal = rpcClient.getContents( req, sort, start, limit )
     if not retVal[ 'OK' ]:
-      return retVal
+      return {"success":"false","error":retVal["Message"]}
     svcData = retVal[ 'Value' ]
-    data = { 'numProxies' : svcData[ 'TotalRecords' ], 'proxies' : [] }
+    proxies = []
     dnMap = {}
+    gLogger.info("!!!  RESULT: %s",str(svcData) )
     for record in svcData[ 'Records' ]:
       dn = record[0]
       if dn in dnMap:
@@ -140,12 +139,13 @@ class FrameworkController(BaseController):
         else:
           username = retVal[ 'Value' ]
         dnMap[ dn ] = username
-      data[ 'proxies' ].append( { 'proxyid': "%s@%s" % ( record[0], record[1] ),
+      proxies.append( { 'proxyid': "%s@%s" % ( record[0], record[1] ),
                                   'username' : username,
                                   'UserDN' : record[0],
                                   'UserGroup' : record[1],
                                   'ExpirationTime' : str( record[2] ),
                                   'PersistentFlag' : str( record[3] ) } )
+    data = {"success":"true","result":proxies,"total":svcData[ 'TotalRecords' ]}
     return data
 
   @jsonify
