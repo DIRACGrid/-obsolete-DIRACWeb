@@ -1,3 +1,6 @@
+[web2011101401]
+FIX: Strip whitespaces in a list of values recieved for Launchpad
+
 [web2011093001]
 NEW: Correct RunStatuses for the context menu in transformation monitoring page are taken from CS
 
