@@ -382,6 +382,11 @@ function submitJobNew(){
         dataAdd(items[i]);
       }else{
         var list = items[i].split(launchpadOptsSeparator);
+        if(list.length > 1){
+          for(var j = 0; j < list.length; j++){
+            list[j] = list[j].replace(/^\s\s*/, '').replace(/\s\s*$/, '');
+          }
+        }
         var add = true;
         for(var j in data){
           if(i == data[j][0]){
