@@ -464,26 +464,9 @@ class JobmonitorController(BaseController):
       return self.__getProxyStatus()
     elif request.params.has_key("getLaunchpadOpts") and len(request.params["getLaunchpadOpts"]) > 0:
       return self.__getLaunchpadOpts()
-    elif request.params.has_key("isLaunchpadOptsExists") and len(request.params["isLaunchpadOptsExists"]) > 0:
-      return self.__isLaunchpadOptsExists()
     else:
       c.result = {"success":"false","error":"The request parameters can not be recognized or they are not defined"}
       return c.result
-################################################################################
-  def __isLaunchpadOptsExists(self):
-    gLogger.info("isLaunchpadOptsExists")
-    result = {}
-    options = gConfig.getOptions("/Website/Launchpad/Options")
-    if options["OK"]:
-      result["options"] = "true"
-    else:
-      result["options"] = "false"
-    overwrite = gConfig.getOption("/Website/Launchpad/OptionsOverwrite")
-    if overwrite["OK"]:
-      result["overwrite"] = "true"
-    else:
-      result["overwrite"] = "false"
-    return {"success":"true","result":result}
 ################################################################################
   def __getDataFromCS(self,path="/Website/Launchpad/Options"):
     result = gConfig.getOptionsDict(path)
@@ -494,19 +477,30 @@ class JobmonitorController(BaseController):
       sections = result["Value"]    
     if len(sections) > 0:
       for i in sections:
-        gLogger.always(" itter: %s" % i)
         options[i] = self.__getDataFromCS(path + '/' + i)
     return options
 ################################################################################
   def __getLaunchpadOpts(self):
-    gLogger.always("getLaunchpadOpts")
-    c.result = self.__getDataFromCS()
-    result = gConfig.getOption("/Website/Launchpad/ListSeparator")
-    if result["OK"]:
-      separator = result["Value"]
+    options = gConfig.getOptions("/Website/Launchpad/Options", False)
+    if options and options["OK"]:
+      options = self.__getDataFromCS()
+    else:
+      options = "false"
+    override = gConfig.getOption("/Website/Launchpad/OptionsOverride")
+    if override["OK"]:
+      override = str(override["Value"]).lower()
+      if override == "true":
+        pass
+      else:
+        override = "false"
+    else:
+      override = "false"
+    separator = gConfig.getOption("/Website/Launchpad/ListSeparator")
+    if separator["OK"]:
+      separator = separator["Value"]
     else:
       separator = "false"
-    return {"success":"true","result":c.result,"separator":separator}
+    return {"success":"true","result":options,"override":override,"separator":separator}
 ################################################################################
   def __getStats(self,selector):
     gLogger.always(" --- selector : %s" % selector)
