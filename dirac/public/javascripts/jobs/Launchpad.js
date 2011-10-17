@@ -407,7 +407,7 @@ function submitJobNew(){
   function menuShuffle(menu){
     dataAdd(menu);
     var add = Ext.getCmp(addID);
-    if(!isLaunchpadOptsOverwrite && add.menu){
+    if(!launchpadOptsOverride && add.menu){
       menuAdd(add.menu,menu);
     }else{
       var sub = new Ext.menu.Menu();
@@ -604,43 +604,31 @@ function submitJobNew(){
     title:'Launchpad',
   });
   win.show();
-  if(isLaunchpadOpts){
-    addButton.disable();
-    addButton.icon = gURLRoot+'/images/iface/loading.gif'
-    Ext.Ajax.request({
-      method:'POST',
-      params:{'getLaunchpadOpts':true},
-      success:function(response){
-        response = Ext.util.JSON.decode(response.responseText);
-        if(response.separator && response.separator != 'false'){
-          launchpadOptsSeparator = response.separator;
-        }
-        addButton.enable();
-        if(response.result){
-          menuShuffle(response.result);
-        }
-      },
-      failure:function(response){
-        addButton.enable();
-        alert('Error: Failed to load additional options from Configuration Service. Default options will be used');
-      },
-      timeout:60000, // 1min
-      url:'action'
-    });
-  }else{
-    Ext.Ajax.request({
-      method:'POST',
-      params:{'isLaunchpadOptsExists':true},
-      success:function(response){
-        var response = Ext.util.JSON.decode(response.responseText);
-        if(response.result == 'true'){
-          isLaunchpadOpts = true;
-        }
-      },
-      timeout:60000, // 1min
-      url:'action'
-    });
-  }
+  Ext.Ajax.request({
+    method:'POST',
+    params:{'getLaunchpadOpts':true},
+    success:function(response){
+      var response = Ext.util.JSON.decode(response.responseText);
+      if(response.override && response.override == 'true'){
+        launchpadOptsOverride = true;
+      }else{
+        launchpadOptsOverride = false;
+      }
+      if(response.separator && response.separator != 'false'){
+        launchpadOptsSeparator = response.separator;
+      }
+      addButton.enable();
+      if(response.result){
+        menuShuffle(response.result);
+      }
+    },
+    failure:function(response){
+      addButton.enable();
+      alert('Error: Failed to load additional options from Configuration Service. Default options will be used');
+    },
+    timeout:60000, // 1min
+    url:'action'
+  });  
   win.on({
     'resize':function(){
       var panel = Ext.getCmp(innID);
