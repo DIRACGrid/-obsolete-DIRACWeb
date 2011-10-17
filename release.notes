@@ -1,3 +1,7 @@
+[web2011101701]
+FIX: JobLaunchpad check for extra parameters on creation time
+FIX: Remove extra checks for parametric jobs in JobMonitoring controller
+
 [web2011101401]
 FIX: Strip whitespaces in a list of values recieved for Launchpad
 
