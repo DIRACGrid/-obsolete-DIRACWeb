@@ -891,10 +891,7 @@ class JobmonitorController(BaseController):
       if item == "Parameters":
         try:
           parameters = int(params[item])
-          if parameters > 20:
-            return {"success":"false","error":"Exceeded Parameters limit. Must be less then 20"}
-          else:
-            jdl = jdl + str(item) + " = \"" + str(parameters) + "\";"
+          jdl = jdl + str(item) + " = \"" + str(parameters) + "\";"
         except:
           parameters = str(params[item])
           if parameters.find("{") >= 0 and parameters.find("}") >= 0:
