@@ -3,7 +3,10 @@
 <%inherit file="/diracPage.mako" />
 
 <%def name="head_tags()">
+${ h.javascript_link( "/javascripts/lovCombo.js" ) }
+${ h.javascript_link( "/javascripts/jobs/Lib.js" ) }
 ${ h.javascript_link( "/javascripts/systems/framework/manageProxies.js" ) }
+${ h.stylesheet_link( "/stylesheets/lovCombo.css" ) }
 <style>
 #action-panel .x-panel {
 	margin-bottom:3px;
@@ -39,6 +42,6 @@ ${ h.javascript_link( "/javascripts/systems/framework/manageProxies.js" ) }
 
 <%def name="body()">
 <script type="text/javascript">
-  initManageProxies();
+  initManageProxies(${c.select});
 </script>
 </%def>
