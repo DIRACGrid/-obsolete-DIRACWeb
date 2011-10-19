@@ -7,6 +7,7 @@ import simplejson
 
 from DIRAC import S_OK, S_ERROR, gConfig, gLogger
 from DIRAC.Core.Security import CS
+from DIRAC.Core.Utilities.List import uniqueElements
 
 log = logging.getLogger(__name__)
 
@@ -70,30 +71,23 @@ class FrameworkController(BaseController):
       for i in request.params:
         tmp[i] = str(request.params[i])
       callback["extra"] = tmp
-    result = gConfig.getSections("/Registry/Users")
-    if result["OK"]:
-      users = result["Value"]
-      if len(users)>0:
-        users.sort()
-        users = map(lambda x: [x], users)
-        users.insert(0,["All"])
-        users.append(["unknown"])
-      else:
-        users = [["Nothing to display"]]
-    else:
-      users = [["Error during RPC call"]]
+    rpcClient = getRPCClient( "Framework/ProxyManager" )
+    retVal = rpcClient.getContents( {}, [], 0, 0 )
+    if not retVal[ 'OK' ]:
+      return {"success":"false","error":retVal["Message"]}
+    data = retVal[ 'Value' ]
+    users = []
+    groups = []
+    for record in data[ 'Records' ]:
+      users.append( str(record[0]) )
+      groups.append( str(record[2]) )
+    users = uniqueElements(users)
+    groups = uniqueElements(groups)
+    users.sort()
+    groups.sort()
+    users = map(lambda x: [x], users)
+    groups = map(lambda x: [x], groups)
     callback["username"] = users
-    result = gConfig.getSections("/Registry/Groups")
-    if result["OK"]:
-      groups = result["Value"]
-      if len(groups)>0:
-        groups.sort()
-        groups = map(lambda x: [x], groups)
-        groups.insert(0,["All"])
-      else:
-        groups = [["Nothing to display"]]
-    else:
-      groups = [["Error during RPC call"]]
     callback["usergroup"] = groups
     result = gConfig.getOption("/Website/ProxyManagementMonitoring/TimeSpan")
     if result["OK"]:
