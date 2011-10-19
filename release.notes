@@ -1,3 +1,6 @@
+[web2011101991]
+CHANGE: ProxyManagement can select by username and usergroup
+
 [web2011101701]
 FIX: JobLaunchpad check for extra parameters on creation time
 FIX: Remove extra checks for parametric jobs in JobMonitoring controller
