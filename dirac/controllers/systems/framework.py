@@ -127,24 +127,14 @@ class FrameworkController(BaseController):
     svcData = retVal[ 'Value' ]
     proxies = []
     dnMap = {}
-    gLogger.info("!!!  RESULT: %s",str(svcData) )
+    gLogger.info("!!!  RESULT: %s" % str(svcData) )
     for record in svcData[ 'Records' ]:
-      dn = record[0]
-      if dn in dnMap:
-        username = dnMap[ dn ]
-      else:
-        retVal = CS.getUsernameForDN( dn )
-        if not retVal[ 'OK' ]:
-          username = 'unknown'
-        else:
-          username = retVal[ 'Value' ]
-        dnMap[ dn ] = username
-      proxies.append( { 'proxyid': "%s@%s" % ( record[0], record[1] ),
-                                  'username' : username,
-                                  'UserDN' : record[0],
-                                  'UserGroup' : record[1],
-                                  'ExpirationTime' : str( record[2] ),
-                                  'PersistentFlag' : str( record[3] ) } )
+      proxies.append( { 'proxyid': "%s@%s" % ( record[1], record[2] ),
+                                  'username' : str( record[0] ),
+                                  'UserDN' : record[1],
+                                  'UserGroup' : record[2],
+                                  'ExpirationTime' : str( record[3] ),
+                                  'PersistentFlag' : str( record[4] ) } )
     data = {"success":"true","result":proxies,"total":svcData[ 'TotalRecords' ]}
     return data
 
@@ -240,14 +230,7 @@ class FrameworkController(BaseController):
       separator = ":::"
     if request.params.has_key("username") and len(request.params["username"]) > 0:
       if str(request.params["username"]) != "All":
-        username = str(request.params["username"]).split(separator)
-        req['UserDN'] = []
-        for i in username:
-          result = CS.getDNForUsername(i)
-          if result["OK"]:
-            dns = result['Value']
-            for j in dns:
-              req['UserDN'].append(j)
+        req["UserName"] = str(request.params["username"]).split(separator)
     if request.params.has_key("usergroup") and len(request.params["usergroup"]) > 0:
       if str(request.params["usergroup"]) != "All":
         req["UserGroup"] = str(request.params["usergroup"]).split(separator)

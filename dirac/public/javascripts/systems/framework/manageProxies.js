@@ -31,9 +31,9 @@ function initSidebar(){
   // Insert object to container BEFORE buttons:
   select.insert(0,userSelect);
   select.insert(1,groupSelect);
-  select.insert(2,expiredBefore);
-  select.insert(3,expiredAfter);
-  select.insert(4,persistentSelect);
+//  select.insert(2,expiredBefore);
+//  select.insert(3,expiredAfter);
+//  select.insert(4,persistentSelect);
   var bar = sideBar();
   bar.insert(0,select);
   bar.setTitle('ProxyManagement');
