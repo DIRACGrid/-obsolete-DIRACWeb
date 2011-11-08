@@ -1,3 +1,8 @@
+[web2011110801]
+CHANGE: Add "All" item in users' list for proxy management page
+FIX: Fix bug with console unknown object
+CHANGE: Remove refresh button from selection pane in error console
+
 [web2011101991]
 CHANGE: ProxyManagement can select by username and usergroup
 
