@@ -73,12 +73,12 @@ class FrameworkController(BaseController):
       callback["extra"] = tmp
     rpcClient = getRPCClient( "Framework/ProxyManager" )
     retVal = rpcClient.getContents( {}, [], 0, 0 )
-    if not retVal[ 'OK' ]:
+    if not retVal[ "OK" ]:
       return {"success":"false","error":retVal["Message"]}
-    data = retVal[ 'Value' ]
+    data = retVal[ "Value" ]
     users = []
     groups = []
-    for record in data[ 'Records' ]:
+    for record in data[ "Records" ]:
       users.append( str(record[0]) )
       groups.append( str(record[2]) )
     users = uniqueElements(users)
@@ -87,6 +87,7 @@ class FrameworkController(BaseController):
     groups.sort()
     users = map(lambda x: [x], users)
     groups = map(lambda x: [x], groups)
+    users.insert(0,["All"])
     callback["username"] = users
     callback["usergroup"] = groups
     result = gConfig.getOption("/Website/ProxyManagementMonitoring/TimeSpan")
