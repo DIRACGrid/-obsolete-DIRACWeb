@@ -33,6 +33,7 @@ function initSidebar(){
   var select = selectPanel(); // Initializing container for selection objects
   select.insert(0,startDate);
   select.insert(1,finalDate);
+  select.buttons[2].hide(); // Remove refresh button
   var bar = sideBar();
   bar.insert(0,select);
   return bar
