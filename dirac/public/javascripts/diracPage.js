@@ -66,6 +66,28 @@ function __addClickHandlerToMenuSubEntries( menuEntry )
   }
   return hndlMenu;
 }
+function regForm(dn){
+  if(dn){}
+  var title = 'Help for ' + gPageDescription.pagePath;
+  var window = new Ext.Window({
+    iconCls:'icon-grid',
+    closable:true,
+    width:800,
+    height:400,
+    border:true,
+    collapsible:false,
+    constrain:true,
+    constrainHeader:true,
+    maximizable:true,
+    modal:true,
+//    layout:'fit',
+//    plain:true,
+//    shim:false,
+    title:'Registration form',
+    items:[panel]
+  });
+  window.show();
+}
 function helpEntry(){
   var url = 'http://marwww.in2p3.fr/~atsareg/Docs/DIRAC/build/html/diracindex.html';
   if(gPageDescription.helpURL){
@@ -168,25 +190,40 @@ function initBottomFrame( pageDescription )
 {
   var navItems = [ pageDescription['pagePath'], '->', { 'id' : 'mainNotificationStats', 'text' : '' }, "-" ];
   var userObject = pageDescription[ 'userData' ];
-  if( userObject.group )
-  {
-  	navItems.push( userObject[ 'username' ]+"@" );
-  	// Set the handler
-  	for( var i = 0; i< userObject.groupMenu.length; i++ )
-  	{
-  		userObject.groupMenu[i].handler = redirectWithHashHandler;
-  	}
-    var userGroupMenu = new Ext.Toolbar.Button({
-      text : userObject.group,
-      menu : userObject.groupMenu
+  var username = 'undefined';
+  try{
+    username = userObject.username.toLowerCase();
+  }catch(e){
+    alert('Error: ' + e.name + ': ' + e.message)
+  }
+  username = 'anonymous' // just debug
+  if(userObject.DN && username == 'anonymous'){
+    var register = new Ext.Toolbar.Button({
+      handler:function(){
+        regForm(userObject.DN);
+      },
+      text:'<b>Click here to register yourself in DIRAC</b>',
+      tooltip:''
+    });
+    navItems.push(register);
+  }else{
+    if( userObject.group ){
+    	navItems.push( userObject[ 'username' ]+"@" );
+    	// Set the handler
+    	for( var i = 0; i< userObject.groupMenu.length; i++ )
+    	{
+    		userObject.groupMenu[i].handler = redirectWithHashHandler;
+    	}
+      var userGroupMenu = new Ext.Toolbar.Button({
+        text : userObject.group,
+        menu : userObject.groupMenu
       });
-    navItems.push( userGroupMenu );
+      navItems.push( userGroupMenu );
+    }else{
+    	navItems.push( userObject[ 'username' ] );
+    }
+    navItems.push( "("+userObject.DN+")" );
   }
-  else
-  {
-  	navItems.push( userObject[ 'username' ] );
-  }
-  navItems.push( "("+userObject.DN+")" );
   var bottomBar = new Ext.Toolbar({
     region:'south',
     id:'diracBottomBar',
