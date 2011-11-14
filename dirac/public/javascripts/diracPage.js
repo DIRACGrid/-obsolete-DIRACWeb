@@ -67,8 +67,126 @@ function __addClickHandlerToMenuSubEntries( menuEntry )
   return hndlMenu;
 }
 function regForm(dn){
-  if(dn){}
-  var title = 'Help for ' + gPageDescription.pagePath;
+//  if(dn){}
+  var formHandle = {
+    success:function(){
+      alert('Your request has been successfully sent to administrator\nInstructions will be sent to your e-mail address shortly');
+      var win = panel.findParentByType('window');
+      try{
+        win.close();
+      }catch(e){
+        alert('Error: ' + e.name + ': ' + e.message)
+      }
+    },
+    failure:function(a,b){
+      alert('Error: Error happens on server side: ' + b.result.error);
+      var win = panel.findParentByType('window');
+      try{
+        win.close();
+      }catch(e){
+        alert('Error: ' + e.name + ': ' + e.message)
+      }    
+    }
+  }
+  var close = new Ext.Button({
+    cls:"x-btn-text-icon",
+    handler:function(){
+      var win = panel.findParentByType('window');
+      try{
+        win.close();
+      }catch(e){
+        alert('Error: ' + e.name + ': ' + e.message)
+      }
+    },
+    icon:gURLRoot+'/images/iface/close.gif',
+    minWidth:'100',
+    tooltip:'Alternatively, you can close the dialogue by pressing the [X] button on the top of the window',
+    text:'Close'
+  })
+  var reset = new Ext.Button({
+    cls:"x-btn-text-icon",
+    handler:function(){
+      panel.form.reset();
+    },
+    icon:gURLRoot+'/images/iface/reset.gif',
+    minWidth:'100',
+    tooltip:'Reset values in the form',
+    text:'Reset'
+  });
+  var submit = new Ext.Button({
+    cls:"x-btn-text-icon",
+    handler:function(){
+      panel.form.submit(formHandle);
+    },
+    icon:gURLRoot+'/images/iface/submit.gif',
+    minWidth:'100',
+    tooltip:'Send request to the server',
+    text:'Submit'
+  });
+  var country = {fieldLabel:'Country',name:'country',emptyText:'Select your country'};
+  if(pageDescription['regCountries']){
+    var country = new Ext.form.ComboBox({
+      displayField:'name',
+      emptyText:'Select your country',
+      fieldLabel:'Country',
+      store:new Ext.data.SimpleStore({fields:['name'],data:pageDescription['regCountries'],sortInfo:{field:'name',direction:'ASC'}}),
+      typeAhead:true,
+      mode:'local',
+      name:'country',
+      forceSelection:true,
+      triggerAction:'all',
+      selectOnFocus:true,
+    });
+  }
+  var voList = {fieldLabel:'Virtual Organization',name:'vo',emptyText:'Select prefered virtual organization(s)'};
+  if(pageDescription['regVO']){
+    var voList = new Ext.ux.form.LovCombo({
+      displayField:'data',
+      emptyText:'Select prefered virtual organization(s)',
+      fieldLabel:'Virtual Organization',
+      hiddenName:'vo',
+      hideOnSelect:false,
+      id:Ext.id(),
+      mode:'local',
+      resizable:true,
+      separator:',',
+      store:new Ext.data.SimpleStore({fields:['data'],data:pageDescription['regVO'],sortInfo:{field:'data',direction:'ASC'}}),
+      triggerAction:'all',
+      typeAhead:true,
+      valueField:'data'
+    });
+  }
+  var panel = new Ext.form.FormPanel({
+    autoScroll:true,
+    baseParams:{'registration_request':'true'},
+    bodyStyle:'padding: 5px',
+    border:false,
+    buttonAlign:'center',
+    buttons:[submit,reset,close],
+    defaultType:'textfield',
+    defaults:{
+      anchor:'-25'
+    },
+    items:[
+      {fieldLabel:'Full Name',name:'full_name',allowBlank:false,emptyText:'John Smith'},
+      {fieldLabel:'Username',name:'user_name',emptyText:'jsmith'},
+      {fieldLabel:'Email',name:'email',vtype:'email',allowBlank:false,emptyText:'john.smith@gmail.com'},
+      {fieldLabel:'Phone number',name:'phone',emptyText:'+33 9 10 00 10 00'},
+      country,voList,
+      {fieldLabel:'Comments',name:'comment',xtype:'textarea',emptyText:'Any additional information you want to provide to administrators'}
+    ],
+    keys:[{
+      key:13,
+      scope:this,
+      fn:function(key,e){
+        panel.form.submit(formHandle);
+      }
+    }],
+    labelAlign:'top',
+    method:'POST',
+    url:'../../info/general/action',
+    waitMsgTarget:true  
+  });
   var window = new Ext.Window({
     iconCls:'icon-grid',
     closable:true,
@@ -80,10 +198,10 @@ function regForm(dn){
     constrainHeader:true,
     maximizable:true,
     modal:true,
-//    layout:'fit',
-//    plain:true,
-//    shim:false,
-    title:'Registration form',
+    layout:'fit',
+    plain:true,
+    shim:false,
+    title:'Registration form for ' + dn,
     items:[panel]
   });
   window.show();
@@ -190,19 +308,55 @@ function initBottomFrame( pageDescription )
 {
   var navItems = [ pageDescription['pagePath'], '->', { 'id' : 'mainNotificationStats', 'text' : '' }, "-" ];
   var userObject = pageDescription[ 'userData' ];
-  var username = 'undefined';
-  try{
-    username = userObject.username.toLowerCase();
-  }catch(e){
-    alert('Error: ' + e.name + ': ' + e.message)
-  }
-  username = 'anonymous' // just debug
-  if(userObject.DN && username == 'anonymous'){
+  userObject.username = 'anonymous' // just debug
+  if(userObject.DN && userObject.username && userObject.username.toLowerCase() == 'anonymous'){
+// A trick to include additional JS file  
+    var th = document.getElementsByTagName('head')[0];
+    var s = document.createElement('script');
+    s.setAttribute('type','text/javascript');
+    s.setAttribute('src','/javascripts/lovCombo.js');
+    var c = document.createElement('link');
+    c.setAttribute('type','text/css');
+    c.setAttribute('rel','stylesheet');
+    c.setAttribute('href','/stylesheets/lovCombo.css');
+    th.appendChild(s);
+    th.appendChild(c);
+// End of trick    
+    Ext.Ajax.request({
+      method:'POST',
+      params:{'getCountries':true},
+      success:function(response){
+        var response = Ext.util.JSON.decode(response.responseText);
+        if(response.result){
+          var result = response.result;
+          pageDescription['regCountries'] = [];
+          for(var i in result){
+            pageDescription['regCountries'].push([result[i]]);
+          }
+        }
+      },
+      url:'../../info/general/action'
+    });
+    Ext.Ajax.request({
+      method:'POST',
+      params:{'getVOList':true},
+      success:function(response){
+        var response = Ext.util.JSON.decode(response.responseText);
+        if(response.result){
+          var result = response.result;
+          pageDescription['regVO'] = [];
+          for(var i=0;i<result.length;i++){
+            pageDescription['regVO'].push([result[i]]);
+          }
+        }
+      },
+      url:'../../info/general/action'
+    });
     var register = new Ext.Toolbar.Button({
       handler:function(){
         regForm(userObject.DN);
       },
-      text:'<b>Click here to register yourself in DIRAC</b>',
+      text:'<b>Click here to register in DIRAC</b>',
       tooltip:''
     });
     navItems.push(register);
