@@ -39,16 +39,25 @@ class GeneralController( BaseController ):
     default_values = ["John Smith","jsmith","john.smith@gmail.com","+33 9 10 00 10 00","Select prefered virtual organization(s)"]
     default_values.append("Select your country")
     default_values.append("Any additional information you want to provide to administrators")
-# Check for DN and name anonimous
+# TODO Check for DN and name anonimous
+    admins = gConfig.getValue("/Registry/Groups/dirac_admin/Users").split(', ')
+    if admins:
+      mails = list()
+      for j in admins:
+        path = "/Registry/Users/" + j + "/Email"
+        email = gConfig.getValue(path)
+        if email:
+          mails.append(email)
+      gLogger.info("Admins emails: ",mails)
+    else:
+      return {"success":"false","error":"Administrator is not yet defined for DIRAC instance"}
     ntc = NotificationClient( getRPCClient )
     body = ""
     for i in paramcopy:
       if not paramcopy[i] in default_values:
         body = body + str(i) + ' - ' + str(paramcopy[i]) + '\n'
-    body = str(body)
-    gLogger.info(body)
-# Check for previous requests
-    result = ntc.sendMail("matvey.sapunov@gmail.com","New user has arrived",body,"adduser@diracgrid.org",False)
+# TODO Check for previous requests
+    result = ntc.sendMail("matvey.sapunov@gmail.com","New user has registered",body,"adduser@diracgrid.org",False)
     if not result["OK"]:
       return {"success":"false","error":result["Message"]}
     return {"success":"true","result":result["Value"]}
