@@ -79,7 +79,11 @@ function regForm(dn){
       }
     },
     failure:function(a,b){
-      alert('Error: Error happens on server side: ' + b.result.error);
+      if(b.failureType == 'connect'){
+        alert('Error: Bad connection or error happens on server side while connecting');
+      }else{
+        alert('Error: Error happens on server side');
+      }
       var win = panel.findParentByType('window');
       try{
         win.close();
@@ -168,6 +172,7 @@ function regForm(dn){
       anchor:'-25'
     },
     items:[
+      {xtype:'hidden',name:'dn',value:dn},
       {fieldLabel:'Full Name',name:'full_name',allowBlank:false,emptyText:'John Smith'},
       {fieldLabel:'Username',name:'user_name',emptyText:'jsmith'},
       {fieldLabel:'Email',name:'email',vtype:'email',allowBlank:false,emptyText:'john.smith@gmail.com'},
