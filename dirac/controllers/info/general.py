@@ -4,6 +4,7 @@ import os
 from dirac.lib.base import *
 from DIRAC import gConfig, gLogger
 from dirac.lib.diset import getRPCClient
+from dirac.lib.credentials import getUserDN, getUsername
 from DIRAC.FrameworkSystem.Client.NotificationClient import NotificationClient
 
 log = logging.getLogger( __name__ )
@@ -39,7 +40,13 @@ class GeneralController( BaseController ):
     default_values = ["John Smith","jsmith","john.smith@gmail.com","+33 9 10 00 10 00","Select prefered virtual organization(s)"]
     default_values.append("Select your country")
     default_values.append("Any additional information you want to provide to administrators")
-# TODO Check for DN and name anonimous
+    dn = getUserDN()
+    username = getUsername()
+    if not username == "anonymous":
+      return {"success":"false","error":"You are already registered in DIRAC with username: %s" % username}
+    else:
+      if not dn:
+        return {"success":"false","error":"You have to load certificate to your browser before trying to register"}
     admins = gConfig.getValue("/Registry/Groups/dirac_admin/Users").split(', ')
     if admins:
       mails = list()
