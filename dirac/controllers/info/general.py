@@ -42,22 +42,27 @@ class GeneralController( BaseController ):
     default_values.append("Any additional information you want to provide to administrators")
     dn = getUserDN()
     username = getUsername()
-    if not username == "anonymous":
-      return {"success":"false","error":"You are already registered in DIRAC with username: %s" % username}
-    else:
-      if not dn:
-        return {"success":"false","error":"You have to load certificate to your browser before trying to register"}
-    admins = gConfig.getValue("/Registry/Groups/dirac_admin/Users").split(', ')
-    if admins:
+#    if not username == "anonymous":
+#      return {"success":"false","error":"You are already registered in DIRAC with username: %s" % username}
+#    else:
+#      if not dn:
+#        return {"success":"false","error":"You have to load certificate to your browser before trying to register"}
+    mails = False
+    mails = gConfig.getValue("/Website/UserRegistration")
+    if not mails:
       mails = list()
-      for j in admins:
-        path = "/Registry/Users/" + j + "/Email"
-        email = gConfig.getValue(path)
-        if email:
-          mails.append(email)
-      gLogger.info("Admins emails: ",mails)
+      admins = gConfig.getValue("/Registry/Groups/dirac_admin/Users").split(', ')
+      if admins:
+        for j in admins:
+          path = "/Registry/Users/" + j + "/Email"
+          email = gConfig.getValue(path)
+          if email:
+            mails.append(email)
+      else:
+        return {"success":"false","error":"Administrator is not yet defined for DIRAC instance therefor your request can not be approuved"}
     else:
-      return {"success":"false","error":"Administrator is not yet defined for DIRAC instance"}
+      mails = mails.split()
+    gLogger.info("Admins emails: ",mails)
     ntc = NotificationClient( getRPCClient )
     body = ""
     for i in paramcopy:
