@@ -67,40 +67,46 @@ function __addClickHandlerToMenuSubEntries( menuEntry )
   return hndlMenu;
 }
 function regForm(dn){
-//  if(dn){}
-  var formHandle = {
-    success:function(){
-      alert('Your request has been successfully sent to administrator\nInstructions will be sent to your e-mail address shortly');
-      var win = panel.findParentByType('window');
-      try{
-        win.close();
-      }catch(e){
-        alert('Error: ' + e.name + ': ' + e.message)
-      }
-    },
-    failure:function(a,b){
-      if(b.failureType == 'connect'){
-        alert('Error: Bad connection or error happens on server side while connecting');
-      }else{
-        alert('Error: Error happens on server side');
-      }
-      var win = panel.findParentByType('window');
-      try{
-        win.close();
-      }catch(e){
-        alert('Error: ' + e.name + ': ' + e.message)
-      }    
+  if(Ext.isEmpty(dn)){
+    alert('Error: You have to load certificate to your browser before trying to register');
+    return
+  }
+  function winClose(){
+    var win = panel.findParentByType('window');
+    try{
+      win.close();
+    }catch(e){
+      alert('Error: ' + e.name + ': ' + e.message)
     }
+    return  
+  }
+  function sucHandler(form, action){
+    var response = action.result
+    if(response.success && response.success == 'false'){
+      if(response.error){
+        alert('Error: ' + response.error);
+      }else{
+        alert('Error: Your request is failed with no error returned.\nPlease use the forum http://groups.google.com/group/diracgrid-forum to clarify situation');
+      }
+    }else if(response.success && response.success == 'true'){
+      alert('Your request has been successfully sent to administrator\nInstructions will be sent to your e-mail address shortly');
+    }else{
+      alert('Server response is unknown. Most likely your request is acepted\nPlease use the forum http://groups.google.com/group/diracgrid-forum to clarify situation');
+    }
+    winClose();
+  }
+  function falHandler(a,b){
+    if(b.failureType == 'connect'){
+      alert('Error: Bad connection or error happens on server side while connecting');
+    }else{
+      alert('Error: Error happens on server side');
+    }
+    winClose();
   }
   var close = new Ext.Button({
     cls:"x-btn-text-icon",
     handler:function(){
-      var win = panel.findParentByType('window');
-      try{
-        win.close();
-      }catch(e){
-        alert('Error: ' + e.name + ': ' + e.message)
-      }
+      winClose();
     },
     icon:gURLRoot+'/images/iface/close.gif',
     minWidth:'100',
@@ -120,7 +126,7 @@ function regForm(dn){
   var submit = new Ext.Button({
     cls:"x-btn-text-icon",
     handler:function(){
-      panel.form.submit(formHandle);
+      panel.form.submit({success:sucHandler,failure:falHandler});
     },
     icon:gURLRoot+'/images/iface/submit.gif',
     minWidth:'100',
@@ -184,7 +190,7 @@ function regForm(dn){
       key:13,
       scope:this,
       fn:function(key,e){
-        panel.form.submit(formHandle);
+        panel.form.submit({success:sucHandler,failure:falHandler});
       }
     }],
     labelAlign:'top',
@@ -314,7 +320,7 @@ function initBottomFrame( pageDescription )
   var navItems = [ pageDescription['pagePath'], '->', { 'id' : 'mainNotificationStats', 'text' : '' }, "-" ];
   var userObject = pageDescription[ 'userData' ];
   userObject.username = 'anonymous' // just debug
-  if(userObject.DN && userObject.username && userObject.username.toLowerCase() == 'anonymous'){
+  if(userObject.DN && userObject.username && userObject.username == 'anonymous'){
 // A trick to include additional JS file  
     var th = document.getElementsByTagName('head')[0];
     var s = document.createElement('script');
