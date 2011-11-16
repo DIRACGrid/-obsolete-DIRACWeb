@@ -319,8 +319,7 @@ function initBottomFrame( pageDescription )
 {
   var navItems = [ pageDescription['pagePath'], '->', { 'id' : 'mainNotificationStats', 'text' : '' }, "-" ];
   var userObject = pageDescription[ 'userData' ];
-  userObject.username = 'anonymous' // just debug
-  if(userObject.DN && userObject.username && userObject.username == 'anonymous'){
+  if(userObject.DN && userObject.username && userObject.username.toLowerCase() == 'anonymous'){
 // A trick to include additional JS file  
     var th = document.getElementsByTagName('head')[0];
     var s = document.createElement('script');
