@@ -42,13 +42,14 @@ class GeneralController( BaseController ):
     default_values.append("Any additional information you want to provide to administrators")
     dn = getUserDN()
     username = getUsername()
-#    if not username == "anonymous":
-#      return {"success":"false","error":"You are already registered in DIRAC with username: %s" % username}
-#    else:
-#      if not dn:
-#        return {"success":"false","error":"You have to load certificate to your browser before trying to register"}
+    if not username == "anonymous":
+      return {"success":"false","error":"You are already registered in DIRAC with username: %s" % username}
+    else:
+      if not dn:
+        return {"success":"false","error":"You have to load certificate to your browser before trying to register"}
+# TODO Check for previous requests
     mails = False
-    mails = gConfig.getValue("/Website/UserRegistration")
+    mails = gConfig.getValue("/Website/UserRegistrationEmail")
     if not mails:
       mails = list()
       admins = gConfig.getValue("/Registry/Groups/dirac_admin/Users").split(', ')
@@ -68,7 +69,6 @@ class GeneralController( BaseController ):
     for i in paramcopy:
       if not paramcopy[i] in default_values:
         body = body + str(i) + ' - ' + str(paramcopy[i]) + '\n'
-# TODO Check for previous requests
     result = ntc.sendMail("matvey.sapunov@gmail.com","New user has registered",body,"adduser@diracgrid.org",False)
     if not result["OK"]:
       return {"success":"false","error":result["Message"]}
