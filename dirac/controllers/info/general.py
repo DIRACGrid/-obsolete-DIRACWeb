@@ -4,7 +4,7 @@ import os
 from dirac.lib.base import *
 from DIRAC import gConfig, gLogger
 from dirac.lib.diset import getRPCClient
-from dirac.lib.credentials import getUserDN, getUsername
+from dirac.lib.credentials import getUserDN, getUsername, getAvailableGroups, getProperties
 from DIRAC.FrameworkSystem.Client.NotificationClient import NotificationClient
 
 log = logging.getLogger( __name__ )
@@ -51,8 +51,17 @@ class GeneralController( BaseController ):
     mails = False
     mails = gConfig.getValue("/Website/UserRegistrationEmail")
     if not mails:
+      path = "dirac_admin"
+      allGroups = getAvailableGroups()
+      if allGroups:
+        for j in allGroups:
+          props = getProperties(j)
+          if "UserAdministrator" in props:
+            path = j
+      else:
+        return {"success":"false","error":"No groups found in this DIRAC installation"}
       mails = list()
-      admins = gConfig.getValue("/Registry/Groups/dirac_admin/Users").split(', ')
+      admins = gConfig.getValue("/Registry/Groups/%s/Users" % path).split(',')
       if admins:
         for j in admins:
           path = "/Registry/Users/" + j + "/Email"
@@ -60,19 +69,31 @@ class GeneralController( BaseController ):
           if email:
             mails.append(email)
       else:
-        return {"success":"false","error":"Administrator is not yet defined for DIRAC instance therefor your request can not be approuved"}
+        return {"success":"false","error":"Can not find a person resposible for user administration in this DIRAC installation therefor your request can not be approuved"}
     else:
-      mails = mails.split()
+      mails = mails.split(',')
     gLogger.info("Admins emails: ",mails)
     ntc = NotificationClient( getRPCClient )
     body = ""
     for i in paramcopy:
       if not paramcopy[i] in default_values:
-        body = body + str(i) + ' - ' + str(paramcopy[i]) + '\n'
-    result = ntc.sendMail("matvey.sapunov@gmail.com","New user has registered",body,"adduser@diracgrid.org",False)
-    if not result["OK"]:
-      return {"success":"false","error":result["Message"]}
-    return {"success":"true","result":result["Value"]}
+        body = body + str(i) + ' - "' + str(paramcopy[i]) + '"\n'
+    sentFailed = list()
+    sentSuccess = list()
+    if len(mails) > 0:
+      for i in mails:
+        i = i.strip()
+        result = ntc.sendMail(i,"New user has registered",body,"adduser@diracgrid.org",False)
+        if not result["OK"]:
+          sentFailed.append(i)
+        else:
+          sentSuccess.append(i)
+      if len(sentFailed) > 0 and len(sentFailed) == len(mails):
+        return {"success":"false","result":sentFailed}
+      else:
+        return {"success":"true","result":sentSuccess}
+    else:
+      return {"success":"false","error":"Can not find any emails of DIRAC Administrators"}
 
   def getVOList(self):
     result = gConfig.getSections("/Registry/VO")
