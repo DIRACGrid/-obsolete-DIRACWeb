@@ -1,3 +1,7 @@
+[web2011112201]
+FIX: Fix of https://github.com/DIRACGrid/DIRACWeb/issues/32
+CHANGE: Add support for visualseparator for lovCombo item
+
 [web2011111801]
 CHANGE: New column RescheduleCounter has been introduced
 
