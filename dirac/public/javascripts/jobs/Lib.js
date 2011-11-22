@@ -469,13 +469,16 @@ function refreshSelect(id){
             var name = tmp.hiddenName;
             if(result[name] && tmp.store){
               var data = result[name];
-              for(var j = 0; j < data.length; j++){
-                data[j] = [j ,data[j][0]];
-              }
               tmp.store.loadData(data);
-              if(tmp.displayValue){
-                value = tmp.displayValue;
-                value = value.split(', ');
+              var rawValue = tmp.getRawValue();
+              if(rawValue){
+                var separator = ', ';
+                if(!Ext.isEmpty(tmp.visualseparator)){
+                  separator = tmp.visualseparator;
+                }else if(!Ext.isEmpty(tmp.separator)){
+                  separator = tmp.separator;
+                }
+                value = rawValue.split(separator);
                 for(var k = 0; k < value.length; k++){
                   for(var l = 0; l < data.length; l++){
                     if(value == data[l][1]){

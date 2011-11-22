@@ -217,7 +217,9 @@ Ext.ux.form.LovCombo = Ext.extend(Ext.form.ComboBox, {
 	 * @private
 	 */
 	,onRealBlur:function() {
-		this.list.hide();
+	    try{
+    		this.list.hide();
+		}catch(e){}
 		var rv = this.getRawValue();
 		if(this.visualseparator){
 		    rv = rv.replace(new RegExp(this.visualseparator,"g"), this.separator);
