@@ -1,3 +1,6 @@
+[web2011112801]
+FIX: Replace the hardcoded separator by one taken from CS with some fallback value
+
 [web2011112201]
 FIX: Fix of https://github.com/DIRACGrid/DIRACWeb/issues/32
 CHANGE: Add support for visualseparator for lovCombo item
