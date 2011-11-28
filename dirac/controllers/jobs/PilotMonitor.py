@@ -185,23 +185,28 @@ class PilotmonitorController(BaseController):
       pageNumber = 0
       req["TaskQueueID"] = str(request.params["taskQueueID"])
     else:
+      result = gConfig.getOption("/Website/ListSeparator")
+      if result["OK"]:
+        separator = result["Value"]
+      else:
+        separator = ":::"
       if request.params.has_key("broker") and len(request.params["broker"]) > 0:
         if str(request.params["broker"]) != "All":
-          req["Broker"] = str(request.params["broker"]).split('::: ')
+          req["Broker"] = str(request.params["broker"]).split(separator)
       if request.params.has_key("site") and len(request.params["site"]) > 0:
         if str(request.params["site"]) != "All":
-          req["GridSite"] = str(request.params["site"]).split('::: ')
+          req["GridSite"] = str(request.params["site"]).split(separator)
       if request.params.has_key("status") and len(request.params["status"]) > 0:
         if str(request.params["status"]) != "All":
-          req["Status"] = str(request.params["status"]).split('::: ')
+          req["Status"] = str(request.params["status"]).split(separator)
       if request.params.has_key("ce") and len(request.params["ce"]) > 0:
-        req["DestinationSite"] = str(request.params["ce"]).split('::: ')
+        req["DestinationSite"] = str(request.params["ce"]).split(separator)
       if request.params.has_key("ownerGroup") and len(request.params["ownerGroup"]) > 0:
         if str(request.params["ownerGroup"]) != "All":
-          req["OwnerGroup"] = str(request.params["ownerGroup"]).split('::: ')
+          req["OwnerGroup"] = str(request.params["ownerGroup"]).split(separator)
       if request.params.has_key("owner") and len(request.params["owner"]) > 0:
         if str(request.params["owner"]) != "All":
-          req["Owner"] = str(request.params["owner"]).split('::: ')
+          req["Owner"] = str(request.params["owner"]).split(separator)
       if request.params.has_key("startDate") and len(request.params["startDate"]) > 0:
         if str(request.params["startDate"]) != "YYYY-mm-dd":
           if request.params.has_key("startTime") and len(request.params["startTime"]) > 0:
