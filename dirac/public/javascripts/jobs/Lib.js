@@ -759,7 +759,10 @@ function selectPanel(newID){
               alert('Error: ' + action.result.error);
             }else{
               var grid = Ext.getCmp('JobMonitoringTable');
-              var dataStore = grid.getStore();
+              var dataStore = false;
+              if(!Ext.isEmpty(grid)){
+                dataStore = grid.getStore();
+              }
               if(dataStore){
                 dataStore.loadData(action.result);
               }else if(panelID == 'SiteSelectPanel'){
