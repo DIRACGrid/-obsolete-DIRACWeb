@@ -978,10 +978,16 @@ function createMenu(dataName,title,altValue){
     }
   }catch(e){}
   var disabled = true;
+  var error = ['Error happened on service side','Nothing to display','Insufficient rights'];
+  var errorRegexp = new RegExp('^(' + error.join('|') + ')$');
   if((data == 'Nothing to display')||(Ext.isEmpty(data))){
     data = [['Nothing to display']];
   }else{
-    disabled = false;
+    if((!Ext.isEmpty(data[0]))&&(!Ext.isEmpty(data[0][0]))){
+      if(!errorRegexp.test(data[0][0])){
+        disabled = false;
+      }
+    }
   }
   var store = new Ext.data.SimpleStore({
     fields:['value'],
