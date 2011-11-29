@@ -153,7 +153,8 @@ class JobmonitorController(BaseController):
         else:
           prod = [["Nothing to display"]]
       else:
-        prod = [["Error during RPC call"]]
+        gLogger.error("RPC.getProductionIds() return error: %s" % result["Message"])
+        prod = [["Error happened on service side"]]
       callback["prod"] = prod
 ###
     RPC = getRPCClient("WorkloadManagement/JobMonitoring")
@@ -179,7 +180,8 @@ class JobmonitorController(BaseController):
       else:
         site = [["Nothing to display"]]
     else:
-      site = [["Error during RPC call"]]
+      gLogger.error("RPC.getSites() return error: %s" % result["Message"])
+      site = [["Error happened on service side"]]
     callback["site"] = site
 ###
     result = RPC.getStates()
@@ -192,7 +194,8 @@ class JobmonitorController(BaseController):
       else:
         stat = [["Nothing to display"]]
     else:
-      stat = [["Error during RPC call"]]
+      gLogger.error("RPC.getStates() return error: %s" % result["Message"])
+      stat = [["Error happened on service side"]]
     callback["status"] = stat
 ###
     result = RPC.getMinorStates()
@@ -206,7 +209,8 @@ class JobmonitorController(BaseController):
       else:
         stat = [["Nothing to display"]]
     else:
-      stat = [["Error during RPC call"]]
+      gLogger.error("RPC.getMinorStates() return error: %s" % result["Message"])
+      stat = [["Error happened on service side"]]
     callback["minorstat"] = stat
 ###
     result = RPC.getApplicationStates()
@@ -220,7 +224,8 @@ class JobmonitorController(BaseController):
       else:
         app = [["Nothing to display"]]
     else:
-      app = [["Error during RPC call"]]
+      gLogger.error("RPC.getApplicationstates() return error: %s" % result["Message"])
+      app = [["Error happened on service side"]]
     callback["app"] = app
 ###
     result = RPC.getJobTypes()
@@ -234,7 +239,8 @@ class JobmonitorController(BaseController):
       else:
         types = [["Nothing to display"]]
     else:
-      types = [["Error during RPC call"]]
+      gLogger.error("RPC.getJobTypes() return error: %s" % result["Message"])
+      types = [["Error happened on service side"]]
     callback["types"] = types
 ###
     result = RPC.getRunNumbers()
@@ -250,7 +256,8 @@ class JobmonitorController(BaseController):
       else:
         app = [["Nothing to display"]]
     else:
-      app = [["Error during RPC call"]]
+      gLogger.error("RPC.getRunNumbers() return error: %s" % result["Message"])
+      app = [["Error happened on service side"]]
     callback["runNumber"] = app
 ###
     groupProperty = credentials.getProperties(group)
@@ -269,7 +276,8 @@ class JobmonitorController(BaseController):
         else:
           owner = [["Nothing to display"]]
       else:
-        owner = [["Error during RPC call"]]
+        gLogger.error("RPC.getOwners() return error: %s" % result["Message"])
+        owner = [["Error happened on service side"]]
       callback["owner"] = owner
     return callback
 ################################################################################
