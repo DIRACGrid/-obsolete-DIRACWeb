@@ -6,6 +6,7 @@ from dirac.lib.diset import getRPCClient, getTransferClient
 from dirac.lib.credentials import authorizeAction
 from DIRAC import gConfig, gLogger
 from DIRAC.Core.Utilities.List import sortList
+from DIRAC.Core.Utilities import Time
 from DIRAC.AccountingSystem.Client.ReportsClient import ReportsClient
 from DIRAC.Core.Utilities.DictCache import DictCache
 import dirac.lib.credentials as credentials
@@ -84,12 +85,13 @@ class JobmonitorController(BaseController):
                     tmp[head[j]] = i[j]
                   c.result.append(tmp)
                 total = result["TotalRecords"]
+                timestamp = Time.dateTime().strftime("%Y-%m-%d %H:%M [UTC]")
                 if result.has_key("Extras"):
                   st = self.__dict2string(req)
                   extra = result["Extras"]
-                  c.result = {"success":"true","result":c.result,"total":total,"extra":extra,"request":st}
+                  c.result = {"success":"true","result":c.result,"total":total,"extra":extra,"request":st,"date":timestamp}
                 else:
-                  c.result = {"success":"true","result":c.result,"total":total}
+                  c.result = {"success":"true","result":c.result,"total":total,"date":timestamp}
               else:
                 c.result = {"success":"false","result":"","error":"There are no data to display"}
             else:
