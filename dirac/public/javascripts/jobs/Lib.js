@@ -1729,13 +1729,6 @@ function table(tableMngr){
   });
   var items = ['-',updateStamp,'-','Items per page: ',itemsNumber(store,bbarID)];
   if(tableMngr.autorefresh){
-    var stamp = new Ext.Toolbar.Button({
-      disabled:true,
-      disabledClass:'my-disabled',
-      hidden:true,
-      id:'stampTableButton',
-      text:'Updated: -'
-    });
     var autorefresh = new Ext.Toolbar.Button({
       cls:"x-btn-text",
       id:'autorefreshTableButton',
@@ -1751,7 +1744,7 @@ function table(tableMngr){
         }
       }
     });
-    items = ['-','Auto:',autorefresh,stamp,'-','Items per page: ',itemsNumber(store,bbarID)];
+    items = ['-','Auto:',autorefresh,updateStamp,'-','Items per page: ',itemsNumber(store,bbarID)];
   }
   tableMngr.bbar = new Ext.PagingToolbar({
     displayInfo:true,
