@@ -256,7 +256,6 @@ function setChk(value){
   } 
 }
 function setRefresh(time,store){
-  var stamp = Ext.getCmp('stampTableButton');
   if(time == 900000 || time == 3600000 || time == 1800000){
     refreshRate = time;
     heartbeat.start({
@@ -269,26 +268,10 @@ function setRefresh(time,store){
           }
         }
         store.load();
-        if(stamp){
-          var d = new Date();
-          var hh = d.getHours();
-          if(hh < 10){
-            hh = '0' + hh;
-          }
-          var mm = d.getMinutes()
-          if(mm < 10){
-            mm = '0' + mm;
-          }
-          stamp.setText('Updated: ' + hh + ":" + mm);
-          stamp.show();
-        }
       },
       interval:time
     });
   }else{
-    if(stamp){
-      stamp.hide();
-    }
     refreshRate = 0;
     heartbeat.stopAll();
   }
