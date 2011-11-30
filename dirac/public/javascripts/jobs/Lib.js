@@ -324,8 +324,23 @@ function initStore(record,options,id){
           if(sort.length == 2){
             store.sort(sort[0],sort[1]);
           }
-        }catch(e){
-          var ttt = 0;
+        }catch(e){}
+        var up = Ext.getCmp('updatedTableButton');
+        if(!Ext.isEmpty(up)){
+          if(store.reader.jsonData.date){
+            up.setText('Updated: ' + store.reader.jsonData.date);
+          }else{
+            var d = new Date();
+            var hh = d.getUTCHours();
+            if(hh < 10){
+              hh = '0' + hh;
+            }
+            var mm = d.getUTCMinutes();
+            if(mm < 10){
+              mm = '0' + mm;
+            }
+            up.setText('Updated: ' + d.getUTCFullYear() + '-' + d.getUTCMonth() + '-' + d.getUTCDate() + ' ' + hh + ':' + mm + ' [UTC]');
+          }
         }
       }else{
         alert("Error in store.reader.jsonData, trying to reload data store...");
@@ -1706,7 +1721,13 @@ function table(tableMngr){
     }
   }
   var bbarID = id + 'bbar';
-  var items = ['-','Items per page: ',itemsNumber(store,bbarID)];
+  var updateStamp = new Ext.Toolbar.Button({
+    disabled:true,
+    disabledClass:'my-disabled',
+    id:'updatedTableButton',
+    text:'Updated: -'
+  });
+  var items = ['-',updateStamp,'-','Items per page: ',itemsNumber(store,bbarID)];
   if(tableMngr.autorefresh){
     var stamp = new Ext.Toolbar.Button({
       disabled:true,
