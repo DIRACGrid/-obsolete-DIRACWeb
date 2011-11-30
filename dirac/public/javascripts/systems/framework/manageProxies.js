@@ -57,6 +57,25 @@ function renderPage()
             groupField : 'username',
             listeners : { beforeload : cbStoreBeforeLoad },
         		});
+  store.on('load',function(){
+    var up = Ext.getCmp('updatedTableButton');
+    if(!Ext.isEmpty(up)){
+      if(store.reader.jsonData.date){
+        up.setText('Updated: ' + store.reader.jsonData.date);
+      }else{
+        var d = new Date();
+        var hh = d.getUTCHours();
+        if(hh < 10){
+          hh = '0' + hh;
+        }
+        var mm = d.getUTCMinutes();
+        if(mm < 10){
+          mm = '0' + mm;
+        }
+        up.setText('Updated: ' + d.getUTCFullYear() + '-' + d.getUTCMonth() + '-' + d.getUTCDate() + ' ' + hh + ':' + mm + ' [UTC]');
+      }
+    }
+  });
   var columns = [
             { id : 'check', header : '', width : 30, dataIndex: 'proxyid', renderer : renderSelect },
             { header: "User", width: 100, sortable: false, dataIndex: 'username'},
