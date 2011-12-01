@@ -1848,6 +1848,23 @@ function dateTimeWidget(pin){
     });
     return timeField
   }
+  function resetButton(tmpWidth){
+    var button = {
+      cls:"x-btn-text-icon",
+      handler:function(){
+        timeSpan.reset();
+        startDate.reset();
+        startTime.reset();
+        endDate.reset();
+        endTime.reset();
+      },
+      icon:gURLRoot+'/images/iface/reset.gif',
+      minWidth:tmpWidth,
+      text:'Reset date',
+      tooltip:'Click to reset values of date and time in this widget'
+    }
+    return button
+  }
   var startDate = retDate('startDate','startDate','Start Date');
   var endDate = retDate('endDate','endDate','End Date');
   var startTime = retTime('startTime','startTime','');
@@ -1951,10 +1968,12 @@ function dateTimeWidget(pin){
       manualSelection();
     }
   });
+  
   var datePin = {xtype:'checkbox',id:'datePin',fieldLabel:'',name:'datePin',boxLabel:'Pin the date'};
   var panel = new Ext.Panel({
     layout:'table',
     id:'time-panel',
+    bbar:[resetButton()],
     defaults: {
       bodyStyle:'padding:5px',
     },
@@ -1977,6 +1996,13 @@ function dateTimeWidget(pin){
     labelAlign:'top',
     minWidth:'170',
     width:'170'
+  });
+  panel.on('resize',function(){
+    var tmpWidth = panel.getInnerWidth() - 6;
+    var bar = panel.getBottomToolbar();
+    Ext.fly(bar.items.get(0).getEl()).remove();
+    bar.items.removeAt(0);
+    bar.insertButton(0,resetButton(tmpWidth));
   });
   try{
     if(pin){
