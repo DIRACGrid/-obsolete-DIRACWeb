@@ -1,3 +1,9 @@
+[web2011120101]
+CHANGE: Refresh time should be displayed by default - https://github.com/DIRACGrid/DIRACWeb/issues/31
+FIX: Bugfix in SiteGateway - https://github.com/DIRACGrid/DIRACWeb/issues/42
+CHANGE: Add timestamp value to submit call
+CHANGE: Add default values to getValue call
+
 [web2011112801]
 FIX: Replace the hardcoded separator by one taken from CS with some fallback value
 
