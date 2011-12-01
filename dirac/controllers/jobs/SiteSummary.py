@@ -129,17 +129,10 @@ class SitesummaryController(BaseController):
         maskstatus = [["Nothing to display"]]
       callback["maskstatus"] = maskstatus
       if result.has_key("Site") and len(result["Site"]) > 0:
-        tier1 = gConfig.getValue("/Website/PreferredSites")
-        if tier1:
-          try:
-            tier1 = tier1.split(", ")
-          except:
-            tier1 = list()
-        else:
-          tier1 = list()
-        site = []
         s = list(result["Site"])
-        site.append([str("All")])
+        tier1 = gConfig.getValue("/Website/PreferredSites",[])
+        site = list()
+        site.append(["All"])
         for i in tier1:
           site.append([str(i)])
         for i in s:

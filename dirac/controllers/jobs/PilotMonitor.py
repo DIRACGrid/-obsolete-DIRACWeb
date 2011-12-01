@@ -118,24 +118,17 @@ class PilotmonitorController(BaseController):
       callback["ownerGroup"] = ownerGroup
       if result.has_key("DestinationSite") and len(result["DestinationSite"]) > 0:
         ce = []
-        ce.append([str("All")])
+        ce.append(["All"])
         for i in result["DestinationSite"]:
           ce.append([str(i)])
       else:
         ce = [["Nothing to display"]]
       callback["ce"] = ce
       if result.has_key("GridSite") and len(result["GridSite"]) > 0:
-        tier1 = gConfig.getValue("/Website/PreferredSites")
-        if tier1:
-          try:
-            tier1 = tier1.split(", ")
-          except:
-            tier1 = list()
-        else:
-          tier1 = list()
+        tier1 = gConfig.getValue("/Website/PreferredSites",[])
         site = []
         s = list(result["GridSite"])
-        site.append([str("All")])
+        site.append(["All"])
         for i in tier1:
           site.append([str(i)])
         for i in s:
@@ -146,7 +139,7 @@ class PilotmonitorController(BaseController):
       callback["site"] = site
       if result.has_key("Broker") and len(result["Broker"]) > 0:
         broker = []
-        broker.append([str("All")])
+        broker.append(["All"])
         for i in result["Broker"]:
           broker.append([str(i)])
       else:

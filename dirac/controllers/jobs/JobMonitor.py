@@ -47,13 +47,8 @@ class JobmonitorController(BaseController):
     user = str(credentials.getUsername())
     result = RPC.getOwners()
     if result["OK"]:
-      defaultGroup = gConfig.getValue("/Registry/DefaultGroup")
-      if defaultGroup:
-        try:
-          defaultGroup = str(defaultGroup)
-        except:
-          return {"success":"false","error":"Option /Registry/DefaultGroup is not a string, please set the default group as a string in the CS"} 
-      else:
+      defaultGroup = gConfig.getValue("/Registry/DefaultGroup","")
+      if defaultGroup == "":
         return {"success":"false","error":"Option /Registry/DefaultGroup is undefined, please set the default group in the CS"}
       group = str(credentials.getSelectedGroup())
       groupProperty = credentials.getProperties(group)
@@ -162,14 +157,7 @@ class JobmonitorController(BaseController):
     RPC = getRPCClient("WorkloadManagement/JobMonitoring")
     result = RPC.getSites()
     if result["OK"]:
-      tier1 = gConfig.getValue("/Website/PreferredSites")
-      if tier1:
-        try:
-          tier1 = tier1.split(", ")
-        except:
-          tier1 = list()
-      else:
-        tier1 = list()
+      tier1 = gConfig.getValue("/Website/PreferredSites",[]) # Always return a list
       site = []
       if len(result["Value"])>0:
         s = list(result["Value"])
@@ -531,16 +519,9 @@ class JobmonitorController(BaseController):
       keylist = result.keys()
       keylist.sort()
       if selector == "Site":
-        tier1 = gConfig.getValue("/Website/PreferredSites")
-        if tier1:
-          try:
-            tier1 = tier1.split(", ")
-            tier1.sort()
-          except:
-            tier1 = False
-        else:
-          tier1 = False
-        if tier1 and len(tier1) > 0:
+        tier1 = gConfig.getValue("/Website/PreferredSites",[])
+        if len(tier1) > 0:
+          tier1.sort()
           for i in tier1:
             if result.has_key(i):
               countryCode = i.rsplit(".",1)[1]
