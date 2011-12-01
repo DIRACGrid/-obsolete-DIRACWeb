@@ -7,6 +7,7 @@ from dirac.lib.diset import getRPCClient
 from dirac.lib.credentials import authorizeAction
 from dirac.lib.sessionManager import *
 from DIRAC import gLogger
+from DIRAC.Core.Utilities import Time
 
 log = logging.getLogger( __name__ )
 
@@ -71,14 +72,14 @@ class ErrorconsoleController( BaseController ):
             jobs = result["Records"]
             head = result["ParameterNames"]
             headLength = len( head )
-            gLogger.info( "8" )
             for i in jobs:
               tmp = {}
               for j in range( 0, headLength ):
                 tmp[head[j]] = i[j]
               c.result.append( tmp )
-            gLogger.info( "9" )
             total = result["TotalRecords"]
+            timestamp = Time.dateTime().strftime("%Y-%m-%d %H:%M [UTC]")
+#            c.result = {"success":"true", "result":c.result, "total":total,"date":timestamp}
             c.result = {"success":"true", "result":c.result, "total":total}
           else:
             c.result = {"success":"false", "result":"", "error":"There are no data to display"}

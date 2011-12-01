@@ -324,8 +324,23 @@ function initStore(record,options,id){
           if(sort.length == 2){
             store.sort(sort[0],sort[1]);
           }
-        }catch(e){
-          var ttt = 0;
+        }catch(e){}
+        var up = Ext.getCmp('updatedTableButton');
+        if(!Ext.isEmpty(up)){
+          if(store.reader.jsonData.date){
+            up.setText('Updated: ' + store.reader.jsonData.date);
+          }else{
+            var d = new Date();
+            var hh = d.getUTCHours();
+            if(hh < 10){
+              hh = '0' + hh;
+            }
+            var mm = d.getUTCMinutes();
+            if(mm < 10){
+              mm = '0' + mm;
+            }
+            up.setText('Updated: ' + d.getUTCFullYear() + '-' + d.getUTCMonth() + '-' + d.getUTCDate() + ' ' + hh + ':' + mm + ' [UTC]');
+          }
         }
       }else{
         alert("Error in store.reader.jsonData, trying to reload data store...");
@@ -759,7 +774,10 @@ function selectPanel(newID){
               alert('Error: ' + action.result.error);
             }else{
               var grid = Ext.getCmp('JobMonitoringTable');
-              var dataStore = grid.getStore();
+              var dataStore = false;
+              if(!Ext.isEmpty(grid)){
+                dataStore = grid.getStore();
+              }
               if(dataStore){
                 dataStore.loadData(action.result);
               }else if(panelID == 'SiteSelectPanel'){
@@ -975,10 +993,16 @@ function createMenu(dataName,title,altValue){
     }
   }catch(e){}
   var disabled = true;
+  var error = ['Error happened on service side','Nothing to display','Insufficient rights'];
+  var errorRegexp = new RegExp('^(' + error.join('|') + ')$');
   if((data == 'Nothing to display')||(Ext.isEmpty(data))){
     data = [['Nothing to display']];
   }else{
-    disabled = false;
+    if((!Ext.isEmpty(data[0]))&&(!Ext.isEmpty(data[0][0]))){
+      if(!errorRegexp.test(data[0][0])){
+        disabled = false;
+      }
+    }
   }
   var store = new Ext.data.SimpleStore({
     fields:['value'],
@@ -1697,15 +1721,14 @@ function table(tableMngr){
     }
   }
   var bbarID = id + 'bbar';
-  var items = ['-','Items per page: ',itemsNumber(store,bbarID)];
+  var updateStamp = new Ext.Toolbar.Button({
+    disabled:true,
+    disabledClass:'my-disabled',
+    id:'updatedTableButton',
+    text:'Updated: -'
+  });
+  var items = ['-',updateStamp,'-','Items per page: ',itemsNumber(store,bbarID)];
   if(tableMngr.autorefresh){
-    var stamp = new Ext.Toolbar.Button({
-      disabled:true,
-      disabledClass:'my-disabled',
-      hidden:true,
-      id:'stampTableButton',
-      text:'Updated: -'
-    });
     var autorefresh = new Ext.Toolbar.Button({
       cls:"x-btn-text",
       id:'autorefreshTableButton',
@@ -1721,7 +1744,7 @@ function table(tableMngr){
         }
       }
     });
-    items = ['-','Auto:',autorefresh,stamp,'-','Items per page: ',itemsNumber(store,bbarID)];
+    items = ['-','Auto:',autorefresh,updateStamp,'-','Items per page: ',itemsNumber(store,bbarID)];
   }
   tableMngr.bbar = new Ext.PagingToolbar({
     displayInfo:true,

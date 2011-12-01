@@ -6,7 +6,7 @@ from DIRAC.Core.Utilities import Time
 from dirac.lib.base import *
 from dirac.lib.diset import getRPCClient
 from dirac.lib.credentials import authorizeAction
-#from dirac.lib.sessionManager import *
+from DIRAC.Core.Utilities import Time
 import dirac.lib.credentials as credentials
 from DIRAC.Core.Security import CS
 from DIRAC import gConfig, gLogger
@@ -55,8 +55,9 @@ class RequestmonitorController(BaseController):
                 tmp[head[j]] = i[j]
               c.result.append(tmp)
             total = result["TotalRecords"]
+            timestamp = Time.dateTime().strftime("%Y-%m-%d %H:%M [UTC]")
             gLogger.info(" c.result ",c.result)
-            c.result = {"success":"true","result":c.result,"total":total}
+            c.result = {"success":"true","result":c.result,"total":total,"date":timestamp}
           else:
             c.result = {"success":"false","result":"","error":"There are no data to display"}
         else:

@@ -8,6 +8,7 @@ import simplejson
 from DIRAC import S_OK, S_ERROR, gConfig, gLogger
 from DIRAC.Core.Security import CS
 from DIRAC.Core.Utilities.List import uniqueElements
+from DIRAC.Core.Utilities import Time
 
 log = logging.getLogger(__name__)
 
@@ -87,7 +88,10 @@ class FrameworkController(BaseController):
     groups.sort()
     users = map(lambda x: [x], users)
     groups = map(lambda x: [x], groups)
-    users.insert(0,["All"])
+    if len(users) > 3:
+      users.insert(0,["All"])
+    if len(groups) > 3:
+      groups.insert(0,["All"])
     callback["username"] = users
     callback["usergroup"] = groups
     result = gConfig.getOption("/Website/ProxyManagementMonitoring/TimeSpan")
@@ -130,7 +134,8 @@ class FrameworkController(BaseController):
                                   'UserGroup' : record[2],
                                   'ExpirationTime' : str( record[3] ),
                                   'PersistentFlag' : str( record[4] ) } )
-    data = {"success":"true","result":proxies,"total":svcData[ 'TotalRecords' ]}
+    timestamp = Time.dateTime().strftime("%Y-%m-%d %H:%M [UTC]")
+    data = {"success":"true","result":proxies,"total":svcData[ 'TotalRecords' ],"date":timestamp}
     return data
 
   @jsonify
