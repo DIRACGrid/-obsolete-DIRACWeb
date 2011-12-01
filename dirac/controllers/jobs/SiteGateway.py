@@ -206,7 +206,8 @@ class SitegatewayController(BaseController):
       else:
         site = [["Nothing to display"]]
     else:
-      site = [["Error during RPC call"]]
+      gLogger.error("RPC.getSitesList() return error: %s" % result["Message"])
+      site = [["Error happened on service side"]]
     callback["siteName"] = site
     callback["resourceSiteName"] = site
     callback["serviceSiteName"] = site
@@ -234,7 +235,8 @@ class SitegatewayController(BaseController):
       else:
         site = [["Nothing to display"]]
     else:
-      site = [["Error during RPC call"]]
+      gLogger.error("RPC.getSESitesList() return error: %s" % result["Message"])
+      site = [["Error happened on service side"]]
     callback["storageSiteName"] = site
 ###
     result = RPC.getSiteTypeList()
@@ -247,7 +249,8 @@ class SitegatewayController(BaseController):
       else:
         stat = [["Nothing to display"]]
     else:
-      stat = [["Error during RPC call"]]
+      gLogger.error("RPC.getSiteTypeList() return error: %s" % result["Message"])
+      stat = [["Error happened on service side"]]
     callback["siteType"] = stat
 ###
     result = RPC.getStatusList()
@@ -261,7 +264,8 @@ class SitegatewayController(BaseController):
       else:
         stat = [["Nothing to display"]]
     else:
-      stat = [["Error during RPC call"]]
+      gLogger.error("RPC.getStatusList() return error: %s" % result["Message"])
+      stat = [["Error happened on service side"]]
     callback["siteStatus"] = stat
     callback["resourceStatus"] = stat
     callback["serviceStatus"] = stat
@@ -278,7 +282,8 @@ class SitegatewayController(BaseController):
       else:
         app = [["Nothing to display"]]
     else:
-      app = [["Error during RPC call"]]
+      gLogger.error("RPC.getResourceTypeList() return error: %s" % result["Message"])
+      app = [["Error happened on service side"]]
     callback["resourceType"] = app
 ###
     result = RPC.getResourcesList()
@@ -292,7 +297,8 @@ class SitegatewayController(BaseController):
       else:
         stat = [["Nothing to display"]]
     else:
-      stat = [["Error during RPC call"]]
+      gLogger.error("RPC.getResourcesList() return error: %s" % result["Message"])
+      stat = [["Error happened on service side"]]
     callback["resourceName"] = stat
 ###
     result = RPC.getServiceTypeList()
@@ -306,7 +312,8 @@ class SitegatewayController(BaseController):
       else:
         stat = [["Nothing to display"]]
     else:
-      stat = [["Error during RPC call"]]
+      gLogger.error("RPC.getServiceTypeList() return error: %s" % result["Message"])
+      stat = [["Error happened on service side"]]
     callback["serviceType"] = stat
 ###
     result = RPC.getServicesList()
@@ -320,7 +327,8 @@ class SitegatewayController(BaseController):
       else:
         stat = [["Nothing to display"]]
     else:
-      stat = [["Error during RPC call"]]
+      gLogger.error("RPC.getServicesList() return error: %s" % result["Message"])
+      stat = [["Error happened on service side"]]
     callback["serviceName"] = stat
 ###
     result = RPC.getStorageElementsList()
@@ -334,7 +342,8 @@ class SitegatewayController(BaseController):
       else:
         stat = [["Nothing to display"]]
     else:
-      stat = [["Error during RPC call"]]
+      gLogger.error("RPC.getStorageElementsList() return error: %s" % result["Message"])
+      stat = [["Error happened on service side"]]
     callback["storageName"] = stat
     return callback
 ################################################################################

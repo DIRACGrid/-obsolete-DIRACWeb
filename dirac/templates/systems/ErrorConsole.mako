@@ -4,7 +4,8 @@
 
 <%def name="head_tags()">
 ${ h.javascript_link( "/javascripts/lovCombo.js" ) }
-${ h.javascript_link( "/javascripts/systems/Lib.js" ) }
+<!--${ h.javascript_link( "/javascripts/systems/Lib.js" ) } -->
+${ h.javascript_link( "/javascripts/jobs/Lib.js" ) }
 ${ h.javascript_link( "/javascripts/systems/ErrorConsole.js" ) }
 ${ h.stylesheet_link( "/stylesheets/lovCombo.css" ) }
 </%def>
