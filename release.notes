@@ -1,3 +1,7 @@
+[web2011120102]
+CHANGE: Introducing reset button for date/time widget https://github.com/DIRACGrid/DIRACWeb/issues/3
+CHANGE: Proper path to Presenter controller in web.cfg
+
 [web2011120101]
 CHANGE: Refresh time should be displayed by default - https://github.com/DIRACGrid/DIRACWeb/issues/31
 FIX: Bugfix in SiteGateway - https://github.com/DIRACGrid/DIRACWeb/issues/42
