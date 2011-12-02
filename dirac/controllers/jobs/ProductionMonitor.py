@@ -14,6 +14,7 @@ from time import time, gmtime, strftime
 from dirac.lib.base import *
 from dirac.lib.diset import getRPCClient
 from DIRAC.Core.Utilities.List import sortList
+from DIRAC.WorkloadManagementSystem.Client.JobMonitoringClient import JobMonitoringClient
 from DIRAC import gConfig, gLogger
 import DIRAC.Core.Utilities.Time as Time
 import dirac.lib.credentials as credentials
@@ -325,6 +326,9 @@ class ProductionmonitorController(BaseController):
       return self. __getT1()
     elif request.params.has_key("getRunStatus") and len(request.params["getRunStatus"]) > 0:
       return self. __getRunStatuses()
+    elif request.params.has_key("reschedule_counter") and len(request.params["reschedule_counter"]) > 0:
+      id = str(request.params["reschedule_counter"])
+      return self. __getRescheduleCounters(id)
     elif request.params.has_key("setSite") and len(request.params["setSite"]) > 0:
       if not request.params.has_key("runID"):
         return {"success":"false","error":"runID is undefined"}
@@ -350,6 +354,13 @@ class ProductionmonitorController(BaseController):
     else:
       c.result = {"success":"false","error":"Transformation ID(s) is not defined"}
       return c.error
+################################################################################
+  def __getRescheduleCounters(self,transID):
+    jm = JobMonitoringClient()
+    result = jm.getJobStats("RescheduleCounter",{"JobGroup":transID})
+    if not result["OK"]:
+      return {"success":"false","error":result["Message"]}
+    return {"success":"true","result":result['Value']}
 ################################################################################
   def __getRunStatuses(self):
     runStatuses = gConfig.getValue("/Website/TransformationMonitoring/ContextMenu/RunStatuses",[])
