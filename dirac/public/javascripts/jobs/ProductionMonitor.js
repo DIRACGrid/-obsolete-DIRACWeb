@@ -358,6 +358,7 @@ function setMenuItems(selections){
       {handler:function(){jump('job',id,submited)},text:'Show Jobs'},
       {handler:function(){jump('request',family,1)},text:'Show Request'},
       {handler:function(){AJAXrequest('log',id)},text:'Logging Info'},
+      {handler:function(){AJAXrequest('reschedule_counter',id)},text:'Reschedule counter'},
       {handler:function(){runStatus(id)},text:'Run Status'},
       {handler:function(){AJAXrequest('fileStat',id)},text:'File Status'},
       {text:'File Retries',menu:({items:subMenu1})},
@@ -369,28 +370,28 @@ function setMenuItems(selections){
     );
   }
   if(status == 'Active'){
-    dirac.menu.items.items[10].menu.items.items[1].enable();
-    dirac.menu.items.items[10].menu.items.items[0].disable();
+    dirac.menu.items.items[11].menu.items.items[1].enable();
+    dirac.menu.items.items[11].menu.items.items[0].disable();
   }else if(status == 'New'){
-    dirac.menu.items.items[10].menu.items.items[1].disable();
-    dirac.menu.items.items[10].menu.items.items[0].enable();
+    dirac.menu.items.items[11].menu.items.items[1].disable();
+    dirac.menu.items.items[11].menu.items.items[0].enable();
   }else{
-    dirac.menu.items.items[10].menu.items.items[1].disable();
-    dirac.menu.items.items[10].menu.items.items[0].enable();
+    dirac.menu.items.items[11].menu.items.items[1].disable();
+    dirac.menu.items.items[11].menu.items.items[0].enable();
   }
   if(type == 'MCSimulation'){
-    dirac.menu.items.items[4].disable();
     dirac.menu.items.items[5].disable();
     dirac.menu.items.items[6].disable();
+    dirac.menu.items.items[7].disable();
   }
   // RegExp is used to test is type in runStatusMenu array: if (/^(?:bob|sue|smith)$/.test(name))
   if((runStatusMenu)&&(new RegExp('^(' + runStatusMenu.join('|') + ')$').test(type))){
-      dirac.menu.items.items[3].enable();
+      dirac.menu.items.items[4].enable();
   }else{
-    dirac.menu.items.items[3].disable();  
+    dirac.menu.items.items[4].disable();  
   }
   if(!transAdmin){
-  	dirac.menu.items.items[10].disable();
+  	dirac.menu.items.items[11].disable();
   }
 }
 function AJAXsuccess(value,id,response){
