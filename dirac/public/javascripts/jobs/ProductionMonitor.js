@@ -430,7 +430,7 @@ function AJAXsuccess(value,id,response){
     panel.addListener('cellclick',function(table,rowIndex,columnIndex){
       showMenu('nonMain',table,rowIndex,columnIndex);
     });
-  }else if((value == 'additionalParams')||(value == 'dataQuery')){
+  }else if((value == 'additionalParams')||(value == 'dataQuery')||(value == 'reschedule_counter')){
     var reader = new Ext.data.ArrayReader({},[
       {name:'name'},
       {name:'value'}
