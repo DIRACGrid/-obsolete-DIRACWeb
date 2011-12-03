@@ -360,7 +360,17 @@ class ProductionmonitorController(BaseController):
     result = jm.getJobStats("RescheduleCounter",{"JobGroup":transID})
     if not result["OK"]:
       return {"success":"false","error":result["Message"]}
-    return {"success":"true","result":result['Value']}
+    res = result["Value"]
+    back = []
+    for i in sortList(res.keys()):
+      if i == 0:
+        text = "Never been rescheduled"
+      elif i == 1:
+        text = "Rescheduled one time"
+      else:
+        text = "Rescheduled " + i + " times"
+      back.append([text,res[i]])
+    return {"success":"true","result":back}
 ################################################################################
   def __getRunStatuses(self):
     runStatuses = gConfig.getValue("/Website/TransformationMonitoring/ContextMenu/RunStatuses",[])
@@ -575,14 +585,12 @@ class ProductionmonitorController(BaseController):
     RPC = getRPCClient('Transformation/TransformationManager')
     res = RPC.getAdditionalParameters(id)
     if not res['OK']:
-      c.result = {"success":"false","error":res["Message"]}
-    else:
-      result = res["Value"]
-      back = []
-      for i in sortList(result.keys()):
-        back.append([i,result[i]])
-      c.result = {"success":"true","result":back}
-    return c.result
+      return {"success":"false","error":res["Message"]}
+    result = res["Value"]
+    back = []
+    for i in sortList(result.keys()):
+      back.append([i,result[i]])
+    return {"success":"true","result":back}
 ################################################################################
   def __dataQuery(self,prodid):
     id = int(prodid)
@@ -590,14 +598,12 @@ class ProductionmonitorController(BaseController):
     res = RPC.getBookkeepingQueryForTransformation(id)
     gLogger.info("-= #######",res)
     if not res['OK']:
-      c.result = {"success":"false","error":res["Message"]}
-    else:
-      result = res["Value"]
-      back = []
-      for i in sortList(result.keys()):
-        back.append([i,result[i]])
-      c.result = {"success":"true","result":back}
-    return c.result
+      return {"success":"false","error":res["Message"]}
+    result = res["Value"]
+    back = []
+    for i in sortList(result.keys()):
+      back.append([i,result[i]])
+    return {"success":"true","result":back}
 ################################################################################
   @jsonify
   def showFileStatus(self):
