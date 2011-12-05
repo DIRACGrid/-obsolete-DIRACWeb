@@ -9,6 +9,7 @@ from dirac.lib.credentials import authorizeAction
 from DIRAC import gConfig, gLogger
 from DIRAC.Core.Utilities.DictCache import DictCache
 import dirac.lib.credentials as credentials
+from DIRAC.ResourceStatusSystem.Client.ResourceStatusClient import ResourceStatusClient
 
 ########
 from DIRAC.FrameworkSystem.Client.UserProfileClient import UserProfileClient
@@ -36,69 +37,64 @@ class SitegatewayController(BaseController):
   @jsonify
   def submit(self):
     pagestart = time()
-    RPC = getRPCClient("ResourceStatus/ResourceStatus")
+    client = ResourceStatusClient()
     if request.params.has_key("mode") and len(request.params["mode"]) > 0:
       result = self.__request()
       if request.params["mode"] == "Site":
-        result = RPC.getSitesStatusWeb(result,globalSort,pageNumber,numberOfJobs)
+        result = client.getMonitoredsStatusWeb('Site',result,globalSort,pageNumber,numberOfJobs)
       elif request.params["mode"] == "Service":
-        result = RPC.getServicesStatusWeb(result,globalSort,pageNumber,numberOfJobs)
-        gLogger.info("\033[0;31m YO: \033[0m",result)
+        result = client.getMonitoredsStatusWeb('Service',result,globalSort,pageNumber,numberOfJobs)
       elif request.params["mode"] == "Resource":
-        result = RPC.getResourcesStatusWeb(result,globalSort,pageNumber,numberOfJobs)
+        result = client.getMonitoredsStatusWeb('Resource',result,globalSort,pageNumber,numberOfJobs)
       elif request.params["mode"] == "Storage":
-        gLogger.info("\033[0;31m  RPC.getStorageElementsStatusWeb(%s,%s,%s,%s) \033[0m" % (result,globalSort,pageNumber,numberOfJobs))
-        result = RPC.getStorageElementsStatusWeb(result,globalSort,pageNumber,numberOfJobs)
-    else:
-      result = {}
-      result["OK"] = ""
-      result["Message"] = "The parameter 'mode' is absent"
-    if result["OK"]:
-      result = result["Value"]
-      gLogger.info("\033[0;31m YO: \033[0m",result)
-      if result.has_key("TotalRecords") and  result["TotalRecords"] > 0:
-        if result.has_key("ParameterNames") and result.has_key("Records"):
-          if len(result["ParameterNames"]) > 0:
-            if len(result["Records"]) > 0:
-              c.result = []
-              jobs = result["Records"]
-              head = result["ParameterNames"]
-              headLength = len(head)
-              countryCode = self.__countries()
-              for i in jobs:
-                tmp = {}
-                for j in range(0,headLength):
-                  tmp[head[j]] = i[j]
-                if request.params["mode"] == "Resource":
-                  if countryCode.has_key(i[4]):
-                    tmp["FullCountry"] = countryCode[i[4]]
-                  else:
-                    tmp["Country"] = "Unknown"
-                    tmp["FullCountry"] = "Unknown"
-                else:
-                  if countryCode.has_key(i[3]):
-                    tmp["FullCountry"] = countryCode[i[3]]
-                  else:
-                    tmp["Country"] = "Unknown"
-                    tmp["FullCountry"] = "Unknown"
-                c.result.append(tmp)
-              total = result["TotalRecords"]
-              if result.has_key("Extras"):
-                extra = result["Extras"]
-                c.result = {"success":"true","result":c.result,"total":total,"extra":extra}
-              else:
-                c.result = {"success":"true","result":c.result,"total":total}
-            else:
-              c.result = {"success":"false","result":"","error":"There are no data to display"}
-          else:
-            c.result = {"success":"false","result":"","error":"ParameterNames field is undefined"}
-        else:
-          c.result = {"success":"false","result":"","error":"Data structure is corrupted"}
+        result = client.getMonitoredsStatusWeb('StorageElement',result,globalSort,pageNumber,numberOfJobs)
       else:
-        c.result = {"success":"false","result":"","error":"There were no data matching your selection"}
+        gLogger.error("Parameter 'mode': %s is wrong. Should be one of 'Site', 'Service', 'Resource' or 'Storage'" % request.params["mode"])
+        return {"success":"false","error":"Parameter 'mode' is wrong"}      
     else:
-      c.result = {"success":"false","error":result["Message"]}
-    gLogger.info("\033[0;31m SITEGW INDEX REQUEST: \033[0m %s" % (time() - pagestart))
+      gLogger.error("The parameter 'mode' is absent")
+      return {"success":"false","error":"The parameter 'mode' is absent"}
+    if not result["OK"]:
+      gLogger.error(result["Message"])
+      return {"success":"false","error":result["Message"]}
+    gLogger.info("\033[0;31m Call result:\n \033[0m",result)
+    result = result["Value"]
+    if not result.has_key("TotalRecords") or not result["TotalRecords"] > 0:
+      return {"success":"false","error":"There were no data matching your selection"}    
+    if not result.has_key("ParameterNames") or not result.has_key("Records"):
+      return {"success":"false","error":"Data structure is corrupted"}
+    if not len(result["ParameterNames"]) > 0:
+      return {"success":"false","error":"ParameterNames field is undefined"}
+    if not len(result["Records"]) > 0:
+      return {"success":"false","error":"There are no data to display"}
+    c.result = []
+    jobs = result["Records"]
+    head = result["ParameterNames"]
+    headLength = len(head)
+    countryCode = self.__countries()
+    for i in jobs:
+      tmp = {}
+      for j in range(0,headLength):
+        tmp[head[j]] = i[j]
+        if request.params["mode"] == "Resource":
+          if countryCode.has_key(i[4]):
+            tmp["FullCountry"] = countryCode[i[4]]
+          else:
+            tmp["Country"] = "Unknown"
+            tmp["FullCountry"] = "Unknown"
+        else:
+          if countryCode.has_key(i[3]):
+            tmp["FullCountry"] = countryCode[i[3]]
+          else:
+            tmp["Country"] = "Unknown"
+            tmp["FullCountry"] = "Unknown"
+        c.result.append(tmp)
+    total = result["TotalRecords"]
+    if result.has_key("Extras"):
+      extra = result["Extras"]
+      c.result = {"success":"true","result":c.result,"total":total,"extra":extra}
+    else:
+      c.result = {"success":"true","result":c.result,"total":total}
     return c.result
 ###############################################################################
   def __request(self):
@@ -177,32 +173,31 @@ class SitegatewayController(BaseController):
     callback = {}
     lhcbGroup = credentials.getSelectedGroup()
     lhcbUser = str(credentials.getUsername())
+    client = ResourceStatusClient()
     if len(request.params) > 0:
       tmp = {}
       for i in request.params:
         tmp[i] = str(request.params[i])
       callback["extra"] = tmp
-###
-    RPC = getRPCClient("ResourceStatus/ResourceStatus")
-    result = RPC.getSitesList()
+####
+    site = []
+    result = client.getSitePresent( meta = { 'columns' : 'SiteName' } )
     if result["OK"]:
-      tier1 = gConfig.getValue("/Website/PreferredSites")
-      if tier1:
-        try:
-          tier1 = tier1.split(", ")
-        except:
-          tier1 = list()
-      else:
-        tier1 = list()
-      site = []
-      if len(result["Value"])>0:
-        s = list(result["Value"])
-        site.append([str("All")])
+      sites = result["Value"]
+      try:
+        sites = list(sites)
+      except Exception,x:
+        gLogger.error("Exception during convertion to a list: %s" % str(x)}
+        sites = [] # Will return error on length check
+      tier1 = gConfig.getValue("/Website/PreferredSites",[]) # Always return a list
+      if len(sites)>0:
+        site.append(["All"])
         for i in tier1:
-          site.append([str(i)])
-        for i in s:
-          if i not in tier1:
+          if i in sites:
             site.append([str(i)])
+        for i in sites:
+          if i not in tier1:
+            site.append([str(i)])    
       else:
         site = [["Nothing to display"]]
     else:
@@ -211,7 +206,7 @@ class SitegatewayController(BaseController):
     callback["siteName"] = site
     callback["resourceSiteName"] = site
     callback["serviceSiteName"] = site
-###
+####
     RPC = getRPCClient("ResourceStatus/ResourceStatus")
     result = RPC.getSESitesList()
     if result["OK"]:
@@ -238,13 +233,19 @@ class SitegatewayController(BaseController):
       gLogger.error("RPC.getSESitesList() return error: %s" % result["Message"])
       site = [["Error happened on service side"]]
     callback["storageSiteName"] = site
-###
-    result = RPC.getSiteTypeList()
+####
+    result = client.getValidSiteTypes()
+    stat = []
     if result["OK"]:
-      stat = []
-      if len(result["Value"])>0:
-        stat.append([str("All")])
-        for i in result["Value"]:
+      value = result["Value"]
+      try:
+        value = list(value)
+      except Exception,x:
+        gLogger.error("Exception during convertion to a list: %s" % str(x)}
+        value = [] # Will return error on length check
+      if len(value)>0:
+        stat.append(["All"])
+        for i in value:
           stat.append([str(i)])
       else:
         stat = [["Nothing to display"]]
@@ -252,15 +253,21 @@ class SitegatewayController(BaseController):
       gLogger.error("RPC.getSiteTypeList() return error: %s" % result["Message"])
       stat = [["Error happened on service side"]]
     callback["siteType"] = stat
-###
-    result = RPC.getStatusList()
+####
+    stat = []
+    result = client.getValidStatuses()
     if result["OK"]:
-      stat = []
-      if len(result["Value"])>0:
-        stat.append([str("All")])
-        for i in result["Value"]:
+      value = result["Value"]
+      try:
+        value = list(value)
+      except Exception,x:
+        gLogger.error("Exception during convertion to a list: %s" % str(x)}
+        value = [] # Will return error on length check
+      if len(value)>0:
+        stat.append(["All"])
+        for i in value:
           i = i.replace(",",";")
-          stat.append([i])
+          stat.append([str(i)])
       else:
         stat = [["Nothing to display"]]
     else:
@@ -270,75 +277,105 @@ class SitegatewayController(BaseController):
     callback["resourceStatus"] = stat
     callback["serviceStatus"] = stat
     callback["storageStatus"] = stat
-###
-    result = RPC.getResourceTypeList()
+####
+    app = []
+    result = client.getValidResourceTypes()
     if result["OK"]:
-      app = []
-      if len(result["Value"])>0:
-        app.append([str("All")])
-        for i in result["Value"]:
+      value = result["Value"]
+      try:
+        value = list(value)
+      except Exception,x:
+        gLogger.error("Exception during convertion to a list: %s" % str(x)}
+        value = [] # Will return error on length check
+      if len(value)>0:
+        app.append(["All"])
+        for i in value:
           i = i.replace(",",";")
-          app.append([i])
+          app.append([str(i)])
       else:
         app = [["Nothing to display"]]
     else:
       gLogger.error("RPC.getResourceTypeList() return error: %s" % result["Message"])
       app = [["Error happened on service side"]]
     callback["resourceType"] = app
-###
-    result = RPC.getResourcesList()
+####
+    stat = []
+    result = client.getResourcePresent( meta = { 'columns' : 'ResourceName' } )
     if result["OK"]:
-      stat = []
-      if len(result["Value"])>0:
-        stat.append([str("All")])
-        for i in result["Value"]:
+      value = result["Value"]
+      try:
+        value = list(value)
+      except Exception,x:
+        gLogger.error("Exception during convertion to a list: %s" % str(x)}
+        value = [] # Will return error on length check
+      if len(value)>0:
+        stat.append(["All"])
+        for i in value:
           i = i.replace(",",";")
-          stat.append([i])
+          stat.append([str(i)])
       else:
         stat = [["Nothing to display"]]
     else:
       gLogger.error("RPC.getResourcesList() return error: %s" % result["Message"])
       stat = [["Error happened on service side"]]
     callback["resourceName"] = stat
-###
-    result = RPC.getServiceTypeList()
+####
+    stat = []
+    result = client.getValidServiceTypes()
     if result["OK"]:
-      stat = []
-      if len(result["Value"])>0:
-        stat.append([str("All")])
-        for i in result["Value"]:
+      value = result["Value"]
+      try:
+        value = list(value)
+      except Exception,x:
+        gLogger.error("Exception during convertion to a list: %s" % str(x)}
+        value = [] # Will return error on length check
+      if len(value)>0:
+        stat.append(["All"])
+        for i in value:
           i = i.replace(",",";")
-          stat.append([i])
+          stat.append([str(i)])
       else:
         stat = [["Nothing to display"]]
     else:
       gLogger.error("RPC.getServiceTypeList() return error: %s" % result["Message"])
       stat = [["Error happened on service side"]]
     callback["serviceType"] = stat
-###
-    result = RPC.getServicesList()
+####
+    stat = []
+    result = client.getServicePresent( meta = { 'columns' : 'ServiceName' } )
     if result["OK"]:
-      stat = []
-      if len(result["Value"])>0:
-        stat.append([str("All")])
-        for i in result["Value"]:
+      value = result["Value"]
+      try:
+        value = list(value)
+      except Exception,x:
+        gLogger.error("Exception during convertion to a list: %s" % str(x)}
+        value = [] # Will return error on length check
+      if len(value)>0:
+        stat.append(["All"])
+        for i in value:
           i = i.replace(",",";")
-          stat.append([i])
+          stat.append([str(i)])
       else:
         stat = [["Nothing to display"]]
     else:
       gLogger.error("RPC.getServicesList() return error: %s" % result["Message"])
       stat = [["Error happened on service side"]]
     callback["serviceName"] = stat
-###
-    result = RPC.getStorageElementsList()
+####
+    stat = []
+    result = client.getStorageelementPresent( meta = { 'columns' : 'StorageElementName' }, statusType = 'Read' )
     if result["OK"]:
-      stat = []
-      if len(result["Value"])>0:
-        stat.append([str("All")])
-        for i in result["Value"]:
+      value = result["Value"]
+      try:
+        value = list(value)
+      except Exception,x:
+        gLogger.error("Exception during convertion to a list: %s" % str(x)}
+        value = [] # Will return error on length check
+      if len(value)>0:
+        stat.append(["All"])
+        for i in value:
           i = i.replace(",",";")
-          stat.append([i])
+          stat.append([str(i)])
       else:
         stat = [["Nothing to display"]]
     else:
