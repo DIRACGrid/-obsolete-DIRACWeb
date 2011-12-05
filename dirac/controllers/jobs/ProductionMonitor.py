@@ -356,8 +356,11 @@ class ProductionmonitorController(BaseController):
       return c.error
 ################################################################################
   def __getRescheduleCounters(self,transID):
+    gLogger.info("################",gConfig.getValue("/DIRAC/Setup","None"))
     jm = JobMonitoringClient()
+    transID = transID.zfill(8)
     result = jm.getJobStats("RescheduleCounter",{"JobGroup":transID})
+    gLogger.info("################",result)
     if not result["OK"]:
       return {"success":"false","error":result["Message"]}
     res = result["Value"]
