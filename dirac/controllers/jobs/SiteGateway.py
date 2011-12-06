@@ -187,7 +187,7 @@ class SitegatewayController(BaseController):
       try:
         sites = list(sites)
       except Exception,x:
-        gLogger.error("Exception during convertion to a list: %s" % str(x)}
+        gLogger.error("Exception during convertion to a list: %s" % str(x))
         sites = [] # Will return error on length check
       tier1 = gConfig.getValue("/Website/PreferredSites",[]) # Always return a list
       if len(sites)>0:
@@ -241,7 +241,7 @@ class SitegatewayController(BaseController):
       try:
         value = list(value)
       except Exception,x:
-        gLogger.error("Exception during convertion to a list: %s" % str(x)}
+        gLogger.error("Exception during convertion to a list: %s" % str(x))
         value = [] # Will return error on length check
       if len(value)>0:
         stat.append(["All"])
@@ -261,7 +261,7 @@ class SitegatewayController(BaseController):
       try:
         value = list(value)
       except Exception,x:
-        gLogger.error("Exception during convertion to a list: %s" % str(x)}
+        gLogger.error("Exception during convertion to a list: %s" % str(x))
         value = [] # Will return error on length check
       if len(value)>0:
         stat.append(["All"])
@@ -285,7 +285,7 @@ class SitegatewayController(BaseController):
       try:
         value = list(value)
       except Exception,x:
-        gLogger.error("Exception during convertion to a list: %s" % str(x)}
+        gLogger.error("Exception during convertion to a list: %s" % str(x))
         value = [] # Will return error on length check
       if len(value)>0:
         app.append(["All"])
@@ -306,7 +306,7 @@ class SitegatewayController(BaseController):
       try:
         value = list(value)
       except Exception,x:
-        gLogger.error("Exception during convertion to a list: %s" % str(x)}
+        gLogger.error("Exception during convertion to a list: %s" % str(x))
         value = [] # Will return error on length check
       if len(value)>0:
         stat.append(["All"])
@@ -327,7 +327,7 @@ class SitegatewayController(BaseController):
       try:
         value = list(value)
       except Exception,x:
-        gLogger.error("Exception during convertion to a list: %s" % str(x)}
+        gLogger.error("Exception during convertion to a list: %s" % str(x))
         value = [] # Will return error on length check
       if len(value)>0:
         stat.append(["All"])
@@ -348,7 +348,7 @@ class SitegatewayController(BaseController):
       try:
         value = list(value)
       except Exception,x:
-        gLogger.error("Exception during convertion to a list: %s" % str(x)}
+        gLogger.error("Exception during convertion to a list: %s" % str(x))
         value = [] # Will return error on length check
       if len(value)>0:
         stat.append(["All"])
@@ -369,7 +369,7 @@ class SitegatewayController(BaseController):
       try:
         value = list(value)
       except Exception,x:
-        gLogger.error("Exception during convertion to a list: %s" % str(x)}
+        gLogger.error("Exception during convertion to a list: %s" % str(x))
         value = [] # Will return error on length check
       if len(value)>0:
         stat.append(["All"])
