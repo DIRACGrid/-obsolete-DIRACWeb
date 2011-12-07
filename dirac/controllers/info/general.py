@@ -48,9 +48,8 @@ class GeneralController( BaseController ):
       if not dn:
         return {"success":"false","error":"You have to load certificate to your browser before trying to register"}
 # TODO Check for previous requests
-    mails = False
-    mails = gConfig.getValue("/Website/UserRegistrationEmail")
-    if not mails:
+    mails = gConfig.getValue("/Website/UserRegistrationEmail",[])
+    if not len(mails) > 0:
       path = "dirac_admin"
       allGroups = getAvailableGroups()
       if allGroups:
@@ -70,8 +69,6 @@ class GeneralController( BaseController ):
             mails.append(email)
       else:
         return {"success":"false","error":"Can not find a person resposible for user administration in this DIRAC installation therefor your request can not be approuved"}
-    else:
-      mails = mails.split(',')
     gLogger.info("Admins emails: ",mails)
     ntc = NotificationClient( getRPCClient )
     body = ""
