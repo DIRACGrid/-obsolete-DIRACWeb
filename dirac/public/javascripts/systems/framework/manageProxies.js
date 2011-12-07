@@ -217,29 +217,20 @@ function renderExpirationDate( value, metadata, record, rowIndex, colIndex, stor
 {
 	var expStr = record.data.ExpirationTime.trim();
 	var dayTime = expStr.split( " " );
-	var dayList = dayTime[0].split( "-" ); //YYYY-MM-DD
-	var timeList = dayTime[1].split( ":" ); //HH:MM:SS
-	var expEpoch = new Date( dayList[0], parseInt( dayList[1] ) - 1, dayList[2], timeList[0], timeList[1], timeList[2] ).getTime()/1000;
-	var nowDate = new Date();
-	var offsetStr = nowDate.getGMTOffset();
-	var secOff = parseInt( offsetStr.substr( 1, 2 ) ) * 3600 + parseInt( offsetStr.substr( 3, 2 ) ) * 60;
-	if( offsetStr.charAt(0) == "+" )
-		var nowEpoch = nowDate.getTime()/1000 + secOff;
-	else
-		var nowEpoch = nowDate.getTime()/1000 - secOff;
+  var expEpoch = new Date(dayTime[0]).getTime()/1000;
+	var nowEpoch = new Date().getTime()/1000;
 	var secsLeft = expEpoch - nowEpoch;
-
-	var timeLimit = 86400 * 30;
-	if( secsLeft < 0 )
+	var timeLimit = 86400 * 30; // 30 days before expiration
+	if( secsLeft < 0 ){
 		secsLeft = 0;
-	else if( secsLeft > timeLimit )
+	}else if( secsLeft > timeLimit ){
 		secsLeft = timeLimit;
-
-        if( secsLeft < 3600 )
+  }
+  if( secsLeft < 3600 ){
 		var green = 0;
-	else
+	}else{
 		var green = 200;
+  }
 	var red = parseInt( 255 * ( timeLimit - secsLeft ) / timeLimit );
-//	var red = parseInt( 200 * ( secsLeft ) / timeLimit );
 	return '<span style="color: rgb('+red+','+green+',0);">' + expStr + '</span>';
 }
