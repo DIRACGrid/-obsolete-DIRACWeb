@@ -46,18 +46,26 @@ function renderPage()
 		root : 'result',
 		totalProperty : 'total',
 		id : 'proxyid',
-		fields : [ 'username', 'UserDN', 'UserGroup', 'ExpirationTime', 'PersistentFlag' ]
+		fields : [ 'UserName', 'UserDN', 'UserGroup', 'ExpirationTime', 'PersistentFlag' ]
     });
 
 	var store = new Ext.data.GroupingStore({
 				reader: reader,
 				url : "getProxiesList",
 				autoLoad : true,
-				sortInfo: { field: 'ExpirationTime', direction: 'ASC' },
-            groupField : 'username',
+				sortInfo: { field: 'UserName', direction: 'ASC' },
+            groupField : 'UserName',
             listeners : { beforeload : cbStoreBeforeLoad },
         		});
   store.on('load',function(){
+    var sortField = store.getSortState();
+    store.clearGrouping();
+    if(!Ext.isEmpty(sortField) && !Ext.isEmpty(sortField['field'])){
+      var sortBy = sortField['field'];
+      if(sortBy == 'UserName' || sortBy == 'UserDN'){
+        store.groupBy(sortBy);
+      }
+    }
     var up = Ext.getCmp('updatedTableButton');
     if(!Ext.isEmpty(up)){
       if(store.reader.jsonData.date){
@@ -78,7 +86,7 @@ function renderPage()
   });
   var columns = [
             { id : 'check', header : '', width : 30, dataIndex: 'proxyid', renderer : renderSelect },
-            { header: "User", width: 100, sortable: false, dataIndex: 'username'},
+            { header: "User", width: 100, sortable: true, dataIndex: 'UserName'},
             { header: "DN", width: 350, sortable: true, dataIndex: 'UserDN'},
             { header: "Group", width: 100, sortable: true, dataIndex: 'UserGroup'},
             { header: "Expiration date (UTC)", width: 150, sortable: true, dataIndex: 'ExpirationTime', renderer : renderExpirationDate },
