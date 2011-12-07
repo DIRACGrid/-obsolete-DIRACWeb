@@ -144,6 +144,7 @@ function initData(store){
     {header:'SubmissionTime [UTC]',sortable:true,renderer:Ext.util.Format.dateRenderer('Y-m-d H:i'),dataIndex:'SubmissionTime'},
     {header:'DIRACSetup',sortable:true,dataIndex:'DIRACSetup',align:'left',hidden:true},
     {header:'FailedFlag',sortable:true,dataIndex:'FailedFlag',align:'left',hidden:true},
+    {header:'RescheduleCounter',sortable:true,dataIndex:'RescheduleCounter',align:'left',hidden:true},
     {header:'CPUTime',sortable:true,dataIndex:'CPUTime',align:'left',hidden:true},
     {header:'OwnerDN',sortable:true,dataIndex:'OwnerDN',align:'left',hidden:true},
     {header:'JobGroup',sortable:true,dataIndex:'JobGroup',align:'left',hidden:true},

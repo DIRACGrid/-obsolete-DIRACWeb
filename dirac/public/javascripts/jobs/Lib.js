@@ -324,8 +324,23 @@ function initStore(record,options,id){
           if(sort.length == 2){
             store.sort(sort[0],sort[1]);
           }
-        }catch(e){
-          var ttt = 0;
+        }catch(e){}
+        var up = Ext.getCmp('updatedTableButton');
+        if(!Ext.isEmpty(up)){
+          if(store.reader.jsonData.date){
+            up.setText('Updated: ' + store.reader.jsonData.date);
+          }else{
+            var d = new Date();
+            var hh = d.getUTCHours();
+            if(hh < 10){
+              hh = '0' + hh;
+            }
+            var mm = d.getUTCMinutes();
+            if(mm < 10){
+              mm = '0' + mm;
+            }
+            up.setText('Updated: ' + d.getUTCFullYear() + '-' + d.getUTCMonth() + '-' + d.getUTCDate() + ' ' + hh + ':' + mm + ' [UTC]');
+          }
         }
       }else{
         alert("Error in store.reader.jsonData, trying to reload data store...");
@@ -469,13 +484,16 @@ function refreshSelect(id){
             var name = tmp.hiddenName;
             if(result[name] && tmp.store){
               var data = result[name];
-              for(var j = 0; j < data.length; j++){
-                data[j] = [j ,data[j][0]];
-              }
               tmp.store.loadData(data);
-              if(tmp.displayValue){
-                value = tmp.displayValue;
-                value = value.split(', ');
+              var rawValue = tmp.getRawValue();
+              if(rawValue){
+                var separator = ', ';
+                if(!Ext.isEmpty(tmp.visualseparator)){
+                  separator = tmp.visualseparator;
+                }else if(!Ext.isEmpty(tmp.separator)){
+                  separator = tmp.separator;
+                }
+                value = rawValue.split(separator);
                 for(var k = 0; k < value.length; k++){
                   for(var l = 0; l < data.length; l++){
                     if(value == data[l][1]){
@@ -756,7 +774,10 @@ function selectPanel(newID){
               alert('Error: ' + action.result.error);
             }else{
               var grid = Ext.getCmp('JobMonitoringTable');
-              var dataStore = grid.getStore();
+              var dataStore = false;
+              if(!Ext.isEmpty(grid)){
+                dataStore = grid.getStore();
+              }
               if(dataStore){
                 dataStore.loadData(action.result);
               }else if(panelID == 'SiteSelectPanel'){
@@ -972,10 +993,16 @@ function createMenu(dataName,title,altValue){
     }
   }catch(e){}
   var disabled = true;
+  var error = ['Error happened on service side','Nothing to display','Insufficient rights'];
+  var errorRegexp = new RegExp('^(' + error.join('|') + ')$');
   if((data == 'Nothing to display')||(Ext.isEmpty(data))){
     data = [['Nothing to display']];
   }else{
-    disabled = false;
+    if((!Ext.isEmpty(data[0]))&&(!Ext.isEmpty(data[0][0]))){
+      if(!errorRegexp.test(data[0][0])){
+        disabled = false;
+      }
+    }
   }
   var store = new Ext.data.SimpleStore({
     fields:['value'],
@@ -1694,15 +1721,14 @@ function table(tableMngr){
     }
   }
   var bbarID = id + 'bbar';
-  var items = ['-','Items per page: ',itemsNumber(store,bbarID)];
+  var updateStamp = new Ext.Toolbar.Button({
+    disabled:true,
+    disabledClass:'my-disabled',
+    id:'updatedTableButton',
+    text:'Updated: -'
+  });
+  var items = ['-',updateStamp,'-','Items per page: ',itemsNumber(store,bbarID)];
   if(tableMngr.autorefresh){
-    var stamp = new Ext.Toolbar.Button({
-      disabled:true,
-      disabledClass:'my-disabled',
-      hidden:true,
-      id:'stampTableButton',
-      text:'Updated: -'
-    });
     var autorefresh = new Ext.Toolbar.Button({
       cls:"x-btn-text",
       id:'autorefreshTableButton',
@@ -1718,7 +1744,7 @@ function table(tableMngr){
         }
       }
     });
-    items = ['-','Auto:',autorefresh,stamp,'-','Items per page: ',itemsNumber(store,bbarID)];
+    items = ['-','Auto:',autorefresh,updateStamp,'-','Items per page: ',itemsNumber(store,bbarID)];
   }
   tableMngr.bbar = new Ext.PagingToolbar({
     displayInfo:true,
@@ -1821,6 +1847,23 @@ function dateTimeWidget(pin){
       }
     });
     return timeField
+  }
+  function resetButton(tmpWidth){
+    var button = {
+      cls:"x-btn-text-icon",
+      handler:function(){
+        timeSpan.reset();
+        startDate.reset();
+        startTime.reset();
+        endDate.reset();
+        endTime.reset();
+      },
+      icon:gURLRoot+'/images/iface/reset.gif',
+      minWidth:tmpWidth,
+      text:'Reset date',
+      tooltip:'Click to reset values of date and time in this widget'
+    }
+    return button
   }
   var startDate = retDate('startDate','startDate','Start Date');
   var endDate = retDate('endDate','endDate','End Date');
@@ -1925,10 +1968,12 @@ function dateTimeWidget(pin){
       manualSelection();
     }
   });
+  
   var datePin = {xtype:'checkbox',id:'datePin',fieldLabel:'',name:'datePin',boxLabel:'Pin the date'};
   var panel = new Ext.Panel({
     layout:'table',
     id:'time-panel',
+    bbar:[resetButton()],
     defaults: {
       bodyStyle:'padding:5px',
     },
@@ -1951,6 +1996,13 @@ function dateTimeWidget(pin){
     labelAlign:'top',
     minWidth:'170',
     width:'170'
+  });
+  panel.on('resize',function(){
+    var tmpWidth = panel.getInnerWidth() - 6;
+    var bar = panel.getBottomToolbar();
+    Ext.fly(bar.items.get(0).getEl()).remove();
+    bar.items.removeAt(0);
+    bar.insertButton(0,resetButton(tmpWidth));
   });
   try{
     if(pin){

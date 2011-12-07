@@ -1,3 +1,29 @@
+[web2011120701]
+CHANGE: Add dynamic groupping(available only for UserName and UserDN) after global select for ProxyManagement page
+CHANGE: Simplification of overcomplicated function which returns color codes of proxy timelife
+FIX: Proper parsing of the global sort parameter
+FIX: Type in SiteGateway.py and in corresponding JS file
+
+[web2011120102]
+CHANGE: Introducing reset button for date/time widget https://github.com/DIRACGrid/DIRACWeb/issues/3
+CHANGE: Proper path to Presenter controller in web.cfg
+
+[web2011120101]
+CHANGE: Refresh time should be displayed by default - https://github.com/DIRACGrid/DIRACWeb/issues/31
+FIX: Bugfix in SiteGateway - https://github.com/DIRACGrid/DIRACWeb/issues/42
+CHANGE: Add timestamp value to submit call
+CHANGE: Add default values to getValue call
+
+[web2011112801]
+FIX: Replace the hardcoded separator by one taken from CS with some fallback value
+
+[web2011112201]
+FIX: Fix of https://github.com/DIRACGrid/DIRACWeb/issues/32
+CHANGE: Add support for visualseparator for lovCombo item
+
+[web2011111801]
+CHANGE: New column RescheduleCounter has been introduced
+
 [web2011110801]
 CHANGE: Add "All" item in users' list for proxy management page
 FIX: Fix bug with console unknown object

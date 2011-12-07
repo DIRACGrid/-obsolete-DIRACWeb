@@ -352,13 +352,8 @@ class ProductionmonitorController(BaseController):
       return c.error
 ################################################################################
   def __getRunStatuses(self):
-    runStatuses = gConfig.getValue("/Website/TransformationMonitoring/ContextMenu/RunStatuses")
-    gLogger.info("\033[0;31m RUNSTSTUS:  %s \033[0m" % runStatuses)
-    if runStatuses:
-      c.result = {"success":"true","result":runStatuses}
-    else:
-      c.result = {"success":"false","error":"Can't get runStatuses from /Website/TransformationMonitoring/ContextMenu/RunStatuses location in CS"}
-    return c.result
+    runStatuses = gConfig.getValue("/Website/TransformationMonitoring/ContextMenu/RunStatuses",[])
+    return {"success":"true","result":runStatuses}
 ################################################################################
   def __setSite(self,runid,prodid,site):
     try:
@@ -393,8 +388,8 @@ class ProductionmonitorController(BaseController):
     return c.result
 ################################################################################
   def __getT1(self):
-    tier1 = gConfig.getValue("/Website/PreferredSites")
-    if tier1:
+    tier1 = gConfig.getValue("/Website/PreferredSites",[])
+    if len(tier1) > 0:
       c.result = {"success":"true","result":tier1}
     else:
       c.result = {"success":"false","error":"Can't get sites from /Website/PreferredSites location in CS"}
