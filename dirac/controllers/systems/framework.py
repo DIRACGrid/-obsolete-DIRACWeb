@@ -88,9 +88,9 @@ class FrameworkController(BaseController):
     groups.sort()
     users = map(lambda x: [x], users)
     groups = map(lambda x: [x], groups)
-    if len(users) > 3:
+    if len(users) > 1:
       users.insert(0,["All"])
-    if len(groups) > 3:
+    if len(groups) > 1:
       groups.insert(0,["All"])
     callback["username"] = users
     callback["usergroup"] = groups
@@ -121,15 +121,15 @@ class FrameworkController(BaseController):
     start, limit, sort, req = self.__request()
     rpcClient = getRPCClient( "Framework/ProxyManager" )
     retVal = rpcClient.getContents( req, sort, start, limit )
+    gLogger.info("*!*!*!  RESULT: \n%s" % retVal )
     if not retVal[ 'OK' ]:
       return {"success":"false","error":retVal["Message"]}
     svcData = retVal[ 'Value' ]
     proxies = []
     dnMap = {}
-    gLogger.info("!!!  RESULT: %s" % str(svcData) )
     for record in svcData[ 'Records' ]:
       proxies.append( { 'proxyid': "%s@%s" % ( record[1], record[2] ),
-                                  'username' : str( record[0] ),
+                                  'UserName' : str( record[0] ),
                                   'UserDN' : record[1],
                                   'UserGroup' : record[2],
                                   'ExpirationTime' : str( record[3] ),
@@ -218,11 +218,15 @@ class FrameworkController(BaseController):
     except:
       limit = 25
     try:
-      sort = str( request.params[ 'sort' ] )
-      sortField, sortDir = sort.split(" ")
-      sort = [ ( sortField, sortDir ) ]
+      sortDirection = str( request.params[ 'sortDirection' ] ).strip()
     except:
-      sort = []
+      sortDirection = "ASC"
+    try:
+      sortField = str( request.params[ 'sortField' ] ).strip()
+    except:
+      sortField = "UserName"
+    sort = [[sortField, sortDirection]]
+    gLogger.info("!!!  S O R T : ",sort)
     result = gConfig.getOption("/Website/ListSeparator")
     if result["OK"]:
       separator = result["Value"]
