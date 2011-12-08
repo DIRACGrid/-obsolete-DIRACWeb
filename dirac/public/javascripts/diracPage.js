@@ -78,7 +78,7 @@ function regForm(dn){
     }catch(e){
       alert('Error: ' + e.name + ': ' + e.message)
     }
-    return  
+    return
   }
   function sucHandler(form, action){
     var response = action.result
@@ -90,10 +90,10 @@ function regForm(dn){
       }
     }else if(response.success && response.success == 'true'){
       alert('Your request has been successfully sent to administrator\nInstructions will be sent to your e-mail address shortly');
+      winClose();
     }else{
       alert('Server response is unknown. Most likely your request is acepted\nPlease use the forum http://groups.google.com/group/diracgrid-forum to clarify situation');
     }
-    winClose();
   }
   function falHandler(a,b){
     if(b.failureType == 'connect'){
@@ -101,7 +101,6 @@ function regForm(dn){
     }else{
       alert('Error: Error happens on server side');
     }
-    winClose();
   }
   var close = new Ext.Button({
     cls:"x-btn-text-icon",
