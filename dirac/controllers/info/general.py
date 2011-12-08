@@ -6,6 +6,7 @@ from DIRAC import gConfig, gLogger
 from dirac.lib.diset import getRPCClient
 from dirac.lib.credentials import getUserDN, getUsername, getAvailableGroups, getProperties
 from DIRAC.FrameworkSystem.Client.NotificationClient import NotificationClient
+from DIRAC.Core.Utilities.List import uniqueElements
 
 log = logging.getLogger( __name__ )
 
@@ -47,10 +48,49 @@ class GeneralController( BaseController ):
     else:
       if not dn:
         return {"success":"false","error":"You have to load certificate to your browser before trying to register"}
+    body = ""
+    userMail = False
+    vo = []
+    for i in paramcopy:
+      if not paramcopy[i] in default_values:
+        if i == "email":
+          userMail = paramcopy[i]
+        if i == "vo":
+          vo = paramcopy[i].split(",")
+        body = body + str(i) + ' - "' + str(paramcopy[i]) + '"\n'
+    if not userMail:
+      return {"success":"false","error":"Can not get your email from the request"}
+    gLogger.info("!!! VO: ",vo)
 # TODO Check for previous requests
-    mails = gConfig.getValue("/Website/UserRegistrationEmail",[])
+    if not len(vo) > 0:
+      mails = gConfig.getValue("/Website/UserRegistrationEmail",[])
+    else:
+      mails = []
+      for i in vo:
+        i = i.strip()
+        voadm = gConfig.getValue("/Registry/VO/%s/VOAdmin" % i,"")
+        failsafe = False
+        if voadm:
+          tmpmail = gConfig.getValue("/Registry/Users/%s/Email" % voadm,"")
+          if tmpmail:
+            mails.append(tmpmail)
+          else:
+            gLogger.error("Can not find value for option /Registry/Users/%s/Email Trying failsafe option" % voadm)
+            failsafe = True
+        else:
+          gLogger.error("Can not find value for option /Registry/VO/%s/VOAdmin Trying failsafe option" % i)
+          failsafe = True
+        if failsafe:
+          failsafe = gConfig.getValue("/Website/UserRegistrationEmail",[])
+          if len(failsafe) > 0:
+            for j in failsafe:
+              mails.append(j)
+          else:
+              gLogger.error("Can not find value for failsafe option /Website/UserRegistrationEmail User registration for VO %s is failed" % i)
+    mails = uniqueElements(mails)
+    """
     if not len(mails) > 0:
-      path = "dirac_admin"
+      path = "user_admin"
       allGroups = getAvailableGroups()
       if allGroups:
         for j in allGroups:
@@ -69,28 +109,24 @@ class GeneralController( BaseController ):
             mails.append(email)
       else:
         return {"success":"false","error":"Can not find a person resposible for user administration in this DIRAC installation therefor your request can not be approuved"}
+    """
     gLogger.info("Admins emails: ",mails)
-    ntc = NotificationClient( getRPCClient )
-    body = ""
-    for i in paramcopy:
-      if not paramcopy[i] in default_values:
-        body = body + str(i) + ' - "' + str(paramcopy[i]) + '"\n'
     sentFailed = list()
     sentSuccess = list()
-    if len(mails) > 0:
-      for i in mails:
-        i = i.strip()
-        result = ntc.sendMail(i,"New user has registered",body,"adduser@diracgrid.org",False)
-        if not result["OK"]:
-          sentFailed.append(i)
-        else:
-          sentSuccess.append(i)
-      if len(sentFailed) > 0 and len(sentFailed) == len(mails):
-        return {"success":"false","result":sentFailed}
-      else:
-        return {"success":"true","result":sentSuccess}
-    else:
+    if not len(mails) > 0:
       return {"success":"false","error":"Can not find any emails of DIRAC Administrators"}
+    ntc = NotificationClient( getRPCClient )
+    for i in mails:
+      i = i.strip()
+      result = ntc.sendMail(i,"New user has registered",body,userMail,False)
+      if not result["OK"]:
+        sentFailed.append(i)
+      else:
+        sentSuccess.append(i)
+#    if len(sentFailed) > 0 and len(sentFailed) == len(mails):
+#      return {"success":"false","result":sentFailed}
+#    else:
+#      return {"success":"true","result":sentSuccess}
 
   def getVOList(self):
     result = gConfig.getSections("/Registry/VO")
