@@ -68,6 +68,23 @@ def __checkDN( environ ):
   diracLogger.info( "Got username for user" " => %s for %s" % ( userName, userDN ) )
   return ( userDN, userName )
 
+def __getCN( environ ):
+  userCN = "unknown"
+  if 'HTTPS' in environ and environ[ 'HTTPS' ] == 'on':
+    if 'SSL_CLIENT_I_DN' in environ:
+      userCN = environ[ 'SSL_CLIENT_I_DN' ]
+    elif 'SSL_CLIENT_CERT' in environ:
+      userCert = X509Certificate.X509Certificate()
+      result = userCert.loadFromString( environ[ 'SSL_CLIENT_CERT' ] )
+      if not result[ 'OK' ]:
+        diracLogger.error( "Could not load SSL_CLIENT_CERT: %s" % result[ 'Message' ] )
+      else:
+        userCN = userCert.getIssuerDN()[ 'Value' ]
+    else:
+      diracLogger.error( "Web server is not properly configured to get SSL_CLIENT_I_DN or SSL_CLIENT_CERT in env" )
+  diracLogger.info( "Got CN %s" % userCN )
+  return userCN
+
 def __checkGroup( userName, group ):
   retVal = CS.getGroupsForUser( userName )
   if not retVal[ 'OK' ]:
@@ -103,6 +120,10 @@ def checkUserCredentials():
                                          'group' : userGroup,
                                          'availableGroups' : availableGroups
                                        }
+  if userDN and userName == "anonymous":
+    usesrCN = __getCN( environ )
+    if userCN:
+      environ[ 'DIRAC.userCredentials' ]['CN'] = userCN
 
 def authorizeAction( routeDict = False, userCred = False ):
   if not routeDict:
