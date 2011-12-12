@@ -121,7 +121,7 @@ def checkUserCredentials():
                                          'availableGroups' : availableGroups
                                        }
   if userDN and userName == "anonymous":
-    usesrCN = __getCN( environ )
+    userCN = __getCN( environ )
     if userCN:
       environ[ 'DIRAC.userCredentials' ]['CN'] = userCN
 
