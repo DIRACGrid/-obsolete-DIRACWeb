@@ -1,3 +1,6 @@
+[web2011121201]
+NEW: Add registration form to all the pages for users with certificates but not in DIRAC
+
 [web2011120701]
 CHANGE: Add dynamic groupping(available only for UserName and UserDN) after global select for ProxyManagement page
 CHANGE: Simplification of overcomplicated function which returns color codes of proxy timelife
