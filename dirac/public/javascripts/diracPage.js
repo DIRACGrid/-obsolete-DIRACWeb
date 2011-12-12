@@ -2,7 +2,12 @@ var gURLRoot = ''; // Required to set-up the proper path to the pictures.
                     // String.
 var gMainLayout = false; // Main Layout object
 var gPageDescription = {}; // Main object describing the page layout
-
+function showError(msg){
+  if(Ext.isEmpty(msg)){
+    msg = 'Error is not set or an empty value';
+  }
+  alert('Error: ' + msg + '\nPlease use the forum http://groups.google.com/group/diracgrid-forum to clarify situation');
+}
 function initDiracPage( urlRoot, pageDescription )
 {
   if( urlRoot[ urlRoot.length - 1 ] == "/" )
@@ -66,9 +71,9 @@ function __addClickHandlerToMenuSubEntries( menuEntry )
   }
   return hndlMenu;
 }
-function regForm(dn){
+function regForm(dn,cn){
   if(Ext.isEmpty(dn)){
-    alert('Error: You have to load certificate to your browser before trying to register');
+    showError('You have to load certificate to your browser before trying to register');
     return
   }
   function winClose(){
@@ -76,30 +81,37 @@ function regForm(dn){
     try{
       win.close();
     }catch(e){
-      alert('Error: ' + e.name + ': ' + e.message)
+      showError(e.name + ': ' + e.message)
     }
     return
   }
   function sucHandler(form, action){
+    gMainLayout.container.unmask();
     var response = action.result
-    if(response.success && response.success == 'false'){
-      if(response.error){
-        alert('Error: ' + response.error);
-      }else{
-        alert('Error: Your request is failed with no error returned.\nPlease use the forum http://groups.google.com/group/diracgrid-forum to clarify situation');
+    if(response.success){
+      if(response.success == 'false'){
+        if(response.error){
+          showError(response.error);
+        }else{
+          showError('Your request is failed with no error returned.');
+        }
+      }else if(response.success == 'true'){
+        if(Ext.isEmpty(response.result)){
+          response.result = 'Your request has been successfully sent to administrator';
+        }
+        alert(response.result + '\nInstructions will be sent to your e-mail address shortly');
+        winClose();
       }
-    }else if(response.success && response.success == 'true'){
-      alert('Your request has been successfully sent to administrator\nInstructions will be sent to your e-mail address shortly');
-      winClose();
     }else{
-      alert('Server response is unknown. Most likely your request is acepted\nPlease use the forum http://groups.google.com/group/diracgrid-forum to clarify situation');
+      showError('Server response is unknown. Most likely your request has acepted');
     }
   }
   function falHandler(a,b){
+    gMainLayout.container.unmask();
     if(b.failureType == 'connect'){
-      alert('Error: Bad connection or error happens on server side while connecting');
+      showError('Bad connection or error happens on server side while connecting');
     }else{
-      alert('Error: Error happens on server side');
+      showError('Error happens on server side');
     }
   }
   var close = new Ext.Button({
@@ -125,6 +137,7 @@ function regForm(dn){
   var submit = new Ext.Button({
     cls:"x-btn-text-icon",
     handler:function(){
+      gMainLayout.container.mask('Sending registration data');
       panel.form.submit({success:sucHandler,failure:falHandler});
     },
     icon:gURLRoot+'/images/iface/submit.gif',
@@ -165,7 +178,8 @@ function regForm(dn){
       valueField:'data'
     });
   }
-  var panel = new Ext.form.FormPanel({
+//  var panel = new Ext.form.FormPanel({
+  var panel = new Ext.FormPanel({
     autoScroll:true,
     baseParams:{'registration_request':'true'},
     bodyStyle:'padding: 5px',
@@ -178,6 +192,7 @@ function regForm(dn){
     },
     items:[
       {xtype:'hidden',name:'dn',value:dn},
+      {xtype:'hidden',name:'cn',value:cn},
       {fieldLabel:'Full Name',name:'full_name',allowBlank:false,emptyText:'John Smith'},
       {fieldLabel:'Username',name:'user_name',emptyText:'jsmith'},
       {fieldLabel:'Email',name:'email',vtype:'email',allowBlank:false,emptyText:'john.smith@gmail.com'},
@@ -189,6 +204,7 @@ function regForm(dn){
       key:13,
       scope:this,
       fn:function(key,e){
+        gMainLayout.container.mask('Sending registration data');
         panel.form.submit({success:sucHandler,failure:falHandler});
       }
     }],
@@ -363,7 +379,11 @@ function initBottomFrame( pageDescription )
     });
     var register = new Ext.Toolbar.Button({
       handler:function(){
-        regForm(userObject.DN);
+        var cn = "undefined"
+        if(!Ext.isEmpty(userObject.CN)){
+          cn = userObject['CN'];
+        }
+        regForm(userObject.DN, cn);
       },
       text:'<b>Click here to register in DIRAC</b>',
       tooltip:''
