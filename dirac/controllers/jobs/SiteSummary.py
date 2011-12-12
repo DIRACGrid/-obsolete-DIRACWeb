@@ -143,7 +143,7 @@ class SitesummaryController(BaseController):
       callback["site"] = site
       if result.has_key("Country") and len(result["Country"]) > 0:
         country = []
-        country.append([str("All"),str("All")])
+        country.append(["All"])
         countryCode = self.__countries()
         for i in result["Country"]:
           if countryCode.has_key(i):

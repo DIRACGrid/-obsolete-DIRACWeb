@@ -43,7 +43,7 @@ function initSidebar(){
   var selectStatusSiteSummary = createMenu('status','Status'); // Initializing Owner Menu
   var selectGridType = createMenu('gridtype','GridType'); // Initializing Application status Menu
   var selectMaskStatus = createMenu('maskstatus','MaskStatus'); // Initializing JobStatus Menu
-  var selectCountry = createMenu('country','Country',true); // Initializing JobGroup Menu
+  var selectCountry = createMenu('country','Country'); // Initializing JobGroup Menu
   var dateSelect = dateSelectMenu(); // Initializing date dialog
   var id = genericID('id','JobID'); // Initialize field for JobIDs
   var select = selectPanel(); // Initializing container for selection objects
