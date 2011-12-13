@@ -40,14 +40,15 @@ class SitegatewayController(BaseController):
     client = ResourceStatusClient()
     if request.params.has_key("mode") and len(request.params["mode"]) > 0:
       result = self.__request()
+      gLogger.error("+++++++++",result)
       if request.params["mode"] == "Site":
-        result = client.getMonitoredsStatusWeb('Site',result,globalSort,pageNumber,numberOfJobs)
+        result = client.getMonitoredsStatusWeb('Site',result,pageNumber,numberOfJobs)
       elif request.params["mode"] == "Service":
-        result = client.getMonitoredsStatusWeb('Service',result,globalSort,pageNumber,numberOfJobs)
+        result = client.getMonitoredsStatusWeb('Service',result,pageNumber,numberOfJobs)
       elif request.params["mode"] == "Resource":
-        result = client.getMonitoredsStatusWeb('Resource',result,globalSort,pageNumber,numberOfJobs)
+        result = client.getMonitoredsStatusWeb('Resource',result,pageNumber,numberOfJobs)
       elif request.params["mode"] == "Storage":
-        result = client.getMonitoredsStatusWeb('StorageElement',result,globalSort,pageNumber,numberOfJobs)
+        result = client.getMonitoredsStatusWeb('StorageElement',result,pageNumber,numberOfJobs)
       else:
         gLogger.error("Parameter 'mode': %s is wrong. Should be one of 'Site', 'Service', 'Resource' or 'Storage'" % request.params["mode"])
         return {"success":"false","error":"Parameter 'mode' is wrong"}      
@@ -363,7 +364,7 @@ class SitegatewayController(BaseController):
     callback["serviceName"] = stat
 ####
     stat = []
-    result = client.getStorageelementPresent( meta = { 'columns' : 'StorageElementName' }, statusType = 'Read' )
+    result = client.getStorageElementPresent( meta = { 'columns' : 'StorageElementName' }, statusType = 'Read' )
     if result["OK"]:
       value = result["Value"]
       try:
