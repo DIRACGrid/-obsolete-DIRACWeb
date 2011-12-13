@@ -334,7 +334,8 @@ function initBottomFrame( pageDescription )
 {
   var navItems = [ pageDescription['pagePath'], '->', { 'id' : 'mainNotificationStats', 'text' : '' }, "-" ];
   var userObject = pageDescription[ 'userData' ];
-  if(userObject.DN && userObject.username && userObject.username.toLowerCase() == 'anonymous'){
+  var regex = new RegExp('certificate login',i);
+  if(userObject.DN && !regex.test(userObject.DN) &&userObject.username && userObject.username.toLowerCase() == 'anonymous'){
 // A trick to include additional JS file  
     var th = document.getElementsByTagName('head')[0];
     var s = document.createElement('script');
