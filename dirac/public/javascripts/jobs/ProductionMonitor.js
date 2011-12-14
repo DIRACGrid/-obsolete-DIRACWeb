@@ -7,6 +7,7 @@ var refreshRate = 0;
 var tableID = 'tmpID';
 var idObject = new Array();
 var transAdmin = false;
+var separator = false;
 // Main routine
 function initProductionMonitor(reponseSelect){
   try{
@@ -48,6 +49,9 @@ function initProductionMonitor(reponseSelect){
     }
   });
   Ext.onReady(function(){
+    if(!Ext.isEmpty(dataSelect["extra"]) && !Ext.isEmpty(dataSelect["extra"]["listSeparator"])){
+      separator = dataSelect["extra"]["listSeparator"];
+    }
     heartbeat = new Ext.util.TaskRunner();
     Ext.override(Ext.PagingToolbar, {
       onRender :  Ext.PagingToolbar.prototype.onRender.createSequence(function(ct, position){
@@ -133,6 +137,13 @@ function initSidebar(){
   var dateSelect = dateSelectMenu(); // Initializing date dialog
   var id = genericID('productionID','ID'); // Initialize field for JobIDs
   var select = selectPanel(); // Initializing container for selection objects
+  if(separator){
+    prodSelect.separator = separator;
+    agentSelect.separator = separator;
+    prodType.separator = separator;
+    transGroup.separator = separator;
+    plugin.separator = separator;
+  }
 //  select.buttons[2].hide(); // Remove refresh button
   // Insert object to container BEFORE buttons:
   select.insert(0,prodSelect);
@@ -403,7 +414,7 @@ function AJAXsuccess(value,id,response){
     panel.addListener('cellclick',function(table,rowIndex,columnIndex){
       showMenu('nonMain',table,rowIndex,columnIndex);
     });
-  }else if((value == 'additionalParams')||(value == 'dataQuery')){
+  }else if((value == 'additionalParams')||(value == 'dataQuery')||(value == 'reschedule_counter')){
     var reader = new Ext.data.ArrayReader({},[
       {name:'name'},
       {name:'value'}
