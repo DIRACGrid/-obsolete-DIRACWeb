@@ -8,6 +8,7 @@ var tableID = 'tmpID';
 var idObject = new Array();
 var transAdmin = false;
 var runStatusMenu = false; // Array, used in context menu to enable/disable this action for certain type of productions
+var separator = false;
 // Main routine
 function initProductionMonitor(reponseSelect){
   try{
@@ -49,6 +50,9 @@ function initProductionMonitor(reponseSelect){
     }
   });
   Ext.onReady(function(){
+    if(!Ext.isEmpty(dataSelect["extra"]) && !Ext.isEmpty(dataSelect["extra"]["listSeparator"])){
+      separator = dataSelect["extra"]["listSeparator"];
+    }
     heartbeat = new Ext.util.TaskRunner();
     Ext.override(Ext.PagingToolbar, {
       onRender :  Ext.PagingToolbar.prototype.onRender.createSequence(function(ct, position){
@@ -146,6 +150,13 @@ function initSidebar(){
   var id = genericID('productionID','ProductionID'); // Initialize field for JobIDs
   var requestID = genericID('requestID','RequestID');
   var select = selectPanel(); // Initializing container for selection objects
+  if(separator){
+    prodSelect.separator = separator;
+    agentSelect.separator = separator;
+    prodType.separator = separator;
+    transGroup.separator = separator;
+    plugin.separator = separator;
+  }
 //  select.buttons[2].hide(); // Remove refresh button
   // Insert object to container BEFORE buttons:
   select.insert(0,prodSelect);
