@@ -29,10 +29,19 @@ globalSort = [["TransformationID","DESC"]]
 class ProductionmonitorController(BaseController):
 ################################################################################
   def display(self):
-    pagestart = time()
     c.select = self.__getSelectionData()
+    gLogger.info("getSelectionData(): %s" % c.select )
+    separator = gConfig.getValue("/Website/TransformationMonitoring/ListSeparator",":::")
+    gLogger.info("List separator: '%s'" % separator )
     if not c.select.has_key("extra"):
-      c.select["extra"] = {"prodStatus":"Active::: Stopped::: New"}
+      c.select["extra"] = dict()
+      initValues = gConfig.getOptions("/Website/TransformationMonitoring/InitValues/")
+      if initValues["OK"]:
+        for i in initValues["Value"]:
+          tmpInit = gConfig.getValue("/Website/TransformationMonitoring/InitValues/%s" % i,"")
+          gLogger.info("Initial value for %s: %s" % (i, tmpInit) )
+          c.select["extra"][i] = tmpInit
+    c.select["extra"]["listSeparator"] = separator
     return render("jobs/ProductionMonitor.mako")
 ################################################################################
   @jsonify
