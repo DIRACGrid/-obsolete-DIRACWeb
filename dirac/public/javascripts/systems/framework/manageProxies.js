@@ -1,64 +1,133 @@
 var gMainGrid = false;
+var dataSelect = ''; // Required to store the data for filters fields. Object.
+var tableMngr = ''; // Required to handle configuration data for table. Object.
 
-function initManageProxies(){
-
+function initManageProxies(initSelections){
+  dataSelect = initSelections;
   Ext.onReady(function(){
+    Ext.override(Ext.PagingToolbar, {
+      onRender :  Ext.PagingToolbar.prototype.onRender.createSequence(function(ct, position){
+        this.loading.removeClass('x-btn-icon');
+        this.loading.setText('Refresh');
+        this.loading.addClass('x-btn-text-icon');
+      })
+    });
     renderPage();
   });
+}
+
+function initSidebar(){
+/*
+  createMenu(dataIndex or dataName,Text label, alternative data) same for createDropdownMenu
+*/
+  var userSelect = createMenu('username','User');
+  var groupSelect = createMenu('usergroup','Group');
+  var expiredBefore = createDropdownMenu('expiredBefore','Expired Before'); // Initializing JobStatus Menu
+  var expiredAfter = createDropdownMenu('expiredAfter','Expired After'); // Initializing JobStatus Menu
+  var pers = [['All'],['True'],['False']];
+  var persistentSelect = createDropdownMenu('persistent','Persistent',pers); // Initializing Minor Status Menu
+  var select = selectPanel(); // Initializing container for selection objects
+  select.buttons[2].hide(); // Remove refresh button
+  // Insert object to container BEFORE buttons:
+  select.insert(0,userSelect);
+  select.insert(1,groupSelect);
+//  select.insert(2,expiredBefore);
+//  select.insert(3,expiredAfter);
+//  select.insert(4,persistentSelect);
+  var bar = sideBar();
+  bar.insert(0,select);
+  bar.setTitle('ProxyManagement');
+  return bar
 }
 
 function renderPage()
 {
 	var reader = new Ext.data.JsonReader({
-		root : 'proxies',
-		totalProperty : 'numProxies',
+		root : 'result',
+		totalProperty : 'total',
 		id : 'proxyid',
-		fields : [ 'username', 'UserDN', 'UserGroup', 'ExpirationTime', 'PersistentFlag' ]
+		fields : [ 'UserName', 'UserDN', 'UserGroup', 'ExpirationTime', 'PersistentFlag' ]
     });
 
 	var store = new Ext.data.GroupingStore({
 				reader: reader,
 				url : "getProxiesList",
 				autoLoad : true,
-				sortInfo: { field: 'UserDN', direction: 'ASC' },
-            groupField : 'username',
+				sortInfo: { field: 'UserName', direction: 'ASC' },
+            groupField : 'UserName',
             listeners : { beforeload : cbStoreBeforeLoad },
         		});
-
-	gMainGrid = new Ext.grid.GridPanel( {
-		store : store,
-		view: new Ext.grid.GroupingView({
-            groupTextTpl: '{text} ({[values.rs.length]} {[values.rs.length > 1 ? "Items" : "Item"]})',
-            emptyText: 'No data',
-            startCollapsed : false,
-        }),
-		columns: [
+  store.on('load',function(){
+    var sortField = store.getSortState();
+    store.clearGrouping();
+    if(!Ext.isEmpty(sortField) && !Ext.isEmpty(sortField['field'])){
+      var sortBy = sortField['field'];
+      if(sortBy == 'UserName' || sortBy == 'UserDN'){
+        store.groupBy(sortBy);
+      }
+    }
+    var up = Ext.getCmp('updatedTableButton');
+    if(!Ext.isEmpty(up)){
+      if(store.reader.jsonData.date){
+        up.setText('Updated: ' + store.reader.jsonData.date);
+      }else{
+        var d = new Date();
+        var hh = d.getUTCHours();
+        if(hh < 10){
+          hh = '0' + hh;
+        }
+        var mm = d.getUTCMinutes();
+        if(mm < 10){
+          mm = '0' + mm;
+        }
+        up.setText('Updated: ' + d.getUTCFullYear() + '-' + d.getUTCMonth() + '-' + d.getUTCDate() + ' ' + hh + ':' + mm + ' [UTC]');
+      }
+    }
+  });
+  var columns = [
             { id : 'check', header : '', width : 30, dataIndex: 'proxyid', renderer : renderSelect },
-            { header: "User", width: 100, sortable: false, dataIndex: 'username'},
+            { header: "User", width: 100, sortable: true, dataIndex: 'UserName'},
             { header: "DN", width: 350, sortable: true, dataIndex: 'UserDN'},
             { header: "Group", width: 100, sortable: true, dataIndex: 'UserGroup'},
             { header: "Expiration date (UTC)", width: 150, sortable: true, dataIndex: 'ExpirationTime', renderer : renderExpirationDate },
             { header: "Persistent", width: 100, sortable: true, dataIndex: 'PersistentFlag' },
-        ],
-      region : 'center',
-   	tbar : [
-   				{ handler:function(){ toggleAll(true) }, text:'Select all', width:150, tooltip:'Click to select all rows' },
-    				{ handler:function(){ toggleAll(false) }, text:'Select none', width:150, tooltip:'Click to select all rows' },
-    				'->',
-      			{ handler:function(){ cbDeleteSelected() }, text:'Delete', width:150, tooltip:'Click to delete all selected proxies' },
-   			],
-		bbar: new Ext.PagingToolbar({
-					pageSize: 25,
-					store: store,
-					displayInfo: true,
-					displayMsg: 'Displaying entries {0} - {1} of {2}',
-					emptyMsg: "No entries to display",
-					items:['-','Items displaying per page: ', createNumItemsSelector() ],
-	        }),
-	   listeners : { sortchange : cbMainGridSortChange },
-
-		} );
-	renderInMainViewport( [gMainGrid] );
+        ];
+        
+  var view = new Ext.grid.GroupingView({
+            groupTextTpl: '{text} ({[values.rs.length]} {[values.rs.length > 1 ? "Items" : "Item"]})',
+            emptyText: 'No data',
+            startCollapsed : false,
+        });
+        
+  var tbar = [
+   				{ 
+   				  handler:function(){ toggleAll(true) }, 
+   				  text:'Select all', 
+   				  width:150, 
+   				  tooltip:'Click to select all rows', 
+   				  cls:"x-btn-text-icon", 
+   				  icon:gURLRoot+'/images/iface/checked.gif'
+   				},{
+   				  handler:function(){ toggleAll(false) }, 
+   				  text:'Select none', 
+   				  width:150, 
+   				  tooltip:'Click to select all rows', 
+   				  cls:"x-btn-text-icon", 
+   				  icon:gURLRoot+'/images/iface/unchecked.gif'
+   				},'->',{
+   				  handler:function(){ cbDeleteSelected() },
+   				  text:'Delete', 
+   				  width:150, 
+   				  tooltip:'Click to delete all selected proxies', 
+   				  cls:"x-btn-text-icon", 
+   				  icon:gURLRoot+'/images/iface/delete.gif'
+   				}
+   			];
+  tableMngr = {'store':store,'columns':columns,'tbar':tbar,'view':view};
+  gMainGrid = table( tableMngr );
+  gMainGrid.addListener('sortchange',cbMainGridSortChange );  
+	var selectors = initSidebar();
+	renderInMainViewport( [selectors, gMainGrid] );
 }
 
 function renderSelect( value, metadata, record, rowIndex, colIndex, store )
@@ -100,56 +169,25 @@ function cbStoreBeforeLoad( store, params )
 							   'sortDirection' : sortState.direction,
 							   'limit' : bb.pageSize,
 							 };
+	dataSelect.globalSort = sortState.field + ' ' + sortState.direction;
 }
 
 function cbMainGridSortChange( mainGrid, params )
 {
 	var store = mainGrid.getStore();
 	store.setDefaultSort( params.field, params.direction );
+	dataSelect.globalSort = params.field + ' ' + params.direction;
 	store.reload();
 }
 
-function createNumItemsSelector(){
-	var store = new Ext.data.SimpleStore({
-		fields:['number'],
-		data:[[25],[50],[100],[150]]
-	});
-	var combo = new Ext.form.ComboBox({
-		allowBlank:false,
-		displayField:'number',
-		editable:false,
-		maxLength:3,
-		maxLengthText:'The maximum value for this field is 999',
-		minLength:1,
-		minLengthText:'The minimum value for this field is 1',
-		mode:'local',
-		name:'number',
-		selectOnFocus:true,
-		store:store,
-		triggerAction:'all',
-		typeAhead:true,
-		value:25,
-		width:50
-	});
-	combo.on({
-		'collapse':function() {
-			var bb = gMainGrid.getBottomToolbar();
-			if( bb.pageSize != combo.value )
-			{
-				bb.pageSize = combo.value;
-				var store = gMainGrid.getStore()
-				store.load( { params : { start : 0, limit : bb.pageSize } } );
-			}
-		}
- 	});
-	return combo;
-}
-
-
 function cbDeleteSelected()
 {
-	var selIds = getSelectedCheckboxes()
-	if( window.confirm( "Are you sure you want to delete selected proxies?" ) )
+	var selIds = getSelectedCheckboxes();
+	var msg = 'proxy';
+	if(selIds && selIds.length > 1){
+	  msg = 'proxies';
+	}
+	if( window.confirm( "Are you sure you want to delete selected " + msg + "?" ) )
 		Ext.Ajax.request({
 			url : "deleteProxies",
 			success : ajaxCBServerDeleteSelected,
@@ -179,29 +217,20 @@ function renderExpirationDate( value, metadata, record, rowIndex, colIndex, stor
 {
 	var expStr = record.data.ExpirationTime.trim();
 	var dayTime = expStr.split( " " );
-	var dayList = dayTime[0].split( "-" ); //YYYY-MM-DD
-	var timeList = dayTime[1].split( ":" ); //HH:MM:SS
-	var expEpoch = new Date( dayList[0], parseInt( dayList[1] ) - 1, dayList[2], timeList[0], timeList[1], timeList[2] ).getTime()/1000;
-	var nowDate = new Date();
-	var offsetStr = nowDate.getGMTOffset();
-	var secOff = parseInt( offsetStr.substr( 1, 2 ) ) * 3600 + parseInt( offsetStr.substr( 3, 2 ) ) * 60;
-	if( offsetStr.charAt(0) == "+" )
-		var nowEpoch = nowDate.getTime()/1000 + secOff;
-	else
-		var nowEpoch = nowDate.getTime()/1000 - secOff;
+  var expEpoch = new Date(dayTime[0]).getTime()/1000;
+	var nowEpoch = new Date().getTime()/1000;
 	var secsLeft = expEpoch - nowEpoch;
-
-	var timeLimit = 86400 * 30;
-	if( secsLeft < 0 )
+	var timeLimit = 86400 * 30; // 30 days before expiration
+	if( secsLeft < 0 ){
 		secsLeft = 0;
-	else if( secsLeft > timeLimit )
+	}else if( secsLeft > timeLimit ){
 		secsLeft = timeLimit;
-
-        if( secsLeft < 3600 )
+  }
+  if( secsLeft < 3600 ){
 		var green = 0;
-	else
+	}else{
 		var green = 200;
+  }
 	var red = parseInt( 255 * ( timeLimit - secsLeft ) / timeLimit );
-//	var red = parseInt( 200 * ( secsLeft ) / timeLimit );
 	return '<span style="color: rgb('+red+','+green+',0);">' + expStr + '</span>';
 }

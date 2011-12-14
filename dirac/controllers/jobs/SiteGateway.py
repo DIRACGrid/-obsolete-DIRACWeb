@@ -118,52 +118,57 @@ class SitegatewayController(BaseController):
     elif request.params.has_key("getStorageHistory") and len(request.params["getStorageHistory"]) > 0:
         req["ExpandStorageElementHistory"] = str(request.params["getStorageHistory"])
     else:
+      result = gConfig.getOption("/Website/ListSeparator")
+      if result["OK"]:
+        separator = result["Value"]
+      else:
+        separator = ":::"
       if request.params["mode"] == "Site":
         if request.params.has_key("siteName") and len(request.params["siteName"]) > 0:
           if str(request.params["siteName"]) != "All":
-            req["SiteName"] = str(request.params["siteName"]).split('::: ')
+            req["SiteName"] = str(request.params["siteName"]).split(separator)
         if request.params.has_key("siteStatus") and len(request.params["siteStatus"]) > 0:
           if str(request.params["siteStatus"]) != "All":
-            req["Status"] = str(request.params["siteStatus"]).split('::: ')
+            req["Status"] = str(request.params["siteStatus"]).split(separator)
         if request.params.has_key("siteType") and len(request.params["siteType"]) > 0:
           if str(request.params["siteType"]) != "All":
-            req["SiteType"] = str(request.params["siteType"]).split('::: ')
+            req["SiteType"] = str(request.params["siteType"]).split(separator)
       elif request.params["mode"] == "Service":
         if request.params.has_key("serviceName") and len(request.params["serviceName"]) > 0:
           if str(request.params["serviceName"]) != "All":
-            req["ServiceName"] = str(request.params["serviceName"]).split('::: ')
+            req["ServiceName"] = str(request.params["serviceName"]).split(separator)
         if request.params.has_key("serviceType") and len(request.params["serviceType"]) > 0:
           if str(request.params["serviceType"]) != "All":
-            req["ServiceType"] = str(request.params["serviceType"]).split('::: ')
+            req["ServiceType"] = str(request.params["serviceType"]).split(separator)
         if request.params.has_key("serviceSiteName") and len(request.params["serviceSiteName"]) > 0:
           if str(request.params["serviceSiteName"]) != "All":
-            req["SiteName"] = str(request.params["serviceSiteName"]).split('::: ')
+            req["SiteName"] = str(request.params["serviceSiteName"]).split(separator)
         if request.params.has_key("serviceStatus") and len(request.params["serviceStatus"]) > 0:
           if str(request.params["serviceStatus"]) != "All":
-            req["Status"] = str(request.params["serviceStatus"]).split('::: ')
+            req["Status"] = str(request.params["serviceStatus"]).split(separator)
       elif request.params["mode"] == "Resource":
         if request.params.has_key("resourceName") and len(request.params["resourceName"]) > 0:
           if str(request.params["resourceName"]) != "All":
-            req["ResourceName"] = str(request.params["resourceName"]).split('::: ')
+            req["ResourceName"] = str(request.params["resourceName"]).split(separator)
         if request.params.has_key("resourceType") and len(request.params["resourceType"]) > 0:
           if str(request.params["resourceType"]) != "All":
-            req["ResourceType"] = str(request.params["resourceType"]).split('::: ')
+            req["ResourceType"] = str(request.params["resourceType"]).split(separator)
         if request.params.has_key("resourceSiteName") and len(request.params["resourceSiteName"]) > 0:
           if str(request.params["resourceSiteName"]) != "All":
-            req["SiteName"] = str(request.params["resourceSiteName"]).split('::: ')
+            req["SiteName"] = str(request.params["resourceSiteName"]).split(separator)
         if request.params.has_key("resourceStatus") and len(request.params["resourceStatus"]) > 0:
           if str(request.params["resourceStatus"]) != "All":
-            req["Status"] = str(request.params["resourceStatus"]).split('::: ')
+            req["Status"] = str(request.params["resourceStatus"]).split(separator)
       elif request.params["mode"] == "Storage":
         if request.params.has_key("storageName") and len(request.params["storageName"]) > 0:
           if str(request.params["storageName"]) != "All":
-            req["StorageElementName"] = str(request.params["storageName"]).split('::: ')
+            req["StorageElementName"] = str(request.params["storageName"]).split(separator)
         if request.params.has_key("storageSiteName") and len(request.params["storageSiteName"]) > 0:
           if str(request.params["storageSiteName"]) != "All":
-            req["SiteName"] = str(request.params["storageSiteName"]).split('::: ')
+            req["SiteName"] = str(request.params["storageSiteName"]).split(separator)
         if request.params.has_key("storageStatus") and len(request.params["storageStatus"]) > 0:
           if str(request.params["storageStatus"]) != "All":
-            req["Status"] = str(request.params["storageStatus"]).split('::: ')
+            req["Status"] = str(request.params["storageStatus"]).split(separator)
       globalSort = []
     gLogger.info("REQUEST:",req)
     return req
@@ -201,7 +206,8 @@ class SitegatewayController(BaseController):
       else:
         site = [["Nothing to display"]]
     else:
-      site = [["Error during RPC call"]]
+      gLogger.error("RPC.getSitesList() return error: %s" % result["Message"])
+      site = [["Error happened on service side"]]
     callback["siteName"] = site
     callback["resourceSiteName"] = site
     callback["serviceSiteName"] = site
@@ -229,7 +235,8 @@ class SitegatewayController(BaseController):
       else:
         site = [["Nothing to display"]]
     else:
-      site = [["Error during RPC call"]]
+      gLogger.error("RPC.getSESitesList() return error: %s" % result["Message"])
+      site = [["Error happened on service side"]]
     callback["storageSiteName"] = site
 ###
     result = RPC.getSiteTypeList()
@@ -242,7 +249,8 @@ class SitegatewayController(BaseController):
       else:
         stat = [["Nothing to display"]]
     else:
-      stat = [["Error during RPC call"]]
+      gLogger.error("RPC.getSiteTypeList() return error: %s" % result["Message"])
+      stat = [["Error happened on service side"]]
     callback["siteType"] = stat
 ###
     result = RPC.getStatusList()
@@ -256,7 +264,8 @@ class SitegatewayController(BaseController):
       else:
         stat = [["Nothing to display"]]
     else:
-      stat = [["Error during RPC call"]]
+      gLogger.error("RPC.getStatusList() return error: %s" % result["Message"])
+      stat = [["Error happened on service side"]]
     callback["siteStatus"] = stat
     callback["resourceStatus"] = stat
     callback["serviceStatus"] = stat
@@ -273,7 +282,8 @@ class SitegatewayController(BaseController):
       else:
         app = [["Nothing to display"]]
     else:
-      app = [["Error during RPC call"]]
+      gLogger.error("RPC.getResourceTypeList() return error: %s" % result["Message"])
+      app = [["Error happened on service side"]]
     callback["resourceType"] = app
 ###
     result = RPC.getResourcesList()
@@ -287,7 +297,8 @@ class SitegatewayController(BaseController):
       else:
         stat = [["Nothing to display"]]
     else:
-      stat = [["Error during RPC call"]]
+      gLogger.error("RPC.getResourcesList() return error: %s" % result["Message"])
+      stat = [["Error happened on service side"]]
     callback["resourceName"] = stat
 ###
     result = RPC.getServiceTypeList()
@@ -301,7 +312,8 @@ class SitegatewayController(BaseController):
       else:
         stat = [["Nothing to display"]]
     else:
-      stat = [["Error during RPC call"]]
+      gLogger.error("RPC.getServiceTypeList() return error: %s" % result["Message"])
+      stat = [["Error happened on service side"]]
     callback["serviceType"] = stat
 ###
     result = RPC.getServicesList()
@@ -315,7 +327,8 @@ class SitegatewayController(BaseController):
       else:
         stat = [["Nothing to display"]]
     else:
-      stat = [["Error during RPC call"]]
+      gLogger.error("RPC.getServicesList() return error: %s" % result["Message"])
+      stat = [["Error happened on service side"]]
     callback["serviceName"] = stat
 ###
     result = RPC.getStorageElementsList()
@@ -329,7 +342,8 @@ class SitegatewayController(BaseController):
       else:
         stat = [["Nothing to display"]]
     else:
-      stat = [["Error during RPC call"]]
+      gLogger.error("RPC.getStorageElementsList() return error: %s" % result["Message"])
+      stat = [["Error happened on service side"]]
     callback["storageName"] = stat
     return callback
 ################################################################################

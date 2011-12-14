@@ -6,7 +6,7 @@ from DIRAC.Core.Utilities import Time
 from dirac.lib.base import *
 from dirac.lib.diset import getRPCClient
 from dirac.lib.credentials import authorizeAction
-#from dirac.lib.sessionManager import *
+from DIRAC.Core.Utilities import Time
 from DIRAC import gConfig, gLogger
 import dirac.lib.credentials as credentials
 
@@ -57,11 +57,12 @@ class PilotmonitorController(BaseController):
                   tmp[head[j]] = i[j]
                 c.result.append(tmp)
               total = result["TotalRecords"]
+              timestamp = Time.dateTime().strftime("%Y-%m-%d %H:%M [UTC]")
               if result.has_key("Extras"):
                 extra = result["Extras"]
-                c.result = {"success":"true","result":c.result,"total":total,"extra":extra}
+                c.result = {"success":"true","result":c.result,"total":total,"extra":extra,"date":timestamp}
               else:
-                c.result = {"success":"true","result":c.result,"total":total}
+                c.result = {"success":"true","result":c.result,"total":total,"date":timestamp}
             else:
               c.result = {"success":"false","result":"","error":"There are no data to display"}
           else:
@@ -117,24 +118,17 @@ class PilotmonitorController(BaseController):
       callback["ownerGroup"] = ownerGroup
       if result.has_key("DestinationSite") and len(result["DestinationSite"]) > 0:
         ce = []
-        ce.append([str("All")])
+        ce.append(["All"])
         for i in result["DestinationSite"]:
           ce.append([str(i)])
       else:
         ce = [["Nothing to display"]]
       callback["ce"] = ce
       if result.has_key("GridSite") and len(result["GridSite"]) > 0:
-        tier1 = gConfig.getValue("/Website/PreferredSites")
-        if tier1:
-          try:
-            tier1 = tier1.split(", ")
-          except:
-            tier1 = list()
-        else:
-          tier1 = list()
+        tier1 = gConfig.getValue("/Website/PreferredSites",[])
         site = []
         s = list(result["GridSite"])
-        site.append([str("All")])
+        site.append(["All"])
         for i in tier1:
           site.append([str(i)])
         for i in s:
@@ -145,7 +139,7 @@ class PilotmonitorController(BaseController):
       callback["site"] = site
       if result.has_key("Broker") and len(result["Broker"]) > 0:
         broker = []
-        broker.append([str("All")])
+        broker.append(["All"])
         for i in result["Broker"]:
           broker.append([str(i)])
       else:
@@ -185,23 +179,28 @@ class PilotmonitorController(BaseController):
       pageNumber = 0
       req["TaskQueueID"] = str(request.params["taskQueueID"])
     else:
+      result = gConfig.getOption("/Website/ListSeparator")
+      if result["OK"]:
+        separator = result["Value"]
+      else:
+        separator = ":::"
       if request.params.has_key("broker") and len(request.params["broker"]) > 0:
         if str(request.params["broker"]) != "All":
-          req["Broker"] = str(request.params["broker"]).split('::: ')
+          req["Broker"] = str(request.params["broker"]).split(separator)
       if request.params.has_key("site") and len(request.params["site"]) > 0:
         if str(request.params["site"]) != "All":
-          req["GridSite"] = str(request.params["site"]).split('::: ')
+          req["GridSite"] = str(request.params["site"]).split(separator)
       if request.params.has_key("status") and len(request.params["status"]) > 0:
         if str(request.params["status"]) != "All":
-          req["Status"] = str(request.params["status"]).split('::: ')
+          req["Status"] = str(request.params["status"]).split(separator)
       if request.params.has_key("ce") and len(request.params["ce"]) > 0:
-        req["DestinationSite"] = str(request.params["ce"]).split('::: ')
+        req["DestinationSite"] = str(request.params["ce"]).split(separator)
       if request.params.has_key("ownerGroup") and len(request.params["ownerGroup"]) > 0:
         if str(request.params["ownerGroup"]) != "All":
-          req["OwnerGroup"] = str(request.params["ownerGroup"]).split('::: ')
+          req["OwnerGroup"] = str(request.params["ownerGroup"]).split(separator)
       if request.params.has_key("owner") and len(request.params["owner"]) > 0:
         if str(request.params["owner"]) != "All":
-          req["Owner"] = str(request.params["owner"]).split('::: ')
+          req["Owner"] = str(request.params["owner"]).split(separator)
       if request.params.has_key("startDate") and len(request.params["startDate"]) > 0:
         if str(request.params["startDate"]) != "YYYY-mm-dd":
           if request.params.has_key("startTime") and len(request.params["startTime"]) > 0:

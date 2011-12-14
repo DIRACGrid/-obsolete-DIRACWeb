@@ -129,17 +129,10 @@ class SitesummaryController(BaseController):
         maskstatus = [["Nothing to display"]]
       callback["maskstatus"] = maskstatus
       if result.has_key("Site") and len(result["Site"]) > 0:
-        tier1 = gConfig.getValue("/Website/PreferredSites")
-        if tier1:
-          try:
-            tier1 = tier1.split(", ")
-          except:
-            tier1 = list()
-        else:
-          tier1 = list()
-        site = []
         s = list(result["Site"])
-        site.append([str("All")])
+        tier1 = gConfig.getValue("/Website/PreferredSites",[])
+        site = list()
+        site.append(["All"])
         for i in tier1:
           site.append([str(i)])
         for i in s:
@@ -150,7 +143,7 @@ class SitesummaryController(BaseController):
       callback["site"] = site
       if result.has_key("Country") and len(result["Country"]) > 0:
         country = []
-        country.append([str("All"),str("All")])
+        country.append(["All"])
         countryCode = self.__countries()
         for i in result["Country"]:
           if countryCode.has_key(i):
@@ -183,34 +176,39 @@ class SitesummaryController(BaseController):
       pageNumber = 0
       req["ExpandSite"] = str(request.params["expand"])
     else:
+      result = gConfig.getOption("/Website/ListSeparator")
+      if result["OK"]:
+        separator = result["Value"]
+      else:
+        separator = ":::"
       pageNumber = 0
       numberOfJobs = 500
       if request.params.has_key("country") and len(request.params["country"]) > 0:
         if str(request.params["country"]) != "All":
           code = self.__reverseCountry()
-          tmpValue = str(request.params["country"]).split('::: ')
+          tmpValue = str(request.params["country"]).split(separator)
           newValue = []
           for i in tmpValue:
             if code.has_key(i):
               newValue.append(code[i])
           req["Country"] = newValue
-#          req["Country"] = str(request.params["country"]).split('::: ')
+#          req["Country"] = str(request.params["country"]).split(separator)
       if request.params.has_key("site") and len(request.params["site"]) > 0:
         if str(request.params["site"]) != "All":
-          req["Site"] = str(request.params["site"]).split('::: ')
+          req["Site"] = str(request.params["site"]).split(separator)
       if request.params.has_key("status") and len(request.params["status"]) > 0:
         if str(request.params["status"]) != "All":
-          req["Status"] = str(request.params["status"]).split('::: ')
+          req["Status"] = str(request.params["status"]).split(separator)
       if request.params.has_key("maskstatus") and len(request.params["maskstatus"]) > 0:
         if str(request.params["maskstatus"]) != "All":
-          req["MaskStatus"] = str(request.params["maskstatus"]).split('::: ')
+          req["MaskStatus"] = str(request.params["maskstatus"]).split(separator)
       if request.params.has_key("gridtype") and len(request.params["gridtype"]) > 0:
         if str(request.params["gridtype"]) != "All":
-          req["GridType"] = str(request.params["gridtype"]).split('::: ')
+          req["GridType"] = str(request.params["gridtype"]).split(separator)
       else:
         if request.params.has_key("owner") and len(request.params["owner"]) > 0:
           if str(request.params["owner"]) != "All":
-            req["Owner"] = str(request.params["owner"]).split('::: ')
+            req["Owner"] = str(request.params["owner"]).split(separator)
       if request.params.has_key("date") and len(request.params["date"]) > 0:
         if str(request.params["date"]) != "YYYY-mm-dd":
           req["LastUpdate"] = str(request.params["date"])
