@@ -20,8 +20,6 @@ class ProductionmonitorController(BaseController):
   def display(self):
     pagestart = time()
     c.select = self.__getSelectionData()
-    if not c.select.has_key("extra"):
-      c.select["extra"] = {"prodStatus":"Active::: Stopped::: New"}
     return render("jobs/ProductionMonitor.mako")
 ################################################################################
   @jsonify
@@ -88,8 +86,7 @@ class ProductionmonitorController(BaseController):
       numberOfJobs = 25
       pageNumber = 0
     if request.params.has_key("productionID") and len(request.params["productionID"]) > 0:
-      gLogger.info(" !!!!!!!!!!!!!!!!!!!!!11 productionID - ",request.params["productionID"])
-      testString = str(request.params["productionID"])
+       testString = str(request.params["productionID"])
       testString = testString.strip(';, ')
       testString = testString.split(', ')
       if len(testString) == 1:
@@ -112,30 +109,6 @@ class ProductionmonitorController(BaseController):
           req["TransformationID"] = testString
       else:
         req["TransformationID"] = testString
-    elif request.params.has_key("requestID") and len(request.params["requestID"]) > 0:
-      testString = str(request.params["requestID"])
-      testString = testString.strip(';, ')
-      testString = testString.split(', ')
-      if len(testString) == 1:
-        testString = testString[0].split('; ')
-        if len(testString) == 1:
-          testString = testString[0].split(' ')
-          if len(testString) == 1:
-            testString = testString[0].split(',')
-            if len(testString) == 1:
-              testString = testString[0].split(';')
-              if len(testString) == 1:
-                req["TransformationFamily"] = testString[0]
-              else:
-                req["TransformationFamily"] = testString
-            else:
-              req["TransformationFamily"] = testString
-          else:
-            req["TransformationFamily"] = testString
-        else:
-          req["TransformationFamily"] = testString
-      else:
-        req["TransformationFamily"] = testString
     else:
       result = gConfig.getOption("/Website/ListSeparator")
       if result["OK"]:
@@ -177,25 +150,12 @@ class ProductionmonitorController(BaseController):
         tmp[i] = str(request.params[i])
       callback["extra"] = tmp
     RPC = getRPCClient("Transformation/TransformationManager")
-#    result = RPC.getTransformationSummaryWeb()
-#    if result["OK"]:
-#      prod = []
-#      prods = result["Value"]
-#      if len(prods)>0:
-#        for keys,i in prods.items():
-#          id = str(int(keys)).zfill(8)
-#          prod.append([str(id)])
-#      else:
-#        prod = "Nothing to display"
-#    else:
-#      prod = "Error during RPC call"
-#    callback["prod"] = prod
 ####
     result = RPC.getDistinctAttributeValues("Plugin",{})
     if result["OK"]:
       plugin = []
       if len(result["Value"])>0:
-        plugin.append([str("All")])
+        plugin.append(["All"])
         for i in result["Value"]:
           plugin.append([str(i)])
       else:
@@ -312,69 +272,9 @@ class ProductionmonitorController(BaseController):
       return self.__getSelectionData()
     elif request.params.has_key("getT1") and len(request.params["getT1"]) > 0:
       return self. __getT1()
-    elif request.params.has_key("getRunStatus") and len(request.params["getRunStatus"]) > 0:
-      return self. __getRunStatuses()
-    elif request.params.has_key("setSite") and len(request.params["setSite"]) > 0:
-      if not request.params.has_key("runID"):
-        return {"success":"false","error":"runID is undefined"}
-      elif not request.params.has_key("prodID"):
-        return {"success":"false","error":"prodID is undefined"}
-      elif not request.params.has_key("site"):
-        return {"success":"false","error":"site is undefined"}
-      runid = request.params["runID"]
-      prodid = request.params["prodID"]
-      site = request.params["site"]
-      return self.__setSite(runid,prodid,site)
-    elif request.params.has_key("setRunStatus") and len(request.params["setRunStatus"]) > 0:
-      if not request.params.has_key("runID"):
-        return {"success":"false","error":"runID is undefined"}
-      elif not request.params.has_key("prodID"):
-        return {"success":"false","error":"prodID is undefined"}
-      elif not request.params.has_key("status"):
-        return {"success":"false","error":"status is undefined"}
-      runid = request.params["runID"]
-      prodid = request.params["prodID"]
-      status = request.params["status"]
-      return self.__setRunStatus(runid,prodid,status)
     else:
       c.result = {"success":"false","error":"Transformation ID(s) is not defined"}
       return c.error
-################################################################################
-  def __getRunStatuses(self):
-    runStatuses = gConfig.getValue("/Website/TransformationMonitoring/ContextMenu/RunStatuses",[])
-    return {"success":"true","result":runStatuses}
-################################################################################
-  def __setSite(self,runid,prodid,site):
-    try:
-      runID = int(runid)
-      transID = int(prodid)
-      site = str(site)
-    except Exception,x:
-      return {"success":"false","error":str(x)}
-    RPC = getRPCClient("Transformation/TransformationManager")
-    gLogger.info("\033[0;31m setTransformationRunsSite(%s, %s, %s) \033[0m" % (transID,runID,site))
-    result = RPC.setTransformationRunsSite(transID,runID,site)
-    if result["OK"]:
-      c.result = {"success":"true","result":"true"}
-    else:
-      c.result = {"success":"false","error":result["Message"]}
-    return c.result
-################################################################################
-  def __setRunStatus(self,runid,prodid,status):
-    try:
-      runID = int(runid)
-      transID = int(prodid)
-      status = str(status)
-    except Exception,x:
-      return {"success":"false","error":str(x)}
-    RPC = getRPCClient("Transformation/TransformationManager")
-    gLogger.info("\033[0;31m setTransformationRunStatus(%s, %s, %s) \033[0m" % (transID,runID,status))
-    result = RPC.setTransformationRunStatus(transID,runID,status)
-    if result["OK"]:
-      c.result = {"success":"true","result":"true"}
-    else:
-      c.result = {"success":"false","error":result["Message"]}
-    return c.result
 ################################################################################
   def __getT1(self):
     tier1 = gConfig.getValue("/Website/PreferredSites",[])
@@ -619,62 +519,6 @@ class ProductionmonitorController(BaseController):
               total = result["TotalRecords"]
               if result.has_key("Extras"):
                 extra = result["Extras"]
-                c.result = {"success":"true","result":c.result,"total":total,"extra":extra}
-              else:
-                c.result = {"success":"true","result":c.result,"total":total}
-            else:
-              c.result = {"success":"false","result":"","error":"There are no data to display"}
-          else:
-            c.result = {"success":"false","result":"","error":"ParameterNames field is undefined"}
-        else:
-          c.result = {"success":"false","result":"","error":"Data structure is corrupted"}
-      else:
-        c.result = {"success":"false","result":"","error":"There were no data matching your selection"}
-    return c.result
-################################################################################
-  @jsonify
-  def showRunStatus(self):
-    req = {}
-    if request.params.has_key("limit") and len(request.params["limit"]) > 0:
-      limit = int(request.params["limit"])
-      if request.params.has_key("start") and len(request.params["start"]) > 0:
-        start = int(request.params["start"])
-      else:
-        start = 0
-    else:
-      limit = 25
-      start = 0
-    if request.params.has_key("getRunStatus"):
-      id = int(request.params["getRunStatus"])
-    else:
-      return {"success":"false","error":"Run status is not defined"}
-    RPC = getRPCClient("Transformation/TransformationManager")
-    result = RPC.getTransformationRunsSummaryWeb({'TransformationID':id},[["RunNumber","DESC"]],start,limit)
-    if not result['OK']:
-      c.result = {"success":"false","error":result["Message"]}
-    else:
-      result = result["Value"]
-      if result.has_key("TotalRecords") and  result["TotalRecords"] > 0:
-        total = result["TotalRecords"]
-        if result.has_key("Extras"):
-          extra = result["Extras"]
-        if result.has_key("ParameterNames") and result.has_key("Records"):
-          head = result["ParameterNames"]
-          if len(head) > 0:
-            headLength = len(head)
-            if len(result["Records"]) > 0:
-              c.result = []
-              jobs = result["Records"]
-              for i in jobs:
-                if len(i) != headLength:
-                  gLogger.info("Faulty record: %s" % i)
-                  c.result = {"success":"false","result":c.result,"total":total,"error":"One of the records in service response is corrupted"}
-                  return c.result
-                tmp = {}
-                for j in range(0,headLength):
-                  tmp[head[j]] = i[j]
-                c.result.append(tmp)
-              if extra:
                 c.result = {"success":"true","result":c.result,"total":total,"extra":extra}
               else:
                 c.result = {"success":"true","result":c.result,"total":total}
