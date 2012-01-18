@@ -339,7 +339,15 @@ function initStore(record,options,id){
             if(mm < 10){
               mm = '0' + mm;
             }
-            up.setText('Updated: ' + d.getUTCFullYear() + '-' + d.getUTCMonth() + '-' + d.getUTCDate() + ' ' + hh + ':' + mm + ' [UTC]');
+            var mon = d.getUTCMonth() + 1;
+            if(mon < 10){
+              mon = '0' + mon;
+            }
+            var day = d.getUTCDate();
+            if(day < 10){
+              day = '0' + day;
+            }
+            up.setText('Updated: ' + d.getUTCFullYear() + '-' + mon + '-' + day + ' ' + hh + ':' + mm + ' [UTC]');
           }
         }
       }else{
