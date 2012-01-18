@@ -1,3 +1,7 @@
+[web2012011801]
+FIX: Fix of month error
+FIX: Add scrollbars to activities monitoring page
+
 [web2011121301]
 FIX: Display for http requests the standard 'certificate login' message instead of registration form
 
