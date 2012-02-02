@@ -1,3 +1,6 @@
+[web2012020202]
+FIX: split function is not used anymore
+
 [web2012020201]
 FIX: Check for not existance of a menu object
 
