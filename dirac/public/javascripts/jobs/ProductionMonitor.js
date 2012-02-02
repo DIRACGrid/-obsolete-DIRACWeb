@@ -63,7 +63,6 @@ function initProductionMonitor(reponseSelect){
       params:{'getRunStatus':true},
       success:function(response){
         runStatusMenu = Ext.util.JSON.decode(response.responseText).result;
-        runStatusMenu = runStatusMenu.split(', ');
       },
       timeout:60000, // 1min
       url:'action'
