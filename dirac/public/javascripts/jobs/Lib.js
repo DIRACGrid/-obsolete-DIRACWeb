@@ -1058,7 +1058,7 @@ function createDropdownMenu(dataName,title,altValue){
   if(altValue && altValue.constructor == Array){
     data = altValue;  
   }else{
-    if(dataSelect && dataSelect[dataName].constructor == Array){
+    if(dataSelect && dataSelect[dataName] && dataSelect[dataName].constructor == Array){
       data = dataSelect[dataName];
     }
   }
@@ -1070,7 +1070,7 @@ function createDropdownMenu(dataName,title,altValue){
   }
   var fields = ['value'];
   var valueField = 'value';
-  if(data[0].constructor == Array){
+  if(data[0] && data[0].constructor == Array){
     fields = []
     var tmp = data[0];
     if(tmp.length > 1){
