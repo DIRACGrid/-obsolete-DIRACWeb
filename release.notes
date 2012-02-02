@@ -1,3 +1,6 @@
+[web2012020201]
+FIX: Check for not existance of a menu object
+
 [web2012011801]
 FIX: Fix of month error
 FIX: Add scrollbars to activities monitoring page
