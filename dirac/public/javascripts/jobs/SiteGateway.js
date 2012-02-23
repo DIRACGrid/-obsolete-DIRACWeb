@@ -5,21 +5,35 @@ var tableMngr = ''; // Required to handle configuration data for table. Object.
 function initLoop(selection){
   dataSelect = selection;
   Ext.onReady(function(){
+    Ext.override(Ext.PagingToolbar, {
+      onRender :  Ext.PagingToolbar.prototype.onRender.createSequence(function(ct, position){
+        this.loading.removeClass('x-btn-icon');
+        this.loading.setText('Refresh');
+        this.loading.addClass('x-btn-text-icon');
+      })
+    });
     var recSites = recordSite();
     var recServices = recordServices();
     var recResources = recordResources();
-    var recStorage = recordStorage();
+    var recStorageRead = recordStorage();
+    var recStorageWrite = recordStorage();
+    var recStorageCheck = recordStorage();
+    var recStorageRemove = recordStorage();
     var sites = initTable(recSites,'Site');
     var services = initTable(recServices,'Service');
     var resources = initTable(recResources,'Resource');
-    var storage = initTable(recStorage,'Storage');
+    var storageRead = initTable(recStorageRead,'StorageRead');
+    var storageWrite = initTable(recStorageWrite,'StorageWrite');
+    var storageCheck = initTable(recStorageCheck,'StorageCheck');
+    var storageRemove = initTable(recStorageRemove,'StorageRemove');
     var mainContent = new Ext.TabPanel({
       activeTab:0,
-      items:[sites,services,resources,storage],
+      items:[sites,services,resources,storageRead,storageWrite,storageCheck,storageRemove],
       margins:'0 0 2 0',
       monitorResize:true,
       region:'center'
     });
+    
     renderInMainViewport([ mainContent ]);
   });
 }
@@ -124,15 +138,15 @@ function initTable(record,mode){
       for(var i = 0; i < select.items.items.length; i++){
         select.items.items[i].id = 'ResourceSelect_' + select.items.items[i].id;
       }
-    }else if(mode == 'Storage'){
-      var storageStatus = createMenu('storageStatus','Status');
-      var storageSiteName = createMenu('storageSiteName','Site');
-      var storageName = createMenu('storageName','Storage');
+    }else if((mode == 'StorageRead')||(mode == 'StorageWrite')||(mode == 'StorageCheck')||(mode == 'StorageRemove')){
+      var storageStatus = createMenu(mode + 'Status','Status');
+      var storageSiteName = createMenu(mode + 'SiteName','Site');
+      var storageName = createMenu(mode + 'Name','Storage');
       select.insert(0,storageStatus);
       select.insert(1,storageSiteName);
       select.insert(2,storageName);
       for(var i = 0; i < select.items.items.length; i++){
-        select.items.items[i].id = 'StorageSelect_' + select.items.items[i].id;
+        select.items.items[i].id = mode + 'Select_' + select.items.items[i].id;
       }
     }
   // Insert object to container BEFORE buttons:
@@ -145,9 +159,9 @@ function initTable(record,mode){
     }else if(mode == 'Resource'){
       var bar = sideBar('ResourceSelectSideBar');
       bar.setTitle('Resources Selections');
-    }else if(mode == 'Storage'){
-      var bar = sideBar('StorageSelectSideBar');
-      bar.setTitle('Storage Selections');
+    }else if((mode == 'StorageRead')||(mode == 'StorageWrite')||(mode == 'StorageCheck')||(mode == 'StorageRemove')){
+      var bar = sideBar(mode + 'SelectSideBar');
+      bar.setTitle(mode + ' Selections');
     }
     bar.insert(0,select);
     return bar
@@ -186,7 +200,7 @@ function initTable(record,mode){
     var id = 'ServiceTab';
     store.baseParams = {'mode':'Service'};
     var bar = initBar(mode);
-  }else if(mode == 'Storage'){
+  }else if((mode == 'StorageRead')||(mode == 'StorageWrite')||(mode == 'StorageCheck')||(mode == 'StorageRemove')){
     var columns = [
       {header:'',width:26,sortable:false,dataIndex:'StatusIcon',renderer:status,hideable:false,fixed:true,menuDisabled:true},
       {header:'StorageElementName',sortable:true,dataIndex:'StorageElementName',align:'left'},
@@ -199,8 +213,8 @@ function initTable(record,mode){
       {header:'FormerStatus',sortable:true,dataIndex:'FormerStatus',align:'left'},
       {header:'Reason',sortable:true,dataIndex:'Reason',align:'left'},
     ];
-    var id = 'StorageTab';
-    store.baseParams = {'mode':'Storage'};
+    var id = mode + 'Tab';
+    store.baseParams = {'mode':mode};
     var bar = initBar(mode);
   }else{
     var columns = [
@@ -221,8 +235,8 @@ function initTable(record,mode){
   }
   tableMngr = {'store':store,'columns':columns,'tbar':'','id':id};
   var t = table(tableMngr);
-  var bbar = t.getBottomToolbar();
-  bbar.hide();
+//  var bbar = t.getBottomToolbar();
+//  bbar.hide();
   t.addListener('cellclick',function(table,rowIndex,columnIndex){
       showMenu('main',table,rowIndex,columnIndex);
   });
@@ -237,8 +251,8 @@ function initTable(record,mode){
     panel.setTitle('Services');
   }else if(mode == 'Resource'){
     panel.setTitle('Resources');
-  }else if(mode == 'Storage'){
-    panel.setTitle('Storage');
+  }else if((mode == 'StorageRead')||(mode == 'StorageWrite')||(mode == 'StorageCheck')||(mode == 'StorageRemove')){
+    panel.setTitle(mode);
   }
   return panel
 }
