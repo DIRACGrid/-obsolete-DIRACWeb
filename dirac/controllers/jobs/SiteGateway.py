@@ -41,7 +41,7 @@ class SitegatewayController(BaseController):
     mode = request.params["mode"]
     gLogger.verbose("Requested mode is %s" % mode)
     if not mode in MODELIST:
-      gLogger.error("Parameter 'mode': %s is wrong. Should be one of the list %s" % (mode, modeList) )
+      gLogger.error("Parameter 'mode': %s is wrong. Should be one of the list %s" % (mode, MODELIST) )
       return {"success":"false","error":"Parameter 'mode' is wrong"}
     if mode in STORELIST:
       mode = 'StorageElement'
@@ -127,6 +127,10 @@ class SitegatewayController(BaseController):
       if not mode in MODELIST:
         return req
       selectors = [
+                    "SiteStatus",
+                    "ResourceStatus",
+                    "ServiceStatus",
+                    "StorageStatus",
                     "SiteName",
                     "Status",
                     "SiteType",
@@ -136,10 +140,14 @@ class SitegatewayController(BaseController):
                     "ResourceType",
                     "StorageElementName"
                   ]
+      gLogger.info("params: ",request.params)
       for i in selectors:
-        if request.params.has_key(i) and len(request.params[i]) > 0:
-          if str(request.params[i]) != "All":
-            req[i] = str(request.params[i]).split(separator)
+        j = i[0].lower() + i[1:]
+        if request.params.has_key(j) and len(request.params[j]) > 0:
+          if str(request.params[j]) != "All":
+            req[i] = str(request.params[j]).split(separator)
+          if "All" in req[i]:
+            req[i].remove("All")
       if mode in STORELIST:
         status = mode[7:]
         req['StatusType'] = status
