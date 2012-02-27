@@ -103,9 +103,9 @@ function initBar(mode,extcmp){
   var select = selectPanelReloaded(extcmp); // Initializing container for selection objects
   select.buttons[2].hide(); // Remove refresh button
   if(mode == 'Site'){
-    var siteStatus = createMenu('siteStatus','Status');
-    var siteType = createMenu('siteType','Type');
-    var siteName = createMenu('siteName','Site');
+    var siteStatus = createMenu('Status','Status');
+    var siteType = createMenu('SiteType','Type');
+    var siteName = createMenu('SiteName','Site');
     select.insert(0,siteStatus);
     select.insert(1,siteType);
     select.insert(2,siteName);
@@ -113,10 +113,10 @@ function initBar(mode,extcmp){
       select.items.items[i].id = 'SiteSelect_' + select.items.items[i].id;
     }
   }else if(mode == 'Service'){
-    var serviceStatus = createMenu('serviceStatus','Status');
-    var serviceType = createMenu('serviceType','Type');
-    var serviceSiteName = createMenu('serviceSiteName','Site');
-    var serviceName = createMenu('serviceName','Service');
+    var serviceStatus = createMenu('Status','Status');
+    var serviceType = createMenu('ServiceType','Type');
+    var serviceSiteName = createMenu('SiteName','Site');
+    var serviceName = createMenu('ServiceName','Service');
     select.insert(0,serviceStatus);
     select.insert(1,serviceType);
     select.insert(2,serviceSiteName);
@@ -125,10 +125,10 @@ function initBar(mode,extcmp){
       select.items.items[i].id = 'ServiceSelect_' + select.items.items[i].id;
     }
   }else if(mode == 'Resource'){
-    var resourceStatus = createMenu('resourceStatus','Status');
-    var resourceType = createMenu('resourceType','Type');
-    var resourceSiteName = createMenu('resourceSiteName','Site');
-    var resourceName = createMenu('resourceName','Resource');
+    var resourceStatus = createMenu('Status','Status');
+    var resourceType = createMenu('ResourceType','Type');
+    var resourceSiteName = createMenu('SiteName','Site');
+    var resourceName = createMenu('ResourceName','Resource');
     select.insert(0,resourceStatus);
     select.insert(1,resourceType);
     select.insert(2,resourceSiteName);
@@ -137,9 +137,9 @@ function initBar(mode,extcmp){
       select.items.items[i].id = 'ResourceSelect_' + select.items.items[i].id;
     }
   }else if((mode == 'StorageRead')||(mode == 'StorageWrite')||(mode == 'StorageCheck')||(mode == 'StorageRemove')){
-    var storageStatus = createMenu(mode + 'Status','Status');
-    var storageSiteName = createMenu(mode + 'SiteName','Site');
-    var storageName = createMenu(mode + 'Name','Storage');
+    var storageStatus = createMenu('Status','Status');
+    var storageSiteName = createMenu('StorageSiteName','Site');
+    var storageName = createMenu('StorageElementName','StorageElement');
     select.insert(0,storageStatus);
     select.insert(1,storageSiteName);
     select.insert(2,storageName);
