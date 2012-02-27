@@ -1,3 +1,6 @@
+[web2012022701]
+CHANGE: SiteGateway uses the new RSS client. 3 additional tabs are introduced to reflect info about different kinds of SE types.
+
 [web2012020202]
 FIX: split function is not used anymore
 
