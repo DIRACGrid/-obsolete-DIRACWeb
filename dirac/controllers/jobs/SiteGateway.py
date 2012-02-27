@@ -47,7 +47,7 @@ class SitegatewayController(BaseController):
       mode = 'StorageElement'
     gLogger.verbose("Selected mode is %s" % mode)
     req = self.__request()
-    gLogger.info("Client call getMonitoredsStatusWeb(%s,%s,%s,%s)" % (mode,req,P_NUMBER,R_NUMBER))
+    gLogger.info("getMonitoredsStatusWeb(%s,%s,%s,%s)" % (mode,req,P_NUMBER,R_NUMBER))
     result = client.getMonitoredsStatusWeb(mode,req,P_NUMBER,R_NUMBER)
     gLogger.debug("Call result: %s" % result )    
     if not result["OK"]:
@@ -100,10 +100,8 @@ class SitegatewayController(BaseController):
     global globalSort
     globalSort = []
     R_NUMBER = 25
-    gLogger.info("Limit",request.params["limit"])    
     if request.params.has_key("limit") and len(request.params["limit"]) > 0:
       R_NUMBER = int(request.params["limit"])
-    gLogger.info("NoJ",R_NUMBER)
     P_NUMBER = 0
     if request.params.has_key("start") and len(request.params["start"]) > 0:
       P_NUMBER = int(request.params["start"])
@@ -127,27 +125,26 @@ class SitegatewayController(BaseController):
       if not mode in MODELIST:
         return req
       selectors = [
-                    "SiteStatus",
-                    "ResourceStatus",
-                    "ServiceStatus",
-                    "StorageStatus",
                     "SiteName",
-                    "Status",
                     "SiteType",
-                    "ServiceName",
-                    "ServiceType",
-                    "ResourceName",
+                    "Status",
                     "ResourceType",
+                    "ResourceName",
+                    "ServiceType",
+                    "ServiceName",
+                    "StorageSiteName",
                     "StorageElementName"
                   ]
       gLogger.info("params: ",request.params)
       for i in selectors:
-        j = i[0].lower() + i[1:]
-        if request.params.has_key(j) and len(request.params[j]) > 0:
-          if str(request.params[j]) != "All":
-            req[i] = str(request.params[j]).split(separator)
-          if "All" in req[i]:
-            req[i].remove("All")
+        if request.params.has_key(i) and len(request.params[i]) > 0:
+          if str(request.params[i]) != "All":
+            req[i] = request.params[i].split(separator)
+            if "All" in req[i]:
+              req[i].remove("All")
+            if i == "StorageSiteName":
+              req["SiteName"] = req[i]
+              del req[i]
       if mode in STORELIST:
         status = mode[7:]
         req['StatusType'] = status
@@ -185,38 +182,9 @@ class SitegatewayController(BaseController):
       else:
         sites = [["Nothing to display"]]
     else:
-      gLogger.error("client.getSitePresent( meta = { 'columns' : 'SiteName' } ) return error: %s" % result["Message"])
+      gLogger.error("client.getSitePresent(meta ={'columns':'SiteName'}) return error: %s" % result["Message"])
       sites = [["Error happened on service side"]]
-    callback["siteName"] = sites
-    callback["resourceSiteName"] = sites
-    callback["serviceSiteName"] = sites
-####
-    RPC = getRPCClient("ResourceStatus/ResourceStatus")
-    result = client.getStorageElementPresent( meta = { "columns" : "GridSiteName" }, statusType = "Read" )
-    if result["OK"]:
-      tier1 = gConfig.getValue("/Website/PreferredSites")
-      if tier1:
-        try:
-          tier1 = tier1.split(", ")
-        except:
-          tier1 = list()
-      else:
-        tier1 = list()
-      site = []
-      if len(result["Value"])>0:
-        s = list(result["Value"])
-        site.append([str("All")])
-        for i in tier1:
-          site.append([str(i)])
-        for i in s:
-          if i not in tier1:
-            site.append([str(i)])
-      else:
-        site = [["Nothing to display"]]
-    else:
-      gLogger.error("RPC.getSESitesList() return error: %s" % result["Message"])
-      site = [["Error happened on service side"]]
-    callback["storageSiteName"] = site
+    callback["SiteName"] = sites
 ####
     result = client.getValidSiteTypes()
     stat = []
@@ -236,7 +204,7 @@ class SitegatewayController(BaseController):
     else:
       gLogger.error("client.getValidSiteTypes() return error: %s" % result["Message"])
       stat = [["Error happened on service side"]]
-    callback["siteType"] = stat
+    callback["SiteType"] = stat
 ####
     stat = []
     result = client.getValidStatuses()
@@ -257,10 +225,7 @@ class SitegatewayController(BaseController):
     else:
       gLogger.error("client.getValidStatuses() return error: %s" % result["Message"])
       stat = [["Error happened on service side"]]
-    callback["siteStatus"] = stat
-    callback["resourceStatus"] = stat
-    callback["serviceStatus"] = stat
-    callback["storageStatus"] = stat
+    callback["Status"] = stat
 ####
     app = []
     result = client.getValidResourceTypes()
@@ -281,7 +246,7 @@ class SitegatewayController(BaseController):
     else:
       gLogger.error("client.getValidResourceTypes() return error: %s" % result["Message"])
       app = [["Error happened on service side"]]
-    callback["resourceType"] = app
+    callback["ResourceType"] = app
 ####
     result = client.getResourcePresent( meta = { 'columns' : 'ResourceName' } )
     if result["OK"]:
@@ -291,7 +256,6 @@ class SitegatewayController(BaseController):
       except Exception,x:
         gLogger.error("Exception during convertion to a list: %s" % str(x))
         value = [] # Will return error on length check
-      gLogger.info("\n\nV A L U E: %s" % value)
       if len(value)>0:
         value.insert(0,["All"])
         gLogger.info("Deb: %s \n" % value)
@@ -300,7 +264,7 @@ class SitegatewayController(BaseController):
     else:
       gLogger.error("client.getResourcePresent( meta = { 'columns' : 'ResourceName' } ) return error: %s" % result["Message"])
       value = [["Error happened on service side"]]
-    callback["resourceName"] = value
+    callback["ResourceName"] = value
 ####
     stat = []
     result = client.getValidServiceTypes()
@@ -321,7 +285,7 @@ class SitegatewayController(BaseController):
     else:
       gLogger.error("client.getValidServiceTypes() return error: %s" % result["Message"])
       stat = [["Error happened on service side"]]
-    callback["serviceType"] = stat
+    callback["ServiceType"] = stat
 ####
     result = client.getServicePresent( meta = { 'columns' : 'ServiceName' } )
     if result["OK"]:
@@ -338,24 +302,35 @@ class SitegatewayController(BaseController):
     else:
       gLogger.error("client.getServicePresent( meta = { 'columns' : 'ServiceName' } ) return error: %s" % result["Message"])
       value = [["Error happened on service side"]]
-    callback["serviceName"] = value
+    callback["ServiceName"] = value
 ####
-    result = client.getStorageElementPresent( meta = { 'columns' : 'StorageElementName' }, statusType = 'Read' )
+    value = [["Nothing to display"]]
+    result = client.getStorageElementPresent( meta = { "columns" : "StorageElementName" }, statusType = "Read" )
     if result["OK"]:
       value = result["Value"]
-      try:
-        value = list(value)
-      except Exception,x:
-        gLogger.error("Exception during convertion to a list: %s" % str(x))
-        value = [] # Will return error on length check
       if len(value)>0:
         value.insert(0,["All"])
-      else:
-        value = [["Nothing to display"]]
     else:
-      gLogger.error("client.getStorageElementPresent( meta = { 'columns' : 'StorageElementName' }, statusType = 'Read' ) return error: %s" % result["Message"])
+      gLogger.error("client.getStorageElementPresent(meta={'columns':'StorageElementName'},statusType=%s) return error: %s" % result)
       value = [["Error happened on service side"]]
-    callback["storageName"] = value
+    callback["StorageElementName"] = value
+####
+    sesites = [["Nothing to display"]]
+    result = client.getSESitesList()
+    if result["OK"]:
+      if len(result["Value"])>0:
+        sesites = [[x] for x in result["Value"]]
+        tier1 = gConfig.getValue("/Website/PreferredSites",[]) # Always return a list
+        tier1.reverse()
+        tier1 = [[x] for x in tier1]
+        sesites = [x for x in sesites if x not in tier1] # Removes sites which are in tier1 list
+        for i in tier1:
+          sesites.insert(0,i)
+        sesites.insert(0,["All"])
+    else:
+      gLogger.error("client.getSESitesList() return error: %s" % result["Message"])
+      sesites = [["Error happened on service side"]]
+    callback["StorageSiteName"] = sesites
     return callback
 ################################################################################
   def __reverseCountry(self):
