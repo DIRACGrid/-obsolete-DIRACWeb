@@ -69,6 +69,25 @@ function action(type,mode,id){
     url:'action'
   });
 }
+function errorReport(strobj){
+  var prefix = 'Error: ';
+  var postfix = '';
+  if(strobj.substring) {
+    error = strobj;
+  }else{
+    error = 'Action has finished with error';
+    try{
+      if(strobj.failureType == 'connect'){
+        error = 'Can not recieve service response';
+      }
+    }catch(e){}
+    try{
+      error = error + '\nMessage: ' + strobj.response.statusText;
+    }catch(e){}
+  }
+  error = prefix + error + postfix;
+  alert(error);
+}
 function AJAXerror(response){
   try{
     gMainLayout.container.unmask();
@@ -633,6 +652,99 @@ function sortGlobalPanel(){
     labelAlign:'top',
     layout:'column',
     title:'Global Sort'
+  });
+  return panel;
+}
+function selectPanelReloaded(table){
+  var refresh = new Ext.Button({
+    cls:"x-btn-icon",
+    handler:function(){
+      refreshSelect(panel);
+    },
+    icon:gURLRoot+'/images/iface/refresh.gif',
+    minWidth:'20',
+    tooltip:'Refresh data in the selection boxes',
+    width:'100%'
+  });
+  var reset = new Ext.Button({
+    cls:"x-btn-text-icon",
+    handler:function(){
+      panel.form.reset();
+      var number = Ext.getCmp('id');
+      hideControls(number);
+    },
+    icon:gURLRoot+'/images/iface/reset.gif',
+    minWidth:'70',
+    tooltip:'Reset values in the form',
+    text:'Reset'
+  });
+  var submit = new Ext.Button({
+    cls:"x-btn-text-icon",
+    handler:function(){
+      panel.form.submit();
+    },
+    id:'submitFormButton',
+    icon:gURLRoot+'/images/iface/submit.gif',
+    minWidth:'70',
+    name:'submitFormButton',
+    tooltip:'Send request to the server',
+    text:'Submit'
+  });
+  var panel = new Ext.FormPanel({
+    autoScroll:true,
+    bodyStyle:'padding: 5px',
+    border:false,
+    buttonAlign:'center',
+    buttons:[submit,reset,refresh],
+    collapsible:true,
+    keys:[{
+      key:13,
+      scope:this,
+      fn:function(key,e){
+        panel.form.submit();
+      }
+    }],
+    labelAlign:'top',
+    method:'POST',
+    minWidth:'200',
+    title:'Selections',
+    url:'submit',
+    waitMsgTarget:true
+  });
+  panel.on('beforeaction',function(form,action){
+    var params = {};
+    try{
+      params = table.getStore().baseParams;
+    }catch(e){}
+    params['start'] = 0;
+    params['limit'] = 25;
+    try{
+      params['limit'] = table.getBottomToolbar().pageSize;
+    }catch(e){}
+    form['baseParams'] = params;
+    try{
+      gMainLayout.container.mask('Sending data...');
+    }catch(e){}
+  });
+  panel.on('actioncomplete',function(form,action){
+    try{
+      gMainLayout.container.unmask();
+    }catch(e){}
+    try{
+      if(action.result.success == 'false'){
+        alert('Error: ' + action.result.error);
+      }else{
+        table.store.loadData(action.result);
+      }
+    }catch(e){
+      alert('');
+    }
+  });
+  panel.on('actionfailed',function(form,action){
+    try{
+      gMainLayout.container.unmask();
+    }catch(e){}
+    errorReport(action);
   });
   return panel;
 }
