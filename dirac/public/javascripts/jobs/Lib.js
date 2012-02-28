@@ -1891,6 +1891,35 @@ function table(tableMngr){
     view:view,
     viewConfig:viewConfig
   });
+  store.on('load',function(){
+    var date = false;
+    try{
+      date = store.reader.jsonData.date;
+    }catch(e){}
+    if(date){
+      updateStamp.setText('Updated: ' + store.reader.jsonData.date);
+    }else{
+      var d = new Date();
+      var hh = d.getUTCHours();
+      if(hh < 10){
+        hh = '0' + hh;
+      }
+      var mm = d.getUTCMinutes();
+      if(mm < 10){
+        mm = '0' + mm;
+      }
+      var mon = d.getUTCMonth() + 1;
+      if(mon < 10){
+              mon = '0' + mon;
+      }
+      var day = d.getUTCDate();
+      if(day < 10){
+              day = '0' + day;
+      }
+      var dateText = 'Updated: ' + d.getUTCFullYear() + '-' + mon + '-' + day + ' ' + hh + ':' + mm + ' [UTC]';
+      updateStamp.setText(dateText);
+    }
+  });
   if(tableMngr.tbar == ''){
     var bar = dataTable.getTopToolbar();
     bar.hide();
