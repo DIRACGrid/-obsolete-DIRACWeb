@@ -344,31 +344,6 @@ function initStore(record,options,id){
             store.sort(sort[0],sort[1]);
           }
         }catch(e){}
-        var up = Ext.getCmp('updatedTableButton');
-        if(!Ext.isEmpty(up)){
-          if(store.reader.jsonData.date){
-            up.setText('Updated: ' + store.reader.jsonData.date);
-          }else{
-            var d = new Date();
-            var hh = d.getUTCHours();
-            if(hh < 10){
-              hh = '0' + hh;
-            }
-            var mm = d.getUTCMinutes();
-            if(mm < 10){
-              mm = '0' + mm;
-            }
-            var mon = d.getUTCMonth() + 1;
-            if(mon < 10){
-              mon = '0' + mon;
-            }
-            var day = d.getUTCDate();
-            if(day < 10){
-              day = '0' + day;
-            }
-            up.setText('Updated: ' + d.getUTCFullYear() + '-' + mon + '-' + day + ' ' + hh + ':' + mm + ' [UTC]');
-          }
-        }
       }else{
         alert("Error in store.reader.jsonData, trying to reload data store...");
         store.load();
