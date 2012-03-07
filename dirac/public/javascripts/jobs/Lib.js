@@ -111,19 +111,21 @@ function AJAXerror(response){
     return;
   }
 }
-function AJAXrequest(value,id){
+function AJAXrequest(key,value){
   try{
     gMainLayout.container.mask('Please wait');
   }catch(e){}
   var params = value + '=' + id;
   Ext.Ajax.request({
     failure:function(response){
-      AJAXerror(response.responseText);
+      response.responseText ? response = response.responseText : '';
+      AJAXerror(response);
     },
     method:'POST',
     params:params,
     success:function(response){
-      AJAXsuccess(value,id,response.responseText);
+      response.responseText ? response = response.responseText : '';
+      AJAXsuccess(key,value,response);
     },
     timeout:60000, // 1min
     url:'action'
@@ -192,7 +194,7 @@ function displayWin(panel,title,modal){
     width:600,
     height:400,
     border:true,
-    collapsible:true,
+    collapsible: modal ? false : true,
     constrain:true,
     constrainHeader:true,
     maximizable:true,
