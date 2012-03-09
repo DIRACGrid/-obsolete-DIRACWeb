@@ -188,6 +188,7 @@ function dateSelectMenu(){
   return date;
 }
 function displayWin(panel,title,modal){
+  var coords = Ext.EventObject.xy;
   var window = new Ext.Window({
     iconCls:'icon-grid',
     closable:true,
@@ -1052,30 +1053,27 @@ function genericID(name,fieldLabel,altRegex,altRegexText,hide){
   return textField;
 }
 function createRemoteMenu(item){
-  try{
-    baseParams = {'meta':item.text};
-    url = '/getmeta';
-    fieldLabel = item.text;
-    emptyText = 'Select value from menu';
-  }catch(e){
-    alert('Error: ' + e.name + ': ' + e.message);
+  if((!item)||(typeof item!=='object')){
+    window.console && console.log ?
+      console.log('Argument is None or not an Object') : '';
+    return
   }
   var store = new Ext.data.JsonStore({
-    baseParams:baseParams,
+    baseParams:item.baseParams ? item.baseParams : false,
     fields:['name'],
     root:'result',
-    url:url
+    url:item.url ? item.url : 'action'
   });
   var combo = new Ext.form.ComboBox({
     anchor:'-15',
-    store:store,
     displayField:'name',
-    typeAhead:true,
-    fieldLabel:fieldLabel,
+    emptyText:item.emptyText ? item.emptyText : 'Select item from the menu',
+    fieldLabel:item.fieldLabel ? item.fieldLabel : 'Default label',
     forceSelection:true,
-    triggerAction:'all',
-    emptyText:emptyText,
     selectOnFocus:true,
+    store:store,
+    triggerAction:'all',
+    typeAhead:true
   });
   return combo
 }
@@ -1090,7 +1088,11 @@ function createMenu(dataName,title,altValue){
     }
   }catch(e){}
   var disabled = true;
-  var error = ['Error happened on service side','Nothing to display','Insufficient rights'];
+  var error = [
+    'Error happened on service side',
+    'Nothing to display',
+    'Insufficient rights'
+  ];
   var errorRegexp = new RegExp('^(' + error.join('|') + ')$');
   if((data == 'Nothing to display')||(Ext.isEmpty(data))){
     data = [['Nothing to display']];
