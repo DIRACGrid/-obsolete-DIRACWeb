@@ -205,3 +205,15 @@ class PresenterController(BaseController):
       return self.__getBookmarks()
     else:
       return {"success":"false","error":result["Message"]}
+################################################################################
+  def adm(self):
+    overall = ""
+    upc = UserProfileClient( "Summary", getRPCClient )
+    result = upc.listAvailableVars()
+    gLogger.info("\033[0;31m result: \033[0m",result)
+    overall = overall + "<br><br><br>" + str( result["Value"] )
+    result = upc.listAvailableVars({ 'user' : [ 'msapunov', 'acasajus' ] } )
+    overall = overall + "<br><br><br>" + str( result )
+    result = upc.retrieveVar( "Bookmarks" )
+    overall = overall + "<br><br><br>" + str( result )
+    return overall
