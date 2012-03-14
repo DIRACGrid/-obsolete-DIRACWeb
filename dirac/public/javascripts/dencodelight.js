@@ -118,7 +118,7 @@ DEncode.encode = function( uObject )
 	if( typeof uObject == "number" )
 		return DEncode.g_dEncodeFunctions[ 'int' ]( uObject );
 	//For firefox encode deterministically with toSource function
-	DEncode.debug( "Encoding " + uObject.toSource() );
+	//DEncode.debug( "Encoding " + uObject.toSource() );
 	if( uObject.toSource )
 	{
 		var source = uObject.toSource();
