@@ -12,7 +12,6 @@ function init(reponseSelect){
     var rightBar = right();
     var mainContent = center();
     renderInMainViewport([ leftBar, mainContent ]);
-//    renderInMainViewport([ leftBar, mainContent, rightBar ]);
   });
 }
 function left(reponseSelect){
@@ -70,7 +69,8 @@ function left(reponseSelect){
     labelAlign:'top',
     tbar:new Ext.Toolbar({
       items:[addButton]
-    })
+    }),
+    url:'submit'
   });
   panel.on('resize',function(){
     keepButtonSize(panel,addButton);
@@ -320,7 +320,7 @@ function addItems(response,panel){
     return
   }
   var result = new Array();
-// TODO: Check against already selected boxes which are already exists at panel
+// TODO: Check against already selected boxes
   if(data && data.result){
     for(var i in data.result){
       var label = 'unknown';
@@ -365,11 +365,7 @@ function addItems2Panel(panel,form){
     var item = false;
     if(checked[i].dataType == 'integer'){
       var name = label = checked[i].dataLabel;
-//      item = genericID(name,label);
-      item = createRemoteMenu({
-        baseParams:{getMeta:name},
-        fieldLabel:name
-      });
+      item = genericID(name,label);
     }else if(checked[i].dataType == 'date'){
       var name = label = checked[i].dataLabel;
       item = new Ext.form.DateField({
@@ -386,7 +382,11 @@ function addItems2Panel(panel,form){
       });      
     }else if(checked[i].dataType == 'string'){
       var name = checked[i].dataLabel;
-      item = createRemoteMenu({text:name});
+      item = createRemoteMenu({
+        baseParams:{getMeta:name},
+        fieldLabel:name,
+        name:name
+      });
     }
     if(item){
       panel.form.add(item);
