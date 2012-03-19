@@ -211,7 +211,7 @@ class PresenterController(BaseController):
     upc = UserProfileClient( "Summary", getRPCClient )
     result = upc.listAvailableVars()
     gLogger.info("\033[0;31m result: \033[0m",result)
-    overall = overall + "<br><br><br>" + str( result["Value"] )
+    overall = overall + "<br><br><br>" + str( result )
     result = upc.listAvailableVars({ 'user' : [ 'msapunov', 'acasajus' ] } )
     overall = overall + "<br><br><br>" + str( result )
     result = upc.retrieveVar( "Bookmarks" )
