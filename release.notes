@@ -1,3 +1,6 @@
+[web2012032101]
+FIX: Do not use toSource in the accounting plots by default
+
 [web2012022801]
 CHANGE: Last update is set to be working on per table basis
 
