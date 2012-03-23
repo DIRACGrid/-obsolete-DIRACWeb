@@ -311,7 +311,7 @@ class SitegatewayController(BaseController):
       if len(value)>0:
         value.insert(0,["All"])
     else:
-      gLogger.error("client.getStorageElementPresent(meta={'columns':'StorageElementName'},statusType=%s) return error: %s" % result)
+      gLogger.error("client.getStorageElementPresent(meta={'columns':'StorageElementName'},statusType='Read') return error: %s" % result)
       value = [["Error happened on service side"]]
     callback["StorageElementName"] = value
 ####
