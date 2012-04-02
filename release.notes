@@ -1,3 +1,6 @@
+[web2012040201]
+FIX: Using the functions of new UP client insted of old UP client's functions
+
 [web2012032301]
 FIX: Typo in error message could rise an exception
 
