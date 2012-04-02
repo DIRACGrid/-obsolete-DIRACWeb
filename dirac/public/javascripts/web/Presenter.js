@@ -372,7 +372,7 @@ function gatherInfo(){
   if(url){
     url = url.replace(/&/g,'[ampersand]');
   }
-  var params = {'columns':columnWidth,'refresh':refreshRate,'plots':url};  
+  var params = {'columns':columnWidth,'refresh':refreshRate,'url':url};  
   return params
 }
 function syncLayout(){
