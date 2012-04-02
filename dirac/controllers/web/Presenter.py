@@ -7,7 +7,7 @@ from DIRAC.FrameworkSystem.Client.UserProfileClient import UserProfileClient
 
 USER_PROFILE_NAME = "Summary"
 
-class NewpresenterController(BaseController):
+class PresenterController(BaseController):
 ################################################################################
   def display(self):
     if not authorizeAction():
