@@ -78,6 +78,7 @@ function initRecord(){
     {name:'DeletedFlag'},
     {name:'TaskQueueID'},
     {name:'JobType'},
+    {name:'RunNumber'},
     {name:'JobIDcheckBox',mapping:'JobID'},
     {name:'StatusIcon',mapping:'Status'},
     {name:'OwnerGroup'}
@@ -97,7 +98,7 @@ function initSidebar(){
   var prodSelect = createMenu('prod','JobGroup'); // Initializing JobGroup Menu
   var typesSelect = createMenu('types','JobType');
   var id = genericID('id','JobID'); // Initialize field for JobIDs
-  var runid = genericID('runNumber','RunID','','','None'); // Initialize field for JobIDs
+  var runid = genericID('runNumber','RunNumber','','','None'); // Initialize field for JobIDs
   var dateSelect = dateTimeWidget(); // Initializing date dialog
   var select = selectPanel(); // Initializing container for selection objects
   // Insert object to container BEFORE buttons:
@@ -153,6 +154,7 @@ function initData(store){
     {header:'OSandboxReadyFlag',sortable:true,dataIndex:'OSandboxReadyFlag',align:'left',hidden:true},
     {header:'Owner',sortable:true,dataIndex:'Owner',align:'left'},
     {header:'TaskQueueID',sortable:true,dataIndex:'TaskQueueID',align:'left',hidden:true},
+    {header:'RunNumber',sortable:true,dataIndex:'RunNumber',align:'left',hidden:true},
     {header:'OwnerGroup',sortable:true,dataIndex:'OwnerGroup',align:'left',hidden:true}
   ];
   var tbar = [
