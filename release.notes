@@ -1,3 +1,6 @@
+[web2012041001]
+NEW: Following feature request https://github.com/DIRACGrid/DIRACWeb/issues/71 the column "RunNumber" is introduced
+
 [web2012040201]
 FIX: Using the functions of new UP client insted of old UP client's functions
 
