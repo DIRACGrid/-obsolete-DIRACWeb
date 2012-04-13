@@ -82,9 +82,15 @@ class MetacatalogueController(BaseController):
       return self.__getSelector( str(request.params["getSelector"]) )
     elif request.params.has_key("getMeta") and len(request.params["getMeta"]) > 0:
       return self.__getMetadata( str(request.params["getMeta"]) )
+    elif request.params.has_key("getFile") and len(request.params["getFile"]) > 0:
+      return self.__prepareURL()
     else:
-      c.result = {"success":"false","error":"The request parameters can not be recognized or they are not defined"}
-      return c.result
+      return {"success":"false","error":"The request parameters can not be recognized or they are not defined"}
+################################################################################
+  def __prepareURL(self):
+    import time
+    time.sleep(20)
+    return {"success":"true","result":"https://mardirac.in2p3.fr/DIRAC/images/content/overview1.png"}
 ################################################################################
   def __getMetadata(self,key=False):
     if not key:
