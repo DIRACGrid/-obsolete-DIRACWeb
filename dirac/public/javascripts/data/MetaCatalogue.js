@@ -188,13 +188,8 @@ function center(){
     {header:'File Size',sortable:true,dataIndex:'FileSize',align:'left'},
     {header:'Run number',sortable:true,dataIndex:'RunNumber',align:'left'},
     {header:'Physics statistics',sortable:true,dataIndex:'PhysicStat',align:'left'},
-    {header:'Creation Date',sortable:true,dataIndex:'CreationDate',align:'left',hidden:true},
     {header:'Job Start',sortable:true,dataIndex:'JobStart',align:'left'},
     {header:'Job End',sortable:true,dataIndex:'JobEnd',align:'left'},
-    {header:'Worker Node',sortable:true,dataIndex:'WorkerNode',align:'left',hidden:true},
-    {header:'File Type',sortable:true,dataIndex:'FileType',align:'left',hidden:true},
-    {header:'Event Type Id',sortable:true,dataIndex:'EvtTypeId',align:'left',hidden:true},
-    {header:'Data Quality', sortable:true, dataIndex:'DataqualityFlag', align:'left',hidden:true},
     {header:'Tck', sortable:true, dataIndex:'TCK', align:'left',hidden:true}
   ];
     var store = new Ext.data.Store({
@@ -203,6 +198,17 @@ function center(){
         totalProperty:'total'
       },record)
     });
+  var tbar = [
+    '->',{
+      cls:"x-btn-text-icon",
+      handler:function(){
+        save(this);
+      },
+      icon:gURLRoot+'/images/iface/save.gif',
+      text:'Save',
+      tooltip:'Click to save selected data'
+    }
+  ];
   var dataTable = new Ext.grid.GridPanel({
     autoHeight:false,
     columns:columns,
@@ -213,6 +219,7 @@ function center(){
     split:true,
     store:store,
     stripeRows:true,
+    tbar:tbar
   });
   return dataTable
 }
@@ -394,4 +401,29 @@ function addItems2Panel(panel,form){
     }
   }
   panel.doLayout();
+}
+function save(button){
+  button.setIconClass('Loading');
+  Ext.Ajax.request({
+    failure:function(response){
+      button.setIconClass('Save');
+      response.responseText ? response = response.responseText : '';
+      errorReport(response);
+    },
+    method:'POST',
+    params:{'getFile':'Test'},
+    success:function(response){
+      button.setIconClass('Save');
+      response.responseText ? response = response.responseText : '';
+      if(response){
+        response = Ext.util.JSON.decode(response)
+//        uriContent = "data:application/octet-stream," + encodeURIComponent(content);
+//        newWindow=window.open(uriContent, 'name');
+        var url = response.result;
+        window.open(url, 'name');
+      }
+    },
+    timeout:60000, // 1min
+    url:'action'
+  });
 }
