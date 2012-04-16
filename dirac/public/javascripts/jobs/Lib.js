@@ -1319,6 +1319,8 @@ function setTitle(value,id){
 function status(value){
   if((value == 'Done')||(value == 'Completed')||(value == 'Good')||(value == 'Active')||(value == 'Cleared')||(value == 'Completing')){
     return '<img src="'+gURLRoot+'/images/monitoring/done.gif">';
+  }else if(value == 'Bad'){
+    return '<img src="'+gURLRoot+'/images/monitoring/bad.gif">';
   }else if((value == 'Failed')||(value == 'Bad')||(value == 'Banned')||(value == 'Aborted')){
     return '<img src="'+gURLRoot+'/images/monitoring/failed.gif">';
   }else if((value == 'Waiting')||(value == 'Stopped')||(value == 'Poor')||(value == 'Probing')){
