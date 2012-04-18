@@ -72,18 +72,20 @@ function action(type,mode,id){
 function errorReport(strobj){
   var prefix = 'Error: ';
   var postfix = '';
-  if(strobj.substring) {
-    error = strobj;
-  }else{
-    error = 'Action has finished with error';
-    try{
-      if(strobj.failureType == 'connect'){
-        error = 'Can not recieve service response';
-      }
-    }catch(e){}
-    try{
-      error = error + '\nMessage: ' + strobj.response.statusText;
-    }catch(e){}
+  var error = 'Action has finished with error';
+  if(strobj){
+    if(strobj.substring) {
+      error = strobj;
+    }else{
+      try{
+        if(strobj.failureType == 'connect'){
+          error = 'Can not recieve service response';
+        }
+      }catch(e){}
+      try{
+        error = error + '\nMessage: ' + strobj.response.statusText;
+      }catch(e){}
+    }
   }
   error = prefix + error + postfix;
   alert(error);
@@ -1070,6 +1072,7 @@ function createRemoteMenu(item){
     emptyText:item.emptyText ? item.emptyText : 'Select item from the menu',
     fieldLabel:item.fieldLabel ? item.fieldLabel : 'Default label',
     forceSelection:true,
+    name:item.name ? item.name : Ext.id(),
     selectOnFocus:true,
     store:store,
     triggerAction:'all',
