@@ -6,7 +6,7 @@ from DIRAC.Core.DISET.TransferClient import TransferClient
 from DIRAC.FrameworkSystem.Client.UserProfileClient import UserProfileClient
 
 def __prepareArgs( kwargs ):
-  if credentials.getUserDN():
+  if ( 'static' not in kwargs or not kwargs[ 'static' ] ) and credentials.getUserDN():
     kwargs[ 'delegatedGroup' ] =  str( credentials.getSelectedGroup() )
     kwargs[ 'delegatedDN' ] = str( credentials.getUserDN() )
   kwargs[ 'useCertificates' ] = True
