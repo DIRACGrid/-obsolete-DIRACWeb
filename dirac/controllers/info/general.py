@@ -135,7 +135,7 @@ class GeneralController( BaseController ):
     sentFailed = list()
     sentSuccess = list()
     errorMessage = list()
-    ntc = NotificationClient( getRPCClient )
+    ntc = NotificationClient( getRPCClient(static = True) )
     for i in mails:
       i = i.strip()
       result = ntc.sendMail(i,"New user has registered",body,userMail,False)
