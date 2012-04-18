@@ -9,6 +9,27 @@ function init(reponseSelect){
       })
     });
     var leftBar = left(reponseSelect);
+    var panel = leftBar.items.itemAt(0);
+    panel.on('actioncomplete',function(form,action){
+      try{
+        gMainLayout.container.unmask();
+      }catch(e){}
+      try{
+        if(action.result.success == 'false'){
+          errorReport(action.result.error);
+        }else{
+          mainContent.store.loadData(action.result);
+        }
+      }catch(e){
+        alert('');
+      }
+    });
+    panel.on('actionfailed',function(form,action){
+      try{
+        gMainLayout.container.unmask();
+      }catch(e){}
+      errorReport(action);
+    });
     var rightBar = right();
     var mainContent = center();
     renderInMainViewport([ leftBar, mainContent ]);
@@ -168,42 +189,59 @@ function right(){
 }
 function center(){
   var record = new Ext.data.Record.create([
-    {name:'Name'},
-    {name:'EventStat'},
-    {name:'FileSize'},
-    {name:'RunNumber'},
-    {name:'PhysicStat'},
-    {name:'CreationDate',type:'date',dateFormat:'Y-n-j h:i:s'},
-    {name:'JobStart',type:'date',dateFormat:'Y-n-j h:i:s'},
-    {name:'JobEnd',type:'date',dateFormat:'Y-n-j h:i:s'},
-    {name:'WorkerNode'},
-    {name:'FileType'},
-    {name:'EvtTypeId'},
-    {name:'DataqualityFlag'},
-    {name:'TCK'}
+    {name:'filename'}
   ]);
   var columns = [
-    {header:'File Name',sortable:true,dataIndex:'Name',align:'left'},
-    {header:'Event Stat',sortable:true,dataIndex:'EventStat',align:'left'},
-    {header:'File Size',sortable:true,dataIndex:'FileSize',align:'left'},
-    {header:'Run number',sortable:true,dataIndex:'RunNumber',align:'left'},
-    {header:'Physics statistics',sortable:true,dataIndex:'PhysicStat',align:'left'},
-    {header:'Job Start',sortable:true,dataIndex:'JobStart',align:'left'},
-    {header:'Job End',sortable:true,dataIndex:'JobEnd',align:'left'},
-    {header:'Tck', sortable:true, dataIndex:'TCK', align:'left',hidden:true}
+    {header:'',name:'checkBox',id:'checkBox',width:26,sortable:false,dataIndex:'filename',renderer:chkBox,hideable:false,fixed:true,menuDisabled:true},
+    {header:'File Name',sortable:true,dataIndex:'filename',align:'left',width:'90%'}
   ];
-    var store = new Ext.data.Store({
-      reader:new Ext.data.JsonReader({
-        root:'result',
-        totalProperty:'total'
-      },record)
-    });
+  var store = new Ext.data.Store({
+    reader:new Ext.data.JsonReader({
+      root:'result',
+      totalProperty:'total'
+    },record)
+  });
+  store.on('load',function(records){
+    var show = false;
+    if(records && records.totalLength){
+      if(records.totalLength > 0){
+        show = true;
+      }
+    }
+    var toolbar = dataTable.getTopToolbar();
+    if(!toolbar){
+      return errorReport('Unable to get toolbar of dataTable component');
+    }
+    var length = toolbar.items.getCount();
+    for(var i=0; i < length; i++){
+      if(show){
+        toolbar.items.itemAt(i).enable();
+      }else{
+        toolbar.items.itemAt(i).disable();
+      }
+    }
+  });
   var tbar = [
-    '->',{
+    {
+      cls:"x-btn-text-icon",
+      handler:function(){selectAll('all')},
+      disabled:true,
+      icon:gURLRoot+'/images/iface/checked.gif',
+      text:'Select All',
+      tooltip:'Click to select all rows'
+    },{
+      cls:"x-btn-text-icon",
+      handler:function(){selectAll('none')},
+      disabled:true,
+      icon:gURLRoot+'/images/iface/unchecked.gif',
+      text:'Select None',
+      tooltip:'Click to uncheck selected row(s)'
+    },'->',{
       cls:"x-btn-text-icon",
       handler:function(){
         save(this);
       },
+      disabled:true,
       icon:gURLRoot+'/images/iface/save.gif',
       text:'Save',
       tooltip:'Click to save selected data'
@@ -388,7 +426,7 @@ function addItems2Panel(panel,form){
         width:98
       });      
     }else if(checked[i].dataType == 'string'){
-      var name = checked[i].dataLabel;
+      var name = label = checked[i].dataLabel;
       item = createRemoteMenu({
         baseParams:{getMeta:name},
         fieldLabel:name,
@@ -404,23 +442,36 @@ function addItems2Panel(panel,form){
 }
 function save(button){
   button.setIconClass('Loading');
+  var files = '';
+  var inputs = document.getElementsByTagName('input');
+  for (var i = 0; i < inputs.length; i++){
+    if (inputs[i].checked === true){
+      files = files + inputs[i].id + ',';
+    }
+  }
+  files = files.replace(/,$/,'');
   Ext.Ajax.request({
     failure:function(response){
       button.setIconClass('Save');
-      response.responseText ? response = response.responseText : '';
-      errorReport(response);
+      var message = (response.responseText) ? response.responseText : 'Connection error';
+      return errorReport(message);
     },
     method:'POST',
-    params:{'getFile':'Test'},
+    params:{'getFile':files},
     success:function(response){
       button.setIconClass('Save');
-      response.responseText ? response = response.responseText : '';
-      if(response){
-        response = Ext.util.JSON.decode(response)
-//        uriContent = "data:application/octet-stream," + encodeURIComponent(content);
-//        newWindow=window.open(uriContent, 'name');
-        var url = response.result;
-        window.open(url, 'name');
+      try{
+        var data = (response.responseText) ? Ext.util.JSON.decode(response.responseText) : false;
+      }catch(e){
+        return errorReport('Unable to decode data from server response');
+      }
+      if(data && data.error){
+          return errorReport(data.error);
+      }
+      try{
+        window.open(data.result.url);
+      }catch(e){
+        return errorReport('Unable to decode data from server response');
       }
     },
     timeout:60000, // 1min
