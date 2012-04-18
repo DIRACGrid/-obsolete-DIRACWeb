@@ -72,18 +72,20 @@ function action(type,mode,id){
 function errorReport(strobj){
   var prefix = 'Error: ';
   var postfix = '';
-  if(strobj.substring) {
-    error = strobj;
-  }else{
-    error = 'Action has finished with error';
-    try{
-      if(strobj.failureType == 'connect'){
-        error = 'Can not recieve service response';
-      }
-    }catch(e){}
-    try{
-      error = error + '\nMessage: ' + strobj.response.statusText;
-    }catch(e){}
+  var error = 'Action has finished with error';
+  if(strobj){
+    if(strobj.substring) {
+      error = strobj;
+    }else{
+      try{
+        if(strobj.failureType == 'connect'){
+          error = 'Can not recieve service response';
+        }
+      }catch(e){}
+      try{
+        error = error + '\nMessage: ' + strobj.response.statusText;
+      }catch(e){}
+    }
   }
   error = prefix + error + postfix;
   alert(error);
@@ -111,19 +113,21 @@ function AJAXerror(response){
     return;
   }
 }
-function AJAXrequest(value,id){
+function AJAXrequest(key,value){
   try{
     gMainLayout.container.mask('Please wait');
   }catch(e){}
   var params = value + '=' + id;
   Ext.Ajax.request({
     failure:function(response){
-      AJAXerror(response.responseText);
+      response.responseText ? response = response.responseText : '';
+      AJAXerror(response);
     },
     method:'POST',
     params:params,
     success:function(response){
-      AJAXsuccess(value,id,response.responseText);
+      response.responseText ? response = response.responseText : '';
+      AJAXsuccess(key,value,response);
     },
     timeout:60000, // 1min
     url:'action'
@@ -186,13 +190,14 @@ function dateSelectMenu(){
   return date;
 }
 function displayWin(panel,title,modal){
+  var coords = Ext.EventObject.xy;
   var window = new Ext.Window({
     iconCls:'icon-grid',
     closable:true,
     width:600,
     height:400,
     border:true,
-    collapsible:true,
+    collapsible: modal ? false : true,
     constrain:true,
     constrainHeader:true,
     maximizable:true,
@@ -1050,30 +1055,28 @@ function genericID(name,fieldLabel,altRegex,altRegexText,hide){
   return textField;
 }
 function createRemoteMenu(item){
-  try{
-    baseParams = {'meta':item.text};
-    url = '/getmeta';
-    fieldLabel = item.text;
-    emptyText = 'Select value from menu';
-  }catch(e){
-    alert('Error: ' + e.name + ': ' + e.message);
+  if((!item)||(typeof item!=='object')){
+    window.console && console.log ?
+      console.log('Argument is None or not an Object') : '';
+    return
   }
   var store = new Ext.data.JsonStore({
-    baseParams:baseParams,
+    baseParams:item.baseParams ? item.baseParams : false,
     fields:['name'],
     root:'result',
-    url:url
+    url:item.url ? item.url : 'action'
   });
   var combo = new Ext.form.ComboBox({
     anchor:'-15',
-    store:store,
     displayField:'name',
-    typeAhead:true,
-    fieldLabel:fieldLabel,
+    emptyText:item.emptyText ? item.emptyText : 'Select item from the menu',
+    fieldLabel:item.fieldLabel ? item.fieldLabel : 'Default label',
     forceSelection:true,
-    triggerAction:'all',
-    emptyText:emptyText,
+    name:item.name ? item.name : Ext.id(),
     selectOnFocus:true,
+    store:store,
+    triggerAction:'all',
+    typeAhead:true
   });
   return combo
 }
@@ -1088,7 +1091,11 @@ function createMenu(dataName,title,altValue){
     }
   }catch(e){}
   var disabled = true;
-  var error = ['Error happened on service side','Nothing to display','Insufficient rights'];
+  var error = [
+    'Error happened on service side',
+    'Nothing to display',
+    'Insufficient rights'
+  ];
   var errorRegexp = new RegExp('^(' + error.join('|') + ')$');
   if((data == 'Nothing to display')||(Ext.isEmpty(data))){
     data = [['Nothing to display']];
