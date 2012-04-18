@@ -34,17 +34,21 @@ class MetacatalogueController(BaseController):
 ################################################################################
   @jsonify
   def submit(self):
-    pagestart = time()
     RPC = getRPCClient("DataManagement/FileCatalog")
     req = self.__request()
     result = RPC.findFilesByMetadata(req,"/")
     gLogger.always(" - REZ: %s" % result)
-    if result["OK"]:
-      c.result = {"success":"false","result":"","error":result["Value"]}
-    else:
-      c.result = {"success":"false","error":result["Message"]}
-    gLogger.info("\033[0;31mJOB SUBMIT REQUEST:\033[0m %s" % (time() - pagestart))
-    return c.result
+    if not result["OK"]:
+      return {"success":"false","error":result["Message"]}
+    result = result["Value"]
+    if not len(result) > 0:
+      return {"success":"true","result":{},"total":0}
+    callback = list()
+    for key,value in result.items():
+      if len(value) > 0:
+        for j in value:
+          callback.append({"filename":key + "/" + j})
+    return {"success":"true","result":callback,"total":len(callback)}
 ################################################################################
   def __request(self):
     req = {}  
@@ -63,15 +67,21 @@ class MetacatalogueController(BaseController):
       separator = ":::"
     RPC = getRPCClient("DataManagement/FileCatalog")
     result = RPC.getMetadataFields()
+    gLogger.always(" +++ ",result)
     if not result["OK"]:
       return {}
     result = result["Value"]
     meta = []
     for key,value in result.items():
-      meta.append(key)
+      for j in value:
+        meta.append(j)
+    gLogger.always(" * * * ",meta)
     for i in request.params:
       if i in meta:
-        req[i] = str(request.params[i]).split(separator)
+        meta_list = str(request.params[i]).split(separator)
+        if len(meta_list) == 1:
+          meta_list = meta_list[0]
+        req[i] = meta_list
     gLogger.always(" * * * ",req)
     return req
 ################################################################################
@@ -83,14 +93,24 @@ class MetacatalogueController(BaseController):
     elif request.params.has_key("getMeta") and len(request.params["getMeta"]) > 0:
       return self.__getMetadata( str(request.params["getMeta"]) )
     elif request.params.has_key("getFile") and len(request.params["getFile"]) > 0:
-      return self.__prepareURL()
+      return self.__prepareURL( str(request.params["getFile"]) )
     else:
       return {"success":"false","error":"The request parameters can not be recognized or they are not defined"}
 ################################################################################
-  def __prepareURL(self):
-    import time
-    time.sleep(20)
-    return {"success":"true","result":"https://mardirac.in2p3.fr/DIRAC/images/content/overview1.png"}
+  def __prepareURL(self,files):
+#    gLogger.always(" *** ",files)
+    files = files.split(",")
+#    gLogger.always(" *** ",files)
+    if not len(files) > 0:
+      return {"success":"false","error":"No LFN given"}
+#    se = getRPCClient("DataManagement/StorageElementProxy")
+    se = getRPCClient("dips://volhcb13.cern.ch:9144/DataManagement/StorageElementProxy")
+    result = se.prepareFileForHTTP(files)
+    if not result["OK"]:
+      return {"success":"false","error":result["Message"]}
+    httpURLs = result['HttpURL']
+    httpKey = result['HttpKey']
+    return {"success":"true","result":{"url":httpURLs,"cookie":httpKey}}
 ################################################################################
   def __getMetadata(self,key=False):
     if not key:
