@@ -6,6 +6,7 @@ from dirac.lib.diset import getRPCClient, getTransferClient
 from dirac.lib.credentials import authorizeAction
 from DIRAC import gConfig, gLogger
 from DIRAC.Core.Utilities.List import sortList
+from DIRAC.Core.Utilities import Time
 from DIRAC.AccountingSystem.Client.ReportsClient import ReportsClient
 from DIRAC.Core.Utilities.DictCache import DictCache
 import dirac.lib.credentials as credentials
@@ -20,18 +21,6 @@ globalSort = [["JobID","DESC"]]
 
 class JobmonitorController(BaseController):
   __imgCache = DictCache()
-################################################################################
-  @jsonify
-  def layoutUser(self):
-    return {"success":"true","result":[{"name":"User1"},{"name":"User2"},{"name":"User3"},{"name":"User4"},{"name":"User5"},{"name":"User6"}],"total":"5"}
-################################################################################
-  @jsonify
-  def layoutGroup(self):
-    return {"success":"true","result":[{"name":"Grp1"},{"name":"Grp2"},{"name":"Grp3"},{"name":"Grp4"},{"name":"Grp5"},{"name":"Grp6"}],"total":"5"}
-################################################################################
-  @jsonify
-  def layoutAvailable(self):
-    return {"success":"true","result":[{"name":"Test1","owner":"msapunov","description":"Testing message"},{"name":"Test2","owner":"msapunov","description":"Testing message"}],"total":"5"}
 ################################################################################
   def display(self):
     pagestart = time()
@@ -58,13 +47,8 @@ class JobmonitorController(BaseController):
     user = str(credentials.getUsername())
     result = RPC.getOwners()
     if result["OK"]:
-      defaultGroup = gConfig.getValue("/Registry/DefaultGroup")
-      if defaultGroup:
-        try:
-          defaultGroup = str(defaultGroup)
-        except:
-          return {"success":"false","error":"Option /Registry/DefaultGroup is not a string, please set the default group as a string in the CS"} 
-      else:
+      defaultGroup = gConfig.getValue("/Registry/DefaultGroup","")
+      if defaultGroup == "":
         return {"success":"false","error":"Option /Registry/DefaultGroup is undefined, please set the default group in the CS"}
       group = str(credentials.getSelectedGroup())
       groupProperty = credentials.getProperties(group)
@@ -96,12 +80,13 @@ class JobmonitorController(BaseController):
                     tmp[head[j]] = i[j]
                   c.result.append(tmp)
                 total = result["TotalRecords"]
+                timestamp = Time.dateTime().strftime("%Y-%m-%d %H:%M [UTC]")
                 if result.has_key("Extras"):
                   st = self.__dict2string(req)
                   extra = result["Extras"]
-                  c.result = {"success":"true","result":c.result,"total":total,"extra":extra,"request":st}
+                  c.result = {"success":"true","result":c.result,"total":total,"extra":extra,"request":st,"date":timestamp}
                 else:
-                  c.result = {"success":"true","result":c.result,"total":total}
+                  c.result = {"success":"true","result":c.result,"total":total,"date":timestamp}
               else:
                 c.result = {"success":"false","result":"","error":"There are no data to display"}
             else:
@@ -165,20 +150,14 @@ class JobmonitorController(BaseController):
         else:
           prod = [["Nothing to display"]]
       else:
-        prod = [["Error during RPC call"]]
+        gLogger.error("RPC.getProductionIds() return error: %s" % result["Message"])
+        prod = [["Error happened on service side"]]
       callback["prod"] = prod
 ###
     RPC = getRPCClient("WorkloadManagement/JobMonitoring")
     result = RPC.getSites()
     if result["OK"]:
-      tier1 = gConfig.getValue("/Website/PreferredSites")
-      if tier1:
-        try:
-          tier1 = tier1.split(", ")
-        except:
-          tier1 = list()
-      else:
-        tier1 = list()
+      tier1 = gConfig.getValue("/Website/PreferredSites",[]) # Always return a list
       site = []
       if len(result["Value"])>0:
         s = list(result["Value"])
@@ -191,7 +170,8 @@ class JobmonitorController(BaseController):
       else:
         site = [["Nothing to display"]]
     else:
-      site = [["Error during RPC call"]]
+      gLogger.error("RPC.getSites() return error: %s" % result["Message"])
+      site = [["Error happened on service side"]]
     callback["site"] = site
 ###
     result = RPC.getStates()
@@ -204,7 +184,8 @@ class JobmonitorController(BaseController):
       else:
         stat = [["Nothing to display"]]
     else:
-      stat = [["Error during RPC call"]]
+      gLogger.error("RPC.getStates() return error: %s" % result["Message"])
+      stat = [["Error happened on service side"]]
     callback["status"] = stat
 ###
     result = RPC.getMinorStates()
@@ -218,7 +199,8 @@ class JobmonitorController(BaseController):
       else:
         stat = [["Nothing to display"]]
     else:
-      stat = [["Error during RPC call"]]
+      gLogger.error("RPC.getMinorStates() return error: %s" % result["Message"])
+      stat = [["Error happened on service side"]]
     callback["minorstat"] = stat
 ###
     result = RPC.getApplicationStates()
@@ -232,8 +214,24 @@ class JobmonitorController(BaseController):
       else:
         app = [["Nothing to display"]]
     else:
-      app = [["Error during RPC call"]]
+      gLogger.error("RPC.getApplicationstates() return error: %s" % result["Message"])
+      app = [["Error happened on service side"]]
     callback["app"] = app
+###
+    result = RPC.getJobTypes()
+    if result["OK"]:
+      types = []
+      if len(result["Value"])>0:
+        types.append([str("All")])
+        for i in result["Value"]:
+          i = i.replace(",",";")
+          types.append([i])
+      else:
+        types = [["Nothing to display"]]
+    else:
+      gLogger.error("RPC.getJobTypes() return error: %s" % result["Message"])
+      types = [["Error happened on service side"]]
+    callback["types"] = types
 ###
     result = RPC.getRunNumbers()
     if result["OK"]:
@@ -248,7 +246,8 @@ class JobmonitorController(BaseController):
       else:
         app = [["Nothing to display"]]
     else:
-      app = [["Error during RPC call"]]
+      gLogger.error("RPC.getRunNumbers() return error: %s" % result["Message"])
+      app = [["Error happened on service side"]]
     callback["runNumber"] = app
 ###
     groupProperty = credentials.getProperties(group)
@@ -267,7 +266,8 @@ class JobmonitorController(BaseController):
         else:
           owner = [["Nothing to display"]]
       else:
-        owner = [["Error during RPC call"]]
+        gLogger.error("RPC.getOwners() return error: %s" % result["Message"])
+        owner = [["Error happened on service side"]]
       callback["owner"] = owner
     return callback
 ################################################################################
@@ -322,31 +322,39 @@ class JobmonitorController(BaseController):
     else:
       groupProperty = credentials.getProperties(group)
       gLogger.always("### groupProperty: ",str(groupProperty))
+      result = gConfig.getOption("/Website/ListSeparator")
+      if result["OK"]:
+        separator = result["Value"]
+      else:
+        separator = ":::"
       if request.params.has_key("prod") and len(request.params["prod"]) > 0:
         if str(request.params["prod"]) != "All":
-          req["JobGroup"] = str(request.params["prod"]).split('::: ')
+          req["JobGroup"] = str(request.params["prod"]).split(separator)
       if request.params.has_key("site") and len(request.params["site"]) > 0:
         if str(request.params["site"]) != "All":
-          req["Site"] = str(request.params["site"]).split('::: ')
+          req["Site"] = [x.strip() for x in str(request.params["site"]).split(separator)]
       if request.params.has_key("status") and len(request.params["status"]) > 0:
         if str(request.params["status"]) != "All":
-          req["Status"] = str(request.params["status"]).split('::: ')
+          req["Status"] = str(request.params["status"]).split(separator)
       if request.params.has_key("runNumber") and len(request.params["runNumber"]) > 0:
         if str(request.params["runNumber"]) != "All":
-          req["runNumber"] = str(request.params["runNumber"]).split('::: ')
+          req["runNumber"] = str(request.params["runNumber"]).split(separator)
       if request.params.has_key("minorstat") and len(request.params["minorstat"]) > 0:
         if str(request.params["minorstat"]) != "All":
-          req["MinorStatus"] = str(request.params["minorstat"]).split('::: ')
+          req["MinorStatus"] = str(request.params["minorstat"]).split(separator)
       if request.params.has_key("app") and len(request.params["app"]) > 0:
         if str(request.params["app"]) != "All":
-          req["ApplicationStatus"] = str(request.params["app"]).split('::: ')
+          req["ApplicationStatus"] = str(request.params["app"]).split(separator)
+      if request.params.has_key("types") and len(request.params["types"]) > 0:
+        if str(request.params["types"]) != "All":
+          req["JobType"] = str(request.params["types"]).split(separator)
       if not "JobAdministrator" in groupProperty and not "JobSharing" in groupProperty:
         if not request.params.has_key("globalStat"):
           req["Owner"] = str(user)
       else:
         if request.params.has_key("owner") and len(request.params["owner"]) > 0:
           if str(request.params["owner"]) != "All":
-            req["Owner"] = str(request.params["owner"]).split('::: ')
+            req["Owner"] = str(request.params["owner"]).split(separator)
       if request.params.has_key("startDate") and len(request.params["startDate"]) > 0:
         if str(request.params["startDate"]) != "YYYY-mm-dd":
           if request.params.has_key("startTime") and len(request.params["startTime"]) > 0:
@@ -451,13 +459,46 @@ class JobmonitorController(BaseController):
     elif request.params.has_key("canRunJobs") and request.params["canRunJobs"]:
       return self.__canRunJobs()
     elif request.params.has_key("getProxyStatus") and len(request.params["getProxyStatus"]) > 0:
-      if request.params["getProxyStatus"].isdigit():
-        return self.__getProxyStatus(int(request.params["getProxyStatus"]))
-      else:
-        return {"success":"false","error":"getProxyStatus value is not a number"}
+      return self.__getProxyStatus()
+    elif request.params.has_key("getLaunchpadOpts") and len(request.params["getLaunchpadOpts"]) > 0:
+      return self.__getLaunchpadOpts()
     else:
       c.result = {"success":"false","error":"The request parameters can not be recognized or they are not defined"}
       return c.result
+################################################################################
+  def __getDataFromCS(self,path="/Website/Launchpad/Options"):
+    result = gConfig.getOptionsDict(path)
+    if result["OK"]:
+      options = result["Value"]
+    result = gConfig.getSections(path)
+    if result["OK"]:
+      sections = result["Value"]    
+    if len(sections) > 0:
+      for i in sections:
+        options[i] = self.__getDataFromCS(path + '/' + i)
+    return options
+################################################################################
+  def __getLaunchpadOpts(self):
+    options = gConfig.getOptions("/Website/Launchpad/Options", False)
+    if options and options["OK"]:
+      options = self.__getDataFromCS()
+    else:
+      options = "false"
+    override = gConfig.getOption("/Website/Launchpad/OptionsOverride")
+    if override["OK"]:
+      override = str(override["Value"]).lower()
+      if override == "true":
+        pass
+      else:
+        override = "false"
+    else:
+      override = "false"
+    separator = gConfig.getOption("/Website/Launchpad/ListSeparator")
+    if separator["OK"]:
+      separator = separator["Value"]
+    else:
+      separator = "false"
+    return {"success":"true","result":options,"override":override,"separator":separator}
 ################################################################################
   def __getStats(self,selector):
     gLogger.always(" --- selector : %s" % selector)
@@ -478,16 +519,9 @@ class JobmonitorController(BaseController):
       keylist = result.keys()
       keylist.sort()
       if selector == "Site":
-        tier1 = gConfig.getValue("/Website/PreferredSites")
-        if tier1:
-          try:
-            tier1 = tier1.split(", ")
-            tier1.sort()
-          except:
-            tier1 = False
-        else:
-          tier1 = False
-        if tier1 and len(tier1) > 0:
+        tier1 = gConfig.getValue("/Website/PreferredSites",[])
+        if len(tier1) > 0:
+          tier1.sort()
           for i in tier1:
             if result.has_key(i):
               countryCode = i.rsplit(".",1)[1]
@@ -520,13 +554,20 @@ class JobmonitorController(BaseController):
     else:
       return False
 ################################################################################
-  def __getProxyStatus( self, validSeconds = 0 ):
+  def __getProxyStatus(self,secondsOverride = None):
+      
     from DIRAC.FrameworkSystem.Client.ProxyManagerClient import ProxyManagerClient
+    
     proxyManager = ProxyManagerClient()
     group = str(credentials.getSelectedGroup())
     if group == "visitor":
-      return {"success":"false","error":"User not registered"}
+      return {"success":"false","error":"User is anonymous or is not registered in the system"}
     userDN = str(credentials.getUserDN())
+    if secondsOverride and str(secondsOverride).isdigit():
+      validSeconds = int(secondsOverride)
+    else:
+      defaultSeconds = 24 * 3600 + 60 # 24H + 1min
+      validSeconds = gConfig.getValue("/Registry/DefaultProxyLifeTime",defaultSeconds)
     gLogger.info("\033[0;31m userHasProxy(%s, %s, %s) \033[0m" % (userDN,group,validSeconds))
     result = proxyManager.userHasProxy(userDN,group,validSeconds)
     if result["OK"]:
@@ -841,10 +882,7 @@ class JobmonitorController(BaseController):
       if item == "Parameters":
         try:
           parameters = int(params[item])
-          if parameters > 20:
-            return {"success":"false","error":"Exceeded Parameters limit. Must be less then 20"}
-          else:
-            jdl = jdl + str(item) + " = \"" + str(parameters) + "\";"
+          jdl = jdl + str(item) + " = \"" + str(parameters) + "\";"
         except:
           parameters = str(params[item])
           if parameters.find("{") >= 0 and parameters.find("}") >= 0:

@@ -24,6 +24,12 @@ function bytesToSize(bytes, precision){
     return bytes + ' B';
   }
 }
+function loadLaunchpadOpts(options){
+  for(var i in options){
+    var ss = options[i];
+    var tt = 0;
+  }
+}
 function submitJobNew(){
   var formID = Ext.id(); // from panel
   var innID =  Ext.id(); // For JDL and Sandboxescontainer
@@ -31,8 +37,25 @@ function submitJobNew(){
   var fileID = Ext.id();
   var lfnID = Ext.id();
   var winID = Ext.id();
+  var addID = Ext.id();
   var fileAnchor = 45;
   var fieldAnchor = '-5';
+  var data = [ // Array of default key\value pairs
+    ['InputData',''],
+    ['OutputData',''],
+    ['OutputSE','DIRAC-USER'],
+    ['OutputPath',''],
+    ['CPUTime','86400'],
+    ['Site',''],
+    ['BannedSite',''],
+    ['SystemConfig','slc4_ia32_gcc34'],
+    ['Priority','5'],
+    ['StdError','std.err'],
+    ['StdOutput','std.out'],
+    ['Parameters','0'],
+    ['ParameterStart','0'],
+    ['ParameterStep','1']
+  ];
 // check for proxy
   var proxyCheckerFunction = function(){
     showProxyStat('check');
@@ -43,7 +66,7 @@ function submitJobNew(){
         return false
       },
       method:'POST',
-      params:{'getProxyStatus':86460},
+      params:{'getProxyStatus':true},
       success:function(response){
         var jsonData = Ext.util.JSON.decode(response.responseText);
         if(jsonData['success'] == 'false'){
@@ -126,7 +149,7 @@ function submitJobNew(){
         success:function(form,action){
           gMainLayout.container.unmask();
           if(action.result.success == 'false'){
-             alert('Error: ' + action.result.result);
+             alert('Error: ' + action.result.error);
           }else{
             var warn = Ext.Msg.show({
               animEl: 'elId',
@@ -221,7 +244,7 @@ function submitJobNew(){
     });
     return field
   }
-// Create an text entrie for JDL panel
+// Create a text entrie for JDL panel
   function createText(name,value){
     var text = new Ext.form.TextField({
       anchor:fieldAnchor,
@@ -231,24 +254,19 @@ function submitJobNew(){
     });
     return text
   }
+// Create a combobox entrie for JDL panel
+  function createList(name,items){
+    for(var i in items){
+      items[i] = [items[i]];
+    }
+    var combo = createMenu(false,name,items);
+    combo.separator = launchpadOptsSeparator;
+    combo.anchor = fieldAnchor;
+    combo.id = Ext.id();
+    return combo;  
+  }
 // Add or remove entries from the JDL panel
   function entryMagic(item,state){
-    var data = [
-      ['InputData',''],
-      ['OutputData',''],
-      ['OutputSE','DIRAC-USER'],
-      ['OutputPath',''],
-      ['CPUTime','86400'],
-      ['Site',''],
-      ['BannedSite',''],
-      ['SystemConfig','slc4_ia32_gcc34'],
-      ['Priority','5'],
-      ['StdError','std.err'],
-      ['StdOutput','std.out'],
-      ['Parameters','0'],
-      ['ParameterStart','0'],
-      ['ParameterStep','1']
-    ];
     var panel = Ext.getCmp(jdlID);
     if(!panel){
       alert('Error: Can not get component by jdlID');
@@ -268,7 +286,11 @@ function submitJobNew(){
     if(state){
       for(var i=0; i<data.length; i++){
         if(data[i][0] == text && !isJDL){
-          var field = createText(data[i][0],data[i][1]);
+          if(typeof(data[i][1]) == 'object'){
+            var field = createList(data[i][0],data[i][1]);
+          }else{
+            var field = createText(data[i][0],data[i][1]);
+          }
           form.form.add(field);
           panel.add(field);
         }
@@ -281,7 +303,7 @@ function submitJobNew(){
             if(!tmpJDL){
               return
             }
-            var itemParentNode = tmpJDL.el.dom.parentNode.parentNode;
+            var itemParentNode = tmpJDL.el.up('div.x-form-item');
             panel.remove(tmpJDL);
             if(itemParentNode){
               Ext.fly(itemParentNode).remove();
@@ -294,13 +316,109 @@ function submitJobNew(){
     panel.doLayout();
   }
 // Create the specific entries for the Add Elements menu
-  function checkedMenu(text){
+  function checkedMenu(text,isList){
     var item = new Ext.menu.CheckItem({
       checkHandler:entryMagic,
       hideOnClick:false,
       text:text
     });
     return item
+  }
+// Recursively check if element is already exists in menu
+  function menuAdd(menu,items){
+    var extmenu = []
+    try{    
+      var length = menu.items.getCount();
+      for(var j = 0; j < length; j++){
+        if(menu.items.items[j].text){
+          extmenu.push(menu.items.items[j].text);
+        }
+      }  
+    }catch(e){
+      alert('Error: ' + e.name + ': ' + e.message)
+      return
+    }
+    for(var i in items){
+      if(extmenu.indexOf(i) != -1){
+        if(typeof(items[i]) == 'object'){
+          var length = menu.items.getCount();
+          for(var j = 0; j < length; j++){
+            if(menu.items.items[j].text == i){
+              if(menu.items.items[j].menu){
+                menuAdd(menu.items.items[j].menu,items[i]);
+              }else{
+                var sub = new Ext.menu.Menu();
+                menuAdd(sub,items[i]);              
+              }
+            }
+          }
+        }
+      }else{
+        if(i == '-'){
+          menu.add('-');
+        }else if(typeof(items[i]) == 'object'){
+          var sub = new Ext.menu.Menu();
+          menu.add({text:i,menu:sub});
+          menuAdd(sub,items[i]);
+        }else{
+          if(launchpadOptsSeparator){
+            var list = items[i].split(launchpadOptsSeparator);
+            if(list.length > 1){
+              menu.add(checkedMenu(i,list));
+            }else{
+              menu.add(checkedMenu(i));
+            }
+          }else{
+            menu.add(checkedMenu(i));
+          }
+        }
+      }
+    }
+  }
+// Adds new elements to data key/value massive
+  function dataAdd(items){
+    for(var i in items){
+      if(typeof(items[i]) == 'object'){
+        dataAdd(items[i]);
+      }else{
+        var list = items[i].split(launchpadOptsSeparator);
+        if(list.length > 1){
+          for(var j = 0; j < list.length; j++){
+            list[j] = list[j].replace(/^\s\s*/, '').replace(/\s\s*$/, '');
+          }
+        }
+        var add = true;
+        for(var j in data){
+          if(i == data[j][0]){
+            if(list.length > 1){
+              data[j][1] = list;
+            }else{
+              data[j][1] = list[0];
+            }
+            add = false;
+          }
+        }
+        if(add){
+          if(list.length > 1){
+            data.push([i, list]);
+          }else{
+            data.push([i, items[i]]);
+          }
+        }
+      }
+    }
+  }
+// Create/change menu entries in 'Add Parameters' menu
+  function menuShuffle(menu){
+    dataAdd(menu);
+    var add = Ext.getCmp(addID);
+    if(!launchpadOptsOverride && add.menu){
+      menuAdd(add.menu,menu);
+    }else{
+      var sub = new Ext.menu.Menu();
+      add.menu = sub;
+      menuAdd(sub,menu);
+    }
   }
 // End of function declaration
   var submit = new Ext.Button({
@@ -393,6 +511,7 @@ function submitJobNew(){
 //*/
   var addButton = new Ext.Toolbar.Button({
     cls:"x-btn-text-icon",
+    id:addID,
     icon:gURLRoot+'/images/iface/advanced.gif',
     menu:[
       checkedMenu('InputData'),
@@ -414,6 +533,7 @@ function submitJobNew(){
       checkedMenu('ParameterStart'),
       checkedMenu('ParameterStep')
     ],
+//    menu:menu,    
     text:'Add Parameters',
     tooltip:'Click to add more parameters to the JDL'
   });
@@ -489,6 +609,31 @@ function submitJobNew(){
     title:'Launchpad',
   });
   win.show();
+  Ext.Ajax.request({
+    method:'POST',
+    params:{'getLaunchpadOpts':true},
+    success:function(response){
+      var response = Ext.util.JSON.decode(response.responseText);
+      if(response.override && response.override == 'true'){
+        launchpadOptsOverride = true;
+      }else{
+        launchpadOptsOverride = false;
+      }
+      if(response.separator && response.separator != 'false'){
+        launchpadOptsSeparator = response.separator;
+      }
+      addButton.enable();
+      if(response.result){
+        menuShuffle(response.result);
+      }
+    },
+    failure:function(response){
+      addButton.enable();
+      alert('Error: Failed to load additional options from Configuration Service. Default options will be used');
+    },
+    timeout:60000, // 1min
+    url:'action'
+  });  
   win.on({
     'resize':function(){
       var panel = Ext.getCmp(innID);

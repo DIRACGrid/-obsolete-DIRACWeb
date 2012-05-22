@@ -1,12 +1,35 @@
 var dataSelect = ''; // Required to store the data for filters fields. Object.
 var dataMngr = ''; // Required to connect form and table. Object.
 var tableMngr = ''; // Required to handle configuration data for table. Object.
+var user = false; // user treated as anonymous
+var isLaunchpadOpts = false; // Used in launchpad.js shows is there any custom options for launchpad
+var launchpadOptsOverride = false; // Used in launchpad.js if true the default LP options menu should be overwritten by new from CS
+var launchpadOptsSeparator = false; // Used in launchpad.js to separate values if they are list of values
+var proxy = false; // Used in launchpad.js storing proxy status
 // Main routine
 function initLoop(reponseSelect){
   dataSelect = reponseSelect;
   var record = initRecord();
   var store = initStore(record);
   Ext.onReady(function(){
+    if(gPageDescription && gPageDescription.userData && gPageDescription.userData.groupProperties && gPageDescription.userData.username){
+      if(gPageDescription.userData.username != 'Anonymous'){
+        user = true;
+        var length = gPageDescription.userData.groupProperties.length;
+        for(i=0; i<length; i++){
+          if(gPageDescription.userData.groupProperties[i] == 'ProductionManagement'){
+            user = 'prod';
+          }
+        }
+        for(i=0; i<length; i++){
+          if(gPageDescription.userData.groupProperties[i] == 'JobAdministrator'){
+            user = 'admin';
+          }
+        }
+      }
+    }else{
+      alert('Error: Cannot distinguish your username or group. You will be treated as anonymous');
+    }
     Ext.override(Ext.PagingToolbar, {
       onRender :  Ext.PagingToolbar.prototype.onRender.createSequence(function(ct, position){
         this.loading.removeClass('x-btn-icon');
@@ -55,6 +78,7 @@ function initRecord(){
     {name:'DeletedFlag'},
     {name:'TaskQueueID'},
     {name:'JobType'},
+    {name:'RunNumber'},
     {name:'JobIDcheckBox',mapping:'JobID'},
     {name:'StatusIcon',mapping:'Status'},
     {name:'OwnerGroup'}
@@ -72,7 +96,9 @@ function initSidebar(){
   var statSelect = createMenu('status','Status'); // Initializing JobStatus Menu
   var minSelect = createMenu('minorstat','Minor status'); // Initializing Minor Status Menu
   var prodSelect = createMenu('prod','JobGroup'); // Initializing JobGroup Menu
+  var typesSelect = createMenu('types','JobType');
   var id = genericID('id','JobID'); // Initialize field for JobIDs
+  var runid = genericID('runNumber','RunNumber','','','None'); // Initialize field for JobIDs
   var dateSelect = dateTimeWidget(); // Initializing date dialog
   var select = selectPanel(); // Initializing container for selection objects
   // Insert object to container BEFORE buttons:
@@ -82,10 +108,11 @@ function initSidebar(){
   select.insert(3,appSelect);
   select.insert(4,ownerSelect);
   select.insert(5,prodSelect);
-  select.insert(6,id);
-  select.insert(7,dateSelect);
+  select.insert(6,typesSelect);
+  select.insert(7,id);
+  select.insert(8,runid);
+  select.insert(9,dateSelect);
   var sortGlobal = sortGlobalPanel(); // Initializing the global sort panel
-//  var stat = statPanel('Current Statistics','current','statGrid');
 /*
   id - String/Int, custom id
   global - Boolean, actually used to display refresh button
@@ -118,6 +145,7 @@ function initData(store){
     {header:'SubmissionTime [UTC]',sortable:true,renderer:Ext.util.Format.dateRenderer('Y-m-d H:i'),dataIndex:'SubmissionTime'},
     {header:'DIRACSetup',sortable:true,dataIndex:'DIRACSetup',align:'left',hidden:true},
     {header:'FailedFlag',sortable:true,dataIndex:'FailedFlag',align:'left',hidden:true},
+    {header:'RescheduleCounter',sortable:true,dataIndex:'RescheduleCounter',align:'left',hidden:true},
     {header:'CPUTime',sortable:true,dataIndex:'CPUTime',align:'left',hidden:true},
     {header:'OwnerDN',sortable:true,dataIndex:'OwnerDN',align:'left',hidden:true},
     {header:'JobGroup',sortable:true,dataIndex:'JobGroup',align:'left',hidden:true},
@@ -126,6 +154,7 @@ function initData(store){
     {header:'OSandboxReadyFlag',sortable:true,dataIndex:'OSandboxReadyFlag',align:'left',hidden:true},
     {header:'Owner',sortable:true,dataIndex:'Owner',align:'left'},
     {header:'TaskQueueID',sortable:true,dataIndex:'TaskQueueID',align:'left',hidden:true},
+    {header:'RunNumber',sortable:true,dataIndex:'RunNumber',align:'left',hidden:true},
     {header:'OwnerGroup',sortable:true,dataIndex:'OwnerGroup',align:'left',hidden:true}
   ];
   var tbar = [
@@ -155,40 +184,35 @@ function initData(store){
       tooltip:'Click to delete selected job(s)'
     }
   ];
-  try{
-    if(gPageDescription.userData.group == 'diracAdmin'){
-      var resetButton = {
-        cls:"x-btn-text-icon",
-        handler:function(){action('job','reset')},
-        icon:gURLRoot+'/images/iface/resetButton.gif',
-        text:'Reset',
-        tooltip:'Click to reset selected job(s)'
-      };
-      var a = tbar.slice(), b = a.splice( 3 );
-      a[3] = resetButton;
-      tbar = a.concat( b );
-    }
-  }catch(e){}
-  try{
-    if(gPageDescription.userData.group != 'lhcb_prod'){
-      var rescheduleButton = {
-        cls:"x-btn-text-icon",
-        handler:function(){action('job','reschedule')},
-        icon:gURLRoot+'/images/iface/reschedule.gif',
-        text:'Reschedule',
-        tooltip:'Click to reschedule selected job(s)'
-      };
-      if(gPageDescription.userData.group == 'diracAdmin'){
-        var a = tbar.slice(), b = a.splice( 4 );
-        a[4] = rescheduleButton;
-      }else{
-        var a = tbar.slice(), b = a.splice( 3 );
-        a[3] = rescheduleButton;
-      }
-      tbar = a.concat( b );
-    }
-  }catch(e){}
+
+  if(user && user != 'prod'){
+    var rescheduleButton = {
+      cls:"x-btn-text-icon",
+      handler:function(){action('job','reschedule')},
+      icon:gURLRoot+'/images/iface/reschedule.gif',
+      text:'Reschedule',
+      tooltip:'Click to reschedule selected job(s)'
+    };
+    var a = tbar.slice(), b = a.splice( 3 );
+    a[3] = rescheduleButton;
+    tbar = a.concat( b );  
+  }
+  if(user && user == 'admin'){
+    var resetButton = {
+      cls:"x-btn-text-icon",
+      handler:function(){action('job','reset')},
+      icon:gURLRoot+'/images/iface/resetButton.gif',
+      text:'Reset',
+      tooltip:'Click to reset selected job(s)'
+    };
+    var a = tbar.slice(), b = a.splice( 3 );
+    a[3] = resetButton;
+    tbar = a.concat( b );
+  }
   store.setDefaultSort('JobID','DESC'); // Default sorting
+  if(!user){
+ 	  tbar.hidden = '';
+ 	}
   tableMngr = {'store':store,'columns':columns,'tbar':tbar};
   var t = table(tableMngr);
   t.addListener('cellclick',function(table,rowIndex,columnIndex){
@@ -240,21 +264,25 @@ function addMenu(){
       '-'
     ]
   });
-  var length = gPageDescription.userData.groupProperties.length;
-  for(i=0; i<length; i++){
-    if(gPageDescription.userData.groupProperties[i] == 'JobAdministrator'){
-      menu.items.items[0].disable();
-    }
+  if((!user)||(user && user == 'admin')){
+    menu.items.items[0].disable();
   }
   var button = Ext.getCmp('mainTopbarToolsButton');
   if(button){
     var originalMenu = button.menu;
-    var length = menu.items.items.length;
-    for(i=0; i<length; i++){
-      originalMenu.insert(i,menu.items.items[i]);
+    if(originalMenu){
+      var originalLength = originalMenu.items.items.length;
+      var length = menu.items.items.length;
+      if(length > 0 && !originalLength > 0){
+        menu.remove(menu.items.items[length-1]);
+      }
+      length = menu.items.items.length;
+      if(length > 0){
+        for(i=0; i<length; i++){
+          originalMenu.insert(i,menu.items.items[i]);
+        }
+      }
     }
-    var originalMenu = button.menu;
-    originalMenu.add(menu);
     button.menu = originalMenu;
   }
 }
@@ -265,7 +293,7 @@ function setMenuItems(selections){
   }else{
     return
   }
-  if(dirac.menu){
+  if(user && dirac.menu){
     dirac.menu.add(
       {handler:function(){AJAXrequest('getJDL',id)},text:'JDL'},
       '-',
@@ -291,9 +319,9 @@ function setMenuItems(selections){
         {handler:function(){getSandbox(id,'Output')},text:'Get output file(s)'}
       ]})}
     );
-    if(gPageDescription.userData.group != 'lhcb_prod'){
+    if(user && user != 'prod'){
       var reschedule = new Ext.menu.Item({handler:function(){action('job','reschedule',id)},icon:gURLRoot + '/images/iface/reschedule.gif',text:'Reschedule'});
-      if(gPageDescription.userData.group == 'diracAdmin'){
+      if(user == 'admin'){
         var reset = new Ext.menu.Item({handler:function(){action('job','reset',id)},icon:gURLRoot + '/images/iface/resetButton.gif',text:'Reset'});
         dirac.menu.items.items[11].menu.insert(0,reset);
         dirac.menu.items.items[11].menu.insert(1,reschedule);

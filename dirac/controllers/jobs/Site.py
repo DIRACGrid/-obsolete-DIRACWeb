@@ -6,7 +6,7 @@ from DIRAC.Core.Utilities import Time
 from dirac.lib.base import *
 from dirac.lib.diset import getRPCClient
 from dirac.lib.credentials import authorizeAction
-from DIRAC import gLogger
+from DIRAC import gConfig, gLogger
 from DIRAC.Core.Utilities.List import sortList
 from DIRAC.Core.Utilities.DictCache import DictCache
 import dirac.lib.credentials as credentials
@@ -192,9 +192,14 @@ class SiteController(BaseController):
     elif request.params.has_key("getResourceHistory") and len(request.params["getResourceHistory"]) > 0:
         req["ExpandResourceHistory"] = str(request.params["getResourceHistory"])
     else:
+      result = gConfig.getOption("/Website/ListSeparator")
+      if result["OK"]:
+        separator = result["Value"]
+      else:
+        separator = ":::"
       if request.params.has_key("siteName") and len(request.params["siteName"]) > 0:
         if str(request.params["siteName"]) != "All":
-          req["SiteName"] = str(request.params["siteName"]).split('::: ')
+          req["SiteName"] = str(request.params["siteName"]).split(separator)
     gLogger.info("REQUEST:",req)
     return req
 ################################################################################

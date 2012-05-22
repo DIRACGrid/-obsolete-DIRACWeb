@@ -1,0 +1,132 @@
+[web2012041801]
+NEW: First prototype of metadata catalog
+
+[web2012041601]
+NEW: New icon for status "Bad"
+
+[web2012041001]
+NEW: Following feature request https://github.com/DIRACGrid/DIRACWeb/issues/71 the column "RunNumber" is introduced
+
+[web2012040201]
+FIX: Using the functions of new UP client insted of old UP client's functions
+
+[web2012032301]
+FIX: Typo in error message could rise an exception
+
+[web2012032101]
+FIX: Do not use toSource in the accounting plots by default
+
+[web2012022801]
+CHANGE: Last update is set to be working on per table basis
+
+[web2012022701]
+CHANGE: SiteGateway uses the new RSS client. 3 additional tabs are introduced to reflect info about different kinds of SE types.
+
+[web2012020202]
+FIX: split function is not used anymore
+
+[web2012020201]
+FIX: Check for not existance of a menu object
+
+[web2012011801]
+FIX: Fix of month error
+FIX: Add scrollbars to activities monitoring page
+
+[web2011121301]
+FIX: Display for http requests the standard 'certificate login' message instead of registration form
+
+[web2011121201]
+NEW: Add registration form to all the pages for users with certificates but not in DIRAC
+
+[web2011120701]
+CHANGE: Add dynamic groupping(available only for UserName and UserDN) after global select for ProxyManagement page
+CHANGE: Simplification of overcomplicated function which returns color codes of proxy timelife
+FIX: Proper parsing of the global sort parameter
+FIX: Type in SiteGateway.py and in corresponding JS file
+
+[web2011120102]
+CHANGE: Introducing reset button for date/time widget https://github.com/DIRACGrid/DIRACWeb/issues/3
+CHANGE: Proper path to Presenter controller in web.cfg
+
+[web2011120101]
+CHANGE: Refresh time should be displayed by default - https://github.com/DIRACGrid/DIRACWeb/issues/31
+FIX: Bugfix in SiteGateway - https://github.com/DIRACGrid/DIRACWeb/issues/42
+CHANGE: Add timestamp value to submit call
+CHANGE: Add default values to getValue call
+
+[web2011112801]
+FIX: Replace the hardcoded separator by one taken from CS with some fallback value
+
+[web2011112201]
+FIX: Fix of https://github.com/DIRACGrid/DIRACWeb/issues/32
+CHANGE: Add support for visualseparator for lovCombo item
+
+[web2011111801]
+CHANGE: New column RescheduleCounter has been introduced
+
+[web2011110801]
+CHANGE: Add "All" item in users' list for proxy management page
+FIX: Fix bug with console unknown object
+CHANGE: Remove refresh button from selection pane in error console
+
+[web2011101991]
+CHANGE: ProxyManagement can select by username and usergroup
+
+[web2011101701]
+FIX: JobLaunchpad check for extra parameters on creation time
+FIX: Remove extra checks for parametric jobs in JobMonitoring controller
+
+[web2011101401]
+FIX: Strip whitespaces in a list of values recieved for Launchpad
+
+[web2011093001]
+NEW: Correct RunStatuses for the context menu in transformation monitoring page are taken from CS
+
+[web2011092801]
+CHANGE: getHours -> getUTCHours fix of last hour update bug 
+
+[web2011092601]
+CHANGE: Add RunStatus report for DataReprocessing
+
+[web2011092101]
+NEW: JobType selector for JobMonitoring page
+
+[web2011091901]
+NEW: JobLaunchpad AddParameter menu can be described in the CS and the list type of selector is introduced
+CHANGE: lovCombo is supporting new option visualseparator used to separate values onRender
+
+[web2011070501]
+CHANGE: In __getProxyStatus() function, proxy lifetime is taken from CS if not provided
+
+[web2011070101]
+CHANGE: PilotMonitor's jump() function has been rewritten to follow the same style as ProductionMonitor. Thank you, Stephane for pointing this out
+
+[web2011062301]
+*CHANGE: Update Ext4 to 4.0.2a
+CHANGE: Add new type DataReprocessing to be available in RunStatus context menu
+
+[web2011060902]
+CHANGE: More rational menu schema for web portal
+BUGFIX: extractall is only available for newer python versions
+
+[web2011060901]
+
+CHANGE: Rewritten security model for JobMonitor based on user properties
+CHANGE: Previous version of Presenter page as new is not ready yet
+BUGFIX: Show tool button in top menu only for jobmonitor and disable it from anonymous
+
+[web2011060101]
+
+BUGFIX: Conflicts in .gitignore
+BUGFIX: When it's a 404 code give the page a proper title
+CHANGE: By default set the home page as diracgrid.org
+BUGFIX: http://savannah.cern.ch/bugs/?82807
+
+[web2011052001]
+
+BUGFIX: https://github.com/DIRACGrid/DIRACWeb/issues/5
+CHANGE: Action related controls are available only for the users with ProductionManagement property
+
+* Move Presenter to Web Core from LHCbWebDIRAC
+* Created a base page to use ExyJS 4
+CHANGE: voIcon and voURL can be defined via the CS

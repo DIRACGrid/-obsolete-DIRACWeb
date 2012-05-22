@@ -128,33 +128,38 @@ class PilotsummaryController(BaseController):
       pageNumber = 0
       req["ExpandSite"] = str(request.params["expand"])
     else:
+      result = gConfig.getOption("/Website/ListSeparator")
+      if result["OK"]:
+        separator = result["Value"]
+      else:
+        separator = ":::"
       pageNumber = 0
       numberOfJobs = 500
       if request.params.has_key("prod") and len(request.params["prod"]) > 0:
         if str(request.params["prod"]) != "All":
-          req["JobGroup"] = str(request.params["prod"]).split('::: ')
+          req["JobGroup"] = str(request.params["prod"]).split(separator)
       if request.params.has_key("site") and len(request.params["site"]) > 0:
         if str(request.params["site"]) != "All":
-          tmp = str(request.params["site"]).split('::: ')
+          tmp = str(request.params["site"]).split(separator)
           if len(tmp) == 1:
             req["ExpandSite"] = tmp[0]
           else:
             req["GridSite"] = tmp
       if request.params.has_key("stat") and len(request.params["stat"]) > 0:
         if str(request.params["stat"]) != "All":
-          req["Status"] = str(request.params["stat"]).split('::: ')
+          req["Status"] = str(request.params["stat"]).split(separator)
       if request.params.has_key("minorstat") and len(request.params["minorstat"]) > 0:
         if str(request.params["minorstat"]) != "All":
-          req["MinorStatus"] = str(request.params["minorstat"]).split('::: ')
+          req["MinorStatus"] = str(request.params["minorstat"]).split(separator)
       if request.params.has_key("app") and len(request.params["app"]) > 0:
         if str(request.params["app"]) != "All":
-          req["ApplicationStatus"] = str(request.params["app"]).split('::: ')
+          req["ApplicationStatus"] = str(request.params["app"]).split(separator)
 #      if lhcbGroup == "lhcb" or lhcbGroup == "lhcb_user":
 #        req["Owner"] = str(lhcbUser)
       else:
         if request.params.has_key("owner") and len(request.params["owner"]) > 0:
           if str(request.params["owner"]) != "All":
-            req["Owner"] = str(request.params["owner"]).split('::: ')
+            req["Owner"] = str(request.params["owner"]).split(separator)
       if request.params.has_key("date") and len(request.params["date"]) > 0:
         if str(request.params["date"]) != "YYYY-mm-dd":
           req["LastUpdate"] = str(request.params["date"])

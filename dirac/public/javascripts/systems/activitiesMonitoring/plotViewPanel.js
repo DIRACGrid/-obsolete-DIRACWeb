@@ -148,6 +148,7 @@ function plotViewPanel( cfg )
 		} );
 
 		this.plotsPanel = new Ext.Panel( {
+      autoScroll : true,
 			html : '',
 			region : 'center',
 			heigth : 'auto',
@@ -156,6 +157,7 @@ function plotViewPanel( cfg )
 
 		anchor = this.getProperty( 'anchor', false );
 		this.viewPlotPanel = new Ext.Panel( {
+  		autoScroll : true,
 		   renderTo : anchor,
 			items : [ this.leftBar, this.plotsPanel ],
 			layout : 'border',

@@ -7,6 +7,13 @@ function initErrorConsole(reponseSelect){
   var record = initRecord();
   var store = initStore(record);
   Ext.onReady(function(){
+    Ext.override(Ext.PagingToolbar, {
+      onRender :  Ext.PagingToolbar.prototype.onRender.createSequence(function(ct, position){
+        this.loading.removeClass('x-btn-icon');
+        this.loading.setText('Refresh');
+        this.loading.addClass('x-btn-text-icon');
+      })
+    });
     renderData(store);
   });
 }
@@ -28,20 +35,20 @@ function initRecord(){
   return record
 }
 function initSidebar(){
-  var startDate = selectStartDate(); // Initializing date dialog
-  var finalDate = selectFinalDate(); // Initializing date dialog
+  var dateSelect = dateTimeWidget(); // Initializing date dialog
   var select = selectPanel(); // Initializing container for selection objects
-  select.insert(0,startDate);
-  select.insert(1,finalDate);
+  select.insert(0,dateSelect);
+  select.buttons[2].hide(); // Remove refresh button
   var bar = sideBar();
   bar.insert(0,select);
+  bar.setTitle('ErrorConsole');
   return bar
 }
 function initData(store){
   var columns = [
-    {header:'Component',sortable:true,dataIndex:'SystemName',align:'left'},
+    {header:'Component',sortable:true,dataIndex:'SystemName',align:'left',width:300},
     {header:'SubSystem',sortable:true,dataIndex:'SubSystemName',align:'left',hidden:true},
-    {header:'Error',sortable:true,dataIndex:'FixedTextString',align:'left'},
+    {header:'Error',sortable:true,dataIndex:'FixedTextString',align:'left',width:300},
     {header:'LogLevel',sortable:true,dataIndex:'LogLevel',align:'left',hidden:true},
     {header:'SiteName',sortable:true,dataIndex:'SiteName',align:'left',hidden:true},
     {header:'Example',sortable:true,dataIndex:'VariableText',align:'left',hidden:true},
@@ -49,22 +56,13 @@ function initData(store){
     {header:'OwnerGroup',sortable:true,dataIndex:'OwnerGroup',align:'left',hidden:true},
     {header:'IP',sortable:true,dataIndex:'ClientIPNumberString',align:'left',hidden:true},
     {header:'Message Time',sortable:true,dataIndex:'MessageTime',align:'left',hidden:true},
-    {header:'Number of error(s)',sortable:true,dataIndex:'Number of Errors',align:'left'}
+    {header:'Number of error(s)',sortable:true,dataIndex:'Number of Errors',align:'left',width:100}
   ];
-  var title = 'Error Console';
   store.setDefaultSort('Number of Errors','DESC'); // Default sorting
-  tableMngr = {'store':store,'columns':columns,'title':title,'tbar':''};
+  tableMngr = {'store':store,'columns':columns,'tbar':''};
   var t = table(tableMngr);
   t.addListener('cellclick',showMenu);
-  var tabPanel = new Ext.TabPanel({
-    activeTab:0,
-    enableTabScroll:true,
-    id:'tabPanel',
-    items:[t],
-    margins:'2 0 2 0',
-    region:'center'
-  });
-  return tabPanel
+  return t
 }
 function renderData(store){
   var leftBar = initSidebar();

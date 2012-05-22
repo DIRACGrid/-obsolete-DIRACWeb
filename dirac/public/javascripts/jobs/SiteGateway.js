@@ -5,21 +5,35 @@ var tableMngr = ''; // Required to handle configuration data for table. Object.
 function initLoop(selection){
   dataSelect = selection;
   Ext.onReady(function(){
+    Ext.override(Ext.PagingToolbar, {
+      onRender :  Ext.PagingToolbar.prototype.onRender.createSequence(function(ct, position){
+        this.loading.removeClass('x-btn-icon');
+        this.loading.setText('Refresh');
+        this.loading.addClass('x-btn-text-icon');
+      })
+    });
     var recSites = recordSite();
     var recServices = recordServices();
     var recResources = recordResources();
-    var recStorage = recordStorage();
+    var recStorageRead = recordStorage();
+    var recStorageWrite = recordStorage();
+    var recStorageCheck = recordStorage();
+    var recStorageRemove = recordStorage();
     var sites = initTable(recSites,'Site');
     var services = initTable(recServices,'Service');
     var resources = initTable(recResources,'Resource');
-    var storage = initTable(recStorage,'Storage');
+    var storageRead = initTable(recStorageRead,'StorageRead');
+    var storageWrite = initTable(recStorageWrite,'StorageWrite');
+    var storageCheck = initTable(recStorageCheck,'StorageCheck');
+    var storageRemove = initTable(recStorageRemove,'StorageRemove');
     var mainContent = new Ext.TabPanel({
       activeTab:0,
-      items:[sites,services,resources,storage],
+      items:[sites,services,resources,storageRead,storageWrite,storageCheck,storageRemove],
       margins:'0 0 2 0',
       monitorResize:true,
       region:'center'
     });
+    
     renderInMainViewport([ mainContent ]);
   });
 }
@@ -85,73 +99,72 @@ function recordStorage(){
   ]);
   return record
 }
+function initBar(mode,extcmp){
+  var select = selectPanelReloaded(extcmp); // Initializing container for selection objects
+  select.buttons[2].hide(); // Remove refresh button
+  if(mode == 'Site'){
+    var siteStatus = createMenu('Status','Status');
+    var siteType = createMenu('SiteType','Type');
+    var siteName = createMenu('SiteName','Site');
+    select.insert(0,siteStatus);
+    select.insert(1,siteType);
+    select.insert(2,siteName);
+    for(var i = 0; i < select.items.items.length; i++){
+      select.items.items[i].id = 'SiteSelect_' + select.items.items[i].id;
+    }
+  }else if(mode == 'Service'){
+    var serviceStatus = createMenu('Status','Status');
+    var serviceType = createMenu('ServiceType','Type');
+    var serviceSiteName = createMenu('SiteName','Site');
+    var serviceName = createMenu('ServiceName','Service');
+    select.insert(0,serviceStatus);
+    select.insert(1,serviceType);
+    select.insert(2,serviceSiteName);
+    select.insert(3,serviceName);
+    for(var i = 0; i < select.items.items.length; i++){
+      select.items.items[i].id = 'ServiceSelect_' + select.items.items[i].id;
+    }
+  }else if(mode == 'Resource'){
+    var resourceStatus = createMenu('Status','Status');
+    var resourceType = createMenu('ResourceType','Type');
+    var resourceSiteName = createMenu('SiteName','Site');
+    var resourceName = createMenu('ResourceName','Resource');
+    select.insert(0,resourceStatus);
+    select.insert(1,resourceType);
+    select.insert(2,resourceSiteName);
+    select.insert(3,resourceName);
+    for(var i = 0; i < select.items.items.length; i++){
+      select.items.items[i].id = 'ResourceSelect_' + select.items.items[i].id;
+    }
+  }else if((mode == 'StorageRead')||(mode == 'StorageWrite')||(mode == 'StorageCheck')||(mode == 'StorageRemove')){
+    var storageStatus = createMenu('Status','Status');
+    var storageSiteName = createMenu('StorageSiteName','Site');
+    var storageName = createMenu('StorageElementName','StorageElement');
+    select.insert(0,storageStatus);
+    select.insert(1,storageSiteName);
+    select.insert(2,storageName);
+    for(var i = 0; i < select.items.items.length; i++){
+      select.items.items[i].id = mode + 'Select_' + select.items.items[i].id;
+    }
+  }
+  if(mode == 'Site'){
+    var bar = sideBar('SiteSelectSideBar');
+    bar.setTitle('Site Selections');
+  }else if(mode == 'Service'){
+    var bar = sideBar('ServiceSelectSideBar');
+    bar.setTitle('Services Selections');
+  }else if(mode == 'Resource'){
+    var bar = sideBar('ResourceSelectSideBar');
+    bar.setTitle('Resources Selections');
+  }else if((mode == 'StorageRead')||(mode == 'StorageWrite')||(mode == 'StorageCheck')||(mode == 'StorageRemove')){
+    var bar = sideBar(mode + 'SelectSideBar');
+    bar.setTitle(mode + ' Selections');
+  }
+  bar.insert(0,select);
+  return bar
+}
 // Initialisation of selection sidebar, all changes with selection items should goes here
 function initTable(record,mode){
-  function initBar(mode){
-    var select = selectPanel(mode + 'SelectPanel'); // Initializing container for selection objects
-    select.buttons[2].hide(); // Remove refresh button
-    if(mode == 'Site'){
-      var siteStatus = createMenu('siteStatus','Status');
-      var siteType = createMenu('siteType','Type');
-      var siteName = createMenu('siteName','Site');
-      select.insert(0,siteStatus);
-      select.insert(1,siteType);
-      select.insert(2,siteName);
-      for(var i = 0; i < select.items.items.length; i++){
-        select.items.items[i].id = 'SiteSelect_' + select.items.items[i].id;
-      }
-    }else if(mode == 'Service'){
-      var serviceStatus = createMenu('serviceStatus','Status');
-      var serviceType = createMenu('serviceType','Type');
-      var serviceSiteName = createMenu('serviceSiteName','Site');
-      var serviceName = createMenu('serviceName','Service');
-      select.insert(0,serviceStatus);
-      select.insert(1,serviceType);
-      select.insert(2,serviceSiteName);
-      select.insert(3,serviceName);
-      for(var i = 0; i < select.items.items.length; i++){
-        select.items.items[i].id = 'ServiceSelect_' + select.items.items[i].id;
-      }
-    }else if(mode == 'Resource'){
-      var resourceStatus = createMenu('resourceStatus','Status');
-      var resourceType = createMenu('resourceType','Type');
-      var resourceSiteName = createMenu('resourceSiteName','Site');
-      var resourceName = createMenu('resourceName','Resource');
-      select.insert(0,resourceStatus);
-      select.insert(1,resourceType);
-      select.insert(2,resourceSiteName);
-      select.insert(3,resourceName);
-      for(var i = 0; i < select.items.items.length; i++){
-        select.items.items[i].id = 'ResourceSelect_' + select.items.items[i].id;
-      }
-    }else if(mode == 'Storage'){
-      var storageStatus = createMenu('storageStatus','Status');
-      var storageSiteName = createMenu('storageSiteName','Site');
-      var storageName = createMenu('storageName','Storage');
-      select.insert(0,storageStatus);
-      select.insert(1,storageSiteName);
-      select.insert(2,storageName);
-      for(var i = 0; i < select.items.items.length; i++){
-        select.items.items[i].id = 'StorageSelect_' + select.items.items[i].id;
-      }
-    }
-  // Insert object to container BEFORE buttons:
-    if(mode == 'Site'){
-      var bar = sideBar('SiteSelectSideBar');
-      bar.setTitle('Site Selections');
-    }else if(mode == 'Service'){
-      var bar = sideBar('ServiceSelectSideBar');
-      bar.setTitle('Services Selections');
-    }else if(mode == 'Resource'){
-      var bar = sideBar('ResourceSelectSideBar');
-      bar.setTitle('Resources Selections');
-    }else if(mode == 'Storage'){
-      var bar = sideBar('StorageSelectSideBar');
-      bar.setTitle('Storage Selections');
-    }
-    bar.insert(0,select);
-    return bar
-  }
   var store = initStore(record);
   store.setDefaultSort('DateEffective','DESC'); // Default sorting
   if(mode == 'Site'){
@@ -167,9 +180,7 @@ function initTable(record,mode){
       {header:'FormerStatus',sortable:true,dataIndex:'FormerStatus',align:'left'},
       {header:'Reason',sortable:true,dataIndex:'Reason',align:'left'},
     ];
-    var id = 'SiteTab';
     store.baseParams = {'mode':'Site'};
-    var bar = initBar(mode);
   }else if(mode == 'Service'){
     var columns = [
       {header:'',width:26,sortable:false,dataIndex:'StatusIcon',renderer:status,hideable:false,fixed:true,menuDisabled:true},
@@ -183,10 +194,8 @@ function initTable(record,mode){
       {header:'FormerStatus',sortable:true,dataIndex:'FormerStatus',align:'left'},
       {header:'Reason',sortable:true,dataIndex:'Reason',align:'left'},
     ];
-    var id = 'ServiceTab';
     store.baseParams = {'mode':'Service'};
-    var bar = initBar(mode);
-  }else if(mode == 'Storage'){
+  }else if((mode == 'StorageRead')||(mode == 'StorageWrite')||(mode == 'StorageCheck')||(mode == 'StorageRemove')){
     var columns = [
       {header:'',width:26,sortable:false,dataIndex:'StatusIcon',renderer:status,hideable:false,fixed:true,menuDisabled:true},
       {header:'StorageElementName',sortable:true,dataIndex:'StorageElementName',align:'left'},
@@ -199,9 +208,7 @@ function initTable(record,mode){
       {header:'FormerStatus',sortable:true,dataIndex:'FormerStatus',align:'left'},
       {header:'Reason',sortable:true,dataIndex:'Reason',align:'left'},
     ];
-    var id = 'StorageTab';
-    store.baseParams = {'mode':'Storage'};
-    var bar = initBar(mode);
+    store.baseParams = {'mode':mode};
   }else{
     var columns = [
       {header:'',width:26,sortable:false,dataIndex:'StatusIcon',renderer:status,hideable:false,fixed:true,menuDisabled:true},
@@ -215,14 +222,11 @@ function initTable(record,mode){
       {header:'FormerStatus',sortable:true,dataIndex:'FormerStatus',align:'left'},
       {header:'Reason',sortable:true,dataIndex:'Reason',align:'left'},
     ];
-    var id = 'ResourceTab';
     store.baseParams = {'mode':'Resource'};
-    var bar = initBar(mode);
   }
-  tableMngr = {'store':store,'columns':columns,'tbar':'','id':id};
+  tableMngr = {'store':store,'columns':columns,'tbar':''};
   var t = table(tableMngr);
-  var bbar = t.getBottomToolbar();
-  bbar.hide();
+  var bar = initBar(mode,t);
   t.addListener('cellclick',function(table,rowIndex,columnIndex){
       showMenu('main',table,rowIndex,columnIndex);
   });
@@ -237,8 +241,8 @@ function initTable(record,mode){
     panel.setTitle('Services');
   }else if(mode == 'Resource'){
     panel.setTitle('Resources');
-  }else if(mode == 'Storage'){
-    panel.setTitle('Storage');
+  }else if((mode == 'StorageRead')||(mode == 'StorageWrite')||(mode == 'StorageCheck')||(mode == 'StorageRemove')){
+    panel.setTitle(mode);
   }
   return panel
 }

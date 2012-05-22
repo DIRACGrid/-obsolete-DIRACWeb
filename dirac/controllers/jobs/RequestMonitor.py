@@ -6,10 +6,10 @@ from DIRAC.Core.Utilities import Time
 from dirac.lib.base import *
 from dirac.lib.diset import getRPCClient
 from dirac.lib.credentials import authorizeAction
-#from dirac.lib.sessionManager import *
+from DIRAC.Core.Utilities import Time
 import dirac.lib.credentials as credentials
 from DIRAC.Core.Security import CS
-from DIRAC import gLogger
+from DIRAC import gConfig, gLogger
 
 log = logging.getLogger(__name__)
 
@@ -55,8 +55,9 @@ class RequestmonitorController(BaseController):
                 tmp[head[j]] = i[j]
               c.result.append(tmp)
             total = result["TotalRecords"]
+            timestamp = Time.dateTime().strftime("%Y-%m-%d %H:%M [UTC]")
             gLogger.info(" c.result ",c.result)
-            c.result = {"success":"true","result":c.result,"total":total}
+            c.result = {"success":"true","result":c.result,"total":total,"date":timestamp}
           else:
             c.result = {"success":"false","result":"","error":"There are no data to display"}
         else:
@@ -70,103 +71,90 @@ class RequestmonitorController(BaseController):
 ################################################################################
   def __getSelectionData(self):
     callback = {}
-    group = credentials.getSelectedGroup()
-    user = str(credentials.getUsername())
+    if not authorizeAction():
+      return {"success":"false","error":"Insufficient rights"}
     if len(request.params) > 0:
       tmp = {}
       for i in request.params:
         tmp[i] = str(request.params[i])
       callback["extra"] = tmp
     RPC = getRPCClient("RequestManagement/centralURL")
-###
-    if user == "Anonymous":
-      callback["requestType"] = [["Insufficient rights"]]
-    else:
-      result = RPC.getDistinctValues("RequestType")
-      if result["OK"]:
-        type = []
-        if len(result["Value"])>0:
-          type.append([str("All")])
-          for i in result["Value"]:
-            type.append([str(i)])
-        else:
-          type = [["Nothing to display"]]
-      else:
-        type = [["Error during RPC call"]]
-      callback["requestType"] = type
-###
-    if user == "Anonymous":
-      callback["operation"] = [["Insufficient rights"]]
-    else:
-      result = RPC.getDistinctValues("Operation")
-      if result["OK"]:
-        operation = []
-        if len(result["Value"])>0:
-          operation.append([str("All")])
-          for i in result["Value"]:
-            i = i.replace(",",";")
-            operation.append([i])
-        else:
-          operation = [["Nothing to display"]]
-      else:
-        operation = [["Error during RPC call"]]
-      callback["operation"] = operation
-###
-    if user == "Anonymous":
-      callback["owner"] = [["Insufficient rights"]]
-    else:
-      result = RPC.getDistinctValues("OwnerDN")
-      if result["OK"]:
-        owner = [["All"]]
+### R E Q U E S T T Y P E
+    result = RPC.getDistinctValues("RequestType")
+    gLogger.info("getDistinctValues(RequestType)",result)
+    if result["OK"]:
+      reqtype = list()
+      if len(result["Value"])>0:
+#        if len(result["Value"])>3:
+#          reqtype.append(["All"])
+        reqtype.append(["All"])
         for i in result["Value"]:
-          returnValue = CS.getUsernameForDN(i)
-          if not returnValue["OK"]:
-            if i == "":
-              nick = "\"\""
-            else:
-              nick = i
-          else:
-            nick = returnValue["Value"]
-          owner.append([nick])
+          reqtype.append([str(i)])
       else:
-        owner = [["Error during RPC call"]]
-      callback["owner"] = owner
-###
-    if user == "Anonymous":
-      callback["ownerGroup"] = [["Insufficient rights"]]
+        reqtype = [["Nothing to display"]]
     else:
-      result = RPC.getDistinctValues("OwnerGroup")
-      if result["OK"]:
-        ownerGroup = []
-        if len(result["Value"])>0:
-          ownerGroup.append([str("All")])
-          for i in result["Value"]:
-            i = i.replace(",",";")
-            if i == "":
-              i = "\"\""
-            ownerGroup.append([i])
-        else:
-          ownerGroup = [["Nothing to display"]]
+      reqtype = [["Error during RPC call"]]
+    callback["requestType"] = reqtype
+### O P E R A T I O N
+    result = RPC.getDistinctValues("Operation")
+    gLogger.info("getDistinctValues(Operation)",result)
+    if result["OK"]:
+      operation = list()
+      if len(result["Value"])>0:
+        operation.append(["All"])
+        for i in result["Value"]:
+          operation.append([str(i)])
       else:
-        ownerGroup = [["Error during RPC call"]]
-      callback["ownerGroup"] = ownerGroup
-###
-    if user == "Anonymous":
-      callback["status"] = [["Insufficient rights"]]
+        operation = [["Nothing to display"]]
     else:
-      result = RPC.getDistinctValues("Status")
-      if result["OK"]:
-        status = []
-        if len(result["Value"])>0:
-          status.append([str("All")])
-          for i in result["Value"]:
-            i = i.replace(",",";")
-            status.append([i])
+      operation = [["Error during RPC call"]]
+    callback["operation"] = operation
+### U S E R
+    result = RPC.getDistinctValues("OwnerDN")
+    gLogger.info("getDistinctValues(OwnerDN)",result)
+    if result["OK"]:
+      owner = [["All"]]
+      for i in result["Value"]:
+        returnValue = CS.getUsernameForDN(i)
+        if not returnValue["OK"]:
+          gLogger.info("Error CS.getUsernameForDN(%s): %s" % (i,returnValue["Message"]) )
+          nick = i
         else:
-          status = [["Nothing to display"]]
+          nick = returnValue["Value"]
+        owner.append([str(nick)])
+      if len(owner) < 2:
+        owner = [["Nothing to display"]]
+    else:
+      owner = [["Error during RPC call"]]
+    callback["owner"] = owner
+### G R O U P
+    result = RPC.getDistinctValues("OwnerGroup")
+    gLogger.info("getDistinctValues(OwnerGroup)",result)
+    if result["OK"]:
+      ownerGroup = list()
+      if len(result["Value"])>0:
+        ownerGroup.append(["All"])
+        for i in result["Value"]:
+          ownerGroup.append([str(i)])
       else:
-        status = [["Error during RPC call"]]
-      callback["status"] = status
+        ownerGroup = [["Nothing to display"]]
+    else:
+      ownerGroup = [["Error during RPC call"]]
+    callback["ownerGroup"] = ownerGroup
+### S T A T U S
+    result = RPC.getDistinctValues("Status")
+    gLogger.info("getDistinctValues(Status)",result)
+    if result["OK"]:
+      status = list()
+      if len(result["Value"])>0:
+        status.append(["All"])
+        for i in result["Value"]:
+          status.append([str(i)])
+      else:
+        status = [["Nothing to display"]]
+    else:
+      status = [["Error during RPC call"]]
+    callback["status"] = status
     return callback
 ################################################################################
   def __request(self):
@@ -232,28 +220,33 @@ class RequestmonitorController(BaseController):
       else:
         req["RequestID"] = testString
     else:
+      result = gConfig.getOption("/Website/ListSeparator")
+      if result["OK"]:
+        separator = result["Value"]
+      else:
+        separator = ":::"
       if request.params.has_key("requestType") and len(request.params["requestType"]) > 0:
         if str(request.params["requestType"]) != "All":
-          req["RequestType"] = str(request.params["requestType"]).split('::: ')
+          req["RequestType"] = str(request.params["requestType"]).split(separator)
       if request.params.has_key("operation") and len(request.params["operation"]) > 0:
         if str(request.params["operation"]) != "All":
-          req["Operation"] = str(request.params["operation"]).split('::: ')
+          req["Operation"] = str(request.params["operation"]).split(separator)
       if request.params.has_key("ownerGroup") and len(request.params["ownerGroup"]) > 0:
         if str(request.params["ownerGroup"]) != "All":
           req["OwnerGroup"] = []
-          for i in str(request.params["ownerGroup"]).split('::: '):
+          for i in str(request.params["ownerGroup"]).split(separator):
             if i == "\"\"":
               req["OwnerGroup"].append("")
             else:
               req["OwnerGroup"].append(i)
-#          req["OwnerGroup"] = str(request.params["ownerGroup"]).split('::: ')
+#          req["OwnerGroup"] = str(request.params["ownerGroup"]).split(separator)
       if request.params.has_key("status") and len(request.params["status"]) > 0:
         if str(request.params["status"]) != "All":
-          req["Status"] = str(request.params["status"]).split('::: ')
+          req["Status"] = str(request.params["status"]).split(separator)
       if request.params.has_key("owner") and len(request.params["owner"]) > 0:
         if str(request.params["owner"]) != "All":
           req["OwnerDN"] = []
-          for i in str(request.params["owner"]).split('::: '):
+          for i in str(request.params["owner"]).split(separator):
             if i == "\"\"":
               req["OwnerDN"].append("")
             else:

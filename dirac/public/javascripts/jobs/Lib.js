@@ -69,6 +69,27 @@ function action(type,mode,id){
     url:'action'
   });
 }
+function errorReport(strobj){
+  var prefix = 'Error: ';
+  var postfix = '';
+  var error = 'Action has finished with error';
+  if(strobj){
+    if(strobj.substring) {
+      error = strobj;
+    }else{
+      try{
+        if(strobj.failureType == 'connect'){
+          error = 'Can not recieve service response';
+        }
+      }catch(e){}
+      try{
+        error = error + '\nMessage: ' + strobj.response.statusText;
+      }catch(e){}
+    }
+  }
+  error = prefix + error + postfix;
+  alert(error);
+}
 function AJAXerror(response){
   try{
     gMainLayout.container.unmask();
@@ -92,19 +113,21 @@ function AJAXerror(response){
     return;
   }
 }
-function AJAXrequest(value,id){
+function AJAXrequest(key,value){
   try{
     gMainLayout.container.mask('Please wait');
   }catch(e){}
   var params = value + '=' + id;
   Ext.Ajax.request({
     failure:function(response){
-      AJAXerror(response.responseText);
+      response.responseText ? response = response.responseText : '';
+      AJAXerror(response);
     },
     method:'POST',
     params:params,
     success:function(response){
-      AJAXsuccess(value,id,response.responseText);
+      response.responseText ? response = response.responseText : '';
+      AJAXsuccess(key,value,response);
     },
     timeout:60000, // 1min
     url:'action'
@@ -167,13 +190,14 @@ function dateSelectMenu(){
   return date;
 }
 function displayWin(panel,title,modal){
+  var coords = Ext.EventObject.xy;
   var window = new Ext.Window({
     iconCls:'icon-grid',
     closable:true,
     width:600,
     height:400,
     border:true,
-    collapsible:true,
+    collapsible: modal ? false : true,
     constrain:true,
     constrainHeader:true,
     maximizable:true,
@@ -324,9 +348,7 @@ function initStore(record,options,id){
           if(sort.length == 2){
             store.sort(sort[0],sort[1]);
           }
-        }catch(e){
-          var ttt = 0;
-        }
+        }catch(e){}
       }else{
         alert("Error in store.reader.jsonData, trying to reload data store...");
         store.load();
@@ -373,12 +395,10 @@ function itemsNumber(mainStore,id){
     data:[[25],[50],[100],[200],[500],[1000]]
   });
   var value = 25;
-  if(dataSelect){
-    if(dataSelect.extra){
+  if(dataSelect && dataSelect.extra){
       if(dataSelect.extra.limit){ // Will be deleted in table function
         value = dataSelect.extra.limit/1;
       }
-    }
   }
   var combo = new Ext.form.ComboBox({
     allowBlank:false,
@@ -471,13 +491,16 @@ function refreshSelect(id){
             var name = tmp.hiddenName;
             if(result[name] && tmp.store){
               var data = result[name];
-              for(var j = 0; j < data.length; j++){
-                data[j] = [j ,data[j][0]];
-              }
               tmp.store.loadData(data);
-              if(tmp.displayValue){
-                value = tmp.displayValue;
-                value = value.split(', ');
+              var rawValue = tmp.getRawValue();
+              if(rawValue){
+                var separator = ', ';
+                if(!Ext.isEmpty(tmp.visualseparator)){
+                  separator = tmp.visualseparator;
+                }else if(!Ext.isEmpty(tmp.separator)){
+                  separator = tmp.separator;
+                }
+                value = rawValue.split(separator);
                 for(var k = 0; k < value.length; k++){
                   for(var l = 0; l < data.length; l++){
                     if(value == data[l][1]){
@@ -612,6 +635,99 @@ function sortGlobalPanel(){
   });
   return panel;
 }
+function selectPanelReloaded(table){
+  var refresh = new Ext.Button({
+    cls:"x-btn-icon",
+    handler:function(){
+      refreshSelect(panel);
+    },
+    icon:gURLRoot+'/images/iface/refresh.gif',
+    minWidth:'20',
+    tooltip:'Refresh data in the selection boxes',
+    width:'100%'
+  });
+  var reset = new Ext.Button({
+    cls:"x-btn-text-icon",
+    handler:function(){
+      panel.form.reset();
+      var number = Ext.getCmp('id');
+      hideControls(number);
+    },
+    icon:gURLRoot+'/images/iface/reset.gif',
+    minWidth:'70',
+    tooltip:'Reset values in the form',
+    text:'Reset'
+  });
+  var submit = new Ext.Button({
+    cls:"x-btn-text-icon",
+    handler:function(){
+      panel.form.submit();
+    },
+    id:'submitFormButton',
+    icon:gURLRoot+'/images/iface/submit.gif',
+    minWidth:'70',
+    name:'submitFormButton',
+    tooltip:'Send request to the server',
+    text:'Submit'
+  });
+  var panel = new Ext.FormPanel({
+    autoScroll:true,
+    bodyStyle:'padding: 5px',
+    border:false,
+    buttonAlign:'center',
+    buttons:[submit,reset,refresh],
+    collapsible:true,
+    keys:[{
+      key:13,
+      scope:this,
+      fn:function(key,e){
+        panel.form.submit();
+      }
+    }],
+    labelAlign:'top',
+    method:'POST',
+    minWidth:'200',
+    title:'Selections',
+    url:'submit',
+    waitMsgTarget:true
+  });
+  panel.on('beforeaction',function(form,action){
+    var params = {};
+    try{
+      params = table.getStore().baseParams;
+    }catch(e){}
+    params['start'] = 0;
+    params['limit'] = 25;
+    try{
+      params['limit'] = table.getBottomToolbar().pageSize;
+    }catch(e){}
+    form['baseParams'] = params;
+    try{
+      gMainLayout.container.mask('Sending data...');
+    }catch(e){}
+  });
+  panel.on('actioncomplete',function(form,action){
+    try{
+      gMainLayout.container.unmask();
+    }catch(e){}
+    try{
+      if(action.result.success == 'false'){
+        alert('Error: ' + action.result.error);
+      }else{
+        table.store.loadData(action.result);
+      }
+    }catch(e){
+      alert('');
+    }
+  });
+  panel.on('actionfailed',function(form,action){
+    try{
+      gMainLayout.container.unmask();
+    }catch(e){}
+    errorReport(action);
+  });
+  return panel;
+}
 function selectPanel(newID){
   var id = 'selectPanel';
   try{
@@ -706,13 +822,18 @@ function selectPanel(newID){
       sideBar.body = gMainLayout.container;
     }
     sideBar.body.mask('Sending data...');
+    selections.start = 0;
     try{
       selections.sort = dataSelect.globalSort;
-      selections.limit = tableMngr.bbar.pageSize;
-      selections.start = 0;
     }catch(e){
       sideBar.body.unmask();
-      alert('Error: Either selections.sort or selections.limit or selections.start are not defined');
+      alert('Error: selections.sort is not defined');
+    }
+    try{
+      selections.limit = tableMngr.bbar.pageSize;
+    }catch(e){
+      sideBar.body.unmask();
+      alert('Error: selections.limit is not defined');
     }
 //    var title = document.title + ' - ';
     var title = '';
@@ -753,7 +874,10 @@ function selectPanel(newID){
               alert('Error: ' + action.result.error);
             }else{
               var grid = Ext.getCmp('JobMonitoringTable');
-              var dataStore = grid.getStore();
+              var dataStore = false;
+              if(!Ext.isEmpty(grid)){
+                dataStore = grid.getStore();
+              }
               if(dataStore){
                 dataStore.loadData(action.result);
               }else if(panelID == 'SiteSelectPanel'){
@@ -913,7 +1037,7 @@ function genericID(name,fieldLabel,altRegex,altRegexText,hide){
     selectOnFocus:true,
     value:value
   });
-  if(hide){
+  if(hide == true){
     textField.on({
       'render':function(){
         if(textField.value !== ''){
@@ -931,101 +1055,151 @@ function genericID(name,fieldLabel,altRegex,altRegexText,hide){
   return textField;
 }
 function createRemoteMenu(item){
-  try{
-    baseParams = {'meta':item.text};
-    url = '/getmeta';
-    fieldLabel = item.text;
-    emptyText = 'Select value from menu';
-  }catch(e){
-    alert('Error: ' + e.name + ': ' + e.message);
+  if((!item)||(typeof item!=='object')){
+    window.console && console.log ?
+      console.log('Argument is None or not an Object') : '';
+    return
   }
   var store = new Ext.data.JsonStore({
-    baseParams:baseParams,
+    baseParams:item.baseParams ? item.baseParams : false,
     fields:['name'],
     root:'result',
-    url:url
+    url:item.url ? item.url : 'action'
   });
   var combo = new Ext.form.ComboBox({
     anchor:'-15',
-    store:store,
     displayField:'name',
-    typeAhead:true,
-    fieldLabel:fieldLabel,
+    emptyText:item.emptyText ? item.emptyText : 'Select item from the menu',
+    fieldLabel:item.fieldLabel ? item.fieldLabel : 'Default label',
     forceSelection:true,
-    triggerAction:'all',
-    emptyText:emptyText,
+    name:item.name ? item.name : Ext.id(),
     selectOnFocus:true,
+    store:store,
+    triggerAction:'all',
+    typeAhead:true
   });
   return combo
 }
-function createMenu(dataName,menuName,altValue){
-  var data = [['']];
+function createMenu(dataName,title,altValue){
+  var data = 'Nothing to display';
+// test for dataSelect existence  
   try{
-    data = dataSelect[dataName];
+    if(!altValue){
+      data = dataSelect[dataName];
+    }else{
+      data = altValue;
+    }
   }catch(e){}
   var disabled = true;
-  if(data == 'Nothing to display'){
-    data = [[0,'Nothing to display']];
+  var error = [
+    'Error happened on service side',
+    'Nothing to display',
+    'Insufficient rights'
+  ];
+  var errorRegexp = new RegExp('^(' + error.join('|') + ')$');
+  if((data == 'Nothing to display')||(Ext.isEmpty(data))){
+    data = [['Nothing to display']];
   }else{
-    try{
-    var length = data.length;
-    }catch(e){
-      data = [[0,'Error, can not get data.length']];
-    }
-    if(altValue){
-      for (var i = 0; i < length; i++) {
-        data[i] = [i ,data[i][0],data[i][1]];
-      }
-    }else{
-      for (var i = 0; i < length; i++) {
-        data[i] = [i ,data[i][0]];
+    if((!Ext.isEmpty(data[0]))&&(!Ext.isEmpty(data[0][0]))){
+      if(!errorRegexp.test(data[0][0])){
+        disabled = false;
       }
     }
-    disabled = false;
   }
   var store = new Ext.data.SimpleStore({
-    id:0,
-    fields:[{name:'id',type:'int'},dataName],
+    fields:['value'],
     data:data
   });
   var combo = new Ext.ux.form.LovCombo({
     anchor:'-15',
     disabled:disabled,
-    displayField:dataName,
-    emptyText:data[0][1],
-    fieldLabel:menuName,
-    hiddenName:dataName,
+    displayField:'value',
+    emptyText:data[0],
+    fieldLabel:title,
+    hiddenName:dataName ? dataName : title,
     hideOnSelect:false,
-    id:menuName,
+    id:title,
     mode:'local',
     resizable:true,
+    separator:':::',
     store:store,
     triggerAction:'all',
     typeAhead:true,
-    valueField:'id'
+    valueField:'value',
+    visualseparator:', '
   });
   combo.on({
     'render':function(){
       try{
-        var nameList = dataSelect.extra[dataName].split('::: ');
-        var newValue = '';
+        var nameList = dataSelect.extra[dataName].split(this.separator);
+        var newValue = new Array();
         for(var j = 0; j < nameList.length; j++){
-          for(var i = 0; i < store.totalLength; i++){
-            if(store.data.items[i].data[dataName] == nameList[j]){
-              if(newValue.length == 0){
-                newValue = i;
-              }else{
-                newValue = newValue + ':::' + i;
-              }
-            }
+          var re = new RegExp(nameList[j], "g");
+          if(store.find('value',re) != -1){
+            newValue.push(nameList[j]);
           }
         }
+        newValue = newValue.join(this.separator);
         combo.setValue(newValue);
         delete dataSelect.extra[dataName];
       }catch(e){}
     }
   });
   return combo;
+}
+function createDropdownMenu(dataName,title,altValue){
+  var data = 'Nothing to display';
+  if(altValue && altValue.constructor == Array){
+    data = altValue;  
+  }else{
+    if(dataSelect && dataSelect[dataName] && dataSelect[dataName].constructor == Array){
+      data = dataSelect[dataName];
+    }
+  }
+  var disabled = true;
+  if(data == 'Nothing to display'){
+    data = [['Nothing to display']];
+  }else{
+    disabled = false;
+  }
+  var fields = ['value'];
+  var valueField = 'value';
+  if(data[0] && data[0].constructor == Array){
+    fields = []
+    var tmp = data[0];
+    if(tmp.length > 1){
+      for(var i=0; i< tmp.length; i++){
+        fields.push('tmp_value_' + i);
+      }
+      fields.pop();
+      valueField = 'tmp_value_0';
+    }
+    fields.push('value');
+  }
+  var store = new Ext.data.SimpleStore({
+    fields:fields,
+    data:data
+  });
+  var comboBox = new Ext.form.ComboBox({
+    allowBlank:true,
+    anchor:'-15',
+    disabled:disabled,
+    displayField:'value',
+    emptyText:'All',
+    fieldLabel:title,
+    hiddenName:dataName ? dataName : title,
+    hideOnSelect:false,
+    id:title + 'DropdownMenu',
+    resizable:true,
+    store:store,
+    valueField:valueField,
+    typeAhead:true,
+    mode:'local',
+    forceSelection:true,
+    triggerAction:'all',
+    selectOnFocus:true,
+  });
+  return comboBox
 }
 function showJobID(separator){
   var url = 'No JobID found';
@@ -1152,6 +1326,8 @@ function setTitle(value,id){
 function status(value){
   if((value == 'Done')||(value == 'Completed')||(value == 'Good')||(value == 'Active')||(value == 'Cleared')||(value == 'Completing')){
     return '<img src="'+gURLRoot+'/images/monitoring/done.gif">';
+  }else if(value == 'Bad'){
+    return '<img src="'+gURLRoot+'/images/monitoring/bad.gif">';
   }else if((value == 'Failed')||(value == 'Bad')||(value == 'Banned')||(value == 'Aborted')){
     return '<img src="'+gURLRoot+'/images/monitoring/failed.gif">';
   }else if((value == 'Waiting')||(value == 'Stopped')||(value == 'Poor')||(value == 'Probing')){
@@ -1649,15 +1825,14 @@ function table(tableMngr){
     }
   }
   var bbarID = id + 'bbar';
-  var items = ['-','Items per page: ',itemsNumber(store,bbarID)];
+  var updateStamp = new Ext.Toolbar.Button({
+    disabled:true,
+    disabledClass:'my-disabled',
+    id:'updatedTableButton',
+    text:'Updated: -'
+  });
+  var items = ['-',updateStamp,'-','Items per page: ',itemsNumber(store,bbarID)];
   if(tableMngr.autorefresh){
-    var stamp = new Ext.Toolbar.Button({
-      disabled:true,
-      disabledClass:'my-disabled',
-      hidden:true,
-      id:'stampTableButton',
-      text:'Updated: -'
-    });
     var autorefresh = new Ext.Toolbar.Button({
       cls:"x-btn-text",
       id:'autorefreshTableButton',
@@ -1673,7 +1848,7 @@ function table(tableMngr){
         }
       }
     });
-    items = ['-','Auto:',autorefresh,stamp,'-','Items per page: ',itemsNumber(store,bbarID)];
+    items = ['-','Auto:',autorefresh,updateStamp,'-','Items per page: ',itemsNumber(store,bbarID)];
   }
   tableMngr.bbar = new Ext.PagingToolbar({
     displayInfo:true,
@@ -1699,6 +1874,35 @@ function table(tableMngr){
     tbar:tbar,
     view:view,
     viewConfig:viewConfig
+  });
+  store.on('load',function(){
+    var date = false;
+    try{
+      date = store.reader.jsonData.date;
+    }catch(e){}
+    if(date){
+      updateStamp.setText('Updated: ' + store.reader.jsonData.date);
+    }else{
+      var d = new Date();
+      var hh = d.getUTCHours();
+      if(hh < 10){
+        hh = '0' + hh;
+      }
+      var mm = d.getUTCMinutes();
+      if(mm < 10){
+        mm = '0' + mm;
+      }
+      var mon = d.getUTCMonth() + 1;
+      if(mon < 10){
+              mon = '0' + mon;
+      }
+      var day = d.getUTCDate();
+      if(day < 10){
+              day = '0' + day;
+      }
+      var dateText = 'Updated: ' + d.getUTCFullYear() + '-' + mon + '-' + day + ' ' + hh + ':' + mm + ' [UTC]';
+      updateStamp.setText(dateText);
+    }
   });
   if(tableMngr.tbar == ''){
     var bar = dataTable.getTopToolbar();
@@ -1777,6 +1981,23 @@ function dateTimeWidget(pin){
     });
     return timeField
   }
+  function resetButton(tmpWidth){
+    var button = {
+      cls:"x-btn-text-icon",
+      handler:function(){
+        timeSpan.reset();
+        startDate.reset();
+        startTime.reset();
+        endDate.reset();
+        endTime.reset();
+      },
+      icon:gURLRoot+'/images/iface/reset.gif',
+      minWidth:tmpWidth,
+      text:'Reset date',
+      tooltip:'Click to reset values of date and time in this widget'
+    }
+    return button
+  }
   var startDate = retDate('startDate','startDate','Start Date');
   var endDate = retDate('endDate','endDate','End Date');
   var startTime = retTime('startTime','startTime','');
@@ -1808,7 +2029,7 @@ function dateTimeWidget(pin){
     },
     'valid':function(){
       var currentTime = new Date();
-      var hoursToSet = currentTime.getHours();
+      var hoursToSet = currentTime.getUTCHours();
       if(hoursToSet < 10){
         hoursToSet = '0' + hoursToSet;
       }
@@ -1819,7 +2040,7 @@ function dateTimeWidget(pin){
       timeToSet = hoursToSet + ':' + minutesToSet;
       var value = timeSpan.getValue();
       if(value == 'Last hour'){
-        var minHour = currentTime.add(Date.HOUR,-1).getHours()
+        var minHour = currentTime.add(Date.HOUR,-1).getUTCHours()
         if(minHour < 10){
           minHour = '0' + minHour;
         }
@@ -1880,10 +2101,12 @@ function dateTimeWidget(pin){
       manualSelection();
     }
   });
+  
   var datePin = {xtype:'checkbox',id:'datePin',fieldLabel:'',name:'datePin',boxLabel:'Pin the date'};
   var panel = new Ext.Panel({
     layout:'table',
     id:'time-panel',
+    bbar:[resetButton()],
     defaults: {
       bodyStyle:'padding:5px',
     },
@@ -1907,6 +2130,13 @@ function dateTimeWidget(pin){
     minWidth:'170',
     width:'170'
   });
+  panel.on('resize',function(){
+    var tmpWidth = panel.getInnerWidth() - 6;
+    var bar = panel.getBottomToolbar();
+    Ext.fly(bar.items.get(0).getEl()).remove();
+    bar.items.removeAt(0);
+    bar.insertButton(0,resetButton(tmpWidth));
+  });
   try{
     if(pin){
       panel.insert(8,datePin);
@@ -1914,22 +2144,3 @@ function dateTimeWidget(pin){
   }catch(e){}
   return panel
 }
-/*
-    var date = new Ext.form.DateField({
-      anchor:'90%',
-      allowBlank:true,
-      emptyText:'YYYY-mm-dd',
-//      enableKeyEvents:true,
-      fieldLabel:fieldLabel,
-//      fireKey:function(e){
-//        manualSelection();
-//      },
-      format:'Y-m-d',
-      name:name,
-      selectOnFocus:true,
-      startDay:1,
-      value:'',
-      width:98
-    });
-*/
-
