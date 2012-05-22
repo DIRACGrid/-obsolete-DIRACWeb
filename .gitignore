@@ -24,7 +24,15 @@ pip-log.txt
 .pyproject
 
 #ext and yui
-dirac/public/ext
+dirac/public/ext*
 dirac/public/yui
+tarballs/down
+#Flag files
+dirac/public/images/flags
+
 #Pylons data dir
 data
+
+#Debug.cfg
+dirac/debug.cfg
+
