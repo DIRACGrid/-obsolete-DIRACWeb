@@ -37,21 +37,35 @@ class GeneralController( BaseController ):
       return {"success":"false","error":"The request parameters can not be recognized or they are not defined"}
 
   def registerUser(self,paramcopy):
-# Unfortunately there is no way to get rid of empty text values in JS, so i have to hardcode it on server side. Hate it!
-    default_values = ["John Smith","jsmith","john.smith@gmail.com","+33 9 10 00 10 00","Select prefered virtual organization(s)"]
+    gLogger.info("Start processing a registration request")
+    """
+    Unfortunately there is no way to get rid of empty text values in JS,
+    so i have to hardcode it on server side. Hate it!
+    """
+    default_values = ["John Smith","jsmith","john.smith@gmail.com","+33 9 10 00 10 00"]
+    default_values.append("Select preferred virtual organization(s)")
     default_values.append("Select your country")
     default_values.append("Any additional information you want to provide to administrators")
+    # Check for having a DN but no username
     dn = getUserDN()
     username = getUsername()
+    gLogger.debug("User's DN: %s and DIRAC username: %s" % (dn, username))
     if not username == "anonymous":
-      return {"success":"false","error":"You are already registered in DIRAC with username: %s" % username}
+      error = "You are already registered in DIRAC with username: %s" % username
+      gLogger.debug("Service response: %s" % error)
+      return {"success":"false","error":error}
     else:
       if not dn:
-        return {"success":"false","error":"You have to load certificate to your browser before trying to register"}
+        error = "Certificate is not loaded to a browser or DN is absent"
+        gLogger.debug("Service response: %s" % error)
+        return {"success":"false","error":error}
     body = ""
     userMail = False
     vo = []
+    # Check for user's email, creating mail body
+    gLogger.debug("Request's body:")
     for i in paramcopy:
+      gLogger.debug("%s - %s" % (i,paramcopy[i]))
       if not paramcopy[i] in default_values:
         if i == "email":
           userMail = paramcopy[i]
@@ -59,104 +73,121 @@ class GeneralController( BaseController ):
           vo = paramcopy[i].split(",")
         body = body + str(i) + ' - "' + str(paramcopy[i]) + '"\n'
     if not userMail:
-      return {"success":"false","error":"Can not get your email from the request"}
-    gLogger.info("!!! VO: ",vo)
-# TODO Check for previous requests
-    if not len(vo) > 0:
-      mails = gConfig.getValue("/Website/UserRegistrationEmail",[])
-    else:
-      mails = []
-      for i in vo:
-        i = i.strip()
-        voadm = gConfig.getValue("/Registry/VO/%s/VOAdmin" % i,"")
-        failsafe = False
-        if voadm:
-          tmpmail = gConfig.getValue("/Registry/Users/%s/Email" % voadm,"")
-          if tmpmail:
-            mails.append(tmpmail)
-          else:
-            gLogger.error("Can not find value for option /Registry/Users/%s/Email Trying failsafe option" % voadm)
-            failsafe = True
-        else:
-          gLogger.error("Can not find value for option /Registry/VO/%s/VOAdmin Trying failsafe option" % i)
-          failsafe = True
-        if failsafe:
-          failsafe = gConfig.getValue("/Website/UserRegistrationEmail",[])
-          if len(failsafe) > 0:
-            for j in failsafe:
-              mails.append(j)
-          else:
-              gLogger.error("Can not find value for failsafe option /Website/UserRegistrationEmail User registration for VO %s is failed" % i)
-    mails = uniqueElements(mails)
-    if not len(mails) > 0:
-      groupList = list()
-      allGroups = gConfig.getSections("/Registry/Groups")
-      if not allGroups["OK"]:
-        return {"success":"false","error":"No groups found at this DIRAC installation"}
-      allGroups = allGroups["Value"]
-      for j in allGroups:
-        props = getProperties(j)
-        if "UserAdministrator" in props: # property which usd for user administration
-          groupList.append(j)
-      groupList = uniqueElements(groupList)
-      if not len(groupList) > 0:
-        return {"success":"false","error":"No groups, resposible for user administration, found"}
-      userList = list()
-      for i in groupList:
-        users = gConfig.getValue("/Registry/Groups/%s/Users" % i,[])
-        for j in users:
-          userList.append(j)
-      userList = uniqueElements(userList)
-      if not len(userList) > 0:
-        return {"success":"false","error":"Can not find a person resposible for user administration, your request can not be approuved"}
-      mails = list()
-      mail2name = dict()
-      for i in userList:
-        tmpmail = gConfig.getValue("/Registry/Users/%s/Email" % i,"")
-        if tmpmail:
-          mails.append(tmpmail)
-        else:
-          gLogger.error("Can not find value for option /Registry/Users/%s/Email" % i)
-      mails = uniqueElements(mails)
-      if not len(mails) > 0:
-        return {"success":"false","error":"Can not find an email of the person resposible for the users administration, your request can not be approuved"}
-    gLogger.info("Admins emails: ",mails)
-    if not len(mails) > 0:
-      return {"success":"false","error":"Can not find any emails of DIRAC Administrators"}
-    allUsers = gConfig.getSections("/Registry/Users")
-    if not allUsers["OK"]:
-      return {"success":"false","error":"No users found at this DIRAC installation"}
-    allUsers = allUsers["Value"]
-    mail2name = dict()
-    for i in allUsers:
-      tmpmail = gConfig.getValue("/Registry/Users/%s/Email" % i,"")
-      if tmpmail in mails:
-        mail2name[tmpmail] = gConfig.getValue("/Registry/Users/%s/FullName" % i,i)
-    sentFailed = list()
-    sentSuccess = list()
-    errorMessage = list()
-    ntc = NotificationClient( getRPCClient )
-    for i in mails:
+      error = "Can not get your email address from the request"
+      gLogger.debug("Service response: %s" % error)
+      return {"success":"false","error":error}
+    gLogger.info("User want to be register in VO(s): %s" % vo)
+    # TODO Check for previous requests
+    # Get admin mail based on requested VO i.e. mail of VO admin
+    mails = list()
+    gLogger.debug("Trying to get admin username to take care about request")
+    for i in vo:
+      gLogger.debug("VOAdmin for VO: %s" % i)
       i = i.strip()
-      result = ntc.sendMail(i,"New user has registered",body,userMail,False)
+      voadm = gConfig.getValue("/Registry/VO/%s/VOAdmin" % i,[])
+      gLogger.debug("/Registry/VO/%s/VOAdmin - %s" % (i,voadm))
+      for user in voadm:
+        mails.append(user)
+    # If no VOAdmin - try to get admin mails based on group properties
+    if not len(mails) > 0:
+      gLogger.debug("No VO admins found. Trying to get something based on group property")
+      groupList = list()
+      groups = gConfig.getSections("/Registry/Groups")
+      gLogger.debug("Group response: %s" % groups)
+      if groups["OK"]:
+        allGroups = groups["Value"]
+        gLogger.debug("Looking for UserAdministrator property")
+        for j in allGroups:
+          props = getProperties(j)
+          gLogger.debug("%s properties: %s" % (j,props)) #1
+          if "UserAdministrator" in props: # property which is used for user administration
+            groupList.append(j)
+      groupList = uniqueElements(groupList)
+      gLogger.debug("Chosen group(s): %s" % groupList)
+      if len(groupList) > 0:
+        for i in groupList:
+          users = gConfig.getValue("/Registry/Groups/%s/Users" % i,[])
+          gLogger.debug("%s users: %s" % (i,users))
+          for user in users:
+            mails.append(user)
+    # Last stand - Failsafe option
+    if not len(mails) > 0:
+      gLogger.debug("No suitable groups found. Trying failsafe")
+      regAdmin = gConfig.getValue("/Website/UserRegistrationAdmin",[])
+      gLogger.debug("/Website/UserRegistrationAdmin - %s" % regAdmin)
+      for user in regAdmin:
+        mails.append(user)
+    mails = uniqueElements(mails)
+    gLogger.info("Chosen admin(s): %s" % mails)
+    # Final check of usernames
+    if not len(mails) > 0:
+      error = "Can't get in contact with administrators about your request\n"
+      error = error + "Most likely this DIRAC instance is not configured yet"
+      gLogger.debug("Service response: %s" % error)
+      return {"success":"false","error":error}
+    # Convert usernames to { e-mail : full name }
+    gLogger.debug("Trying to get admin's mail and associated name")
+    sendDict = dict()
+    for user in mails:
+      email = gConfig.getValue("/Registry/Users/%s/Email" % user,"")
+      gLogger.debug("/Registry/Users/%s/Email - '%s'" % (user,email))
+      emil = email.strip()
+      if not email:
+        gLogger.error("Can't find value for option /Registry/Users/%s/Email" % user)
+        continue
+      fname = gConfig.getValue("/Registry/Users/%s/FullName" % user,"")
+      gLogger.debug("/Registry/Users/%s/FullName - '%s'" % (user,fname))
+      fname = fname.strip()
+      if not fname:
+        fname = user
+        gLogger.debug("FullName is absent, name to be used: %s" % fname)
+      sendDict[email] = fname
+    # Final check of mails
+    gLogger.debug("Final dictionary with mails to be used %s" % sendDict)
+    if not len(sendDict) > 0:
+      error = "Can't get in contact with administrators about your request\n"
+      error = error + "Most likely this DIRAC instance is not configured yet"
+      gLogger.debug("Service response: %s" % error)
+      return {"success":"false","error":error}
+    # Sending a mail
+    sentSuccess = list()
+    sentFailed = list()
+    gLogger.debug("Initializing Notification client")
+    ntc = NotificationClient(lambda x, timeout: getRPCClient(x, timeout=timeout, static = True) )
+    gLogger.debug("Sending messages")
+    for email,name in sendDict.iteritems():
+      gLogger.debug("ntc.sendMail(%s,New user has registered,%s,%s,False" % (email,body,userMail))
+      result = ntc.sendMail(email,"New user has registered",body,userMail,False)
       if not result["OK"]:
-        sentFailed.append(mail2name[i])
-        errorMessage.append(result["Message"])
+        error = name + ": " + result["Message"]
+        sentFailed.append(error)
+        gLogger.error("Sent failure: ", error)
       else:
-        sentSuccess.append(mail2name[i])
-    gLogger.info("Sent success: ",sentSuccess)
-    gLogger.info("Sent failure: ",sentFailed)
-    errorMessage = uniqueElements(errorMessage)
-    if len(sentSuccess) == 0:
-      if not len(errorMessage) > 0:
-        return {"success":"false","error":"No messages were sent to administrators due techincal reasons"}
-      errorMessage = ", ".join(errorMessage)
-      return {"success":"false","error":errorMessage}
+        gLogger.info("Successfully sent to %s" % name)
+        sentSuccess.append(name)
+    # Returning results
     sName = ", ".join(sentSuccess)
-    fName = ", ".join(sentFailed)
-    if len(sentFailed) > 0:
-      return {"success":"true","result":"Your registration request were sent successfuly to %s. Failed to sent request to %s." % (sName, fName)}
-    return {"success":"true","result":"Your registration request were sent successfuly to %s." % sName}
+    gLogger.info("End of processing of a registration request")
+    gLogger.debug("Service response sent to a user:")
+    if len(sentSuccess) > 0 and len(sentFailed) > 0:
+      result = "Your registration request were sent successfully to: "
+      result = result + sName + "\n\nFailed to sent it to:\n"
+      result = result + "\n".join(sentFailed)
+      gLogger.debug(result)
+      return {"success":"true","result":result}
+    elif len(sentSuccess) > 0 and (not len(sentFailed)) > 0:
+      result = "Your registration request were sent successfully to: %s" % sName
+      gLogger.debug(result)
+      return {"success":"true","result":result}
+    elif (not len(sentSuccess)) > 0 and len(sentFailed) > 0:
+      result = "Failed to sent your request to:\n"
+      result = result + "\n".join(sentFailed)
+      gLogger.debug(result)
+      return {"success":"false","error":result}
+    else:
+      result = "No messages were sent to administrator due technical failure"
+      gLogger.debug(result)
+      return {"success":"false","error":result}
 
   def getVOList(self):
     result = gConfig.getSections("/Registry/VO")
