@@ -1,3 +1,6 @@
+[web2012053101]
+FIX: User registration form should be able to send email in behalf of webportal
+
 [web2012052201]
 FIX: Fixing order and placement of some elements under System menu
 
