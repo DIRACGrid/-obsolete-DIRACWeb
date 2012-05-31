@@ -6,7 +6,7 @@ function showError(msg){
   if(Ext.isEmpty(msg)){
     msg = 'Error is not set or an empty value';
   }
-  alert('Error: ' + msg + '\nPlease use the forum http://groups.google.com/group/diracgrid-forum to clarify situation');
+  alert('Error: ' + msg + '\nPlease, use the forum http://groups.google.com/group/diracgrid-forum to clarify situation');
 }
 function initDiracPage( urlRoot, pageDescription )
 {
@@ -73,7 +73,7 @@ function __addClickHandlerToMenuSubEntries( menuEntry )
 }
 function regForm(dn,cn){
   if(Ext.isEmpty(dn)){
-    showError('You have to load certificate to your browser before trying to register');
+    showError('You have to load certificate to browser before register');
     return
   }
   function winClose(){
@@ -97,18 +97,21 @@ function regForm(dn,cn){
         }
       }else if(response.success == 'true'){
         if(Ext.isEmpty(response.result)){
-          response.result = 'Your request has been successfully sent to administrator';
+          response.result = 'Your request has been successfully registered\nInstructions';
+          response.result = response.result + ' will be sent to your e-mail address shortly'
         }
-        alert(response.result + '\nInstructions will be sent to your e-mail address shortly');
+        alert(response.result);
         winClose();
       }
     }else{
-      showError('Server response is unknown. Most likely your request has acepted');
+      showError('Server response is unknown. Most likely your request is accepted');
     }
   }
   function falHandler(a,b){
     gMainLayout.container.unmask();
-    if(b.failureType == 'connect'){
+    if(b.failureType == 'client'){
+      showError('Error happens on client side');
+    }else if(b.failureType == 'connect'){
       showError('Bad connection or error happens on server side while connecting');
     }else{
       showError('Error happens on server side');
@@ -160,11 +163,11 @@ function regForm(dn,cn){
       selectOnFocus:true,
     });
   }
-  var voList = {fieldLabel:'Virtual Organization',name:'vo',emptyText:'Select prefered virtual organization(s)'};
+  var voList = {fieldLabel:'Virtual Organization',name:'vo',emptyText:'Select preferred virtual organization(s)'};
   if(pageDescription['regVO']){
     var voList = new Ext.ux.form.LovCombo({
       displayField:'data',
-      emptyText:'Select prefered virtual organization(s)',
+      emptyText:'Select preferred virtual organization(s)',
       fieldLabel:'Virtual Organization',
       hiddenName:'vo',
       hideOnSelect:false,
