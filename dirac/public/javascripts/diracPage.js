@@ -71,6 +71,55 @@ function __addClickHandlerToMenuSubEntries( menuEntry )
   }
   return hndlMenu;
 }
+function proxyUpload(){
+  var form = new Ext.FormPanel({
+    autoHeight:true,
+    defaults:{
+      anchor:'100%',
+      allowBlank:false
+    },
+    frame:true,
+    fileUpload:true,
+    items:[new Ext.ux.form.FileUploadField({
+      buttonOffset:2,
+      cls:"x-btn-text-icon",
+      hideLabel:true,
+      icon:gURLRoot+'/images/iface/addfile.gif',
+      listeners:{
+        'fileselected':function(fb,name){
+          var tt = name.substr(-4);
+          if(name.substr(-4)!='.p12'){
+            showError('You have to choose the *.p12 file with you credentials');
+            return
+          }else{
+            form.submit();
+          }
+        }
+      }
+    })],
+    url:'../../info/general/proxyUpload',
+  });
+  var window = new Ext.Window({
+    iconCls:'icon-grid',
+    closable:true,
+    width:400,
+//    height:400,
+    border:true,
+    collapsible:false,
+    constrain:true,
+    constrainHeader:true,
+    maximizable:false,
+    modal:true,
+    layout:'fit',
+    plain:true,
+    resizable:false,
+    shim:false,
+    title:'Proxy upload',
+    items:[form]
+  });
+  window.show();
+  return
+}
 function regForm(dn,cn){
   if(Ext.isEmpty(dn)){
     showError('You have to load certificate to browser before register');
@@ -393,6 +442,15 @@ function initBottomFrame( pageDescription )
       tooltip:''
     });
     navItems.push(register);
+////////// Proxy upload /////////
+    var proxyCreation = new Ext.Toolbar.Button({
+      handler:function(){
+        proxyUpload();
+      },
+      text:'<b>Upload proxy</b>',
+      tooltip:''
+    });
+    navItems.push(proxyCreation);
   }else{
     if( userObject.group ){
     	navItems.push( userObject[ 'username' ]+"@" );
