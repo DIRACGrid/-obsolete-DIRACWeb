@@ -20,7 +20,55 @@ class GeneralController( BaseController ):
 
   def ext4test( self ):
     return render( "/info/ext4test.mako" )
-        
+
+  @jsonify
+  def proxyUpload(self):
+    gLogger.info("Start creating proxy out of p12 and upload it to proxy store")
+    # Otherwise the browser would offer to download a file
+    response.headers['Content-type'] = "text/html"
+    store = []
+    gLogger.debug("Request's body:")
+    for key in request.params.keys():
+      gLogger.debug("%s - %s" % (key,request.params[key]))
+      try:
+        if request.params[key].filename:
+          if request.params[key].filename(:-3) == ".p12"
+            gLogger.info("p12 filename detected")
+            store.append(request.params[key])
+      except Exception,x:
+        pass
+    if not len(store) > 0: # If there is a file(s) to store
+      error = "Failed to find any suitable *.p12 filename in your request"
+      gLogger.debug("Service response: %s" % error)
+      return {"success":"false","error":error}
+    import shutil
+    import os
+    import random
+    import string
+    storePath = tempfile.mkdtemp(prefix='DIRAC_')
+    gLogger.info("Saving file from request to a tmp directory")
+    fileNameList = list()
+    try:
+      for file in store:
+        fname = ''.join(random.choice(string.letters) for x in range(10))
+        name = os.path.join( storePath,fname)
+        tFile = open( name , 'w' )
+        shutil.copyfileobj(file.file, tFile)
+        file.file.close()
+        tFile.close()
+        fileNameList.append(name)
+    except Exception,x:
+      gLogger.debug("Tmp directory name is: %s" % storePath)      
+      shutil.rmtree(storePath)
+      error  = "An exception has happen '%s'\n" % str(x)
+      error = error + "No proxy was created\n"
+      error = error + "Your certificate was safely deleted from service side"
+      gLogger.debug("Service response: %s" % error)
+      return {"success":"false","error":error}
+    gLogger.info("Creating and uploading proxy out from certificate(s)")
+    
+    shutil.rmtree(storePath)
+################################################################################
   @jsonify
   def action(self):
     if request.params.has_key("getVOList") and len(request.params["getVOList"]) > 0:
