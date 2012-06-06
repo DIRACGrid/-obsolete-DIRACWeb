@@ -24,50 +24,127 @@ class GeneralController( BaseController ):
   @jsonify
   def proxyUpload(self):
     gLogger.info("Start creating proxy out of p12 and upload it to proxy store")
+    disclaimer  = "\nNo proxy was created\nYour private info was safely deleted"
     # Otherwise the browser would offer to download a file
     response.headers['Content-type'] = "text/html"
-    store = []
+    store = list()
     gLogger.debug("Request's body:")
     for key in request.params.keys():
-      gLogger.debug("%s - %s" % (key,request.params[key]))
+      try:
+        gLogger.debug("%s - %s" % (key,request.params[key]))
+      except Exception,x:      
+        error  = "An exception has happen '%s'" % str(x)
+        error = error + disclaimer
+        gLogger.debug("Service response: %s" % error)
+        return {"success":"false","error":error}
       try:
         if request.params[key].filename:
-          if request.params[key].filename(:-3) == ".p12"
-            gLogger.info("p12 filename detected")
-            store.append(request.params[key])
+          name = request.params[key].filename
+          name = name.strip()
+          if name[-4:] == ".p12":
+            gLogger.info(".p12 in filename detected")
+            if request.params["pass_p12"] and request.params["pass_pem"]:
+              fileObject = request.params[key]
+              fileObject.p12 = str(request.params["pass_p12"])
+              fileObject.pem = str(request.params["pass_pem"])
+              store.append(fileObject)
+              gLogger.info("Certificate object is loaded")
       except Exception,x:
         pass
     if not len(store) > 0: # If there is a file(s) to store
       error = "Failed to find any suitable *.p12 filename in your request"
+      error = error + disclaimer
       gLogger.debug("Service response: %s" % error)
       return {"success":"false","error":error}
+    import tempfile
     import shutil
     import os
     import random
     import string
     storePath = tempfile.mkdtemp(prefix='DIRAC_')
     gLogger.info("Saving file from request to a tmp directory")
-    fileNameList = list()
+    descriptionList = list()
     try:
       for file in store:
-        fname = ''.join(random.choice(string.letters) for x in range(10))
-        name = os.path.join( storePath,fname)
-        tFile = open( name , 'w' )
-        shutil.copyfileobj(file.file, tFile)
+        desc = dict()
+        for i in "name","p12","pem":
+          tmp = "".join(random.choice(string.letters) for x in range(10))
+          desc[i] = os.path.join(storePath,tmp)
+        tmpFile = open(desc["name"],"w")
+        shutil.copyfileobj(file.file, tmpFile)
         file.file.close()
-        tFile.close()
-        fileNameList.append(name)
+        tmpFile.close()
+        tmpFile = open(desc["p12"],"w")
+        tmpFile.write(file.p12)
+        tmpFile.close()
+        tmpFile = open(desc["pem"],"w")
+        tmpFile.write(file.pem)
+        tmpFile.close()
+        descriptionList.append(desc)
     except Exception,x:
-      gLogger.debug("Tmp directory name is: %s" % storePath)      
+      gLogger.debug("Tmp directory name is: %s" % storePath)
       shutil.rmtree(storePath)
-      error  = "An exception has happen '%s'\n" % str(x)
-      error = error + "No proxy was created\n"
-      error = error + "Your certificate was safely deleted from service side"
+      error  = "An exception has happen '%s'" % str(x)
+      error = error + disclaimer
       gLogger.debug("Service response: %s" % error)
       return {"success":"false","error":error}
-    gLogger.info("Creating and uploading proxy out from certificate(s)")
-    
-    shutil.rmtree(storePath)
+    if not len(descriptionList) > 0: # If there is a file(s) to store
+      gLogger.debug("Tmp directory name is: %s" % storePath)
+      shutil.rmtree(storePath)
+      error = "List of certificate(s) is empty"
+      error = error + disclaimer
+      gLogger.debug("Service response: %s" % error)
+      return {"success":"false","error":error}
+    gLogger.info("Split certificate(s) to public and private keys")
+    keyList = list()
+    from DIRAC.Core.Utilities import Subprocess
+    for i in descriptionList:
+      key = dict()
+      name = i["name"]
+      p12 = i["p12"]
+      key["pem"] = i["pem"]
+      for j in "pub","private":
+        tmp = "".join(random.choice(string.letters) for x in range(10))
+        key[j] = os.path.join(storePath,tmp)
+      cmdCert = "openssl pkcs12 -clcerts -nokeys -in %s -out %s -password file:%s" % (name,key["pub"],p12)
+      cmdKey = "openssl pkcs12 -nocerts -in %s -out %s -passout file:%s -password file:%s" % (name,key["private"],p12,key["pem"])
+      for cmd in cmdCert,cmdKey:
+        result = Subprocess.shellCall(900,cmd)
+        gLogger.debug("Command is: %s" % cmd)
+        if not result[ 'OK' ]:
+          gLogger.debug("Command is: %s" % cmd)
+          shutil.rmtree(storePath)
+          error =  "Error while executing SSL command: %s" % result["Message"]
+          error = error + disclaimer
+          gLogger.debug("Service response: %s" % error)
+          return {"success":"false","error":error}
+        keyList.append(key)
+    if not len(keyList) > 0:
+      gLogger.debug("Tmp directory name is: %s" % storePath)
+      shutil.rmtree(storePath)
+      error = "List of public and private keys is empty"
+      error = error + disclaimer
+      gLogger.debug("Service response: %s" % error)
+      return {"success":"false","error":error}
+    gLogger.info("Generating proxy")
+    from DIRAC.FrameworkSystem.Client import ProxyGeneration, ProxyUpload  
+    proxyList = list()
+    for key in keyList:
+      proxy = "".join(random.choice(string.letters) for x in range(10))
+      proxy = os.path.join(storePath,proxy)
+      params = ProxyGeneration.CLIParams()
+      params.certLoc = key["pub"]
+      params.keyLoc = key["private"]
+      params.proxyLoc = proxy
+      params.userPasswd = open(key["pem"],"r").readline()
+      result = ProxyGeneration.generateProxy(params)
+      if not result[ 'OK' ]:
+        shutil.rmtree(storePath)
+        error = result[ 'Message' ]
+        error = error + disclaimer
+        gLogger.debug("Service response: %s" % error)
+        return {"success":"false","error":error}
+#    shutil.rmtree(storePath)
 ################################################################################
   @jsonify
   def action(self):
