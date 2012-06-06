@@ -72,8 +72,81 @@ function __addClickHandlerToMenuSubEntries( menuEntry )
   return hndlMenu;
 }
 function proxyUpload(){
-  var form = new Ext.FormPanel({
+  function winClose(){
+    var win = panel.findParentByType('window');
+    try{
+      win.close();
+    }catch(e){
+      showError(e.name + ': ' + e.message)
+    }
+    return
+  }
+  function sucHandler(form, action){
+    gMainLayout.container.unmask();
+    var response = action.result
+    if(response.success){
+      if(response.success == 'false'){
+        if(response.error){
+          showError(response.error);
+        }else{
+          showError('Your request is failed with no error returned.');
+        }
+      }else if(response.success == 'true'){
+        alert(response.result);
+        winClose();
+      }
+    }else{
+      showError('Server response is unknown. Most likely your request is accepted');
+    }
+  }
+  function falHandler(a,b){
+    gMainLayout.container.unmask();
+    if(b.failureType == 'client'){
+      showError('Error happens on client side');
+    }else if(b.failureType == 'connect'){
+      showError('Bad connection or error happens on server side while connecting');
+    }else{
+      showError('Error happens on server side');
+    }
+  }
+  var close = new Ext.Button({
+    cls:"x-btn-text-icon",
+    handler:function(){
+      winClose();
+    },
+    icon:gURLRoot+'/images/iface/close.gif',
+    minWidth:'100',
+    tooltip:'Alternatively, you can close the dialogue by pressing the [X] button on the top of the window',
+    text:'Close'
+  })
+  var reset = new Ext.Button({
+    cls:"x-btn-text-icon",
+    handler:function(){
+      panel.form.reset();
+    },
+    icon:gURLRoot+'/images/iface/reset.gif',
+    minWidth:'100',
+    tooltip:'Reset values in the form',
+    text:'Reset'
+  });
+  var submit = new Ext.Button({
+    cls:"x-btn-text-icon",
+    handler:function(){
+      gMainLayout.container.mask('Sending data');
+      panel.form.submit({success:sucHandler,failure:falHandler});
+    },
+    icon:gURLRoot+'/images/iface/submit.gif',
+    minWidth:'100',
+    tooltip:'Send request to the server',
+    text:'Submit'
+  });
+  var panel = new Ext.FormPanel({
     autoHeight:true,
+    buttons:[submit,reset,close],
+    defaultType:'textfield',
+//    defaults:{
+//      anchor:'-25'
+//    },
     defaults:{
       anchor:'100%',
       allowBlank:false
@@ -83,7 +156,7 @@ function proxyUpload(){
     items:[new Ext.ux.form.FileUploadField({
       buttonOffset:2,
       cls:"x-btn-text-icon",
-      hideLabel:true,
+      fieldLabel:'Certificate',
       icon:gURLRoot+'/images/iface/addfile.gif',
       listeners:{
         'fileselected':function(fb,name){
@@ -92,11 +165,40 @@ function proxyUpload(){
             showError('You have to choose the *.p12 file with you credentials');
             return
           }else{
-            form.submit();
+            submit.enable();
           }
         }
       }
-    })],
+    }),new Ext.form.FieldSet({
+      autoHeight:true,
+      defaultType:'textfield',
+      labelWidth:80,
+      items:[{
+        allowBlank:false,
+        anchor:'100%',
+        fieldLabel:'p12 certificate',
+        inputType:'password',
+        name:'pass_p12'
+      },{
+        allowBlank:false,
+        anchor:'100%',
+        fieldLabel:'personal key',
+        inputType:'password',
+        name:'pass_pem'
+      }],
+      title:'Input password for'
+    }),{
+      xtype:'label',
+      html:'We are not keeping neither your private key nor password for'+
+      ' certificate or private key on our service. While we try to make this'+
+      ' process as secure as possible by using SSL to encrypt the key when it'+
+      ' is sent to the server, for maximum security, we recommend that you'+
+      ' manually convert and upload the proxy using DIRAC client commands:'+
+      '<ul><li>dirac-cert-convert.sh CERT_FILE_NAME.p12</li>'+
+      '<li>dirac-proxy-init -UP</li>'+
+      '</ul><br><br>'
+    }],
+    labelWidth:90,
     url:'../../info/general/proxyUpload',
   });
   var window = new Ext.Window({
@@ -115,7 +217,7 @@ function proxyUpload(){
     resizable:false,
     shim:false,
     title:'Proxy upload',
-    items:[form]
+    items:[panel]
   });
   window.show();
   return
