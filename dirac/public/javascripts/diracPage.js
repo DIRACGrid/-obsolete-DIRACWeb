@@ -444,15 +444,36 @@ function initTopFrame( pageDescription ){
     navItems.push( menuEntry );
   }
   if(gPageDescription.userData && gPageDescription.userData.username && gPageDescription.userData.username != 'Anonymous'){
-    if(gPageDescription.pageName == 'JobMonitor'){
-      var upmenu = new Ext.menu.Menu();
-      var tools = new Ext.Toolbar.Button({
-    	  text:'Tools',
-	      id:'mainTopbarToolsButton',
-      	menu:upmenu
-      });
-      navItems.push(tools);
-    }
+    var upmenu = new Ext.menu.Menu({
+      items:[{
+        handler:function(){
+          loadFile({
+            '/stylesheets/fileupload.css':'css',
+            '/javascripts/FileUploadField.js':function(){proxyUpload()}
+          });
+        },
+        text:'Proxy Upload'
+      },{
+        handler:function(){
+          loadFile({
+            '/stylesheets/fileupload.css':'css',
+            '/javascripts/FileUploadField.js':null,
+            '/stylesheets/lovCombo.css':'css',
+            '/javascripts/lovCombo.js':null,
+            '/javascripts/jobs/Launchpad.js':function(){
+              submitJobNew()
+            }
+          });
+        },
+        text:'Job Launchpad'
+      }]
+    });
+    var tools = new Ext.Toolbar.Button({
+      text:'Tools',
+      id:'mainTopbarToolsButton',
+      menu:upmenu
+    });
+    navItems.push(tools);
   }
   navItems.push( "->" );
   navItems.push( "Selected setup:" );
@@ -490,18 +511,6 @@ function initBottomFrame( pageDescription )
   var userObject = pageDescription[ 'userData' ];
   var regex = new RegExp('certificate login',i);
   if(userObject.DN && !regex.test(userObject.DN) &&userObject.username && userObject.username.toLowerCase() == 'anonymous'){
-// A trick to include additional JS file  
-    var th = document.getElementsByTagName('head')[0];
-    var s = document.createElement('script');
-    s.setAttribute('type','text/javascript');
-    s.setAttribute('src','/javascripts/lovCombo.js');
-    var c = document.createElement('link');
-    c.setAttribute('type','text/css');
-    c.setAttribute('rel','stylesheet');
-    c.setAttribute('href','/stylesheets/lovCombo.css');
-    th.appendChild(s);
-    th.appendChild(c);
-// End of trick    
     Ext.Ajax.request({
       method:'POST',
       params:{'getCountries':true},
@@ -538,21 +547,17 @@ function initBottomFrame( pageDescription )
         if(!Ext.isEmpty(userObject.CN)){
           cn = userObject['CN'];
         }
-        regForm(userObject.DN, cn);
+        loadFile({
+            '/stylesheets/lovCombo.css':'css',
+            '/javascripts/lovCombo.js':function(){
+              regForm(userObject.DN, cn)
+            }
+        });
       },
       text:'<b>Click here to register in DIRAC</b>',
       tooltip:''
     });
     navItems.push(register);
-////////// Proxy upload /////////
-    var proxyCreation = new Ext.Toolbar.Button({
-      handler:function(){
-        proxyUpload();
-      },
-      text:'<b>Upload proxy</b>',
-      tooltip:''
-    });
-    navItems.push(proxyCreation);
   }else{
     if( userObject.group ){
     	navItems.push( userObject[ 'username' ]+"@" );
@@ -640,4 +645,33 @@ function getCookie( cookieName )
 function deleteCooke( cookieName )
 {
   document.cookie = cookieName + '=;expires=Thu, 01-Jan-1970 00:00:01 GMT';
+}
+
+function loadFile(data){
+  if(!data) return;
+  var addLoadHandler = function(script, data){
+    script.onload = script.onreadystatechange = function( ){
+      if(!script.readyState || script.readyState == "loaded" || script.readyState == "complete"){
+        if(typeof data == "function") data( );
+        script.onload = script.readystatechange = null; 
+      }
+    }
+  }
+  var head = document.getElementsByTagName("head")[0];    
+  for(file in data){
+    if(data.hasOwnProperty(file)){
+      if(data[file] == 'css'){
+        var el = document.createElement('link');
+        el.setAttribute('type','text/css');
+        el.setAttribute('rel','stylesheet');
+        el.setAttribute('href',file);
+      }else{
+        var el = document.createElement('script');
+        el.setAttribute('type','text/javascript');
+        el.setAttribute('src',file);
+        addLoadHandler(el, data[file]);
+      }
+      head.appendChild(el);
+    }
+  }  
 }
