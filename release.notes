@@ -1,3 +1,7 @@
+[web2012061102]
+FIX: URL fix in diracPage.js file
+FIX: showJob() redirects to JobMonitor page if not already there
+
 [web2012061101]
 NEW: Proxy generation and upload out of p12 file
 
