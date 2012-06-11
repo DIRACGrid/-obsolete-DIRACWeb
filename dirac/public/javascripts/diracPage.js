@@ -664,11 +664,11 @@ function loadFile(data){
         var el = document.createElement('link');
         el.setAttribute('type','text/css');
         el.setAttribute('rel','stylesheet');
-        el.setAttribute('href',file);
+        el.setAttribute('href',gURLRoot+file);
       }else{
         var el = document.createElement('script');
         el.setAttribute('type','text/javascript');
-        el.setAttribute('src',file);
+        el.setAttribute('src',gURLRoot+file);
         addLoadHandler(el, data[file]);
       }
       head.appendChild(el);
