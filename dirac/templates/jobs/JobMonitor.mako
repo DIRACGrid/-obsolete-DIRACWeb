@@ -5,13 +5,10 @@
 <%def name="head_tags()">
 ${ h.javascript_link( "/javascripts/lovCombo.js" ) }
 ${ h.javascript_link( "/javascripts/dencodelight.js" ) }
-${ h.javascript_link( "/javascripts/FileUploadField.js" ) }
 ${ h.javascript_link( "/javascripts/jobs/Lib.js" ) }
 ${ h.javascript_link( "/javascripts/jobs/Plot.js" ) }
-${ h.javascript_link( "/javascripts/jobs/Launchpad.js" ) }
 ${ h.javascript_link( "/javascripts/jobs/JobMonitor.js" ) }
 ${ h.stylesheet_link( "/stylesheets/lovCombo.css" ) }
-${ h.stylesheet_link( "/stylesheets/fileupload.css" ) }
 
 </%def>
 
