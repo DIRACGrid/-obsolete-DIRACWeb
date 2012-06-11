@@ -1,3 +1,6 @@
+[web2012061101]
+NEW: Proxy generation and upload out of p12 file
+
 [web2012053101]
 FIX: User registration form should be able to send email in behalf of webportal
 
