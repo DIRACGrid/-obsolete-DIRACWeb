@@ -33,14 +33,16 @@ class GeneralController( BaseController ):
     username = getUsername()
     gLogger.info("Start upload proxy out of p12 for user: %s" % (username))
     disclaimer  = "\nNo proxy was created\nYour private info was safely deleted"
-    gLogger.info("Get the possible groups for the user %s" % username)
     if username == "anonymous":
       error = "Please, send a registration request first"
+      gLogger.error("Anonymous is not allowed")
       gLogger.debug("Service response: %s" % error)
       return {"success":"false","error":error}
     groupList = getAvailableGroups()
-    gLogger.info("getAvailableGroups(): %s" % groupList)
+    groups = ", ".join(groupList)
+    gLogger.info("Available groups for the user %s: %s" % (username,groups))
     if not len(groupList) > 0:
+      gLogger.error("User is not registered in any group")
       error = "Seems that user %s is not register in any group" % username
       error = error + disclaimer
       gLogger.debug("Service response: %s" % error)
@@ -50,7 +52,8 @@ class GeneralController( BaseController ):
     for key in request.params.keys():
       try:
         gLogger.debug("%s - %s" % (key,request.params[key]))
-      except Exception,x:      
+      except Exception,x:
+        gLogger.error("Exception: %s" % str(x))
         error  = "An exception has happen '%s'" % str(x)
         error = error + disclaimer
         gLogger.debug("Service response: %s" % error)
@@ -68,12 +71,15 @@ class GeneralController( BaseController ):
               store.append(fileObject)
               gLogger.info("Certificate object is loaded")
       except Exception,x:
+        gLogger.debug("Non fatal for logic, exception happens: %s" % str(x))
         pass
     if not len(store) > 0: # If there is a file(s) to store
+      gLogger.error("No file with *.p12 found")
       error = "Failed to find any suitable *.p12 filename in your request"
       error = error + disclaimer
       gLogger.debug("Service response: %s" % error)
       return {"success":"false","error":error}
+    gLogger.info("Number of p12 file(s) to process: %s" % len(store))
     import tempfile
     import shutil
     import os
@@ -100,15 +106,15 @@ class GeneralController( BaseController ):
         tmpFile.close()
         descriptionList.append(desc)
     except Exception,x:
-      gLogger.debug("Tmp directory name is: %s" % storePath)
       shutil.rmtree(storePath)
+      gLogger.error("Exception: %s" % str(x))
       error  = "An exception has happen '%s'" % str(x)
       error = error + disclaimer
       gLogger.debug("Service response: %s" % error)
       return {"success":"false","error":error}
     if not len(descriptionList) > 0: # If there is a file(s) to store
-      gLogger.debug("Tmp directory name is: %s" % storePath)
       shutil.rmtree(storePath)
+      gLogger.error("No certificate(s) found")
       error = "List of certificate(s) is empty"
       error = error + disclaimer
       gLogger.debug("Service response: %s" % error)
@@ -130,78 +136,55 @@ class GeneralController( BaseController ):
         result = Subprocess.shellCall(900,cmd)
         gLogger.debug("Command is: %s" % cmd)
         gLogger.debug("Result is: %s" % result)
-        if not result[ 'OK' ]:
+        if not result["OK"]:
           shutil.rmtree(storePath)
+          gLogger.error(result["Message"])
           error =  "Error while executing SSL command: %s" % result["Message"]
           error = error + disclaimer
           gLogger.debug("Service response: %s" % error)
           return {"success":"false","error":error}
-        keyList.append(key)
+      keyList.append(key)
     if not len(keyList) > 0:
       shutil.rmtree(storePath)
       error = "List of public and private keys is empty"
+      gLogger.error(error)
       error = error + disclaimer
       gLogger.debug("Service response: %s" % error)
       return {"success":"false","error":error}
+    resultList = list()
     for key in keyList:
       for group in groupList:
+        gLogger.info("Uploading proxy for group: %s" % group)
         cmd = "cat %s | dirac-proxy-init -U -g %s -C %s -K %s -p" % (key["pem"],group,key["pub"],key["private"])
         result = Subprocess.shellCall(900,cmd)
         gLogger.debug("Command is: %s" % cmd)
+        gLogger.debug("Result is: %s" % result)
         if not result[ 'OK' ]:
           shutil.rmtree(storePath)
-          error =  "Error while executing SSL command: %s" % result["Message"]
+          error =  "".join(result["Message"])
+          gLogger.error(error)
+          if len(resultList) > 0:
+            success = "\nHowever some operations has finished successfully:\n"
+            success = success + "\n".join(resultList)
+            error = error + success
           error = error + disclaimer
           gLogger.debug("Service response: %s" % error)
           return {"success":"false","error":error}
-        gLogger.info("Result is: %s" % result)
-    """
-    from DIRAC.FrameworkSystem.Client import ProxyGeneration, ProxyUpload
-    resultList = list()
-    for key in keyList:
-      proxy = "".join(random.choice(string.letters) for x in range(10))
-      proxy = os.path.join(storePath,proxy)
-      params = ProxyGeneration.CLIParams()
-      params.certLoc = key["pub"]
-      params.keyLoc = key["private"]
-      params.proxyLoc = proxy
-      params.userPasswd = open(key["pem"],"r").readline()
-      gLogger.info("Generating proxy")
-      result = ProxyGeneration.generateProxy(params)
-      gLogger.info("Result: %s" % result)
-      if not result["OK"]:
-        shutil.rmtree(storePath)
-        error = result["Message"]
-        if len(resultList) > 0:
-          error = error + "\n Meanwhile, successfully uploaded proxy:\n"
-          result = "\n".join(resultList)
-          error = error + result
-        error = error + "\nYour private info was safely deleted"
-        gLogger.debug("Service response: %s" % error)
-        return {"success":"false","error":error}
-      params.onTheFly = False
-      for group in groupList:
-        params.diracGroup = group
-        params.onTheFly = True
-        gLogger.info("Upload proxy for group %s" % group)
-        gLogger.info("group: %s, cert: %s, key: %s, proxy: %s, onTheFly: %s" % (params.diracGroup,params.certLoc,params.keyLoc,params.proxyLoc,params.onTheFly))
-        result = ProxyUpload.uploadProxy(params)
-        gLogger.info("Result: %s" % result)
-        if not result["OK"]:
-          shutil.rmtree(storePath)
-          error = result["Message"]
-          if len(resultList) > 0:
-            error = error + "\n Meanwhile, successfully uploaded proxy:\n"
-            result = "\n".join(resultList)
-            error = error + result
-          error = error + "\nYour private info was safely deleted"
-          gLogger.debug("Service response: %s" % error)
-          return {"success":"false","error":error}
-        resultList.append("Successfully upload proxy for group %s" % group)   
+        result = "".join(result["Value"][1])
+        resultList.append(result)
     shutil.rmtree(storePath)
-    """
-#    result = "\n".join(resultList)
-#    result = result + "\nYour private info was safely deleted"
+    debug = "\n".join(resultList)
+    gLogger.debug(debug)
+    groups = ", ".join(groupList)
+    result = "Proxy uploaded for user: %s" % username
+    if len(groupList) > 0:
+      result = result + " in groups: %s" % groups
+    else:
+      result = result + " in group: %s" % groups
+    gLogger.info(result)
+    result = "Operation finished successfully\n" + result
+    result = result + "\nYour private info was safely deleted"
+    gLogger.debug("Service response: %s" % result)
     return {"success":"true","result":result}
 ################################################################################
   @jsonify
