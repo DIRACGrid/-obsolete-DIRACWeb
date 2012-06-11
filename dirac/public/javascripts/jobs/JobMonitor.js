@@ -253,7 +253,7 @@ function renderData(store){
 function addMenu(){
   var menu = new Ext.menu.Menu({
     items:[
-      {handler:function(){submitJobNew()},text:'Job Launchpad'},
+//      {handler:function(){submitJobNew()},text:'Job Launchpad'},
       {handler:function(){showURL()},text:'Full URL'},
       {menu:{items:[
         {handler:function(){showJobID(' ')},text:'Space separated'},

@@ -82,7 +82,7 @@ function submitJobNew(){
           }
         }
       },
-      url:'action'
+      url:'../../jobs/JobMonitor/action'
     });
   };
 // Periodic check for a user proxy
@@ -171,7 +171,7 @@ function submitJobNew(){
           gMainLayout.container.unmask();
           alert('Error: ' + action.response.statusText);
         },
-        url:'jobSubmit'
+        url:'../../jobs/JobMonitor/jobSubmit'
       });
     }catch(e){
       alert('Error: ' + e.name + ': ' + e.message);
@@ -594,7 +594,7 @@ function submitJobNew(){
     labelWidth:100,
     monitorResize:true,
     tbar:[proxyButton('init'),'->',addButton,cancelButton],
-    url:''
+    url:'../../jobs/JobMonitor/'
   });
   var win = new Ext.Window({
     collapsible:true,
@@ -632,7 +632,7 @@ function submitJobNew(){
       alert('Error: Failed to load additional options from Configuration Service. Default options will be used');
     },
     timeout:60000, // 1min
-    url:'action'
+    url:'../../jobs/JobMonitor/action'
   });  
   win.on({
     'resize':function(){
