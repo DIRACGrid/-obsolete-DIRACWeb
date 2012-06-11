@@ -4,7 +4,8 @@ import os
 from dirac.lib.base import *
 from DIRAC import gConfig, gLogger
 from dirac.lib.diset import getRPCClient
-from dirac.lib.credentials import getUserDN, getUsername, getAvailableGroups, getProperties
+from dirac.lib.credentials import getUserDN, getUsername, getAvailableGroups
+from dirac.lib.credentials import getProperties
 from DIRAC.FrameworkSystem.Client.NotificationClient import NotificationClient
 from DIRAC.Core.Utilities.List import uniqueElements
 
@@ -23,10 +24,27 @@ class GeneralController( BaseController ):
 
   @jsonify
   def proxyUpload(self):
-    gLogger.info("Start creating proxy out of p12 and upload it to proxy store")
-    disclaimer  = "\nNo proxy was created\nYour private info was safely deleted"
+    """
+    Get p12 file and passwords as input. Split p12 to user key and certificate
+    and creating proxy for groups user belongs to. Upload proxy to proxy store
+    """
     # Otherwise the browser would offer to download a file
     response.headers['Content-type'] = "text/html"
+    username = getUsername()
+    gLogger.info("Start upload proxy out of p12 for user: %s" % (username))
+    disclaimer  = "\nNo proxy was created\nYour private info was safely deleted"
+    gLogger.info("Get the possible groups for the user %s" % username)
+    if username == "anonymous":
+      error = "Please, send a registration request first"
+      gLogger.debug("Service response: %s" % error)
+      return {"success":"false","error":error}
+    groupList = getAvailableGroups()
+    gLogger.info("getAvailableGroups(): %s" % groupList)
+    if not len(groupList) > 0:
+      error = "Seems that user %s is not register in any group" % username
+      error = error + disclaimer
+      gLogger.debug("Service response: %s" % error)
+      return {"success":"false","error":error}
     store = list()
     gLogger.debug("Request's body:")
     for key in request.params.keys():
@@ -111,8 +129,8 @@ class GeneralController( BaseController ):
       for cmd in cmdCert,cmdKey:
         result = Subprocess.shellCall(900,cmd)
         gLogger.debug("Command is: %s" % cmd)
+        gLogger.debug("Result is: %s" % result)
         if not result[ 'OK' ]:
-          gLogger.debug("Command is: %s" % cmd)
           shutil.rmtree(storePath)
           error =  "Error while executing SSL command: %s" % result["Message"]
           error = error + disclaimer
@@ -120,15 +138,26 @@ class GeneralController( BaseController ):
           return {"success":"false","error":error}
         keyList.append(key)
     if not len(keyList) > 0:
-      gLogger.debug("Tmp directory name is: %s" % storePath)
       shutil.rmtree(storePath)
       error = "List of public and private keys is empty"
       error = error + disclaimer
       gLogger.debug("Service response: %s" % error)
       return {"success":"false","error":error}
-    gLogger.info("Generating proxy")
-    from DIRAC.FrameworkSystem.Client import ProxyGeneration, ProxyUpload  
-    proxyList = list()
+    for key in keyList:
+      for group in groupList:
+        cmd = "cat %s | dirac-proxy-init -U -g %s -C %s -K %s -p" % (key["pem"],group,key["pub"],key["private"])
+        result = Subprocess.shellCall(900,cmd)
+        gLogger.debug("Command is: %s" % cmd)
+        if not result[ 'OK' ]:
+          shutil.rmtree(storePath)
+          error =  "Error while executing SSL command: %s" % result["Message"]
+          error = error + disclaimer
+          gLogger.debug("Service response: %s" % error)
+          return {"success":"false","error":error}
+        gLogger.info("Result is: %s" % result)
+    """
+    from DIRAC.FrameworkSystem.Client import ProxyGeneration, ProxyUpload
+    resultList = list()
     for key in keyList:
       proxy = "".join(random.choice(string.letters) for x in range(10))
       proxy = os.path.join(storePath,proxy)
@@ -137,14 +166,43 @@ class GeneralController( BaseController ):
       params.keyLoc = key["private"]
       params.proxyLoc = proxy
       params.userPasswd = open(key["pem"],"r").readline()
+      gLogger.info("Generating proxy")
       result = ProxyGeneration.generateProxy(params)
-      if not result[ 'OK' ]:
+      gLogger.info("Result: %s" % result)
+      if not result["OK"]:
         shutil.rmtree(storePath)
-        error = result[ 'Message' ]
-        error = error + disclaimer
+        error = result["Message"]
+        if len(resultList) > 0:
+          error = error + "\n Meanwhile, successfully uploaded proxy:\n"
+          result = "\n".join(resultList)
+          error = error + result
+        error = error + "\nYour private info was safely deleted"
         gLogger.debug("Service response: %s" % error)
         return {"success":"false","error":error}
-#    shutil.rmtree(storePath)
+      params.onTheFly = False
+      for group in groupList:
+        params.diracGroup = group
+        params.onTheFly = True
+        gLogger.info("Upload proxy for group %s" % group)
+        gLogger.info("group: %s, cert: %s, key: %s, proxy: %s, onTheFly: %s" % (params.diracGroup,params.certLoc,params.keyLoc,params.proxyLoc,params.onTheFly))
+        result = ProxyUpload.uploadProxy(params)
+        gLogger.info("Result: %s" % result)
+        if not result["OK"]:
+          shutil.rmtree(storePath)
+          error = result["Message"]
+          if len(resultList) > 0:
+            error = error + "\n Meanwhile, successfully uploaded proxy:\n"
+            result = "\n".join(resultList)
+            error = error + result
+          error = error + "\nYour private info was safely deleted"
+          gLogger.debug("Service response: %s" % error)
+          return {"success":"false","error":error}
+        resultList.append("Successfully upload proxy for group %s" % group)   
+    shutil.rmtree(storePath)
+    """
+#    result = "\n".join(resultList)
+#    result = result + "\nYour private info was safely deleted"
+    return {"success":"true","result":result}
 ################################################################################
   @jsonify
   def action(self):
