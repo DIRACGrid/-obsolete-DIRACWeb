@@ -144,9 +144,6 @@ function proxyUpload(){
     autoHeight:true,
     buttons:[submit,reset,close],
     defaultType:'textfield',
-//    defaults:{
-//      anchor:'-25'
-//    },
     defaults:{
       anchor:'100%',
       allowBlank:false
@@ -169,35 +166,24 @@ function proxyUpload(){
           }
         }
       }
-    }),new Ext.form.FieldSet({
-      autoHeight:true,
-      defaultType:'textfield',
-      labelWidth:80,
-      items:[{
-        allowBlank:false,
-        anchor:'100%',
-        fieldLabel:'p12 certificate',
-        inputType:'password',
-        name:'pass_p12'
-      },{
-        allowBlank:false,
-        anchor:'100%',
-        fieldLabel:'personal key',
-        inputType:'password',
-        name:'pass_pem'
-      }],
-      title:'Input password for'
     }),{
+      allowBlank:false,
+      anchor:'100%',
+      fieldLabel:'p12 password',
+      inputType:'password',
+      name:'pass_p12'
+    },{
       xtype:'label',
       html:'We are not keeping neither your private key nor password for'+
-      ' certificate or private key on our service. While we try to make this'+
-      ' process as secure as possible by using SSL to encrypt the key when it'+
-      ' is sent to the server, for maximum security, we recommend that you'+
-      ' manually convert and upload the proxy using DIRAC client commands:'+
-      '<ul><li>dirac-cert-convert.sh CERT_FILE_NAME.p12</li>'+
-      '<li>dirac-proxy-init -UP</li>'+
+      ' p12 file on our service. While we try to make this process as secure'+
+      ' as possible by using SSL to encrypt the p12 file with your credentials'+
+      ' when it is sent to the server, for maximum security, we recommend that'+
+      ' you manually convert and upload the proxy using DIRAC client commands:'+
+      '<ul class="ul_disk">'+
+      '<li>dirac-cert-convert.sh YOUR_P12_FILE_NAME.p12</li>'+
+      '<li>dirac-proxy-init -U -g GROUP_NAME</li>'+
       '</ul><br><br>'
-    }],
+    }], 
     labelWidth:90,
     url:'../../info/general/proxyUpload',
   });
