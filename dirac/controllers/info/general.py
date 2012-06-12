@@ -64,10 +64,10 @@ class GeneralController( BaseController ):
           name = name.strip()
           if name[-4:] == ".p12":
             gLogger.info(".p12 in filename detected")
-            if request.params["pass_p12"] and request.params["pass_pem"]:
+            if request.params["pass_p12"]:
               fileObject = request.params[key]
               fileObject.p12 = str(request.params["pass_p12"])
-              fileObject.pem = str(request.params["pass_pem"])
+              gLogger.info(".p12 password detected")
               store.append(fileObject)
               gLogger.info("Certificate object is loaded")
       except Exception,x:
@@ -101,8 +101,9 @@ class GeneralController( BaseController ):
         tmpFile = open(desc["p12"],"w")
         tmpFile.write(file.p12)
         tmpFile.close()
+        pemPassword = "".join(random.choice(string.letters) for x in range(10))
         tmpFile = open(desc["pem"],"w")
-        tmpFile.write(file.pem)
+        tmpFile.write(pemPassword)
         tmpFile.close()
         descriptionList.append(desc)
     except Exception,x:
