@@ -1,3 +1,6 @@
+[web2012061201]
+FIX: Pem is random generated, PEM password field is removed from password upload form
+
 [web2012061102]
 FIX: URL fix in diracPage.js file
 FIX: showJob() redirects to JobMonitor page if not already there
