@@ -132,7 +132,7 @@ class GeneralController( BaseController ):
         tmp = "".join(random.choice(string.letters) for x in range(10))
         key[j] = os.path.join(storePath,tmp)
       cmdCert = "openssl pkcs12 -clcerts -nokeys -in %s -out %s -password file:%s" % (name,key["pub"],p12)
-      cmdKey = "openssl pkcs12 -nocerts -in %s -out %s -passout file:%s -password file:%s" % (name,key["private"],p12,key["pem"])
+      cmdKey = "openssl pkcs12 -nocerts -in %s -out %s -passout file:%s -password file:%s" % (name,key["private"],key["pem"],p12)
       for cmd in cmdCert,cmdKey:
         result = Subprocess.shellCall(900,cmd)
         gLogger.debug("Command is: %s" % cmd)
