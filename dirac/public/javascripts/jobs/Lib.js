@@ -117,7 +117,7 @@ function AJAXrequest(key,value){
   try{
     gMainLayout.container.mask('Please wait');
   }catch(e){}
-  var params = value + '=' + id;
+  var params = key + '=' + value;
   Ext.Ajax.request({
     failure:function(response){
       response.responseText ? response = response.responseText : '';
