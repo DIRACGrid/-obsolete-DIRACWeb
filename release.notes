@@ -1,3 +1,6 @@
+[web2012061801]
+FIX: Check for exit status in Subprocess call 
+
 [web2012061701]
 FIX: Typo in Lib.js file preventing of a responsew window to be open after AJAX call
 
