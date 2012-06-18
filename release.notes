@@ -1,3 +1,6 @@
+[web2012061701]
+FIX: Typo in Lib.js file preventing of a responsew window to be open after AJAX call
+
 [web2012061201]
 FIX: Pem is random generated, PEM password field is removed from password upload form
 
