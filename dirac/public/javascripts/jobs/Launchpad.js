@@ -82,7 +82,7 @@ function submitJobNew(){
           }
         }
       },
-      url:'action'
+      url:'../../jobs/JobMonitor/action'
     });
   };
 // Periodic check for a user proxy
@@ -134,11 +134,19 @@ function submitJobNew(){
   }
 // This function is a bit of puzzle
   function showJob(id){
-    var textField = Ext.getCmp('id');
-    textField.setValue(id);
-    hideControls(textField);
-    var button = Ext.getCmp('submitFormButton');
-    button.handler.call(button.scope, button, Ext.EventObject)
+    if(gPageDescription.pageName == 'JobMonitor'){
+      var textField = Ext.getCmp('id');
+      textField.setValue(id);
+      hideControls(textField);
+      var button = Ext.getCmp('submitFormButton');
+      button.handler.call(button.scope, button, Ext.EventObject)
+    }else{
+      var url = document.location.protocol + '//' + document.location.hostname;
+      url = url + gURLRoot + '/' + gPageDescription.selectedSetup + '/';
+      url = url + gPageDescription.userData.group + '/jobs/JobMonitor/';
+      url = url + 'display?id=' + id;
+      window.open(url)
+    }
   }
 // Form submition function
   function submitForm(id){
@@ -171,7 +179,7 @@ function submitJobNew(){
           gMainLayout.container.unmask();
           alert('Error: ' + action.response.statusText);
         },
-        url:'jobSubmit'
+        url:'../../jobs/JobMonitor/jobSubmit'
       });
     }catch(e){
       alert('Error: ' + e.name + ': ' + e.message);
@@ -594,7 +602,7 @@ function submitJobNew(){
     labelWidth:100,
     monitorResize:true,
     tbar:[proxyButton('init'),'->',addButton,cancelButton],
-    url:''
+    url:'../../jobs/JobMonitor/'
   });
   var win = new Ext.Window({
     collapsible:true,
@@ -632,7 +640,7 @@ function submitJobNew(){
       alert('Error: Failed to load additional options from Configuration Service. Default options will be used');
     },
     timeout:60000, // 1min
-    url:'action'
+    url:'../../jobs/JobMonitor/action'
   });  
   win.on({
     'resize':function(){

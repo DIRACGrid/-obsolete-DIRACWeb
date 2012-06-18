@@ -69,6 +69,27 @@ function action(type,mode,id){
     url:'action'
   });
 }
+function errorReport(strobj){
+  var prefix = 'Error: ';
+  var postfix = '';
+  var error = 'Action has finished with error';
+  if(strobj){
+    if(strobj.substring) {
+      error = strobj;
+    }else{
+      try{
+        if(strobj.failureType == 'connect'){
+          error = 'Can not recieve service response';
+        }
+      }catch(e){}
+      try{
+        error = error + '\nMessage: ' + strobj.response.statusText;
+      }catch(e){}
+    }
+  }
+  error = prefix + error + postfix;
+  alert(error);
+}
 function AJAXerror(response){
   try{
     gMainLayout.container.unmask();
@@ -92,19 +113,21 @@ function AJAXerror(response){
     return;
   }
 }
-function AJAXrequest(value,id){
+function AJAXrequest(key,value){
   try{
     gMainLayout.container.mask('Please wait');
   }catch(e){}
-  var params = value + '=' + id;
+  var params = key + '=' + value;
   Ext.Ajax.request({
     failure:function(response){
-      AJAXerror(response.responseText);
+      response.responseText ? response = response.responseText : '';
+      AJAXerror(response);
     },
     method:'POST',
     params:params,
     success:function(response){
-      AJAXsuccess(value,id,response.responseText);
+      response.responseText ? response = response.responseText : '';
+      AJAXsuccess(key,value,response);
     },
     timeout:60000, // 1min
     url:'action'
@@ -167,13 +190,14 @@ function dateSelectMenu(){
   return date;
 }
 function displayWin(panel,title,modal){
+  var coords = Ext.EventObject.xy;
   var window = new Ext.Window({
     iconCls:'icon-grid',
     closable:true,
     width:600,
     height:400,
     border:true,
-    collapsible:true,
+    collapsible: modal ? false : true,
     constrain:true,
     constrainHeader:true,
     maximizable:true,
@@ -325,23 +349,6 @@ function initStore(record,options,id){
             store.sort(sort[0],sort[1]);
           }
         }catch(e){}
-        var up = Ext.getCmp('updatedTableButton');
-        if(!Ext.isEmpty(up)){
-          if(store.reader.jsonData.date){
-            up.setText('Updated: ' + store.reader.jsonData.date);
-          }else{
-            var d = new Date();
-            var hh = d.getUTCHours();
-            if(hh < 10){
-              hh = '0' + hh;
-            }
-            var mm = d.getUTCMinutes();
-            if(mm < 10){
-              mm = '0' + mm;
-            }
-            up.setText('Updated: ' + d.getUTCFullYear() + '-' + d.getUTCMonth() + '-' + d.getUTCDate() + ' ' + hh + ':' + mm + ' [UTC]');
-          }
-        }
       }else{
         alert("Error in store.reader.jsonData, trying to reload data store...");
         store.load();
@@ -625,6 +632,99 @@ function sortGlobalPanel(){
     labelAlign:'top',
     layout:'column',
     title:'Global Sort'
+  });
+  return panel;
+}
+function selectPanelReloaded(table){
+  var refresh = new Ext.Button({
+    cls:"x-btn-icon",
+    handler:function(){
+      refreshSelect(panel);
+    },
+    icon:gURLRoot+'/images/iface/refresh.gif',
+    minWidth:'20',
+    tooltip:'Refresh data in the selection boxes',
+    width:'100%'
+  });
+  var reset = new Ext.Button({
+    cls:"x-btn-text-icon",
+    handler:function(){
+      panel.form.reset();
+      var number = Ext.getCmp('id');
+      hideControls(number);
+    },
+    icon:gURLRoot+'/images/iface/reset.gif',
+    minWidth:'70',
+    tooltip:'Reset values in the form',
+    text:'Reset'
+  });
+  var submit = new Ext.Button({
+    cls:"x-btn-text-icon",
+    handler:function(){
+      panel.form.submit();
+    },
+    id:'submitFormButton',
+    icon:gURLRoot+'/images/iface/submit.gif',
+    minWidth:'70',
+    name:'submitFormButton',
+    tooltip:'Send request to the server',
+    text:'Submit'
+  });
+  var panel = new Ext.FormPanel({
+    autoScroll:true,
+    bodyStyle:'padding: 5px',
+    border:false,
+    buttonAlign:'center',
+    buttons:[submit,reset,refresh],
+    collapsible:true,
+    keys:[{
+      key:13,
+      scope:this,
+      fn:function(key,e){
+        panel.form.submit();
+      }
+    }],
+    labelAlign:'top',
+    method:'POST',
+    minWidth:'200',
+    title:'Selections',
+    url:'submit',
+    waitMsgTarget:true
+  });
+  panel.on('beforeaction',function(form,action){
+    var params = {};
+    try{
+      params = table.getStore().baseParams;
+    }catch(e){}
+    params['start'] = 0;
+    params['limit'] = 25;
+    try{
+      params['limit'] = table.getBottomToolbar().pageSize;
+    }catch(e){}
+    form['baseParams'] = params;
+    try{
+      gMainLayout.container.mask('Sending data...');
+    }catch(e){}
+  });
+  panel.on('actioncomplete',function(form,action){
+    try{
+      gMainLayout.container.unmask();
+    }catch(e){}
+    try{
+      if(action.result.success == 'false'){
+        alert('Error: ' + action.result.error);
+      }else{
+        table.store.loadData(action.result);
+      }
+    }catch(e){
+      alert('');
+    }
+  });
+  panel.on('actionfailed',function(form,action){
+    try{
+      gMainLayout.container.unmask();
+    }catch(e){}
+    errorReport(action);
   });
   return panel;
 }
@@ -955,30 +1055,28 @@ function genericID(name,fieldLabel,altRegex,altRegexText,hide){
   return textField;
 }
 function createRemoteMenu(item){
-  try{
-    baseParams = {'meta':item.text};
-    url = '/getmeta';
-    fieldLabel = item.text;
-    emptyText = 'Select value from menu';
-  }catch(e){
-    alert('Error: ' + e.name + ': ' + e.message);
+  if((!item)||(typeof item!=='object')){
+    window.console && console.log ?
+      console.log('Argument is None or not an Object') : '';
+    return
   }
   var store = new Ext.data.JsonStore({
-    baseParams:baseParams,
+    baseParams:item.baseParams ? item.baseParams : false,
     fields:['name'],
     root:'result',
-    url:url
+    url:item.url ? item.url : 'action'
   });
   var combo = new Ext.form.ComboBox({
     anchor:'-15',
-    store:store,
     displayField:'name',
-    typeAhead:true,
-    fieldLabel:fieldLabel,
+    emptyText:item.emptyText ? item.emptyText : 'Select item from the menu',
+    fieldLabel:item.fieldLabel ? item.fieldLabel : 'Default label',
     forceSelection:true,
-    triggerAction:'all',
-    emptyText:emptyText,
+    name:item.name ? item.name : Ext.id(),
     selectOnFocus:true,
+    store:store,
+    triggerAction:'all',
+    typeAhead:true
   });
   return combo
 }
@@ -993,7 +1091,11 @@ function createMenu(dataName,title,altValue){
     }
   }catch(e){}
   var disabled = true;
-  var error = ['Error happened on service side','Nothing to display','Insufficient rights'];
+  var error = [
+    'Error happened on service side',
+    'Nothing to display',
+    'Insufficient rights'
+  ];
   var errorRegexp = new RegExp('^(' + error.join('|') + ')$');
   if((data == 'Nothing to display')||(Ext.isEmpty(data))){
     data = [['Nothing to display']];
@@ -1050,7 +1152,7 @@ function createDropdownMenu(dataName,title,altValue){
   if(altValue && altValue.constructor == Array){
     data = altValue;  
   }else{
-    if(dataSelect && dataSelect[dataName].constructor == Array){
+    if(dataSelect && dataSelect[dataName] && dataSelect[dataName].constructor == Array){
       data = dataSelect[dataName];
     }
   }
@@ -1062,7 +1164,7 @@ function createDropdownMenu(dataName,title,altValue){
   }
   var fields = ['value'];
   var valueField = 'value';
-  if(data[0].constructor == Array){
+  if(data[0] && data[0].constructor == Array){
     fields = []
     var tmp = data[0];
     if(tmp.length > 1){
@@ -1224,6 +1326,8 @@ function setTitle(value,id){
 function status(value){
   if((value == 'Done')||(value == 'Completed')||(value == 'Good')||(value == 'Active')||(value == 'Cleared')||(value == 'Completing')){
     return '<img src="'+gURLRoot+'/images/monitoring/done.gif">';
+  }else if(value == 'Bad'){
+    return '<img src="'+gURLRoot+'/images/monitoring/bad.gif">';
   }else if((value == 'Failed')||(value == 'Bad')||(value == 'Banned')||(value == 'Aborted')){
     return '<img src="'+gURLRoot+'/images/monitoring/failed.gif">';
   }else if((value == 'Waiting')||(value == 'Stopped')||(value == 'Poor')||(value == 'Probing')){
@@ -1770,6 +1874,35 @@ function table(tableMngr){
     tbar:tbar,
     view:view,
     viewConfig:viewConfig
+  });
+  store.on('load',function(){
+    var date = false;
+    try{
+      date = store.reader.jsonData.date;
+    }catch(e){}
+    if(date){
+      updateStamp.setText('Updated: ' + store.reader.jsonData.date);
+    }else{
+      var d = new Date();
+      var hh = d.getUTCHours();
+      if(hh < 10){
+        hh = '0' + hh;
+      }
+      var mm = d.getUTCMinutes();
+      if(mm < 10){
+        mm = '0' + mm;
+      }
+      var mon = d.getUTCMonth() + 1;
+      if(mon < 10){
+              mon = '0' + mon;
+      }
+      var day = d.getUTCDate();
+      if(day < 10){
+              day = '0' + day;
+      }
+      var dateText = 'Updated: ' + d.getUTCFullYear() + '-' + mon + '-' + day + ' ' + hh + ':' + mm + ' [UTC]';
+      updateStamp.setText(dateText);
+    }
   });
   if(tableMngr.tbar == ''){
     var bar = dataTable.getTopToolbar();

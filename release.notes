@@ -1,3 +1,59 @@
+[web2012061801]
+FIX: Check for exit status in Subprocess call 
+
+[web2012061701]
+FIX: Typo in Lib.js file preventing of a responsew window to be open after AJAX call
+
+[web2012061201]
+FIX: Pem is random generated, PEM password field is removed from password upload form
+
+[web2012061102]
+FIX: URL fix in diracPage.js file
+FIX: showJob() redirects to JobMonitor page if not already there
+
+[web2012061101]
+NEW: Proxy generation and upload out of p12 file
+
+[web2012053101]
+FIX: User registration form should be able to send email in behalf of webportal
+
+[web2012052201]
+FIX: Fixing order and placement of some elements under System menu
+
+[web2012041801]
+NEW: First prototype of metadata catalog
+
+[web2012041601]
+NEW: New icon for status "Bad"
+
+[web2012041001]
+NEW: Following feature request https://github.com/DIRACGrid/DIRACWeb/issues/71 the column "RunNumber" is introduced
+
+[web2012040201]
+FIX: Using the functions of new UP client insted of old UP client's functions
+
+[web2012032301]
+FIX: Typo in error message could rise an exception
+
+[web2012032101]
+FIX: Do not use toSource in the accounting plots by default
+
+[web2012022801]
+CHANGE: Last update is set to be working on per table basis
+
+[web2012022701]
+CHANGE: SiteGateway uses the new RSS client. 3 additional tabs are introduced to reflect info about different kinds of SE types.
+
+[web2012020202]
+FIX: split function is not used anymore
+
+[web2012020201]
+FIX: Check for not existance of a menu object
+
+[web2012011801]
+FIX: Fix of month error
+FIX: Add scrollbars to activities monitoring page
+
 [web2011121301]
 FIX: Display for http requests the standard 'certificate login' message instead of registration form
 

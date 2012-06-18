@@ -6,7 +6,7 @@ function showError(msg){
   if(Ext.isEmpty(msg)){
     msg = 'Error is not set or an empty value';
   }
-  alert('Error: ' + msg + '\nPlease use the forum http://groups.google.com/group/diracgrid-forum to clarify situation');
+  alert('Error: ' + msg + '\nPlease, use the forum http://groups.google.com/group/diracgrid-forum to clarify situation');
 }
 function initDiracPage( urlRoot, pageDescription )
 {
@@ -71,9 +71,145 @@ function __addClickHandlerToMenuSubEntries( menuEntry )
   }
   return hndlMenu;
 }
+function proxyUpload(){
+  function winClose(){
+    var win = panel.findParentByType('window');
+    try{
+      win.close();
+    }catch(e){
+      showError(e.name + ': ' + e.message)
+    }
+    return
+  }
+  function sucHandler(form, action){
+    gMainLayout.container.unmask();
+    var response = action.result
+    if(response.success){
+      if(response.success == 'false'){
+        if(response.error){
+          showError(response.error);
+        }else{
+          showError('Your request is failed with no error returned.');
+        }
+      }else if(response.success == 'true'){
+        alert(response.result);
+        winClose();
+      }
+    }else{
+      showError('Server response is unknown. Most likely your request is accepted');
+    }
+  }
+  function falHandler(a,b){
+    gMainLayout.container.unmask();
+    if(b.failureType == 'client'){
+      showError('Error happens on client side');
+    }else if(b.failureType == 'connect'){
+      showError('Bad connection or error happens on server side while connecting');
+    }else{
+      showError('Error happens on server side');
+    }
+  }
+  var close = new Ext.Button({
+    cls:"x-btn-text-icon",
+    handler:function(){
+      winClose();
+    },
+    icon:gURLRoot+'/images/iface/close.gif',
+    minWidth:'100',
+    tooltip:'Alternatively, you can close the dialogue by pressing the [X] button on the top of the window',
+    text:'Close'
+  })
+  var reset = new Ext.Button({
+    cls:"x-btn-text-icon",
+    handler:function(){
+      panel.form.reset();
+    },
+    icon:gURLRoot+'/images/iface/reset.gif',
+    minWidth:'100',
+    tooltip:'Reset values in the form',
+    text:'Reset'
+  });
+  var submit = new Ext.Button({
+    cls:"x-btn-text-icon",
+    handler:function(){
+      gMainLayout.container.mask('Sending data');
+      panel.form.submit({success:sucHandler,failure:falHandler});
+    },
+    icon:gURLRoot+'/images/iface/submit.gif',
+    minWidth:'100',
+    tooltip:'Send request to the server',
+    text:'Submit'
+  });
+  var panel = new Ext.FormPanel({
+    autoHeight:true,
+    buttons:[submit,reset,close],
+    defaultType:'textfield',
+    defaults:{
+      anchor:'-5',
+      allowBlank:false
+    },
+    frame:true,
+    fileUpload:true,
+    items:[new Ext.ux.form.FileUploadField({
+      buttonOffset:2,
+      cls:"x-btn-text-icon",
+      fieldLabel:'Certificate',
+      icon:gURLRoot+'/images/iface/addfile.gif',
+      listeners:{
+        'fileselected':function(fb,name){
+          var tt = name.substr(-4);
+          if(name.substr(-4)!='.p12'){
+            showError('You have to choose the *.p12 file with you credentials');
+            return
+          }else{
+            submit.enable();
+          }
+        }
+      }
+    }),{
+      allowBlank:false,
+      fieldLabel:'p12 password',
+      inputType:'password',
+      name:'pass_p12'
+    },{
+      xtype:'label',
+      html:'We are not keeping neither your private key nor password for'+
+      ' p12 file on our service. While we try to make this process as secure'+
+      ' as possible by using SSL to encrypt the p12 file with your credentials'+
+      ' when it is sent to the server, for maximum security, we recommend that'+
+      ' you manually convert and upload the proxy using DIRAC client commands:'+
+      '<ul class="ul_disk">'+
+      '<li>dirac-cert-convert.sh YOUR_P12_FILE_NAME.p12</li>'+
+      '<li>dirac-proxy-init -U -g GROUP_NAME</li>'+
+      '</ul><br><br>'
+    }], 
+    labelWidth:90,
+    url:'../../info/general/proxyUpload',
+  });
+  var window = new Ext.Window({
+    iconCls:'icon-grid',
+    closable:true,
+    width:400,
+//    height:400,
+    border:true,
+    collapsible:false,
+    constrain:true,
+    constrainHeader:true,
+    maximizable:false,
+    modal:true,
+    layout:'fit',
+    plain:true,
+    resizable:false,
+    shim:false,
+    title:'Proxy upload',
+    items:[panel]
+  });
+  window.show();
+  return
+}
 function regForm(dn,cn){
   if(Ext.isEmpty(dn)){
-    showError('You have to load certificate to your browser before trying to register');
+    showError('You have to load certificate to browser before register');
     return
   }
   function winClose(){
@@ -97,18 +233,21 @@ function regForm(dn,cn){
         }
       }else if(response.success == 'true'){
         if(Ext.isEmpty(response.result)){
-          response.result = 'Your request has been successfully sent to administrator';
+          response.result = 'Your request has been successfully registered\nInstructions';
+          response.result = response.result + ' will be sent to your e-mail address shortly'
         }
-        alert(response.result + '\nInstructions will be sent to your e-mail address shortly');
+        alert(response.result);
         winClose();
       }
     }else{
-      showError('Server response is unknown. Most likely your request has acepted');
+      showError('Server response is unknown. Most likely your request is accepted');
     }
   }
   function falHandler(a,b){
     gMainLayout.container.unmask();
-    if(b.failureType == 'connect'){
+    if(b.failureType == 'client'){
+      showError('Error happens on client side');
+    }else if(b.failureType == 'connect'){
       showError('Bad connection or error happens on server side while connecting');
     }else{
       showError('Error happens on server side');
@@ -160,11 +299,11 @@ function regForm(dn,cn){
       selectOnFocus:true,
     });
   }
-  var voList = {fieldLabel:'Virtual Organization',name:'vo',emptyText:'Select prefered virtual organization(s)'};
+  var voList = {fieldLabel:'Virtual Organization',name:'vo',emptyText:'Select preferred virtual organization(s)'};
   if(pageDescription['regVO']){
     var voList = new Ext.ux.form.LovCombo({
       displayField:'data',
-      emptyText:'Select prefered virtual organization(s)',
+      emptyText:'Select preferred virtual organization(s)',
       fieldLabel:'Virtual Organization',
       hiddenName:'vo',
       hideOnSelect:false,
@@ -290,15 +429,36 @@ function initTopFrame( pageDescription ){
     navItems.push( menuEntry );
   }
   if(gPageDescription.userData && gPageDescription.userData.username && gPageDescription.userData.username != 'Anonymous'){
-    if(gPageDescription.pageName == 'JobMonitor'){
-      var upmenu = new Ext.menu.Menu();
-      var tools = new Ext.Toolbar.Button({
-    	  text:'Tools',
-	      id:'mainTopbarToolsButton',
-      	menu:upmenu
-      });
-      navItems.push(tools);
-    }
+    var upmenu = new Ext.menu.Menu({
+      items:[{
+        handler:function(){
+          loadFile({
+            '/stylesheets/fileupload.css':'css',
+            '/javascripts/FileUploadField.js':function(){proxyUpload()}
+          });
+        },
+        text:'Proxy Upload'
+      },{
+        handler:function(){
+          loadFile({
+            '/stylesheets/fileupload.css':'css',
+            '/javascripts/FileUploadField.js':null,
+            '/stylesheets/lovCombo.css':'css',
+            '/javascripts/lovCombo.js':null,
+            '/javascripts/jobs/Launchpad.js':function(){
+              submitJobNew()
+            }
+          });
+        },
+        text:'Job Launchpad'
+      }]
+    });
+    var tools = new Ext.Toolbar.Button({
+      text:'Tools',
+      id:'mainTopbarToolsButton',
+      menu:upmenu
+    });
+    navItems.push(tools);
   }
   navItems.push( "->" );
   navItems.push( "Selected setup:" );
@@ -336,18 +496,6 @@ function initBottomFrame( pageDescription )
   var userObject = pageDescription[ 'userData' ];
   var regex = new RegExp('certificate login',i);
   if(userObject.DN && !regex.test(userObject.DN) &&userObject.username && userObject.username.toLowerCase() == 'anonymous'){
-// A trick to include additional JS file  
-    var th = document.getElementsByTagName('head')[0];
-    var s = document.createElement('script');
-    s.setAttribute('type','text/javascript');
-    s.setAttribute('src','/javascripts/lovCombo.js');
-    var c = document.createElement('link');
-    c.setAttribute('type','text/css');
-    c.setAttribute('rel','stylesheet');
-    c.setAttribute('href','/stylesheets/lovCombo.css');
-    th.appendChild(s);
-    th.appendChild(c);
-// End of trick    
     Ext.Ajax.request({
       method:'POST',
       params:{'getCountries':true},
@@ -384,7 +532,12 @@ function initBottomFrame( pageDescription )
         if(!Ext.isEmpty(userObject.CN)){
           cn = userObject['CN'];
         }
-        regForm(userObject.DN, cn);
+        loadFile({
+            '/stylesheets/lovCombo.css':'css',
+            '/javascripts/lovCombo.js':function(){
+              regForm(userObject.DN, cn)
+            }
+        });
       },
       text:'<b>Click here to register in DIRAC</b>',
       tooltip:''
@@ -477,4 +630,33 @@ function getCookie( cookieName )
 function deleteCooke( cookieName )
 {
   document.cookie = cookieName + '=;expires=Thu, 01-Jan-1970 00:00:01 GMT';
+}
+
+function loadFile(data){
+  if(!data) return;
+  var addLoadHandler = function(script, data){
+    script.onload = script.onreadystatechange = function( ){
+      if(!script.readyState || script.readyState == "loaded" || script.readyState == "complete"){
+        if(typeof data == "function") data( );
+        script.onload = script.readystatechange = null; 
+      }
+    }
+  }
+  var head = document.getElementsByTagName("head")[0];    
+  for(file in data){
+    if(data.hasOwnProperty(file)){
+      if(data[file] == 'css'){
+        var el = document.createElement('link');
+        el.setAttribute('type','text/css');
+        el.setAttribute('rel','stylesheet');
+        el.setAttribute('href',gURLRoot+file);
+      }else{
+        var el = document.createElement('script');
+        el.setAttribute('type','text/javascript');
+        el.setAttribute('src',gURLRoot+file);
+        addLoadHandler(el, data[file]);
+      }
+      head.appendChild(el);
+    }
+  }  
 }

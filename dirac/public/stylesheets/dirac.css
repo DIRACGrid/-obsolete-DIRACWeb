@@ -185,3 +185,8 @@ p.footer {
 #site-main-panel table.x-table-layout {
     width: 100%;
 }
+.ul_disk {
+  list-style-type:disk !important;
+  text-indent: 5px !important;
+  font-weight: bold !important;
+}
