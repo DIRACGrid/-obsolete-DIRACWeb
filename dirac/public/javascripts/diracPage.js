@@ -145,7 +145,7 @@ function proxyUpload(){
     buttons:[submit,reset,close],
     defaultType:'textfield',
     defaults:{
-      anchor:'100%',
+      anchor:'-5',
       allowBlank:false
     },
     frame:true,
@@ -168,7 +168,6 @@ function proxyUpload(){
       }
     }),{
       allowBlank:false,
-      anchor:'100%',
       fieldLabel:'p12 password',
       inputType:'password',
       name:'pass_p12'
