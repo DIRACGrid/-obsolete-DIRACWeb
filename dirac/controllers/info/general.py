@@ -33,6 +33,7 @@ class GeneralController( BaseController ):
     username = getUsername()
     gLogger.info("Start upload proxy out of p12 for user: %s" % (username))
     disclaimer  = "\nNo proxy was created\nYour private info was safely deleted"
+    disclaimer  = disclaimer + " from DIRAC service"
     if username == "anonymous":
       error = "Please, send a registration request first"
       gLogger.error("Anonymous is not allowed")
@@ -171,8 +172,21 @@ class GeneralController( BaseController ):
           error = error + disclaimer
           gLogger.debug("Service response: %s" % error)
           return {"success":"false","error":error}
-        result = "".join(result["Value"][1])
-        resultList.append(result)
+        code = result["Value"][0]
+        stdout = result["Value"][1]
+        error = result["Value"][2]
+        if len(error) > 0:
+          error = error.replace(">","")
+          error = error.replace("<","")
+        if not code == 0:
+          if len(resultList) > 0:
+            success = "\nHowever some operations has finished successfully:\n"
+            success = success + "\n".join(resultList)
+            error = error + success
+          error = error + disclaimer
+          gLogger.debug("Service response: %s" % error)
+          return {"success":"false","error":error}
+        resultList.append(stdout)
     shutil.rmtree(storePath)
     debug = "\n".join(resultList)
     gLogger.debug(debug)
@@ -184,7 +198,7 @@ class GeneralController( BaseController ):
       result = result + " in group: %s" % groups
     gLogger.info(result)
     result = "Operation finished successfully\n" + result
-    result = result + "\nYour private info was safely deleted"
+    result = result + "\nYour private info was safely deleted from DIRAC server"
     gLogger.debug("Service response: %s" % result)
     return {"success":"true","result":result}
 ################################################################################
