@@ -9,6 +9,7 @@ function init(reponseSelect){
       })
     });
     var leftBar = left(reponseSelect);
+/*
     var panel = leftBar.items.itemAt(0);
     panel.on('actioncomplete',function(form,action){
       try{
@@ -18,7 +19,7 @@ function init(reponseSelect){
         if(action.result.success == 'false'){
           errorReport(action.result.error);
         }else{
-          mainContent.store.loadData(action.result);
+          mainContent.store.loadData(action.result;nel()
         }
       }catch(e){
         alert('');
@@ -30,162 +31,122 @@ function init(reponseSelect){
       }catch(e){}
       errorReport(action);
     });
-    var rightBar = right();
+*/
     var mainContent = center();
     renderInMainViewport([ leftBar, mainContent ]);
   });
 }
 function left(reponseSelect){
-  var addButton = new Ext.Toolbar.Button({
-    cls:"x-btn-text-icon",
-    icon:gURLRoot+'/images/iface/advanced.gif',
-    handler:function(){
-      addMenu(panel);
-    },
-    text:'Add Metadata selector(s)',
-    tooltip:'Click to add more metadata selectors'
+  var store = new Ext.data.JsonStore({
+    autoLoad:true,
+    baseParams:{'getSelectorGrid':true},
+    fields:['Name','Type'],
+    idProperty:'Name',
+    root:'result',
+    url:'action'
   });
-  var refresh = new Ext.Button({
-    cls:"x-btn-icon",
-    handler:function(){
-      refreshSelect(panel);
-    },
-    icon:gURLRoot+'/images/iface/refresh.gif',
-    minWidth:'20',
-    tooltip:'Refresh data in the selection boxes',
-    width:'100%'
+/*
+  store.on('load',function(){
+    if(siteName != ''){
+      var result = store.find('site',siteName);
+      if(result >= 0){
+        var selectionMod = table.getSelectionModel();
+        selectionMod.selectRow(result);
+        simultaneousLoad(siteName);
+      }else{
+        alert('Error: Can not find the site named: ' + siteName);
+        return
+      }
+    }
   });
-  var reset = new Ext.Button({
-    cls:"x-btn-text-icon",
-    handler:function(){
-      panel.form.reset();
-      var number = Ext.getCmp('id');
-      hideControls(number);
-    },
-    icon:gURLRoot+'/images/iface/reset.gif',
-    minWidth:'70',
-    tooltip:'Reset values in the form',
-    text:'Reset'
-  });
-  var submit = new Ext.Button({
-    cls:"x-btn-text-icon",
-    handler:function(){
-      panel.form.submit();
-    },
-    id:'submitFormButton',
-    icon:gURLRoot+'/images/iface/submit.gif',
-    minWidth:'70',
-    name:'submitFormButton',
-    tooltip:'Send request to the server',
-    text:'Submit'
-  });
-  var initPanel = new Ext.form.Hidden({name:'init',value:''});
-  var panel = new Ext.FormPanel({
-    autoScroll:true,
-    border:false,
-    buttonAlign:'center',
-    buttons:[submit,reset],
-    bodyStyle:'padding: 5px',
-    items:[initPanel],
-    labelAlign:'top',
-    tbar:new Ext.Toolbar({
-      items:[addButton]
-    }),
-    url:'submit'
-  });
-  panel.on('resize',function(){
-    keepButtonSize(panel,addButton);
-  });
-  var sidebar = new Ext.Panel({
-    collapsible:true,
-    cmargins:'2 2 2 2',
-    items:[panel],
-    layout:'fit',
-    minWidth: 200,
-    margins:'2 0 2 0',
-    region:'west',
-    split:true,
-    title:'MetadataCatalogue',
-    width: 200,
-  });
-  return sidebar
-}
-function right(){
-  var save = new Ext.Button({
-    cls:"x-btn-text-icon",
-    handler:function(){
-      Ext.emptyFn();
-    },
-    icon:gURLRoot+'/images/iface/save.gif',
-    tooltip:'Click the button if you want to save records to a file',
-    text:'Save dialog'
-  });
-  function createField(label){
-    var txtField = new Ext.form.TextField({
-      anchor:'90%',
-      fieldLabel:label,
-      readOnly:true
+*/
+  function syncButton(minWidth){
+    if(!minWidth){
+      minWidth = '';
+    }
+    var button = new Ext.Button({
+      cls:"x-btn-text-icon",
+      handler:function(){
+        store.reload();
+      },
+      icon:gURLRoot+'/images/iface/refresh.gif',
+      minWidth:minWidth,
+      text:'Refresh',
+      tooltip:'Updates the list of sites',
     });
-    return txtField;
+    return button
   }
-  var fSet1 = {
-    autoHeight:true,
-    defaultType:'textfield',
-    items:[
-      createField('Configuration Name'),
-      createField('Configuration Version'),
-      createField('Simulation/DataTaking Conditions'),
-      createField('Processing pass'),
-      createField('Event Type'),
-      createField('File Type'),
-    ],
-    labelAlign:'top',
-    xtype:'fieldset'
-  }
-  var fSet2 = {
-    autoHeight:true,
-    defaultType:'textfield',
-    items:[
-      createField('Number Of Files'),
-      createField('Number Of Events'),
-      createField('File(s) Size')
-    ],
-    labelAlign:'top',
-    title:'Statistics',
-    xtype:'fieldset'
-  }
-  var panel = new Ext.Panel({
+  var table = new Ext.grid.GridPanel({
+    anchor:'-15',
     autoScroll:true,
     bbar:new Ext.Toolbar({
-      items:[save]
+      items:[syncButton()]
     }),
-    collapsible:false,
-    split:true,
-    region:'east',
-    margins:'2 0 2 0',
+    columns:[
+      {dataIndex:'Type',id:'sl1',renderer:status,width:26,fixed:true,align:'left',menuDisabled:true,sortable:false,css:'cursor:pointer;cursor:hand;'},
+//      {dataIndex:'Name',id:'sl2',renderer:flag,width:26,fixed:true,align:'left',menuDisabled:true,sortable:false,css:'cursor:pointer;cursor:hand;'},
+      {dataIndex:'Name',id:'sl3',align:'left',editable:false,sortable:false,css:'cursor:pointer;cursor:hand;'}
+    ],
+    collapsible:true,
     cmargins:'2 2 2 2',
-    bodyStyle:'padding: 5px',
-    width: 200,
-    labelAlign:'top',
+    enableHdMenu:false,
+    hideHeaders:true,
+//    id:'sidebarSiteSelectors',
+    loadMask:true,
+    margins:'2 0 2 0',
     minWidth: 200,
-    items:[fSet1,fSet2],
-    title:'Stat info',
+//    name:'sidebarSiteSelectors',
+    region:'west',
+    split:true,
+    store:store,
+    stripeRows:true,
+    title:'MetadataCatalog',
+    width: 200,
+    viewConfig:{forceFit:true,scrollOffset:1}
   });
-  panel.on('resize',function(){
-    keepButtonSize(panel,save);
+  table.addListener('rowclick',function(tab,rowIndex){
+    var record = tab.getStore().getAt(rowIndex); // Get the Record for the row
+    try{
+      if(record.data.Name){
+        addSelector(record.data.Name);
+        table.doLayout();
+//        window.location.hash = 'site=' + record.data.Name;
+      }else{
+        alert('Error: record.data.site is absent');
+      }
+    }catch(e){
+      alert('Error: Unable to get the name of a site');
+    }
   });
-  /*
-  panel.addListener('resize',function(){
-    var tmpWidth = panel.getInnerWidth() - 4;
-    var button = saveButton(tmpWidth);
-    var bar = panel.getBottomToolbar();
+  table.addListener('resize',function(){
+    var tmpWidth = table.getInnerWidth() - 6;
+    var button = syncButton(tmpWidth);
+    var bar = table.getBottomToolbar();
     Ext.fly(bar.items.get(0).getEl()).remove();
     bar.items.removeAt(0);
     bar.insertButton(0,button);
-    panel.doLayout();
+    table.doLayout();
   });
-  */
-  return panel
+  return table
+}
+function addSelector(name){
+  var table = false;
+  table = Ext.getCmp('FilePanel');
+  if(!table){
+    return
+  }
+  var tbar = false;
+  tbar = table.getTopToolbar();
+  if(!tbar){
+    return
+  }
+  var item = createRemoteMenu({
+    baseParams:{getMeta:name},
+    name:name
+  });
+  var tbar = Ext.getCmp('tdt');
+  tbar.add(item);
+//  table.add(new Ext.Toolbar({items:item}) )
 }
 function center(){
   var record = new Ext.data.Record.create([
@@ -253,6 +214,7 @@ function center(){
     labelAlign:'left',
     loadMask:true,
     margins:'2 0 2 0',
+    id:'FilePanel',
     region:'center',
     split:true,
     store:store,
@@ -262,31 +224,12 @@ function center(){
   return dataTable
 }
 function keepButtonSize(panel,button){
-/*
-TODO: 
-1) Make the new button's width dependent from number of buttons
-i.e. single button has a width of 100% percents, two buttons
-should have 50% width each
-2) Take a button position on the toolbar and insert the new one
-exactly to the same place
-*/
-  var tmpWidth = panel.getInnerWidth() - 5;
+  var tmpWidth = panel.getInnerWidth() - 15;
   var tmpButton = button.cloneConfig({minWidth:tmpWidth});
-  var bar = new Array();
-  var bbar = panel.getBottomToolbar();
-  var tbar = panel.getTopToolbar();
-  try{
-    tbar.items.get(button.id) ? bar.push(tbar) : '';
-  }catch(e){}
-  try{
-    bbar.items.get(button.id) ? bar.push(bbar) : '';
-  }catch(e){}
-  for(var i = 0; i < bar.length; i++){
-    var j = bar[i];
-    Ext.fly(j.items.get(button.id).getEl()).remove();
-    j.items.removeAt(button.id);
-    j.insertButton(0,tmpButton);
-  }
+  var last = panel.items.getCount() - 1;
+  var lastCmp = panel.getComponent(panel.items.items[last].id);
+  panel.remove(lastCmp);
+  panel.add(tmpButton);
 }
 function addMenu(panel){
   var initPanel = new Ext.form.Hidden({name:'init',value:''});
@@ -371,6 +314,7 @@ function addItems(response,panel){
       var label = 'unknown';
       if(data.result[i] == 'int'){
         label = 'integer';
+//        label = 'string';
       }else if(data.result[i] == 'datetime'){
         label = 'date';
       }else if(data.result[i] == 'varchar(32)'){
@@ -391,10 +335,34 @@ function addItems(response,panel){
   }
   panel.doLayout();
 }
-function addItems2Panel(panel,form){
+function returnBtnLogic(){
+  var button = new Ext.Button({
+    cls:"x-btn-icon",
+    icon:gURLRoot+'/images/iface/advanced.gif',
+    minWidth:'25',
+    menu:new Ext.menu.Menu({
+      items:[
+        {text:'=='},
+        {text:'!='},
+        {text:'>'},
+        {text:'<'},
+        {text:'=>'},
+        {text:'<='},
+        {text:'[]'},
+        {text:']['},
+        {text:']]'},
+        {text:'[['},
+      ]
+    }),
+    tooltip:'Logical operations supported',
+    columnWidth:'35'
+  });
+  return button
+}
+function checkConditions(form){
   var len = form.items.getCount();
   if(len < 1){
-    return
+    return false
   }
   var checked = new Array();
   for(var i=0; i<len; i++){
@@ -404,38 +372,111 @@ function addItems2Panel(panel,form){
   }
   var len = checked.length;
   if(len < 1){
+    return false
+  }
+  return checked
+}
+function resetButton(tmpWidth, panel){
+  var button = {
+    cls:"x-btn-text-icon",
+    handler:function(){
+      timeSpan.reset();
+      startDate.reset();
+      startTime.reset();
+      endDate.reset();
+      endTime.reset();
+    },
+    icon:gURLRoot+'/images/iface/reset.gif',
+    minWidth:tmpWidth,
+    text:'Reset Values',
+    tooltip:'Click to reset values of date and time in this widget'
+  }
+  return button
+}
+function selectWidget(title){
+  var button = false;
+  button = returnBtnLogic();
+  if(!button){
+    return false
+  }
+  button.style = 'padding:10px;';
+//  title = 
+  var deleteButton = {
+    cls:"x-btn-text-icon",
+    handler:function(){
+      panel.destroy();
+    },
+    icon:gURLRoot+'/images/iface/close.gif',
+    text:'Delete selector',
+    tooltip:'Click to '
+  }
+  var panel = new Ext.Panel({
+    autoHeight:true,
+    bbar:[resetButton()],
+//    border:false,
+//    defaults: {
+//      style:'padding:5px;',
+//    },
+    items:[button],
+    layoutConfig: {
+      columns: 3
+    },
+    layout:'table',
+    monitorResize:true,
+    style:'padding-bottom:4px;',
+    tbar:[title, '->', deleteButton]
+//    title:title ? title : 'Undefined'
+  });
+  panel.on('resize',function(){
+    var tmpWidth = panel.getInnerWidth() - 6;
+    var bar = panel.getBottomToolbar();
+    Ext.fly(bar.items.get(0).getEl()).remove();
+    bar.items.removeAt(0);
+    bar.insertButton(0,resetButton(tmpWidth, panel));
+  });
+  return panel
+}
+function addItems2Panel(panel,form){
+  var check = false;
+  check = checkConditions(form);
+  if(!check){
     return
   }
-  for(var i=0; i<len; i++){
-    var item = false;
-    if(checked[i].dataType == 'integer'){
-      var name = label = checked[i].dataLabel;
-      item = genericID(name,label);
-    }else if(checked[i].dataType == 'date'){
-      var name = label = checked[i].dataLabel;
-      item = new Ext.form.DateField({
-        anchor:'-15',
-        allowBlank:true,
-        emptyText:'YYYY-mm-dd',
-        fieldLabel:label,
-        format:'Y-m-d',
-        name:name,
-        selectOnFocus:true,
-        startDay:1,
-        value:'',
-        width:98
-      });      
-    }else if(checked[i].dataType == 'string'){
-      var name = label = checked[i].dataLabel;
-      item = createRemoteMenu({
-        baseParams:{getMeta:name},
-        fieldLabel:name,
-        name:name
-      });
+  for(var i=0; i < check.length; i++){
+    if(!check[i].dataLabel || !check[i].dataType){
+      continue
     }
-    if(item){
-      panel.form.add(item);
-      panel.add(item);
+    var name = check[i].dataLabel;
+    var type = check[i].dataType;
+    var select = false;
+    select = selectWidget(name);
+    if(!select){
+      continue
+    }
+    for ( i in { 'start' : '' , 'end' : '' } ) {
+      var tmp = name +  '_' + i;
+      if(type == 'date'){
+        var item = new Ext.form.DateField({
+          allowBlank:true,
+          emptyText:'YYYY-mm-dd',
+          format:'Y-m-d',
+          name:tmp,
+          selectOnFocus:true,
+          startDay:1,
+          value:'',
+        }); 
+      }else{
+        var item = createRemoteMenu({
+          baseParams:{getMeta:name},
+          name:tmp
+        });
+      }
+      if(item){
+        select.add(item);
+        panel.form.add(item);
+        select.doLayout();
+      }
+      panel.insert(0,select);
     }
   }
   panel.doLayout();
