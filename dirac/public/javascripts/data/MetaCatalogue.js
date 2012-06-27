@@ -1,154 +1,329 @@
-var tableMngr = new Object();
-function init(reponseSelect){
-  Ext.onReady(function(){
-    Ext.override(Ext.PagingToolbar,{
-      onRender :  Ext.PagingToolbar.prototype.onRender.createSequence(function(ct, position){
-        this.loading.removeClass('x-btn-icon');
-        this.loading.setText('Refresh');
-        this.loading.addClass('x-btn-text-icon');
-      })
-    });
-    var leftBar = left(reponseSelect);
-/*
-    var panel = leftBar.items.itemAt(0);
-    panel.on('actioncomplete',function(form,action){
-      try{
-        gMainLayout.container.unmask();
-      }catch(e){}
-      try{
-        if(action.result.success == 'false'){
-          errorReport(action.result.error);
-        }else{
-          mainContent.store.loadData(action.result;nel()
+var gBroker = new Object(); // Used to tight components on this page
+var cache = new Object(); // Used to store cached data
+function init( initSelection ){
+  Ext.onReady( function(){
+    Ext.override ( Ext.PagingToolbar , {
+      onRender : Ext.PagingToolbar.prototype.onRender.createSequence(
+        function( ct , position ){
+          this.loading.removeClass('x-btn-icon');
+          this.loading.setText('Refresh');
+          this.loading.addClass('x-btn-text-icon');
         }
-      }catch(e){
-        alert('');
-      }
+      )
     });
-    panel.on('actionfailed',function(form,action){
-      try{
-        gMainLayout.container.unmask();
-      }catch(e){}
-      errorReport(action);
+    var files = initFilesPanel();
+    var query = initQueryPanel( initSelection );
+    var panel = new Ext.Panel({
+      border      : false
+      ,split      : true
+      ,layout     : 'border'
+      ,region     : 'center'
+      ,cmargins   : '2 2 2 2'
+      ,items      : [ query , files ]
     });
-*/
-    var mainContent = center();
-    renderInMainViewport([ leftBar, mainContent ]);
+    var navigation = sideBar();
+    var metaPanel = initMetaPanel();
+    navigation.insert( 0 , metaPanel );
+    navigation.setTitle( 'MetadataCatalog' );
+    renderInMainViewport([ navigation, panel ]);
   });
 }
-function left(reponseSelect){
-  var store = new Ext.data.JsonStore({
-    autoLoad:true,
-    baseParams:{'getSelectorGrid':true},
-    fields:['Name','Type'],
-    idProperty:'Name',
-    root:'result',
-    url:'action'
-  });
-/*
-  store.on('load',function(){
-    if(siteName != ''){
-      var result = store.find('site',siteName);
-      if(result >= 0){
-        var selectionMod = table.getSelectionModel();
-        selectionMod.selectRow(result);
-        simultaneousLoad(siteName);
-      }else{
-        alert('Error: Can not find the site named: ' + siteName);
-        return
-      }
-    }
-  });
-*/
-  function syncButton(minWidth){
-    if(!minWidth){
-      minWidth = '';
-    }
-    var button = new Ext.Button({
-      cls:"x-btn-text-icon",
-      handler:function(){
-        store.reload();
-      },
-      icon:gURLRoot+'/images/iface/refresh.gif',
-      minWidth:minWidth,
-      text:'Refresh',
-      tooltip:'Updates the list of sites',
-    });
-    return button
+function guerySubmit(){
+  if( ! gBroker.queryPanel || ! gBroker.queryPanel.layout ){
+    return false;
   }
-  var table = new Ext.grid.GridPanel({
-    anchor:'-15',
-    autoScroll:true,
-    bbar:new Ext.Toolbar({
-      items:[syncButton()]
-    }),
-    columns:[
-      {dataIndex:'Type',id:'sl1',renderer:status,width:26,fixed:true,align:'left',menuDisabled:true,sortable:false,css:'cursor:pointer;cursor:hand;'},
-//      {dataIndex:'Name',id:'sl2',renderer:flag,width:26,fixed:true,align:'left',menuDisabled:true,sortable:false,css:'cursor:pointer;cursor:hand;'},
-      {dataIndex:'Name',id:'sl3',align:'left',editable:false,sortable:false,css:'cursor:pointer;cursor:hand;'}
-    ],
-    collapsible:true,
-    cmargins:'2 2 2 2',
-    enableHdMenu:false,
-    hideHeaders:true,
-//    id:'sidebarSiteSelectors',
-    loadMask:true,
-    margins:'2 0 2 0',
-    minWidth: 200,
-//    name:'sidebarSiteSelectors',
-    region:'west',
-    split:true,
-    store:store,
-    stripeRows:true,
-    title:'MetadataCatalog',
-    width: 200,
-    viewConfig:{forceFit:true,scrollOffset:1}
-  });
-  table.addListener('rowclick',function(tab,rowIndex){
-    var record = tab.getStore().getAt(rowIndex); // Get the Record for the row
+  if(  ! gBroker.valuesStore  ){
+    return false;
+  }
+  var store = gBroker.valuesStore;
+  var checked = new Array();
+  for ( var i = 0;  i < store.getCount(); i++ ){
+    if( store.getAt( i ).data.Chk ){
+      checked.push( store.getAt( i ).data.Name  );
+    }
+  }
+  gBroker.queryPanel.setTitle( 'Metadata Query' );
+  gBroker.queryPanel.layout.setActiveItem( 0 );
+}
+function metaLogic(){
+  if( ! gBroker.metaPanel || ! gBroker.valuesStore || ! gBroker.valuesGrid ){
+    return false;
+  }
+  var grid = gBroker.metaPanel;
+  var store = gBroker.valuesStore;
+  var panel = gBroker.valuesGrid;
+  if( ! gBroker.queryPanel ){
+    return false;
+  }
+  grid.addListener( 'rowclick' , function( grid , rowIndex ){
     try{
+      var record = grid.getStore().getAt( rowIndex );
       if(record.data.Name){
-        addSelector(record.data.Name);
-        table.doLayout();
-//        window.location.hash = 'site=' + record.data.Name;
+        var meta = record.data.Name;
+        if( meta ){
+          gBroker.queryPanel.setTitle( meta );
+          if( cache.meta ){
+            store.loadData( cache.meta );
+          }
+          gBroker.queryPanel.layout.setActiveItem( 1 );
+        }
       }else{
-        alert('Error: record.data.site is absent');
+        showError( 'record.data.Name is absent' );
       }
     }catch(e){
-      alert('Error: Unable to get the name of a site');
+      showError( e.message );
     }
   });
-  table.addListener('resize',function(){
-    var tmpWidth = table.getInnerWidth() - 6;
-    var button = syncButton(tmpWidth);
-    var bar = table.getBottomToolbar();
-    Ext.fly(bar.items.get(0).getEl()).remove();
-    bar.items.removeAt(0);
-    bar.insertButton(0,button);
-    table.doLayout();
-  });
-  return table
+  return true;
 }
-function addSelector(name){
-  var table = false;
-  table = Ext.getCmp('FilePanel');
-  if(!table){
+function valuesLogic(){
+  if( ! gBroker.valuesStore || ! gBroker.valuesGrid ){
+    return false;
+  }
+  var store = gBroker.valuesStore;
+  var grid = gBroker.valuesGrid;
+  grid.addListener( 'rowclick' , function( grid , rowIndex ){
+    try{
+      var record = store.getAt( rowIndex );
+      if( record.data.Chk ){
+        record.data.Chk = false;
+      }else{
+        record.data.Chk = true;
+      }
+    }catch(e){
+      showError( e.message );
+    }
+  });
+  return true
+}
+function chk(flag){
+  if(flag){
+    return '<img src="'+gURLRoot+'/images/monitoring/checked.gif">';
+  }else{
+    return '<img src="'+gURLRoot+'/images/monitoring/unchecked.gif">';
+  }
+}
+function valuesInit(){
+  var button = new Ext.Button({
+    cls           : 'x-btn-text-icon'
+    ,handler      : guerySubmit
+    ,icon         : gURLRoot + '/images/iface/submit.gif'
+    ,text         : 'Select'
+    ,tooltip      : 'Confirm selected values and switch to query panel'
+  });
+  var store = new Ext.data.JsonStore({
+//    autoLoad      : true,
+//    baseParams    : { 'getSelectorGrid' : true },
+    fields        : [ 'Name' , 'Chk' ],
+    idProperty    : 'Name',
+    root          : 'result',
+//    url           : 'action'
+  });
+  gBroker.valuesStore = store;
+  var columns = [{
+    dataIndex     : 'Chk',
+    id            : 'sl1',
+    renderer      : chk,
+    width         : 26,
+    fixed         : true,
+    align         : 'left',
+    menuDisabled  : true,
+    sortable      : false,
+    css           : 'cursor:pointer;cursor:hand;'
+  },{
+    dataIndex     : 'Name',
+    id            : 'sl2',
+    align         : 'left',
+    editable      : false,
+    sortable      : false,
+    css           : 'cursor:pointer;cursor:hand;'
+  }];
+  var bbar = new Ext.Toolbar({  items : [ button ]  });
+  var grid = gridContainer({
+    bbar          : bbar
+    ,columns      : columns
+    ,store        : store
+    
+  });
+  gBroker.valuesGrid = grid;
+  var logic = valuesLogic()
+  if( ! logic  ){
+    return false;
+  }
+  return grid
+}
+function initQueryPanel( selection ){
+  var initItem = {
+    xtype         : 'box',
+    autoEl        : { cn  : '<p class="footer">Select file(s) where:'  }
+  }
+  if( ! gBroker.filesPanel ){
+    return false;
+  }
+  var form = selectPanelReloaded( gBroker.filesPanel );
+  if( ! form  ){
+    return false;
+  }
+  form.title = 'Metadata Query';
+  form.add( initItem );
+  var metaValues = valuesInit();
+  if( ! metaValues  ){
+    return false;
+  }
+  var panel = new Ext.Panel({
+    activeItem    : 0
+    ,border       : true
+    ,cmargins     : '2 2 2 2'
+    ,id           : 'card_id'
+    ,items        : [ form , metaValues ]
+    ,layout       : 'card'
+    ,margins      : '2 0 2 0'
+    ,minWidth     : 200
+    ,region       : 'west'
+    ,split        : true
+    ,width        : 200
+  });
+  gBroker.queryPanel = panel;
+  return panel
+}
+function initMetaPanel( ){
+  var button = new Ext.Button({
+    cls           : 'x-btn-text-icon',
+    handler       : function(){ store.reload() },
+    icon          : gURLRoot + '/images/iface/refresh.gif',
+    text          : 'Refresh',
+    tooltip       : 'Updates the list of selectors',
+  });
+  var store = new Ext.data.JsonStore({
+    autoLoad      : true,
+    baseParams    : { 'getSelectorGrid' : true },
+    fields        : [ 'Name' , 'Type' ],
+    idProperty    : 'Name',
+    root          : 'result',
+    url           : 'action'
+  });
+  var columns = [{
+    dataIndex     : 'Type',
+    id            : 'sl1',
+    renderer      : status,
+    width         : 26,
+    fixed         : true,
+    align         : 'left',
+    menuDisabled  : true,
+    sortable      : false,
+    css           : 'cursor:pointer;cursor:hand;'
+  },{
+    dataIndex     : 'Name',
+    id            : 'sl2',
+    align         : 'left',
+    editable      : false,
+    sortable      : false,
+    css           : 'cursor:pointer;cursor:hand;'
+  }];
+  var bbar = new Ext.Toolbar({  items : [ button ]  });
+  var grid = gridContainer({
+    bbar          : bbar 
+    ,columns      : columns
+    ,region       : 'west'
+    ,store        : store
+  });
+  gBroker.metaPanel = grid;
+  var logic = metaLogic()
+  if( ! logic  ){
+    return false;
+  }
+  return grid
+}
+function gridContainer(  config  ){
+  if ( ! config || ! config.columns || ! config.store ){
+    return false
+  }
+  var grid = new Ext.grid.GridPanel({
+    anchor        : '-15'
+    ,autoScroll   : true
+    ,bbar         : config.bbar ? config.bbar : ''
+    ,border       : false
+    ,columns      : config.columns
+    ,enableHdMenu : false
+    ,hideHeaders  : true
+    ,loadMask     : true
+    ,split        : true    
+    ,store        : config.store
+    ,stripeRows   : true
+    ,title        : 'Metadata Selectors'
+    ,tbar         : config.tbar ? config.tbar : ''
+    ,width        : 200
+    ,viewConfig   : { forceFit  : true , scrollOffset : 1 }
+  });
+  if( config.region ){
+    grid.region = config.region;
+  }
+  grid.addListener( 'resize' , function(){
+    var bar = new Object();
+    bar.top = this.getTopToolbar();
+    bar.bottom = this.getBottomToolbar();
+    var width = this.getInnerWidth();
+    for( var i in bar){
+      if( bar[i] ){
+        var tmpBar = bar[i];
+        var items = tmpBar.items.getCount();
+        if( ! items > 0 ){
+          continue
+        }
+        var tmpWidth = width / items ;
+        tmpWidth = tmpWidth - 4;
+        for( var i = 0; i < items; i++ ){
+          var oldButton = tmpBar.items.items[ i ];
+          var newButton = oldButton.cloneConfig({ minWidth  : tmpWidth });
+          Ext.fly( tmpBar.items.get( i ).getEl() ).remove();
+          tmpBar.items.removeAt( i );
+          tmpBar.insertButton( i , newButton );          
+        }
+      }
+    }
+    this.doLayout();
+  });
+  return grid
+}
+
+function syncButtonWidth( button , container ){
+  if( ! button ){
+    return false;
+  }
+  if( ! container ){
+    return false;
+  }
+  var size = false;
+  try{
+    size = container.getSize();
+  }catch( e ){}
+  var width = false;
+  try{
+    width = container.getInnerWidth();
+  }catch( e ){}
+  if( ( ! width ) && ( size && size.width ) ){
+    width = size.width;
+  }
+  if( ! width ){
+    return false;
+  }
+  width = width - 6;
+  button = button.cloneConfig({ minWidth  : width });
+  return button;
+}
+
+function addSelector( meta , form ){
+  if( ! form ){
     return
   }
-  var tbar = false;
-  tbar = table.getTopToolbar();
-  if(!tbar){
+  var store = form.getStore();
+  if ( ! store ){
     return
   }
-  var item = createRemoteMenu({
-    baseParams:{getMeta:name},
-    name:name
-  });
-  var tbar = Ext.getCmp('tdt');
-  tbar.add(item);
-//  table.add(new Ext.Toolbar({items:item}) )
+  store.loadData({"result":[{"Type": "varchar(128)", "Name": "EvtType"}, {"Type": "int", "Name": "NumberOfEvents"}, {"Type": "int", "Name": "BXoverlayed"}, {"Type": "datetime", "Name": "StartDate"}]});
+  form.doLayout();
 }
-function center(){
+function initFilesPanel(){
   var record = new Ext.data.Record.create([
     {name:'filename'}
   ]);
@@ -221,6 +396,7 @@ function center(){
     stripeRows:true,
     tbar:tbar
   });
+  gBroker.filesPanel = dataTable;
   return dataTable
 }
 function keepButtonSize(panel,button){
