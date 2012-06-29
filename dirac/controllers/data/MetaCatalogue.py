@@ -90,6 +90,10 @@ class MetacatalogueController(BaseController):
     pagestart = time()
     if request.params.has_key("getSelector") and len(request.params["getSelector"]) > 0:
       return self.__getSelector( str(request.params["getSelector"]) )
+    if request.params.has_key("getSelectorGrid"):
+      return self.__getSelectorGrid()
+    elif request.params.has_key("getCache"):
+      return self.__getMetaCache( str( request.params["getCache"] ) )
     elif request.params.has_key("getMeta") and len(request.params["getMeta"]) > 0:
       return self.__getMetadata( str(request.params["getMeta"]) )
     elif request.params.has_key("getFile") and len(request.params["getFile"]) > 0:
@@ -97,6 +101,10 @@ class MetacatalogueController(BaseController):
     else:
       return {"success":"false","error":"The request parameters can not be recognized or they are not defined"}
 ################################################################################
+  def __getMetaCache( self , param ):
+    if len( param ) > 0 :
+      arg = str( param )
+################################################################################  
   def __prepareURL(self,files):
 #    gLogger.always(" *** ",files)
     files = files.split(",")
@@ -104,7 +112,7 @@ class MetacatalogueController(BaseController):
     if not len(files) > 0:
       return {"success":"false","error":"No LFN given"}
 #    se = getRPCClient("DataManagement/StorageElementProxy")
-    se = getRPCClient("dips://volhcb13.cern.ch:9144/DataManagement/StorageElementProxy")
+    se = getRPCClient("dips://volcd04.cern.ch:9199/DataManagement/StorageElementProxy")
     result = se.prepareFileForHTTP(files)
     if not result["OK"]:
       return {"success":"false","error":result["Message"]}
@@ -134,8 +142,28 @@ class MetacatalogueController(BaseController):
       return {"success":"false","error":result["Message"]}
     result = result["Value"]
     gLogger.always(" * * * ",result)
-    result = result["DirectoryMetaFields"]
     for key,value in result.items():
       result[key] = value.lower()
     gLogger.always(" * * * ",result)
     return {"success":"true","result":result}
+################################################################################
+  def __getSelectorGrid(self):
+    gLogger.always(" === ")
+#    RPC = getRPCClient("DataManagement/FileCatalog")
+    RPC = getRPCClient("dips://volcd04.cern.ch:9199/DataManagement/StorageElementProxy")
+    result = RPC.getMetadataFields()
+    if not result["OK"]:
+      return {"success":"false","error":result["Message"]}
+    result = result["Value"]
+    callback = list()
+
+    for key,value in result.items():
+      tmp = dict()
+      tmp["Name"] = key
+      tmp["Type"] = value.lower()
+      callback.append(tmp)
+    """
+    callback = [{"Type": "varchar(128)", "Name": "EvtType"}, {"Type": "int", "Name": "NumberOfEvents"}, {"Type": "int", "Name": "BXoverlayed"}, {"Type": "datetime", "Name": "StartDate"}, {"Type": "varchar(128)", "Name": "Datatype"}, {"Type": "int", "Name": "Luminosity"}, {"Type": "varchar(128)", "Name": "Energy"}, {"Type": "varchar(128)", "Name": "MachineParams"}, {"Type": "varchar(128)", "Name": "DetectorType"}, {"Type": "varchar(128)", "Name": "Machine"}, {"Type": "int", "Name": "ProdID"}, {"Type": "int", "Name": "runnumber"}, {"Type": "varchar(128)", "Name": "Owner"}, {"Type": "varchar(128)", "Name": "DetectorModel"}, {"Type": "varchar(128)", "Name": "JobType"}]
+    """
+    gLogger.always(" * * * ",callback)
+    return {"success":"true","result":callback,"total":len(result)}
