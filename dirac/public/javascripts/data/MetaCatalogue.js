@@ -11,6 +11,7 @@ function init( initSelection ){
         }
       )
     });
+    updateCache();
     var files = initFilesPanel();
     var query = initQueryPanel( initSelection );
     var panel = new Ext.Panel({
@@ -26,6 +27,22 @@ function init( initSelection ){
     navigation.insert( 0 , metaPanel );
     navigation.setTitle( 'MetadataCatalog' );
     renderInMainViewport([ navigation, panel ]);
+  });
+}
+function updateCache( value ){
+  if( ! value ){
+    value = '';
+  }
+  var params = { getCache : value };
+  Ext.Ajax.request({
+    method        : 'POST'
+    ,params       : params
+    ,success      : function( response  ){
+      response.responseText ? response = response.responseText : '';
+      var data = Ext.util.JSON.decode(  response  );
+    }
+    ,timeout      : 10000
+    ,url          : 'action'
   });
 }
 function guerySubmit(){
@@ -61,8 +78,8 @@ function metaLogic(){
       if(record.data.Name){
         var meta = record.data.Name;
         if( meta ){
-          gBroker.queryPanel.setTitle( meta );
-          if( cache.meta ){
+          gBroker.valuesGrid.setTitle( meta );
+          if( cache[meta] ){
             store.loadData( cache.meta );
           }
           gBroker.queryPanel.layout.setActiveItem( 1 );
@@ -85,22 +102,23 @@ function valuesLogic(){
   grid.addListener( 'rowclick' , function( grid , rowIndex ){
     try{
       var record = store.getAt( rowIndex );
-      if( record.data.Chk ){
-        record.data.Chk = false;
+      if( record.get( 'Chk' ) ){
+        record.set( 'Chk' , false );
       }else{
-        record.data.Chk = true;
+        record.set( 'Chk' , true );
       }
+      record.commit();
     }catch(e){
       showError( e.message );
     }
   });
   return true
 }
-function chk(flag){
-  if(flag){
-    return '<img src="'+gURLRoot+'/images/monitoring/checked.gif">';
+function checkd(check){
+  if(check){
+    return '<img src="'+gURLRoot+'/images/iface/checked.gif">';
   }else{
-    return '<img src="'+gURLRoot+'/images/monitoring/unchecked.gif">';
+    return '<img src="'+gURLRoot+'/images/iface/unchecked.gif">';
   }
 }
 function valuesInit(){
@@ -112,18 +130,14 @@ function valuesInit(){
     ,tooltip      : 'Confirm selected values and switch to query panel'
   });
   var store = new Ext.data.JsonStore({
-//    autoLoad      : true,
-//    baseParams    : { 'getSelectorGrid' : true },
     fields        : [ 'Name' , 'Chk' ],
-    idProperty    : 'Name',
     root          : 'result',
-//    url           : 'action'
   });
   gBroker.valuesStore = store;
   var columns = [{
     dataIndex     : 'Chk',
     id            : 'sl1',
-    renderer      : chk,
+    renderer      : checkd,
     width         : 26,
     fixed         : true,
     align         : 'left',
@@ -138,12 +152,18 @@ function valuesInit(){
     sortable      : false,
     css           : 'cursor:pointer;cursor:hand;'
   }];
+  var tbar = new Ext.Toolbar({
+    items         : [
+                  {   text   :  '>' }
+                  ,{  text   :  '<'  }
+    ]
+  });
   var bbar = new Ext.Toolbar({  items : [ button ]  });
   var grid = gridContainer({
     bbar          : bbar
     ,columns      : columns
     ,store        : store
-    
+    ,tbar         : tbar
   });
   gBroker.valuesGrid = grid;
   var logic = valuesLogic()
@@ -166,6 +186,7 @@ function initQueryPanel( selection ){
   }
   form.title = 'Metadata Query';
   form.add( initItem );
+  form.buttons[ 2 ].hide();
   var metaValues = valuesInit();
   if( ! metaValues  ){
     return false;
@@ -250,7 +271,7 @@ function gridContainer(  config  ){
     ,split        : true    
     ,store        : config.store
     ,stripeRows   : true
-    ,title        : 'Metadata Selectors'
+    ,title        : config.title ? config.title : 'Default'
     ,tbar         : config.tbar ? config.tbar : ''
     ,width        : 200
     ,viewConfig   : { forceFit  : true , scrollOffset : 1 }
@@ -285,33 +306,6 @@ function gridContainer(  config  ){
   });
   return grid
 }
-
-function syncButtonWidth( button , container ){
-  if( ! button ){
-    return false;
-  }
-  if( ! container ){
-    return false;
-  }
-  var size = false;
-  try{
-    size = container.getSize();
-  }catch( e ){}
-  var width = false;
-  try{
-    width = container.getInnerWidth();
-  }catch( e ){}
-  if( ( ! width ) && ( size && size.width ) ){
-    width = size.width;
-  }
-  if( ! width ){
-    return false;
-  }
-  width = width - 6;
-  button = button.cloneConfig({ minWidth  : width });
-  return button;
-}
-
 function addSelector( meta , form ){
   if( ! form ){
     return
