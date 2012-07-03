@@ -13,7 +13,7 @@ function init( initSelection ){
     });
     updateCache();
     var files = initFilesPanel();
-    var query = initQueryPanel( initSelection );
+    var query = initValuePanel( initSelection );
     var panel = new Ext.Panel({
       border      : false
       ,split      : true
@@ -121,7 +121,11 @@ function checkd(check){
     return '<img src="'+gURLRoot+'/images/iface/unchecked.gif">';
   }
 }
-function valuesInit(){
+function initValuePanel(){
+  var form = selectPanelReloaded( gBroker.filesPanel );
+  if( ! form  ){
+    return false;
+  }
   var button = new Ext.Button({
     cls           : 'x-btn-text-icon'
     ,handler      : guerySubmit
@@ -163,6 +167,7 @@ function valuesInit(){
     bbar          : bbar
     ,columns      : columns
     ,store        : store
+    ,title        : 'Form a query'
     ,tbar         : tbar
   });
   gBroker.valuesGrid = grid;
@@ -170,42 +175,10 @@ function valuesInit(){
   if( ! logic  ){
     return false;
   }
-  return grid
-}
-function initQueryPanel( selection ){
-  var initItem = {
-    xtype         : 'box',
-    autoEl        : { cn  : '<p class="footer">Select file(s) where:'  }
-  }
-  if( ! gBroker.filesPanel ){
-    return false;
-  }
-  var form = selectPanelReloaded( gBroker.filesPanel );
-  if( ! form  ){
-    return false;
-  }
-  form.title = 'Metadata Query';
-  form.add( initItem );
+  form.add( grid );
+  form.region = 'west';
   form.buttons[ 2 ].hide();
-  var metaValues = valuesInit();
-  if( ! metaValues  ){
-    return false;
-  }
-  var panel = new Ext.Panel({
-    activeItem    : 0
-    ,border       : true
-    ,cmargins     : '2 2 2 2'
-    ,id           : 'card_id'
-    ,items        : [ form , metaValues ]
-    ,layout       : 'card'
-    ,margins      : '2 0 2 0'
-    ,minWidth     : 200
-    ,region       : 'west'
-    ,split        : true
-    ,width        : 200
-  });
-  gBroker.queryPanel = panel;
-  return panel
+  return form
 }
 function initMetaPanel( ){
   var button = new Ext.Button({
@@ -250,9 +223,9 @@ function initMetaPanel( ){
   });
   gBroker.metaPanel = grid;
   var logic = metaLogic()
-  if( ! logic  ){
-    return false;
-  }
+//  if( ! logic  ){
+//    return false;
+//  }
   return grid
 }
 function gridContainer(  config  ){
