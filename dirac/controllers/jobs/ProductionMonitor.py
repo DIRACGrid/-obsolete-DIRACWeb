@@ -147,21 +147,26 @@ class ProductionmonitorController(BaseController):
       else:
         req["TransformationFamily"] = testString
     else:
+      result = gConfig.getOption("/Website/ListSeparator")
+      if result["OK"]:
+        separator = result["Value"]
+      else:
+        separator = ":::"
       if request.params.has_key("agentType") and len(request.params["agentType"]) > 0:
         if str(request.params["agentType"]) != "All":
-          req["AgentType"] = str(request.params["agentType"]).split('::: ')
+          req["AgentType"] = str(request.params["agentType"]).split(separator)
       if request.params.has_key("prodStatus") and len(request.params["prodStatus"]) > 0:
         if str(request.params["prodStatus"]) != "All":
-          req["Status"] = str(request.params["prodStatus"]).split('::: ')
+          req["Status"] = str(request.params["prodStatus"]).split(separator)
       if request.params.has_key("plugin") and len(request.params["plugin"]) > 0:
         if str(request.params["plugin"]) != "All":
-          req["Plugin"] = str(request.params["plugin"]).split('::: ')
+          req["Plugin"] = str(request.params["plugin"]).split(separator)
       if request.params.has_key("productionType") and len(request.params["productionType"]) > 0:
         if str(request.params["productionType"]) != "All":
-          req["Type"] = str(request.params["productionType"]).split('::: ')
+          req["Type"] = str(request.params["productionType"]).split(separator)
       if request.params.has_key("transformationGroup") and len(request.params["transformationGroup"]) > 0:
         if str(request.params["transformationGroup"]) != "All":
-          req["TransformationGroup"] = str(request.params["transformationGroup"]).split('::: ')
+          req["TransformationGroup"] = str(request.params["transformationGroup"]).split(separator)
       if request.params.has_key("date") and len(request.params["date"]) > 0:
         if str(request.params["date"]) != "YYYY-mm-dd":
           req["CreationDate"] = str(request.params["date"])
@@ -318,6 +323,8 @@ class ProductionmonitorController(BaseController):
       return self.__getSelectionData()
     elif request.params.has_key("getT1") and len(request.params["getT1"]) > 0:
       return self. __getT1()
+    elif request.params.has_key("getRunStatus") and len(request.params["getRunStatus"]) > 0:
+      return self. __getRunStatuses()
     elif request.params.has_key("setSite") and len(request.params["setSite"]) > 0:
       if not request.params.has_key("runID"):
         return {"success":"false","error":"runID is undefined"}
@@ -343,6 +350,10 @@ class ProductionmonitorController(BaseController):
     else:
       c.result = {"success":"false","error":"Transformation ID(s) is not defined"}
       return c.error
+################################################################################
+  def __getRunStatuses(self):
+    runStatuses = gConfig.getValue("/Website/TransformationMonitoring/ContextMenu/RunStatuses",[])
+    return {"success":"true","result":runStatuses}
 ################################################################################
   def __setSite(self,runid,prodid,site):
     try:
@@ -377,8 +388,8 @@ class ProductionmonitorController(BaseController):
     return c.result
 ################################################################################
   def __getT1(self):
-    tier1 = gConfig.getValue("/Website/PreferredSites")
-    if tier1:
+    tier1 = gConfig.getValue("/Website/PreferredSites",[])
+    if len(tier1) > 0:
       c.result = {"success":"true","result":tier1}
     else:
       c.result = {"success":"false","error":"Can't get sites from /Website/PreferredSites location in CS"}

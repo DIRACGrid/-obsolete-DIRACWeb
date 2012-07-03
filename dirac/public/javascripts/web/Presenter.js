@@ -4,18 +4,14 @@ var refeshID = 0;
 var layout = 'default';
 var heartbeat = '';
 var contextMenu = '';
-var url_common = '';
 function initLoop(initValues){
   Ext.onReady(function(){
     if(window.location.hash){
       var test = window.location.hash.split('#layout=');
       if(test.length == 2 && initValues){
-        initValues['ZGVmYXVsdA=='] = test[1];
+        initValues.defaultLayout = test[1];
       }
     }
-    var setup = gPageDescription.selectedSetup;
-    var group = gPageDescription.userData.group;
-    url_common = location.protocol + '//' + location.host + '/' + setup + '/' + group + '/jobs/Common/';
     var mainContent = mainPanel(initValues);
     renderInMainViewport([ mainContent ]);
   });
@@ -147,11 +143,9 @@ function mainPanel(initValues){
     margins:'2 0 2 0',
     monitorResize:true,
     region:'center',
-    tbar:[current,'->',refresh,'-','Auto:',auto,timeStamp]
-//    tbar:[current,'->',add,'-',get,set,act,'-',refresh,'-','Auto:',auto,timeStamp,'-',column]
+    tbar:[current,'->',add,'-',get,set,act,'-',refresh,'-','Auto:',auto,timeStamp,'-',column]
   });
   panel.on('render',function(){
-    addMenu();
     if(initValues){
       redoLayout(initValues,'load');
     }
@@ -378,7 +372,7 @@ function gatherInfo(){
   if(url){
     url = url.replace(/&/g,'[ampersand]');
   }
-  var params = {'columns':columnWidth,'refresh':refreshRate,'plots':url};  
+  var params = {'columns':columnWidth,'refresh':refreshRate,'url':url};  
   return params
 }
 function syncLayout(){
@@ -401,10 +395,11 @@ function syncLayout(){
         redoLayout(jsonData['result'],'sync');
       }
     },
-    url:url_common+'action'
+    url:'action'
   });
 }
 function saveAs(){
+  var params = gatherInfo();
   var title = 'Save Layout';
   var welcome = Ext.getCmp('welcomeMessage');
   if(welcome){
@@ -414,14 +409,7 @@ function saveAs(){
     Ext.Msg.prompt(title,msg,function(btn,text){
       if(btn == 'ok'){
         if(text){
-          var params = {};
-          params['setLayout'] = text;
-          params['page'] = gPageDescription['pageName'];
-          var tmpParams = gatherInfo();
-          for( i in tmpParams){
-            var tmpName = 'value[' + i +']';
-            params[tmpName] = tmpParams[i];
-          }
+          params['setBookmarks'] = text;
           changeIcon('setLayoutButton','load');
           Ext.Ajax.request({
             failure:function(response){
@@ -445,7 +433,7 @@ function saveAs(){
                 }
               }
             },
-            url:url_common+'action'
+            url:'action'
           });
         }
       }
@@ -486,14 +474,14 @@ function saveLayout(name){
               }
             }
           },
-          url:url_common+'action'
+          url:'action'
         });
       }
     });
   }
 }
-function loadProfile(name){
-  var title = 'Load Data';
+function loadLayout(name){
+  var title = 'Load Layout';
   try{
     var button = Ext.getCmp('getLayoutButton');
     var length = button.menu.items.getCount();
@@ -505,30 +493,25 @@ function loadProfile(name){
     alert('Error: ' + e.name + ': ' + e.message);
     return
   }
-  var msg = 'Are you sure that you want to load \'' + name + '\' data?';
-  msg = msg + '<br>' + 'Caution. All unsaved data will be lost';
+  var msg = 'Load the layout: ' + name + ' ?';
   Ext.Msg.confirm(title,msg,function(btn){
     if(btn == 'yes'){
-      var params = {};
-      params['getLayout'] = name;
-      params['page'] = gPageDescription['pageName'];
-//      changeIcon('getLayoutButton','load');
+      changeIcon('getLayoutButton','load');
       Ext.Ajax.request({
         failure:function(response){
-//          changeIcon('getLayoutButton','normal');
+          changeIcon('getLayoutButton','normal');
           AJAXerror(response.responseText);
           return false
         },
         method:'POST',
-        params:params,
+        params:{'getBookmarks':name},
         success:function(response){
-//          changeIcon('getLayoutButton','normal');
+          changeIcon('getLayoutButton','normal');
           var jsonData = Ext.util.JSON.decode(response.responseText);
           if(jsonData['success'] == 'false'){
             AJAXerror(response.responseText);
             return false
           }else{
-            layout = name;
             redoLayout(jsonData['result'],'load');
             var mainPanel = Ext.getCmp('mainConteiner');
             if(mainPanel){
@@ -536,7 +519,7 @@ function loadProfile(name){
             }
           }
         },
-        url:url_common+'action'
+        url:'action'
       });
     }
   });
@@ -590,7 +573,7 @@ function action(params,mode){
         }
       }
     },
-    url:url_common+'action'
+    url:'action'
   });
 }
 function exportLayout(){
@@ -653,16 +636,16 @@ function redoLayout(result,mode){
     return
   }
   if(mode != 'import'){
-    resetMenu(result); // ! 30.05.2011 Check that !
+    resetMenu(result);
   }
   if(mode == 'sync'){
     return // just to update the menues
   }
-  if(result['ZGVmYXVsdA==']){
-    if(result['ZGVmYXVsdA=='] == ''){
+  if(result.defaultLayout){
+    if(result.defaultLayout == ''){
       layout = 'default';
     }else{
-      layout = result['ZGVmYXVsdA=='];
+      layout = result.defaultLayout;
     }
   }else if(mode == 'import'){
     layout = layout + '*';
@@ -676,29 +659,23 @@ function redoLayout(result,mode){
     document.title = layout;
   }
   updateTimestamp();
-  if(result){
-    for(var i in result){
+  if(result.layouts){
+    for(var i in result.layouts){
       if(i == layout){
-        var tmpLayout = result[i];
-        var plots = new Array();
-        for(var j in tmpLayout){
-          var isImage = j.search(/img/i);
-          if(j == 'columns'){
-            columnWidth = tmpLayout[j];
-          }else if(j == 'refresh'){
-            refreshRate = tmpLayout['refresh'];
-          }else if( isImage != -1){
-            var tmpSrc = tmpLayout[j].replace(/\[ampersand\]/g,'&');
-            if(tmpSrc.search(/&dummythingforrefresh/i) > 0){
-              tmpSrc = tmpSrc.split('&dummythingforrefresh')[0];
-            }
-            plots.push(tmpSrc);
+        var plotSrc = result.layouts[i]['url'];
+        plotSrc = plotSrc.replace(/\[ampersand\]/g,'&');
+        var plots = plotSrc.split(';');
+        for(var j = 0; j < plots.length; j++){
+          if(plots[j].search(/&dummythingforrefresh/i) > 0){
+            plots[j] = plots[j].split('&dummythingforrefresh')[0];
           }
         }
+        columnWidth = result.layouts[i]['columns'];
+        refreshRate = result.layouts[i]['refresh'];
       }
     }
   }else if(mode == 'import'){
-    if(result.plots){ // ! 30.05 What da fuck is that? !
+    if(result.plots){
       var plots = result.plots.split(';');
     }
   }
@@ -989,6 +966,7 @@ function changeURL(id,url){
     var path = Ext.getCmp(pathID);
     path.setHeight(newHeight);
   })
+
   win.show();
 }
 function addPanel(){
@@ -1141,55 +1119,5 @@ function AJAXerror(response){
   }catch(e){
     alert('Error: ' + e.name + ': ' + e.message);
     return
-  }
-}
-function addMenu(){
-  var menu = new Ext.menu.Menu({
-    items:[
-      {handler:function(){addPanel()},icon:gURLRoot + '/images/iface/advanced.gif',text:'Add'},
-      {menu:{items:[
-        {checked:setChk('.98'),checkHandler:function(){setColumn('.98');},group:'column',text:'1 Column'},
-        {checked:setChk('.49'),checkHandler:function(){setColumn('.49');},group:'column',text:'2 Columns'},
-        {checked:setChk('.33'),checkHandler:function(){setColumn('.33');},group:'column',text:'3 Columns'},
-        {checked:setChk('.24'),checkHandler:function(){setColumn('.24');},group:'column',text:'4 Columns'},
-        {checked:setChk('.19'),checkHandler:function(){setColumn('.19');},group:'column',text:'5 Columns'}
-      ]},text:'Columns',icon:gURLRoot + '/images/iface/columns.gif'}
-      ,'-'
-    ]
-  });
-  var button = Ext.getCmp('mainTopbarToolsButton');
-  if(button){
-    var originalMenu = button.menu;
-    var length = menu.items.items.length;
-    for(i=0; i<length; i++){
-      originalMenu.insert(i,menu.items.items[i]);
-    }
-    var originalMenu = button.menu;
-    originalMenu.add(menu);
-    button.menu = originalMenu;
-  }
-}
-function UP(mode,name){
-  if(mode == 'saveNew'){
-    saveAs();
-  }else if(mode == 'save'){
-	if(name){
-	  saveLayout(name);
-	}else{
-	  alert('Error: name is absent');
-	  return
-	}
-  }else if(mode == 'import'){
-	  
-  }else if(mode == 'edit'){
-    return layout
-  }else if(mode == 'delete'){
-	  deleteLayout(layout)
-  }else if(mode == 'deleteAll'){
-	  
-  }else if(mode == 'load'){
-    loadProfile(name);
-  }else{
-	alert('Error: Available');  
   }
 }

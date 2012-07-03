@@ -6,8 +6,19 @@ var heartbeat = '';
 var refreshRate = 0;
 var tableID = 'tmpID';
 var idObject = new Array();
+var transAdmin = false;
+var runStatusMenu = false; // Array, used in context menu to enable/disable this action for certain type of productions
 // Main routine
 function initProductionMonitor(reponseSelect){
+  try{
+    for(var i = 0; i < gPageDescription.userData.groupProperties.length; i++){
+      if(gPageDescription.userData.groupProperties[i] == 'ProductionManagement'){
+    	transAdmin = true;
+  	  }
+    }
+  }catch(e){
+	alert('Error: '+e.description);
+  }
   dataSelect = reponseSelect;
   dataSelect.globalSort = '';
   var record = initRecord();
@@ -47,6 +58,15 @@ function initProductionMonitor(reponseSelect){
       })
     });
     renderData(store);
+    Ext.Ajax.request({
+      method:'POST',
+      params:{'getRunStatus':true},
+      success:function(response){
+        runStatusMenu = Ext.util.JSON.decode(response.responseText).result;
+      },
+      timeout:60000, // 1min
+      url:'action'
+    });    
   });
 }
 function diffValues(value,metaData,record,rowIndex,colIndex,store){
@@ -203,6 +223,11 @@ function initData(store){
     {handler:function(){action('production','complete')},text:'Complete',tooltip:'Click to set selected production(s) as complete'},
     {handler:function(){action('production','clean')},text:'Clean',tooltip:'Click to clean selected production(s)'}
   ];
+  if(!transAdmin){
+	for(var i=3;i<8;i++){
+	  tbar[i].hidden = true;
+	}
+  }
   var view = new Ext.grid.GroupingView({
     groupTextTpl:'<tpl>{text}</tpl>'
   })
@@ -230,7 +255,6 @@ function setChk(value){
   } 
 }
 function setRefresh(time,store){
-  var stamp = Ext.getCmp('stampTableButton');
   if(time == 900000 || time == 3600000 || time == 1800000){
     refreshRate = time;
     heartbeat.start({
@@ -243,26 +267,10 @@ function setRefresh(time,store){
           }
         }
         store.load();
-        if(stamp){
-          var d = new Date();
-          var hh = d.getHours();
-          if(hh < 10){
-            hh = '0' + hh;
-          }
-          var mm = d.getMinutes()
-          if(mm < 10){
-            mm = '0' + mm;
-          }
-          stamp.setText('Updated: ' + hh + ":" + mm);
-          stamp.show();
-        }
       },
       interval:time
     });
   }else{
-    if(stamp){
-      stamp.hide();
-    }
     refreshRate = 0;
     heartbeat.stopAll();
   }
@@ -374,18 +382,16 @@ function setMenuItems(selections){
     dirac.menu.items.items[5].disable();
     dirac.menu.items.items[6].disable();
   }
-  if((type != 'DataReconstruction')&&(type != 'DataStripping')&&(type != 'Replication')&&( type != 'Merge') ){
-    dirac.menu.items.items[3].disable();
+  // RegExp is used to test is type in runStatusMenu array: if (/^(?:bob|sue|smith)$/.test(name))
+  if((runStatusMenu)&&(new RegExp('^(' + runStatusMenu.join('|') + ')$').test(type))){
+      dirac.menu.items.items[3].enable();
+  }else{
+    dirac.menu.items.items[3].disable();  
   }
-  menu.items.items[0].disable();
-  var length = gPageDescription.userData.groupProperties.length;
-  for(i=0; i<length; i++){
-    if((gPageDescription.userData.groupProperties[i] == 'JobAdministrator')&&(gPageDescription.userData.groupProperties[i] == 'ProductionManagement')){
-      menu.items.items[0].enable();
-    }
+  if(!transAdmin){
+  	dirac.menu.items.items[10].disable();
   }
-};
-
+}
 function AJAXsuccess(value,id,response){
   try{
     gMainLayout.container.unmask();

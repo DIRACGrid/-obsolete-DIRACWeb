@@ -6,14 +6,12 @@
 ${ h.javascript_link( "/javascripts/lovCombo.js" ) }
 ${ h.javascript_link( "/javascripts/dencodelight.js" ) }
 ${ h.javascript_link( "/javascripts/jobs/Lib.js" ) }
-${ h.javascript_link( "/javascripts/jobs/Plot.js" ) }
-${ h.javascript_link( "/javascripts/jobs/JobMonitor.js" ) }
+${ h.javascript_link( "/javascripts/data/MetaCatalogue.js" ) }
 ${ h.stylesheet_link( "/stylesheets/lovCombo.css" ) }
-
 </%def>
 
 <%def name="body()">
 <script type="text/javascript">
-  initLoop(${c.select});
+  init(${c.select});
 </script>
 </%def>
