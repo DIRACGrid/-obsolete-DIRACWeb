@@ -159,6 +159,9 @@ p.footer {
 .refreshSplitButton {
   background-image:url("../images/iface/refresh.gif") !important;
 }
+.Delete {
+  background-image:url("../images/iface/close.gif") !important;
+}
 .Refresh {
   background-image:url("../images/iface/refresh.gif") !important;
 }
