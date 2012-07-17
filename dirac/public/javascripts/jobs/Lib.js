@@ -1,3 +1,69 @@
+function formWindow( cfg ){
+  if( ! cfg ){
+    var cfg = new Object() ;
+  }
+  var minWidth = 350 ;
+  var width = Ext.getBody().getViewSize().width ;
+  var x = Ext.EventObject.xy[ 0 ] ;
+  if( width && x && ( width - minWidth < x ) ){
+      x = width - minWidth - 10 ;
+  }
+  x = x - 8 ;
+  var minHeight = 200 ;
+  var height = Ext.getBody().getViewSize().height ;
+  var y = Ext.EventObject.xy[ 1 ] ;
+  if( height && y && ( height - minHeight < y ) ){
+      y = height - minHeight - 10 ;
+  }
+  y = y - 8 ;
+  var submit = new Ext.Button({
+    cls               : 'x-btn-text-icon'
+    ,handler          : Ext.emptyFn
+    ,icon             : gURLRoot + '/images/iface/advanced.gif'
+    ,minWidth         : '150'
+    ,tooltip          : ''
+    ,text             : 'Submit'
+  }) ;
+  var reset = new Ext.Button({
+    cls               : 'x-btn-text-icon'
+    ,handler          : Ext.emptyFn
+    ,icon             : gURLRoot + '/images/iface/reset.gif'
+    ,minWidth         : '80'
+    ,tooltip          : 'Click to reset values and restore defaults'
+    ,text             : 'Reset'
+  }) ;
+  var close = new Ext.Button({
+    cls               : 'x-btn-text-icon'
+    ,handler          : function(){ win.close() }
+    ,icon             : gURLRoot + '/images/iface/close.gif'
+    ,minWidth         : '80'
+    ,tooltip          : 'Click to discard changes and close the window'
+    ,text             : 'Close'
+  }) ;
+  var win = new Ext.Window({
+    border            : true
+    ,collapsible      : cfg.collapsible ? cfg.collapsible : false
+    ,constrain        : cfg.constrain ? cfg.constrain : true
+    ,constrainHeader  : cfg.constrainHeader ? cfg.constrainHeader : true
+    ,closable         : cfg.closable ? cfg.closable : true
+    ,buttonAlign      : 'center'
+    ,buttons          : [ submit , reset , close ]
+    ,height           : minHeight
+    ,iconCls          : cfg.icon ? cfg.icon : 'icon-grid'
+    ,layout           : 'fit'
+    ,maximizable      : cfg.maximizable ? cfg.maximizable : false
+    ,minHeight        : minHeight
+    ,minWidth         : minWidth
+    ,modal            : cfg.modal ? cfg.modal : true 
+    ,plain            : false
+    ,shim             : false
+    ,title            : cfg.title ? cfg.title : 'Default title'
+    ,width            : minWidth
+    ,x                : x
+    ,y                : y
+  }) ;
+  return win
+}
 function action(type,mode,id){
   if((type == null) || (type == '')){
     alert('Item type is not defined');
@@ -201,6 +267,8 @@ function displayWin(panel,title,modal){
     constrain:true,
     constrainHeader:true,
     maximizable:true,
+    minHeight:200,
+    minWidth:300,
     modal:modal,
     layout:'fit',
     plain:true,
@@ -365,26 +433,29 @@ function flag(code){
   return '<img src="'+gURLRoot+'/images/flags/' + code + '.gif">';
 }
 function hideControls(caller){
-  if(caller){
-    var value = caller.getRawValue();
-    var sPanel = Ext.getCmp('selectPanel');
-    if(sPanel){
-      var items = sPanel.items;
-      if(items){
-        if(value == ''){
-          for(var l = 0; l < items.length; l++){
-            items.items[l].enable();
-          }
-        }else{
-          for(var i = 0; i < items.length; i++){
-            var j = items.items[i];
-            if((j.name == caller.name)||(j.name == 'buttons')){
-              j.enable();
-            }else{
-              j.disable();
-            }
-          }
-        }
+  if( ! caller){
+    return false ;
+  }
+  var value = caller.getRawValue();
+  var sPanel = Ext.getCmp('selectPanel');
+  if( ! sPanel){
+    return false ;
+  }
+  var items = sPanel.items;
+  if( ! items){
+    return false ;
+  }
+  if(value == ''){
+    for(var l = 0; l < items.length; l++){
+      items.items[l].enable();
+    }
+  }else{
+    for(var i = 0; i < items.length; i++){
+      var j = items.items[i];
+      if((j.name == caller.name)||(j.name == 'buttons')){
+        j.enable();
+      }else{
+        j.disable();
       }
     }
   }
@@ -1072,11 +1143,13 @@ function createRemoteMenu(item){
     emptyText:item.emptyText ? item.emptyText : 'Select item from the menu',
     fieldLabel:item.fieldLabel ? item.fieldLabel : 'Default label',
     forceSelection:true,
+    maxLength:item.maxLength ? item.maxLength : 100,
     name:item.name ? item.name : Ext.id(),
     selectOnFocus:true,
     store:store,
     triggerAction:'all',
-    typeAhead:true
+    typeAhead:true,
+    width:item.width ? item.width : 'auto'
   });
   return combo
 }
