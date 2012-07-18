@@ -1,26 +1,69 @@
+function toolbarElementsAutoresize( bar , elements ){
+  /*
+  
+  bar        : Object. Instance of Ext.Toolbar
+  elements   : Array. Items from toolbar items collection
+  */
+  if( ! bar.isXType( 'toolbar' , true ) ){
+    return false ;
+  }
+  if( ! Ext.isArray( elements ) ){
+    return false ;
+  }
+  var width = Ext.num( bar.getSize().width , 0 ) ;
+  if( width == 0 ){
+    return false ;
+  }
+  // initialConfig cuz bar.items has already rendered items
+  var clone = bar.initialConfig.items.slice() ;
+  var realItems = new Array() ;
+  for( var i = 0 ; i < elements.length ; i++ ){
+    var test = clone.indexOf( elements[ i ] ) ;
+    if( test > -1 ){
+      realItems.push( elements[ i ] ) ;
+    }
+  }
+  if( ! realItems.length > 0 ){
+    return false ;
+  }
+  for( var i = 0 ; i < clone.length ; i++ ){
+    var index = bar.items.indexOf( clone.itemAt( i ) ) ;
+    if( index ){
+      var xtype = bar.items.items[ index ].getXType() ;
+    }
+  }
+  var setWidth = Math.floor( width / realItems.length ) ;
+  for( var i = 0 ; i < realItems.length ; i++ ){
+    var index = bar.items.indexOf( realItems[ i ] ) ;
+    if( index ){
+      bar.items.items[ index ].setWidth( setWidth ) ;
+    }
+  }
+  return bar
+}
 function formWindow( cfg ){
   if( ! cfg ){
     var cfg = new Object() ;
   }
   var minWidth = 350 ;
-  var width = Ext.getBody().getViewSize().width ;
-  var x = Ext.EventObject.xy[ 0 ] ;
-  if( width && x && ( width - minWidth < x ) ){
-      x = width - minWidth - 10 ;
+  var width = Ext.num( Ext.getBody().getViewSize().width , 640 ) ;
+  var x = Ext.num( Ext.EventObject.xy[ 0 ] , 0 ) ;
+  if( width - minWidth < x ){
+    x = width - minWidth - 10 ;
   }
   x = x - 8 ;
   var minHeight = 200 ;
-  var height = Ext.getBody().getViewSize().height ;
-  var y = Ext.EventObject.xy[ 1 ] ;
-  if( height && y && ( height - minHeight < y ) ){
-      y = height - minHeight - 10 ;
+  var height = Ext.num( Ext.getBody().getViewSize().height , 480 ) ;
+  var y = Ext.num( Ext.EventObject.xy[ 1 ] , 0 ) ;
+  if( height - minHeight < y ){
+    y = height - minHeight - 10 ;
   }
   y = y - 8 ;
   var submit = new Ext.Button({
     cls               : 'x-btn-text-icon'
     ,handler          : Ext.emptyFn
     ,icon             : gURLRoot + '/images/iface/advanced.gif'
-    ,minWidth         : '150'
+    ,minWidth         : 150
     ,tooltip          : ''
     ,text             : 'Submit'
   }) ;
@@ -28,7 +71,7 @@ function formWindow( cfg ){
     cls               : 'x-btn-text-icon'
     ,handler          : Ext.emptyFn
     ,icon             : gURLRoot + '/images/iface/reset.gif'
-    ,minWidth         : '80'
+    ,minWidth         : 80
     ,tooltip          : 'Click to reset values and restore defaults'
     ,text             : 'Reset'
   }) ;
@@ -36,7 +79,7 @@ function formWindow( cfg ){
     cls               : 'x-btn-text-icon'
     ,handler          : function(){ win.close() }
     ,icon             : gURLRoot + '/images/iface/close.gif'
-    ,minWidth         : '80'
+    ,minWidth         : 80
     ,tooltip          : 'Click to discard changes and close the window'
     ,text             : 'Close'
   }) ;
