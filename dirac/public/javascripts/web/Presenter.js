@@ -179,7 +179,8 @@ function saveAs(){
   });
   var regexp = new RegExp( /^[0-9a-zA-Z]+$/ ) ;
   var regmsg = 'Letters and numbers only are allowed' ;
-  var save = genericID( 'save' , '' , regexp , regmsg , 'None' ) ; 
+  var save = genericID( 'save' , '' , regexp , regmsg , 'None' ) ;
+  save.setValue( layout ) ;
   var tbar = new Ext.Toolbar({
     items             : [
                           'Save as:'
@@ -204,16 +205,19 @@ function saveAs(){
   });
   grid.on({
     'resize'          : function(){
-                          var size = tbar.getSize() ;
-                          var nWidth = size.width - 5 ;
-                          save.setWidth( nWidth ) ;
-//      var lfn = Ext.getCmp('lfnField');
-//      var button = topBar.items.items[1];
-//      var bWidth = button.getEl().getWidth();
+                          toolbarElementsAutoresize( tbar , [ save , chkBox ] ) ;
+                          toolbarElementsAutoresize( bbar , [ group , user ] ) ;
+//                          var size = tbar.getSize() ;
+//                          var label = tbar.items.items[ 0 ].getEl() ;
+//                          var m = Ext.util.TextMetrics.createInstance( label ) ;
+//                          var labelWidth = m.getWidth( 'Save as:' ) ;
+//                          var nWidth = size.width - labelWidth - 10 ;
+//                          save.setWidth( nWidth ) ;
                         }
   }) ;
   var win = formWindow({
-    title             : 'Save as new layout'
+    icon              : 'Save'
+    ,title            : 'Save as new layout'
   }) ;
   win.add( grid ) ;
   var submit = win.buttons[ 0 ] ;
@@ -222,7 +226,6 @@ function saveAs(){
   var reset = win.buttons[ 1 ] ;
 //  reset.disable() ;
   reset.hide() ;
-  delete win.buttons[ 1 ] ;
   win.show() ;
   
 }
@@ -238,7 +241,10 @@ function addPanel( init ){
   }
   try{
     var mainPanel = new Ext.getCmp( 'mainConteiner' ) ;
-    var width = ( mainPanel.getInnerWidth() - 30 ) / columnWidth ;
+    var width = 0;
+    if( columnWidth > 0 ){
+      width = ( mainPanel.getInnerWidth() - 30 ) / columnWidth ;
+    }
     width = Math.round( width ) ;
     var tmpPanel = createPanel( url ) ;
     tmpPanel.setWidth( width ) ;
@@ -354,7 +360,7 @@ function setChk( value ){
 }
 function createColumnMenuItem( num ){
   var width = 100 ;
-  if( num != 0 ){
+  if( num > 0 ){
     width = Math.floor( 100 / num ) ;
   }
   width = width - 1 ;
