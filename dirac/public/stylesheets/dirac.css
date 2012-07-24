@@ -177,11 +177,11 @@ p.footer {
 .Act {
   background-image:url("../images/iface/gear.gif") !important;
 }
-.siteheader {
-  font-family:Tahoma, Arial, Helvetica, sans-serif;
-  font-size:21px;
-  text-align:center;
+.metaselect {
+  font: 11px tahoma,arial,helvetica,sans-serif;
+  display: block;
+  padding: 4px 0px 0px 4px !important;
 }
-#site-main-panel table.x-table-layout {
-    width: 100%;
+.paddingButton {
+  padding: 0px 2px !important;
 }
