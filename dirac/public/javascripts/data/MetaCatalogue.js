@@ -1,231 +1,345 @@
-var gBroker = new Object(); // Used to tight components on this page
-var cache = new Object(); // Used to store cached data
+var gBroker = new Object() ; // Used to tight components on this page
+var cache = new Object() ; // Used to store cached data
 function init( initSelection ){
   Ext.onReady( function(){
     Ext.override ( Ext.PagingToolbar , {
       onRender : Ext.PagingToolbar.prototype.onRender.createSequence(
         function( ct , position ){
-          this.loading.removeClass('x-btn-icon');
-          this.loading.setText('Refresh');
-          this.loading.addClass('x-btn-text-icon');
+          this.loading.removeClass('x-btn-icon') ;
+          this.loading.setText('Refresh') ;
+          this.loading.addClass('x-btn-text-icon') ;
         }
       )
-    });
-    updateCache();
-    var files = initFilesPanel();
-    var query = initValuePanel( initSelection );
+    }) ;
+    updateCache() ;
+    var files = initFilesPanel() ;
+    var query = initQueryPanel( initSelection ) ;
     var panel = new Ext.Panel({
-      border      : false
-      ,split      : true
-      ,layout     : 'border'
-      ,region     : 'center'
-      ,cmargins   : '2 2 2 2'
-      ,items      : [ query , files ]
-    });
-    var navigation = sideBar();
-    var metaPanel = initMetaPanel();
-    navigation.insert( 0 , metaPanel );
-    navigation.setTitle( 'MetadataCatalog' );
-    renderInMainViewport([ navigation, panel ]);
-  });
+      border          : false
+      ,split          : true
+      ,layout         : 'border'
+      ,region         : 'center'
+      ,cmargins       : '2 2 2 2'
+      ,items          : [ query , files ]
+    }) ;
+    var navigation = sideBar() ;
+    var metaPanel = initMetaPanel() ;
+    navigation.insert( 0 , metaPanel ) ;
+    navigation.setTitle( 'MetadataCatalog' ) ;
+    renderInMainViewport([ navigation, panel ]) ;
+  }) ;
 }
 function updateCache( value ){
   if( ! value ){
-    value = '';
+    value = '' ;
   }
   var params = { getCache : value };
   Ext.Ajax.request({
-    method        : 'POST'
-    ,params       : params
-    ,success      : function( response  ){
-      response.responseText ? response = response.responseText : '';
-      var data = Ext.util.JSON.decode(  response  );
-    }
-    ,timeout      : 10000
-    ,url          : 'action'
+    method            : 'POST'
+    ,params           : params
+    ,success          : function( response  ){
+                          response.responseText ? response = response.responseText : '';
+                          var data = Ext.util.JSON.decode( response );
+                          if( data && data.result ){
+                            cache = data.result;
+                          }
+                        }
+    ,timeout          : 10000
+    ,url              : 'action'
   });
 }
-function guerySubmit(){
-  if( ! gBroker.queryPanel || ! gBroker.queryPanel.layout ){
-    return false;
+function rmQuerySelector( item ){
+  if( ! gBroker.queryPanel || ! gBroker.queryPanel.isXType( 'panel' , true ) ){
+    return showError( 'queryPanel is absent or unaccessible' ) ;
   }
-  if(  ! gBroker.valuesStore  ){
-    return false;
+  if( ! item.isXType( 'toolbar' , true ) ){
+    return showError( 'rmQuerySelector function expect toolbar as argument' ) ;
   }
-  var store = gBroker.valuesStore;
-  var checked = new Array();
-  for ( var i = 0;  i < store.getCount(); i++ ){
-    if( store.getAt( i ).data.Chk ){
-      checked.push( store.getAt( i ).data.Name  );
-    }
+  gBroker.queryPanel.remove( item ) ;
+}
+function querySelector( metaname , type ){
+  var label = new Ext.Toolbar.TextItem({
+    text              : metaname + ': ' 
+  }) ; 
+  // TODO: check the length of the text in the label and decrease it if needed
+  var menu = new Ext.menu.Menu({
+    items             : [{
+                          handler : function(){ button.value = '==' }
+                          ,text    : '=='
+                        },{
+                          handler : function(){ button.value = '!=' }
+                          ,text   : '!='
+                        },{
+                          handler : function(){ button.value = '>' }
+                          ,text    : '>'
+                        },{
+                          handler : function(){ button.value = '<' }
+                          ,text    : '<'
+                        },{
+                          handler : function(){ button.value = '=>' }
+                          ,text    : '=>'
+                        },{
+                          handler : function(){ button.value = '<=' }
+                          ,text    : '<='
+                        },{
+                          handler : function(){ button.value = '[]' }
+                          ,text    : '[]'
+                        },{
+                          handler : function(){ button.value = '][' }
+                          ,text    : ']['
+                        },{
+                          handler : function(){ button.value = ']]' }
+                          ,text    : ']]'
+                        },{
+                          handler : function(){ button.value = '[[' }
+                          ,text    : '[['
+                        }]
+  }) ;
+  var button = new Ext.Button({
+    cls               : 'x-btn-icon'
+    ,ctCls            : 'paddingButton'
+    ,icon             : gURLRoot + '/images/iface/advanced.gif'
+    ,minWidth         : '25'
+    ,menu             : menu
+    ,value            : '=='
+  }) ;
+  var selector = createRemoteMenu({
+    baseParams        : { 'getMeta' : metaname }
+    ,name             : metaname
+  }) ;
+  if( type == 'datetime' ){
+    selector = new Ext.form.DateField({
+      emptyText       : 'YYYY-mm-dd'
+      ,format         : 'Y-m-d'
+      ,name           : metaname
+      ,selectOnFocus  : true
+      ,startDay       : 1
+      ,value          : ''
+    });
   }
-  gBroker.queryPanel.setTitle( 'Metadata Query' );
-  gBroker.queryPanel.layout.setActiveItem( 0 );
+  selector.setWidth( 100 ) ;
+  selector.ctCls = 'paddingButton' ;
+  var reset = new Ext.Button({
+    cls               : 'x-btn-icon'
+    ,ctCls            : 'paddingButton'
+    ,handler          : function(){ selector.reset() }
+    ,icon             : gURLRoot + '/images/iface/resetButton.gif'
+    ,minWidth         : '25'
+  }) ; 
+  var kill = new Ext.Button({
+    cls               : 'x-btn-icon'
+    ,ctCls            : 'paddingButton'
+    ,handler          : function(){ rmQuerySelector( bar ) }
+    ,icon             : gURLRoot + '/images/iface/close.gif'
+    ,minWidth         : '25'
+    ,style            : 'margin: 5px !important;'
+  }) ;
+  var bar = new Ext.Toolbar({
+    cls               : 'metaselect'
+    ,items            : [
+                          label
+                          , '->'
+                          , button
+                          , selector
+                          , reset
+                          , kill
+                        ]
+    ,width            : 300
+  });
+  bar.on( 'render' , function( el , position ){
+    el.removeClass( 'x-toolbar' );
+  })
+  return bar
 }
 function metaLogic(){
-  if( ! gBroker.metaPanel || ! gBroker.valuesStore || ! gBroker.valuesGrid ){
-    return false;
+  if( ! gBroker.metaPanel || ! gBroker.queryPanel ){
+    return false ;
   }
-  var grid = gBroker.metaPanel;
-  var store = gBroker.valuesStore;
-  var panel = gBroker.valuesGrid;
-  if( ! gBroker.queryPanel ){
-    return false;
-  }
+  var grid = gBroker.metaPanel ;
+  var query = gBroker.queryPanel ;
   grid.addListener( 'rowclick' , function( grid , rowIndex ){
     try{
-      var record = grid.getStore().getAt( rowIndex );
-      if(record.data.Name){
-        var meta = record.data.Name;
-        if( meta ){
-          gBroker.valuesGrid.setTitle( meta );
-          if( cache[meta] ){
-            store.loadData( cache.meta );
-          }
-          gBroker.queryPanel.layout.setActiveItem( 1 );
-        }
-      }else{
-        showError( 'record.data.Name is absent' );
+      var record = grid.getStore().getAt( rowIndex ) ;
+      if( ! record.data.Name){
+        return showError( 'metaLogic: record.data.Name is absent' ) ;
       }
+      if( ! record.data.Type){
+        return showError( 'metaLogic: record.data.Type is absent' ) ;
+      }
+      var meta = record.data.Name ;
+      var type = record.data.Type
+      var newSelector = querySelector( meta , type ) ;
+      query.add(newSelector) ;
+      query.doLayout() ;
     }catch(e){
-      showError( e.message );
+      showError( e.message ) ;
     }
   });
-  return true;
+  return true ;
 }
-function valuesLogic(){
-  if( ! gBroker.valuesStore || ! gBroker.valuesGrid ){
-    return false;
+function submitMetaQuery( panel ){
+  if( ! panel || ! panel.isXType( 'panel' , true ) ){
+    return showError( 'submitMetaQuery: expect ExtJS panel as first argument' ) ;
   }
-  var store = gBroker.valuesStore;
-  var grid = gBroker.valuesGrid;
-  grid.addListener( 'rowclick' , function( grid , rowIndex ){
-    try{
-      var record = store.getAt( rowIndex );
-      if( record.get( 'Chk' ) ){
-        record.set( 'Chk' , false );
-      }else{
-        record.set( 'Chk' , true );
-      }
-      record.commit();
-    }catch(e){
-      showError( e.message );
+  if( ! gBroker.filesPanel || ! gBroker.filesPanel.isXType( 'grid' , true )){
+    var msg = 'submitMetaQuery: expect ExtJS grid at gBroker.filesPanel' ;
+    return showError( msg ) ;
+  }
+  var grid = gBroker.filesPanel ;
+  var store = grid.getStore() ;
+  if( ! store ){
+    var msg = 'submitMetaQuery: GridStore for gBroker.filesPanel is undefined' ;
+    return showError( msg ) ;
+  }
+  var params = new Object() ;
+  var len = panel.items.getCount() ;
+  for( var i = 0 ; i < len ; i++ ){
+    var item = panel.items.itemAt( i ) ;
+    var selector = item.initialConfig.items[ 3 ] ;
+    if( ! selector ){
+      continue ;
     }
-  });
-  return true
+    var name = selector.getName() ;
+    if( ! name ){
+      continue ;
+    }
+    var value = selector.getValue() ;
+    if( ! value ){
+      continue
+    }
+    if( selector.isXType( 'datefield' , true ) ){
+      var year = value.getUTCFullYear() ;
+      var month = value.getUTCMonth() ;
+      if( month < 10 ){
+        month = '0' + month ;
+      }
+      var day = value.getUTCDate() ;
+      if( day < 10 ){
+        day = '0' + day ;
+      }
+      value = year + '-' + month + '-' + day ;
+    }
+    var logic = item.items.items[ 2 ].value ;
+    var id = Ext.id() ;
+    params[ id + '.' + logic + '.' + name ] = value ;
+  }
+  if( ! store.path ){
+    store.path = '/' ;
+  }
+  params['path'] = store.path ;
+  store.baseParams = params ;
+  store.load() ;
 }
-function checkd(check){
-  if(check){
-    return '<img src="'+gURLRoot+'/images/iface/checked.gif">';
-  }else{
-    return '<img src="'+gURLRoot+'/images/iface/unchecked.gif">';
-  }
-}
-function initValuePanel(){
-  var form = selectPanelReloaded( gBroker.filesPanel );
-  if( ! form  ){
-    return false;
-  }
-  var button = new Ext.Button({
-    cls           : 'x-btn-text-icon'
-    ,handler      : guerySubmit
-    ,icon         : gURLRoot + '/images/iface/submit.gif'
-    ,text         : 'Select'
-    ,tooltip      : 'Confirm selected values and switch to query panel'
+function initQueryPanel( selection ){
+  var submit = new Ext.Button({
+    cls               : 'x-btn-text-icon'
+    ,handler          : function(){ submitMetaQuery( panel ) }
+    ,icon             : gURLRoot + '/images/iface/submit.gif'
+    ,text             : 'Submit'
+  }) ;
+  var reset = new Ext.Button({
+    cls               : 'x-btn-text-icon'
+    ,handler          : function(){ removePanelItems( panel ) }
+    ,icon             : gURLRoot + '/images/iface/reset.gif'
+    ,text             : 'Reset'
+    ,width            : 100
+  }) ;
+  var label = new Ext.Toolbar.TextItem({
+    text              : 'Path to start from: ' 
+  }) ;
+  var reg = new RegExp( /^[a-zA-Z0-9\"\'\|\{\}\.\/;\\\[\]\-=+_,`()%\^\$#!@~&*:<>\? ]+$/ ) ;
+  var altText = 'Valid characters are corresponds to IBM PC keyboard layout' ;
+  var path = genericID( 'dfc_path' , '' , reg , altText ) ;
+  path.on( 'valid' , addPath2Store ) ;
+  path.setValue( '/' ) ;
+  var pathReset = new Ext.Button({
+    cls               : 'x-btn-icon'
+    ,handler          : function(){ path.reset() }
+    ,icon             : gURLRoot + '/images/iface/reset.gif'
+    ,minWidth         : '25'
+  }) ;
+  var tbar = new Ext.Toolbar({ items : [ label , path , pathReset ] }) ;
+  var bbar = new Ext.Toolbar({ items : [ submit , reset ] }) ;
+  var panel = new Ext.Panel({
+    autoScroll        : true
+    ,bbar             : bbar
+    ,border           : true
+    ,cmargins         : '2 2 2 2'
+    ,layout           : 'column'
+    ,margins          : '2 0 2 0'
+    ,minWidth         : 315
+    ,region           : 'west'
+    ,split            : true
+    ,tbar             : tbar
+    ,title            : 'Metadata Query'
+    ,width            : 315
+    ,viewConfig       : { forceFit  : true , scrollOffset : 1 }
+  }) ;
+  panel.addListener( 'resize' , function(){
+    var width = this.getInnerWidth();
+    var newSubmit = submit.cloneConfig({ minWidth  : ( ( 2 * width ) / 3 ) - 4 }) ;
+    var newReset = reset.cloneConfig({ minWidth  : ( ( width ) / 3 ) - 4 }) ;
+    for( var i = 1 ; i > -1 ; i-- ){
+      Ext.fly( bbar.items.get( i ).getEl() ).remove() ;
+      bbar.items.removeAt( i ) ;
+    }
+    bbar.insertButton( 0 , newSubmit ) ;
+    bbar.insertButton( 1 , newReset ) ;
+    var button = tbar.items.items[2] ;
+    var bWidth = button.getEl().getWidth() ;
+    var nWidth = width - bWidth - 98 ;
+    path.setWidth( nWidth ) ;
   });
-  var store = new Ext.data.JsonStore({
-    fields        : [ 'Name' , 'Chk' ],
-    root          : 'result',
-  });
-  gBroker.valuesStore = store;
-  var columns = [{
-    dataIndex     : 'Chk',
-    id            : 'sl1',
-    renderer      : checkd,
-    width         : 26,
-    fixed         : true,
-    align         : 'left',
-    menuDisabled  : true,
-    sortable      : false,
-    css           : 'cursor:pointer;cursor:hand;'
-  },{
-    dataIndex     : 'Name',
-    id            : 'sl2',
-    align         : 'left',
-    editable      : false,
-    sortable      : false,
-    css           : 'cursor:pointer;cursor:hand;'
-  }];
-  var tbar = new Ext.Toolbar({
-    items         : [
-                  {   text   :  '>' }
-                  ,{  text   :  '<'  }
-    ]
-  });
-  var bbar = new Ext.Toolbar({  items : [ button ]  });
-  var grid = gridContainer({
-    bbar          : bbar
-    ,columns      : columns
-    ,store        : store
-    ,title        : 'Form a query'
-    ,tbar         : tbar
-  });
-  gBroker.valuesGrid = grid;
-  var logic = valuesLogic()
-  if( ! logic  ){
-    return false;
-  }
-  form.add( grid );
-  form.region = 'west';
-  form.buttons[ 2 ].hide();
-  return form
+  gBroker.queryPanel = panel ;
+  return panel
 }
 function initMetaPanel( ){
   var button = new Ext.Button({
-    cls           : 'x-btn-text-icon',
-    handler       : function(){ store.reload() },
-    icon          : gURLRoot + '/images/iface/refresh.gif',
-    text          : 'Refresh',
-    tooltip       : 'Updates the list of selectors',
+    cls               : 'x-btn-text-icon'
+    ,handler          : function(){ store.reload() }
+    ,icon             : gURLRoot + '/images/iface/refresh.gif'
+    ,text             : 'Refresh'
+    ,tooltip          : 'Updates the list of selectors'
   });
   var store = new Ext.data.JsonStore({
-    autoLoad      : true,
-    baseParams    : { 'getSelectorGrid' : true },
-    fields        : [ 'Name' , 'Type' ],
-    idProperty    : 'Name',
-    root          : 'result',
-    url           : 'action'
+    autoLoad          : true
+    ,baseParams       : { 'getSelectorGrid' : true }
+    ,fields           : [ 'Name' , 'Type' ]
+    ,idProperty       : 'Name'
+    ,root             : 'result'
+    ,url              : 'action'
   });
   var columns = [{
-    dataIndex     : 'Type',
-    id            : 'sl1',
-    renderer      : status,
-    width         : 26,
-    fixed         : true,
-    align         : 'left',
-    menuDisabled  : true,
-    sortable      : false,
-    css           : 'cursor:pointer;cursor:hand;'
+    align             : 'left'
+    ,css              : 'cursor:pointer;cursor:hand;'
+    ,dataIndex        : 'Type'
+    ,fixed            : true
+    ,id               : 'sl1'
+    ,renderer         : metastatus
+    ,menuDisabled     : true
+    ,sortable         : false
+    ,width            : 26
   },{
-    dataIndex     : 'Name',
-    id            : 'sl2',
-    align         : 'left',
-    editable      : false,
-    sortable      : false,
-    css           : 'cursor:pointer;cursor:hand;'
+    align             : 'left'
+    ,css              : 'cursor:pointer;cursor:hand;'
+    ,dataIndex        : 'Name'
+    ,editable         : false
+    ,id               : 'sl2'
+    ,sortable         : false
   }];
-  var bbar = new Ext.Toolbar({  items : [ button ]  });
+  var bbar = new Ext.Toolbar({ items : [ button ] });
   var grid = gridContainer({
-    bbar          : bbar 
-    ,columns      : columns
-    ,region       : 'west'
-    ,store        : store
+    bbar              : bbar 
+    ,columns          : columns
+    ,region           : 'west'
+    ,store            : store
+    ,title            : 'Metadata tags'
   });
   gBroker.metaPanel = grid;
   var logic = metaLogic()
-//  if( ! logic  ){
-//    return false;
-//  }
+  if( ! logic  ){
+    return false;
+  }
   return grid
 }
 function gridContainer(  config  ){
@@ -233,21 +347,21 @@ function gridContainer(  config  ){
     return false
   }
   var grid = new Ext.grid.GridPanel({
-    anchor        : '-15'
-    ,autoScroll   : true
-    ,bbar         : config.bbar ? config.bbar : ''
-    ,border       : false
-    ,columns      : config.columns
-    ,enableHdMenu : false
-    ,hideHeaders  : true
-    ,loadMask     : true
-    ,split        : true    
-    ,store        : config.store
-    ,stripeRows   : true
-    ,title        : config.title ? config.title : 'Default'
-    ,tbar         : config.tbar ? config.tbar : ''
-    ,width        : 200
-    ,viewConfig   : { forceFit  : true , scrollOffset : 1 }
+    anchor            : '-15'
+    ,autoScroll       : true
+    ,bbar             : config.bbar ? config.bbar : ''
+    ,border           : false
+    ,columns          : config.columns
+    ,enableHdMenu     : false
+    ,hideHeaders      : true
+    ,loadMask         : true
+    ,split            : true    
+    ,store            : config.store
+    ,stripeRows       : true
+    ,title            : config.title ? config.title : 'Default'
+    ,tbar             : config.tbar ? config.tbar : ''
+    ,width            : 200
+    ,viewConfig       : { forceFit : true , scrollOffset : 1 }
   });
   if( config.region ){
     grid.region = config.region;
@@ -279,17 +393,6 @@ function gridContainer(  config  ){
   });
   return grid
 }
-function addSelector( meta , form ){
-  if( ! form ){
-    return
-  }
-  var store = form.getStore();
-  if ( ! store ){
-    return
-  }
-  store.loadData({"result":[{"Type": "varchar(128)", "Name": "EvtType"}, {"Type": "int", "Name": "NumberOfEvents"}, {"Type": "int", "Name": "BXoverlayed"}, {"Type": "datetime", "Name": "StartDate"}]});
-  form.doLayout();
-}
 function initFilesPanel(){
   var record = new Ext.data.Record.create([
     {name:'filename'}
@@ -299,12 +402,26 @@ function initFilesPanel(){
     {header:'File Name',sortable:true,dataIndex:'filename',align:'left',width:'90%'}
   ];
   var store = new Ext.data.Store({
-    reader:new Ext.data.JsonReader({
-      root:'result',
-      totalProperty:'total'
-    },record)
+    reader            : new Ext.data.JsonReader({
+                          root              : 'result'
+                          ,totalProperty    : 'total'
+                        },record)
+    ,url              : 'submit'
   });
-  store.on('load',function(records){
+  store.on( 'beforeload' , function(){
+    try{
+      gMainLayout.container.mask('Loading...');
+    }catch(e){}
+  }) ;
+  store.on( 'loadexception' , function(){
+    try{
+      gMainLayout.container.unmask();
+    }catch(e){}
+  }) ;
+  store.on( 'load' , function(records){
+    try{
+      gMainLayout.container.unmask();
+    }catch(e){}
     var show = false;
     if(records && records.totalLength){
       if(records.totalLength > 0){
@@ -324,37 +441,34 @@ function initFilesPanel(){
       }
     }
   });
-  var tbar = [
-    {
-      cls:"x-btn-text-icon",
-      handler:function(){selectAll('all')},
-      disabled:true,
-      icon:gURLRoot+'/images/iface/checked.gif',
-      text:'Select All',
-      tooltip:'Click to select all rows'
-    },{
-      cls:"x-btn-text-icon",
-      handler:function(){selectAll('none')},
-      disabled:true,
-      icon:gURLRoot+'/images/iface/unchecked.gif',
-      text:'Select None',
-      tooltip:'Click to uncheck selected row(s)'
-    },'->',{
-      cls:"x-btn-text-icon",
-      handler:function(){
-        save(this);
-      },
-      disabled:true,
-      icon:gURLRoot+'/images/iface/save.gif',
-      text:'Save',
-      tooltip:'Click to save selected data'
-    }
-  ];
+  var tbar = [{
+    cls               : 'x-btn-text-icon'
+    ,handler          : function(){ selectAll( 'all' ) }
+    ,disabled         : true
+    ,icon             : gURLRoot + '/images/iface/checked.gif'
+    ,text             : 'Select All'
+    ,tooltip          : 'Click to select all rows'
+  },{
+    cls:"x-btn-text-icon",
+    handler:function(){selectAll('none')},
+    disabled:true,
+    icon:gURLRoot+'/images/iface/unchecked.gif',
+    text:'Select None',
+    tooltip:'Click to uncheck selected row(s)'
+  },'->',{
+    cls:"x-btn-text-icon",
+    handler:function(){
+      save(this);
+    },
+    disabled:true,
+    icon:gURLRoot+'/images/iface/save.gif',
+    text:'Save',
+    tooltip:'Click to save selected data'
+  }];
   var dataTable = new Ext.grid.GridPanel({
     autoHeight:false,
     columns:columns,
     labelAlign:'left',
-    loadMask:true,
     margins:'2 0 2 0',
     id:'FilePanel',
     region:'center',
@@ -373,256 +487,6 @@ function keepButtonSize(panel,button){
   var lastCmp = panel.getComponent(panel.items.items[last].id);
   panel.remove(lastCmp);
   panel.add(tmpButton);
-}
-function addMenu(panel){
-  var initPanel = new Ext.form.Hidden({name:'init',value:''});
-  var reset = new Ext.Button({
-    cls:"x-btn-text-icon",
-    handler:function(){
-      panel.form.reset();
-    },
-    icon:gURLRoot+'/images/iface/reset.gif',
-    minWidth:'70',
-    tooltip:'Reset values in the form',
-    text:'Reset'
-  });
-  var ok = new Ext.Button({
-    cls:"x-btn-text-icon",
-    handler:function(){
-      addItems2Panel(panel,form);
-      win.close();
-    },
-    icon:gURLRoot+'/images/iface/submit.gif',
-    minWidth:'70',
-    tooltip:'Send request to the server',
-    text:'Accept'
-  });
-  var close = new Ext.Button({
-    cls:"x-btn-text-icon",
-    handler:function(){
-      win.close();
-    },
-    icon:gURLRoot+'/images/iface/close.gif',
-    minWidth:'70',
-    tooltip:'Alternatively, you can close the dialogue by pressing the [X] button on the top of the window',
-    text:'Close'
-  });
-  var form = new Ext.Panel({
-    bodyStyle:'padding: 10px',
-    border:false,
-    buttonAlign:'center',
-    buttons:[ok,reset,close],
-    items:[initPanel],
-    labelWidth:0,
-  });
-  form.on('render',function(){
-    form.container.mask('Please wait');
-    Ext.Ajax.request({
-      failure:function(response){
-        form.container.unmask();
-        response.responseText ? response = response.responseText : '';
-        errorReport(response);
-      },
-      method:'POST',
-      params:{'getSelector':'All'},
-      success:function(response){
-        form.container.unmask();
-        response.responseText ? response = response.responseText : '';
-        addItems(response,form);
-      },
-      timeout:60000, // 1min
-      url:'action'
-    });
-  });
-  var win = displayWin(form,'Add Metadata selector(s)',true)
-}
-function checkedMenu(text,isList){
-  var item = new Ext.form.Checkbox({
-    checkHandler:Ext.emptyFn(),
-    hideOnClick:false,
-    fieldLabel:text
-  });
-  return item
-}
-function addItems(response,panel){
-  var data = Ext.util.JSON.decode(response);
-  if(data && data.error){
-    errorReport(data.error);
-    return
-  }
-  var result = new Array();
-// TODO: Check against already selected boxes
-  if(data && data.result){
-    for(var i in data.result){
-      var label = 'unknown';
-      if(data.result[i] == 'int'){
-        label = 'integer';
-//        label = 'string';
-      }else if(data.result[i] == 'datetime'){
-        label = 'date';
-      }else if(data.result[i] == 'varchar(32)'){
-        label = 'string';
-      }else if(data.result[i] == 'varchar(128)'){
-        label = 'string';
-      }
-      var item = new Ext.form.Checkbox({
-        boxLabel:i + ' (' + label + ')',
-        dataLabel:i,
-        dataType:label
-      });
-      result.push(item);
-    }
-  }
-  for(var i = 0; i < result.length; i++){
-    panel.add(result[i]);
-  }
-  panel.doLayout();
-}
-function returnBtnLogic(){
-  var button = new Ext.Button({
-    cls:"x-btn-icon",
-    icon:gURLRoot+'/images/iface/advanced.gif',
-    minWidth:'25',
-    menu:new Ext.menu.Menu({
-      items:[
-        {text:'=='},
-        {text:'!='},
-        {text:'>'},
-        {text:'<'},
-        {text:'=>'},
-        {text:'<='},
-        {text:'[]'},
-        {text:']['},
-        {text:']]'},
-        {text:'[['},
-      ]
-    }),
-    tooltip:'Logical operations supported',
-    columnWidth:'35'
-  });
-  return button
-}
-function checkConditions(form){
-  var len = form.items.getCount();
-  if(len < 1){
-    return false
-  }
-  var checked = new Array();
-  for(var i=0; i<len; i++){
-    if(form.items.items[i].checked){
-      checked.push(form.items.items[i]);
-    }
-  }
-  var len = checked.length;
-  if(len < 1){
-    return false
-  }
-  return checked
-}
-function resetButton(tmpWidth, panel){
-  var button = {
-    cls:"x-btn-text-icon",
-    handler:function(){
-      timeSpan.reset();
-      startDate.reset();
-      startTime.reset();
-      endDate.reset();
-      endTime.reset();
-    },
-    icon:gURLRoot+'/images/iface/reset.gif',
-    minWidth:tmpWidth,
-    text:'Reset Values',
-    tooltip:'Click to reset values of date and time in this widget'
-  }
-  return button
-}
-function selectWidget(title){
-  var button = false;
-  button = returnBtnLogic();
-  if(!button){
-    return false
-  }
-  button.style = 'padding:10px;';
-//  title = 
-  var deleteButton = {
-    cls:"x-btn-text-icon",
-    handler:function(){
-      panel.destroy();
-    },
-    icon:gURLRoot+'/images/iface/close.gif',
-    text:'Delete selector',
-    tooltip:'Click to '
-  }
-  var panel = new Ext.Panel({
-    autoHeight:true,
-    bbar:[resetButton()],
-//    border:false,
-//    defaults: {
-//      style:'padding:5px;',
-//    },
-    items:[button],
-    layoutConfig: {
-      columns: 3
-    },
-    layout:'table',
-    monitorResize:true,
-    style:'padding-bottom:4px;',
-    tbar:[title, '->', deleteButton]
-//    title:title ? title : 'Undefined'
-  });
-  panel.on('resize',function(){
-    var tmpWidth = panel.getInnerWidth() - 6;
-    var bar = panel.getBottomToolbar();
-    Ext.fly(bar.items.get(0).getEl()).remove();
-    bar.items.removeAt(0);
-    bar.insertButton(0,resetButton(tmpWidth, panel));
-  });
-  return panel
-}
-function addItems2Panel(panel,form){
-  var check = false;
-  check = checkConditions(form);
-  if(!check){
-    return
-  }
-  for(var i=0; i < check.length; i++){
-    if(!check[i].dataLabel || !check[i].dataType){
-      continue
-    }
-    var name = check[i].dataLabel;
-    var type = check[i].dataType;
-    var select = false;
-    select = selectWidget(name);
-    if(!select){
-      continue
-    }
-    for ( i in { 'start' : '' , 'end' : '' } ) {
-      var tmp = name +  '_' + i;
-      if(type == 'date'){
-        var item = new Ext.form.DateField({
-          allowBlank:true,
-          emptyText:'YYYY-mm-dd',
-          format:'Y-m-d',
-          name:tmp,
-          selectOnFocus:true,
-          startDay:1,
-          value:'',
-        }); 
-      }else{
-        var item = createRemoteMenu({
-          baseParams:{getMeta:name},
-          name:tmp
-        });
-      }
-      if(item){
-        select.add(item);
-        panel.form.add(item);
-        select.doLayout();
-      }
-      panel.insert(0,select);
-    }
-  }
-  panel.doLayout();
 }
 function save(button){
   button.setIconClass('Loading');
@@ -661,4 +525,42 @@ function save(button){
     timeout:60000, // 1min
     url:'action'
   });
+}
+function removePanelItems( panel ){
+  if( ! panel || ! panel.isXType( 'panel' , true ) ){
+    return showError( 'removePanelItems expect panel as first argument' ) ;
+  }
+  var len = panel.items.getCount() ;
+  if( len < 0 ){
+    return false ;
+  }
+  for( var i = len ; i > -1 ; i-- ){
+    var item = panel.items.itemAt( i ) ;
+    panel.remove( item ) ;
+  }
+}
+function addPath2Store( path ){
+  var path = path.getValue() ;
+  if( ! gBroker.filesPanel || ! gBroker.filesPanel.isXType( 'grid' , true )){
+    var msg = 'addPath2Store: expect ExtJS grid at gBroker.filesPanel' ;
+    return showError( msg ) ;
+  }
+  var grid = gBroker.filesPanel ;
+  var store = grid.getStore() ;
+  if( ! store ){
+    var msg = 'addPath2Store: GridStore for gBroker.filesPanel is undefined' ;
+    return showError( msg ) ;
+  }
+  store.path = path ;
+}
+function metastatus( value ){
+  if( value == 'varchar(128)' ){
+    return '<img src="' + gURLRoot + '/images/iface/str.gif">' ;
+  }else if( value == 'int' ){
+    return '<img src="' + gURLRoot + '/images/iface/int.gif">' ;
+  }else if( value == 'datetime' ){
+    return '<img src="' + gURLRoot + '/images/iface/date.gif">' ;
+  }else{
+    return '<img src="' + gURLRoot + '/images/monitoring/unknown.gif">' ;
+  }
 }
