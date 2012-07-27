@@ -85,7 +85,6 @@ class MetacatalogueController(BaseController):
     filemeta = result[ "FileMetaFields" ]
     dirmeta = result[ "DirectoryMetaFields" ]
     meta = []
-# TODO filemeta? example
     for key,value in dirmeta.items() :
       meta.append( key )
     gLogger.always( "request: metafields: %s " % meta )
@@ -94,12 +93,27 @@ class MetacatalogueController(BaseController):
       if len( tmp ) < 3 :
         continue
       logic = tmp[ 1 ]
+      if not logic in [ "=" , "!=" , ">=" , "<=" , ">" , "<" ] :
+        gLogger.always( "Operand '%s' is not supported " % logic )
+        continue
       name = ''.join( tmp[ 2: ] )
       if name in meta :
-        meta_list = str( request.params[ i ] ).split( separator )
-        if len( meta_list ) == 1 :
-          meta_list = meta_list[ 0 ]
-        req[ "selection" ][ name ] = meta_list
+        if not req[ "selection" ].has_key( name ):
+          req[ "selection" ][ name ] = dict()
+        value = str( request.params[ i ] ).split( separator )
+        gLogger.always( "Value for metafield %s: %s " % ( name , value ) )
+        if not logic in [ "=" , "!=" ] :
+          if len( value ) > 1 :
+            gLogger.always( "List of values is not supported for %s " % logic )
+            continue
+          value = value[ 0 ]
+          req[ "selection" ][ name ][ logic ] = value
+        else :
+          if not req[ "selection" ][ name ].has_key( logic ) :
+            req[ "selection" ][ name ][ logic ] = value
+            continue
+          for j in value:
+            req[ "selection" ][ name ][ logic ].append( j )
     if request.params.has_key("path") :
       req["path"] = request.params["path"]
     gLogger.always(" REQ: ",req)
@@ -126,13 +140,14 @@ class MetacatalogueController(BaseController):
     return {"success":"true","result":result}
 ################################################################################  
   def __prepareURL(self,files):
-#    gLogger.always(" *** ",files)
+
     files = files.split(",")
-#    gLogger.always(" *** ",files)
+
     if not len(files) > 0:
       return {"success":"false","error":"No LFN given"}
     se = getRPCClient("DataManagement/StorageElementProxy")
     result = se.prepareFileForHTTP(files)
+    gLogger.always(" *** ",result)    
     if not result["OK"]:
       return {"success":"false","error":result["Message"]}
     httpURLs = result['HttpURL']
