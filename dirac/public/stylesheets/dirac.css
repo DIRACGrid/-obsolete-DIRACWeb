@@ -177,13 +177,31 @@ p.footer {
 .Act {
   background-image:url("../images/iface/gear.gif") !important;
 }
-.siteheader {
-  font-family:Tahoma, Arial, Helvetica, sans-serif;
-  font-size:21px;
-  text-align:center;
+.Equal {
+  background-image:url("../images/iface/equal.gif") !important;
 }
-#site-main-panel table.x-table-layout {
-    width: 100%;
+.NotEqual {
+  background-image:url("../images/iface/nequal.gif") !important;
+}
+.Greater {
+  background-image:url("../images/iface/great.gif") !important;
+}
+.Less {
+  background-image:url("../images/iface/less.gif") !important;
+}
+.GreaterEqual {
+  background-image:url("../images/iface/gequal.gif") !important;
+}
+.LessEqual {
+  background-image:url("../images/iface/lequal.gif") !important;
+}
+.metaselect {
+  font: 11px tahoma,arial,helvetica,sans-serif;
+  display: block;
+  padding: 4px 0px 0px 4px !important;
+}
+.paddingButton {
+  padding: 0px 2px !important;
 }
 .ul_disk {
   list-style-type:disk !important;
