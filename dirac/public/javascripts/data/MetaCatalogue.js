@@ -64,44 +64,56 @@ function querySelector( metaname , type ){
   // TODO: check the length of the text in the label and decrease it if needed
   var menu = new Ext.menu.Menu({
     items             : [{
-                          handler : function(){ button.value = '==' }
-                          ,text    : '=='
+                          handler : function(){
+                                      button.value = '=' ;
+                                      button.setIconClass( 'Equal' ) ;
+                                    }
+                          ,iconCls: 'Equal'
+                          ,text   : 'Equal to'
                         },{
-                          handler : function(){ button.value = '!=' }
-                          ,text   : '!='
+                          handler : function(){
+                                      button.value = '!=' ;
+                                      button.setIconClass( 'NotEqual' ) ;
+                                    }
+                          ,iconCls: 'NotEqual'
+                          ,text   : 'Not equal to'
                         },{
-                          handler : function(){ button.value = '>' }
-                          ,text    : '>'
+                          handler : function(){
+                                      button.value = '>' ;
+                                      button.setIconClass( 'Greater' ) ;
+                                    }
+                          ,iconCls: 'Greater'
+                          ,text   : 'Greater then'
                         },{
-                          handler : function(){ button.value = '<' }
-                          ,text    : '<'
+                          handler : function(){
+                                      button.value = '<' ;
+                                      button.setIconClass( 'Less' ) ;
+                                    }
+                          ,iconCls: 'Less'
+                          ,text   : 'Less then'
                         },{
-                          handler : function(){ button.value = '=>' }
-                          ,text    : '=>'
+                          handler : function(){
+                                      button.value = '>=' ;
+                                      button.setIconClass( 'GreaterEqual' ) ;
+                                    }
+                          ,iconCls: 'GreaterEqual'
+                          ,text   : 'Greater then or equal to'
                         },{
-                          handler : function(){ button.value = '<=' }
-                          ,text    : '<='
-                        },{
-                          handler : function(){ button.value = '[]' }
-                          ,text    : '[]'
-                        },{
-                          handler : function(){ button.value = '][' }
-                          ,text    : ']['
-                        },{
-                          handler : function(){ button.value = ']]' }
-                          ,text    : ']]'
-                        },{
-                          handler : function(){ button.value = '[[' }
-                          ,text    : '[['
+                          handler : function(){ 
+                                      button.value = '<=' ;
+                                      button.setIconClass( 'LessEqual' ) ;
+                                    }
+                          ,iconCls: 'LessEqual'
+                          ,text   : 'Less then or equal to'
                         }]
   }) ;
   var button = new Ext.Button({
     cls               : 'x-btn-icon'
     ,ctCls            : 'paddingButton'
-    ,icon             : gURLRoot + '/images/iface/advanced.gif'
+    ,icon             : gURLRoot + '/images/iface/equal.gif'
     ,minWidth         : '25'
     ,menu             : menu
-    ,value            : '=='
+    ,value            : '='
   }) ;
   var selector = createRemoteMenu({
     baseParams        : { 'getMeta' : metaname }
@@ -118,6 +130,10 @@ function querySelector( metaname , type ){
     });
   }
   selector.setWidth( 100 ) ;
+  if( type.indexOf( 'char' ) > 0 ){
+    selector.setWidth( 140 ) ;
+    button = '';
+  }
   selector.ctCls = 'paddingButton' ;
   var reset = new Ext.Button({
     cls               : 'x-btn-icon'
@@ -220,6 +236,9 @@ function submitMetaQuery( panel ){
       value = year + '-' + month + '-' + day ;
     }
     var logic = item.items.items[ 2 ].value ;
+    if( ! logic ){
+      logic = '=' ;
+    }
     var id = Ext.id() ;
     params[ id + '.' + logic + '.' + name ] = value ;
   }
