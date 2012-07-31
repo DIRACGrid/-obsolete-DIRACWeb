@@ -1,3 +1,6 @@
+[web2012072701]
+NEW: Interface to DIRAC FileCatalog. Use it on your own risk
+
 [web2012061901]
 FIX: All parameters in an url from web.cfg are taken in account
 
