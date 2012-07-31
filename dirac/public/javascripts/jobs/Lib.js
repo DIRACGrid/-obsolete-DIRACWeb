@@ -14,7 +14,7 @@ function toolbarElementsAutoresize( bar , elements ){
   if( width == 0 ){
     return false ;
   }
-  // initialConfig cuz bar.items has already rendered items
+  // initialConfig cuz bar.items contains already rendered items
   var clone = bar.initialConfig.items.slice() ;
   var realItems = new Array() ;
   for( var i = 0 ; i < elements.length ; i++ ){
@@ -26,12 +26,11 @@ function toolbarElementsAutoresize( bar , elements ){
   if( ! realItems.length > 0 ){
     return false ;
   }
-  for( var i = 0 ; i < clone.length ; i++ ){
-    var index = bar.items.indexOf( clone.itemAt( i ) ) ;
-    if( index ){
-      var xtype = bar.items.items[ index ].getXType() ;
-    }
+  
+  for( var i = 0 ; i < realItems.length ; i++ ){
+    var xtype = realItems[ i ].getXType() ;
   }
+  
   var setWidth = Math.floor( width / realItems.length ) ;
   for( var i = 0 ; i < realItems.length ; i++ ){
     var index = bar.items.indexOf( realItems[ i ] ) ;
