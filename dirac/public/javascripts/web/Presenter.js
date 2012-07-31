@@ -205,7 +205,7 @@ function saveAs(){
   });
   grid.on({
     'resize'          : function(){
-                          toolbarElementsAutoresize( tbar , [ save , chkBox ] ) ;
+                            toolbarElementsAutoresize( tbar , [ save , chkBox ] ) ;
                           toolbarElementsAutoresize( bbar , [ group , user ] ) ;
 //                          var size = tbar.getSize() ;
 //                          var label = tbar.items.items[ 0 ].getEl() ;
