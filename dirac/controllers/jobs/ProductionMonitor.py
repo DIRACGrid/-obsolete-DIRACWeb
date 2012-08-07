@@ -438,7 +438,7 @@ class ProductionmonitorController(BaseController):
       resList = []
       total = res['Value'].pop('Total')
       if total == 0:
-        c.result = {"success":"false","error":"No files found"} 
+        c.result = {"success":"false","error":"No files found"}
       else:
         for status in sortList(res['Value'].keys()):
           count = res['Value'][status]
