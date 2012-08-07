@@ -44,6 +44,11 @@ function initProductionMonitor(reponseSelect){
           testObject[record.data.TransformationID]['Files_Assigned'] = record.data['Files_Assigned'];
           testObject[record.data.TransformationID]['Files_Processed'] = record.data['Files_Processed'];
           testObject[record.data.TransformationID]['Files_Problematic'] = record.data['Files_Problematic'];
+          testObject[record.data.TransformationID]['Jobs_Matched'] = record.data['Jobs_Matched'];
+          testObject[record.data.TransformationID]['Jobs_Killed'] = record.data['Jobs_Killed'];
+          testObject[record.data.TransformationID]['Jobs_Staging'] = record.data['Jobs_Staging'];
+          testObject[record.data.TransformationID]['Jobs_Checking'] = record.data['Jobs_Checking'];
+          testObject[record.data.TransformationID]['Jobs_Rescheduled'] = record.data['Jobs_Rescheduled'];
         }catch(e){}
       }
     }
@@ -66,7 +71,7 @@ function initProductionMonitor(reponseSelect){
       },
       timeout:60000, // 1min
       url:'action'
-    });    
+    });
   });
 }
 function diffValues(value,metaData,record,rowIndex,colIndex,store){
@@ -93,7 +98,7 @@ function diffValues(value,metaData,record,rowIndex,colIndex,store){
     return value;
   }
 }
-// function describing data structure, should be individual per page 
+// function describing data structure, should be individual per page
 function initRecord(){
   var record = new Ext.data.Record.create([
     {name:'TransformationIDcheckBox',mapping:'TransformationID'},
@@ -130,7 +135,12 @@ function initRecord(){
     {name:'Jobs_Failed'},
     {name:'Jobs_Stalled'},
     {name:'Jobs_Completed'},
-    {name:'TransformationFamily',type:'float'}
+    {name:'TransformationFamily',type:'float'},
+    {name:'Jobs_Matched'},
+    {name:'Jobs_Killed'},
+    {name:'Jobs_Staging'},
+    {name:'Jobs_Checking'},
+    {name:'Jobs_Rescheduled'}
   ]);
   return record
 }
@@ -183,12 +193,17 @@ function initData(store){
     {header:'Files Unused',sortable:true,dataIndex:'Files_Unused',align:'left',hidden:true,renderer:diffValues},
     {header:'Created',sortable:true,dataIndex:'Jobs_Created',align:'left',renderer:diffValues},
     {header:'Submitted',sortable:true,dataIndex:'Jobs_Submitted',align:'left',renderer:diffValues},
+    {header:'Matched',sortable:true,dataIndex:'Jobs_Matched',align:'left',hidden:true,renderer:diffValues},
+    {header:'Checking',sortable:true,dataIndex:'Jobs_Checking',align:'left',hidden:true,renderer:diffValues},
     {header:'Waiting',sortable:true,dataIndex:'Jobs_Waiting',align:'left',renderer:diffValues},
+    {header:'Staging',sortable:true,dataIndex:'Jobs_Staging',align:'left',hidden:true,renderer:diffValues},
+    {header:'Rescheduled',sortable:true,dataIndex:'Jobs_Rescheduled',align:'left',hidden:true,renderer:diffValues},
     {header:'Running',sortable:true,dataIndex:'Jobs_Running',align:'left',renderer:diffValues},
     {header:'Done',sortable:true,dataIndex:'Jobs_Done',align:'left',renderer:diffValues},
     {header:'Completed',sortable:true,dataIndex:'Jobs_Completed',align:'left',renderer:diffValues},
     {header:'Failed',sortable:true,dataIndex:'Jobs_Failed',align:'left',renderer:diffValues},
     {header:'Stalled',sortable:true,dataIndex:'Jobs_Stalled',align:'left',renderer:diffValues},
+    {header:'Killed',sortable:true,dataIndex:'Jobs_Killed',align:'left',renderer:diffValues},
     {header:'InheritedFrom',sortable:true,dataIndex:'InheritedFrom',align:'left',hidden:true},
     {header:'GroupSize',sortable:true,dataIndex:'GroupSize',align:'left',hidden:true},
     {header:'FileMask',sortable:true,dataIndex:'FileMask',align:'left',hidden:true},
@@ -252,7 +267,7 @@ function setChk(value){
     return true
   }else{
     return false
-  } 
+  }
 }
 function setRefresh(time,store){
   if(time == 900000 || time == 3600000 || time == 1800000){
@@ -326,8 +341,8 @@ function extendTransformation(id){
     }else{
       this.hide();
     }
-  });   
-}  
+  });
+}
 
 function setMenuItems(selections){
   if(selections){
@@ -386,7 +401,7 @@ function setMenuItems(selections){
   if((runStatusMenu)&&(new RegExp('^(' + runStatusMenu.join('|') + ')$').test(type))){
       dirac.menu.items.items[3].enable();
   }else{
-    dirac.menu.items.items[3].disable();  
+    dirac.menu.items.items[3].disable();
   }
   if(!transAdmin){
   	dirac.menu.items.items[10].disable();
@@ -473,7 +488,7 @@ function AJAXsuccess(value,id,response){
     }
     var store = new Ext.data.Store({
       data:result,
-      reader:reader 
+      reader:reader
     }),
     panel = new Ext.grid.GridPanel({
       columns:columns,
