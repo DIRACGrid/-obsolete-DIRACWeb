@@ -7,7 +7,6 @@ var refreshRate = 0;
 var tableID = 'tmpID';
 var idObject = new Array();
 var transAdmin = false;
-var runStatusMenu = false; // Array, used in context menu to enable/disable this action for certain type of productions
 // Main routine
 function initProductionMonitor(reponseSelect){
   try{
@@ -57,16 +56,7 @@ function initProductionMonitor(reponseSelect){
         this.loading.addClass('x-btn-text-icon');
       })
     });
-    renderData(store);
-    Ext.Ajax.request({
-      method:'POST',
-      params:{'getRunStatus':true},
-      success:function(response){
-        runStatusMenu = Ext.util.JSON.decode(response.responseText).result;
-      },
-      timeout:60000, // 1min
-      url:'action'
-    });    
+    renderData(store);   
   });
 }
 function diffValues(value,metaData,record,rowIndex,colIndex,store){
@@ -357,7 +347,6 @@ function setMenuItems(selections){
       {handler:function(){jump('job',id,submited)},text:'Show Jobs'},
       {handler:function(){jump('request',family,1)},text:'Show Request'},
       {handler:function(){AJAXrequest('log',id)},text:'Logging Info'},
-      {handler:function(){runStatus(id)},text:'Run Status'},
       {handler:function(){AJAXrequest('fileStat',id)},text:'File Status'},
       {text:'File Retries',menu:({items:subMenu1})},
       {handler:function(){AJAXrequest('dataQuery',id)},text:'Input Data Query'},
@@ -368,25 +357,19 @@ function setMenuItems(selections){
     );
   }
   if(status == 'Active'){
-    dirac.menu.items.items[10].menu.items.items[1].enable();
-    dirac.menu.items.items[10].menu.items.items[0].disable();
+    dirac.menu.items.items[9].menu.items.items[1].enable();
+    dirac.menu.items.items[9].menu.items.items[0].disable();
   }else if(status == 'New'){
-    dirac.menu.items.items[10].menu.items.items[1].disable();
-    dirac.menu.items.items[10].menu.items.items[0].enable();
+    dirac.menu.items.items[9].menu.items.items[1].disable();
+    dirac.menu.items.items[9].menu.items.items[0].enable();
   }else{
-    dirac.menu.items.items[10].menu.items.items[1].disable();
-    dirac.menu.items.items[10].menu.items.items[0].enable();
+    dirac.menu.items.items[9].menu.items.items[1].disable();
+    dirac.menu.items.items[9].menu.items.items[0].enable();
   }
   if(type == 'MCSimulation'){
+    dirac.menu.items.items[3].disable();
     dirac.menu.items.items[4].disable();
     dirac.menu.items.items[5].disable();
-    dirac.menu.items.items[6].disable();
-  }
-  // RegExp is used to test is type in runStatusMenu array: if (/^(?:bob|sue|smith)$/.test(name))
-  if((runStatusMenu)&&(new RegExp('^(' + runStatusMenu.join('|') + ')$').test(type))){
-      dirac.menu.items.items[3].enable();
-  }else{
-    dirac.menu.items.items[3].disable();  
   }
   if(!transAdmin){
   	dirac.menu.items.items[10].disable();
@@ -524,9 +507,6 @@ function jump(type,id,submited){
     var url = document.location.protocol + '//' + document.location.hostname + gURLRoot + '/' + gPageDescription.selectedSetup;
     var hash = DEncode.encode( {'idF':id} );
     url = url + '/' + gPageDescription.userData.group + '/Production/ProductionRequest/display#' + hash;
-  }else if(type == 'run'){
-    var url = document.location.protocol + '//' + document.location.hostname + gURLRoot + '/' + gPageDescription.selectedSetup;
-    url = url + '/' + gPageDescription.userData.group + '/jobs/JobMonitor/display?runNumber=' + id;
   }else{
     var url = document.location.protocol + '//' + document.location.hostname + gURLRoot + '/' + gPageDescription.selectedSetup;
     url = url + '/' + gPageDescription.userData.group + '/jobs/JobMonitor/display?prod=' + id;
@@ -589,186 +569,4 @@ function showFileStat(stat,id){
   });
   var win = displayWin(panel,title,true);
   win.setWidth(600);
-}
-function runStatus(id){
-  var params = {'getRunStatus':id};
-  var title = 'Run status for production: ' + id;
-  var record = new Ext.data.Record.create([
-    {name:'Status'},
-    {name:'StatusIcon',mapping:'Status'},
-    {name:'TransformationID'},
-    {name:'LastUpdate',type:'date',dateFormat:'Y-n-j H:i:s'},
-    {name:'Files_PercentProcessed',type:'float'},
-    {name:'Files_Total'},
-    {name:'Files_Assigned'},
-    {name:'RunNumber'},
-    {name:'SelectedSite'},
-    {name:'Files_Processed'},
-    {name:'Files_Unused'},
-    {name:'Files_Problematic'}
-  ]);
-// Make a processed counter like bar
-  var columns = [
-    {header:'RunNumber',sortable:true,dataIndex:'RunNumber',align:'left'},
-    {header:'',width:26,sortable:false,dataIndex:'StatusIcon',renderer:status,hideable:false,fixed:true,menuDisabled:true},
-    {header:'Status',sortable:true,dataIndex:'Status',align:'left'},
-    {header:'SelectedSite',sortable:true,dataIndex:'SelectedSite',align:'left'},
-    {header:'Files',sortable:true,dataIndex:'Files_Total',align:'left',renderer:diffRuns},
-    {header:'Processed (%)',sortable:true,dataIndex:'Files_PercentProcessed',align:'left',renderer:diffRuns},
-    {header:'Unused',sortable:true,dataIndex:'Files_Unused',align:'left',renderer:diffRuns},
-    {header:'Assigned',sortable:true,dataIndex:'Files_Assigned',align:'left',renderer:diffRuns},
-    {header:'Processed',sortable:true,dataIndex:'Files_Processed',align:'left',renderer:diffRuns},
-    {header:'Problematic',sortable:true,dataIndex:'Files_Problematic',align:'left',renderer:diffRuns},
-    {header:'LastUpdate',sortable:true,dataIndex:'LastUpdate',align:'left',renderer:Ext.util.Format.dateRenderer('Y-m-d H:i')}
-  ];
-  var store = initStore(record,{'url':'showRunStatus','params':params});
-  store.removeListener('beforeload',storeLoadFunction);
-  runObject = {}
-  store.addListener('beforeload',function(store){
-    if(store.totalLength){
-      for(var i = 0; i < store.totalLength; i++){
-        var record = store.getAt(i);
-        try{
-          runObject[record.data.RunNumber] = {};
-          runObject[record.data.RunNumber]['Files_Total'] = record.data['Files_Total'];
-          runObject[record.data.RunNumber]['Files_PercentProcessed'] = record.data['Files_PercentProcessed'];
-          runObject[record.data.RunNumber]['Files_Unused'] = record.data['Files_Unused'];
-          runObject[record.data.RunNumber]['Files_Assigned'] = record.data['Files_Assigned'];
-          runObject[record.data.RunNumber]['Files_Processed'] = record.data['Files_Processed'];
-          runObject[record.data.RunNumber]['Files_Problematic'] = record.data['Files_Problematic'];
-        }catch(e){}
-      }
-    }
-  });
-  function diffRuns(value,metaData,record,rowIndex,colIndex,store){
-    var id = record.data.RunNumber;
-    if(id && runObject[id]){
-      var name = this.name;
-      try{
-        var diff = value - runObject[id][name];
-        var test = diff + '';
-        if(test.indexOf(".") > 0){
-          diff = diff.toFixed(1);
-        }
-        if(diff > 0){
-          return value + ' <font color="#00CC00">(+' + diff + ')</font>';
-        }else if(diff < 0){
-          return value + ' <font color="#FF3300">(' + diff + ')</font>';
-        }else{
-          return value;
-        }
-      }catch(e){
-        return value;
-      }
-    }else{
-      return value;
-    }
-  }
-  var gridID = Ext.id();
-  var tableMngr = {'store':store,'columns':columns,'id':gridID};
-  var panel = table(tableMngr);
-  panel.addListener('cellclick',function(table,rowIndex,columnIndex){
-    var record = table.getStore().getAt(rowIndex); // Get the Record for the row
-    try{
-      if(record.data.RunNumber){
-        var runID = record.data.RunNumber;
-        run = runID + '&prod=' + id;
-      }
-    }catch(e){
-      return
-    }
-    var columnName = table.getColumnModel().getColumnId(columnIndex); // Get the name for the column
-    var fieldName = table.getColumnModel().getDataIndex(columnIndex); // Get field name for the column
-    if(record.data){
-      var v = record.get(fieldName);
-      try{
-        v = v.format('l, \\t\\he jS \\of F Y H:i [\\U\\TC]');
-      }catch(e){}
-    }
-    var coords = Ext.EventObject.xy;
-    var menu = new Ext.menu.Menu();
-    var siteMenu = [
-      {handler:function(){setSite(id,runID,'LCG.CERN.ch',table.store)},text:'LCG.CERN.ch'},
-      {handler:function(){setSite(id,runID,'LCG.CNAF.it',table.store)},text:'LCG.CNAF.it'},
-      {handler:function(){setSite(id,runID,'LCG.GRIDKA.de',table.store)},text:'LCG.GRIDKA.de'},
-      {handler:function(){setSite(id,runID,'LCG.IN2P3.fr',table.store)},text:'LCG.IN2P3.fr'},
-      {handler:function(){setSite(id,runID,'LCG.NIKHEF.nl',table.store)},text:'LCG.NIKHEF.nl'},
-      {handler:function(){setSite(id,runID,'LCG.PIC.es',table.store)},text:'LCG.PIC.es'},
-      {handler:function(){setSite(id,runID,'LCG.RAL.uk',table.store)},text:'LCG.RAL.uk'},
-      {handler:function(){setSite(id,runID,'LCG.SARA.nl',table.store)},text:'LCG.SARA.nl'}
-    ];
-    menu.add(
-      {handler:function(){jump('run',run,1)},text:'Show Jobs'},
-      {handler:function(){setRunStatus('Flush',id,runID,table.store)},text:'Flush'},
-      {menu:({items:siteMenu}),text:'Set Site'},
-      '-',
-      {handler:function(){Ext.Msg.minWidth = 360;Ext.Msg.alert('Cell value is:',v);},text:'Show value'}
-    );
-    menu.showAt(coords);
-  });
-  idObject.push(store);
-//  idObject.push(panel.id);
-  var win = displayWin(panel,title,false);
-  win.setWidth(600);
-}
-function setSite(prodID,runID,site,store){
-  x = getT1();
-  var title = 'Set Site ' + site;
-  var msg = 'Are you sure you want to set site ' + site + ' for the run ' + runID + ' in production ' + prodID + ' ?';
-  Ext.Msg.confirm(title,msg,function(btn){
-    if(btn == 'yes'){
-      var params = {'setSite':'True','runID':runID,'prodID':prodID,'site':site};
-      Ext.Ajax.request({
-        failure:function(response){
-          AJAXerror(response.responseText);
-        },
-        method:'POST',
-        params:params,
-        success:function(response){
-          store.load();
-        },
-        url:'action'
-      });
-    }
-  });
-}
-function setRunStatus(status,prodID,runID,store){
-  var title = 'Flush ' + runID;
-  var msg = 'Are you sure you want to ' + status + ' this run: ' + runID + ' ?';
-  Ext.Msg.confirm(title,msg,function(btn){
-    if(btn == 'yes'){
-      var params = {'setRunStatus':'True','runID':runID,'prodID':prodID,'status':status};
-      Ext.Ajax.request({
-        failure:function(response){
-          AJAXerror(response.responseText);
-        },
-        method:'POST',
-        params:params,
-        success:function(response){
-          store.load();
-        },
-        url:'action'
-      });
-    }
-  });
-}
-function getT1(){
-  Ext.Ajax.request({
-    failure:function(response){
-      AJAXerror(response.responseText);
-    },
-    method:'POST',
-    params:{'getT1':'True'},
-    success:function(response){
-      var jsonData = Ext.util.JSON.decode(response.responseText);
-      if(jsonData['success'] == 'false'){
-        alert('Error: ' + jsonData['error']);
-        return;
-      }else{
-        var tier1 = jsonData['result'].split(', ');
-        return tier1
-      }
-    },
-    url:'action'
-  });
 }
