@@ -233,23 +233,6 @@ class JobmonitorController(BaseController):
       types = [["Error happened on service side"]]
     callback["types"] = types
 ###
-    result = RPC.getRunNumbers()
-    if result["OK"]:
-      app = []
-      if len(result["Value"])>0:
-        result["Value"].reverse()
-        app.append([str("All")])
-        for i in result["Value"]:
-          i = str(int(i))
-          i = i.replace(",",";")
-          app.append([i])
-      else:
-        app = [["Nothing to display"]]
-    else:
-      gLogger.error("RPC.getRunNumbers() return error: %s" % result["Message"])
-      app = [["Error happened on service side"]]
-    callback["runNumber"] = app
-###
     groupProperty = credentials.getProperties(group)
     if user == "Anonymous":
       callback["owner"] = [["Insufficient rights"]]
@@ -336,9 +319,6 @@ class JobmonitorController(BaseController):
       if request.params.has_key("status") and len(request.params["status"]) > 0:
         if str(request.params["status"]) != "All":
           req["Status"] = str(request.params["status"]).split(separator)
-      if request.params.has_key("runNumber") and len(request.params["runNumber"]) > 0:
-        if str(request.params["runNumber"]) != "All":
-          req["runNumber"] = str(request.params["runNumber"]).split(separator)
       if request.params.has_key("minorstat") and len(request.params["minorstat"]) > 0:
         if str(request.params["minorstat"]) != "All":
           req["MinorStatus"] = str(request.params["minorstat"]).split(separator)
