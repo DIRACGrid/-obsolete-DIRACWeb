@@ -64,20 +64,18 @@ class PresenterController(BaseController):
       return { "success" : "false" , "error" : "Passed permissions are not string" }
     permissions = { "ReadAccess" : permissions }
     data = {}
+    banList = [ "Name" , "Permissions" , "saveLayout" ]
     for i in cfg:
       try:
-        if not i in ["Name","Permissions","saveLayout"] and len(cfg[i]) > 0:
-          data[i] = cfg[i]
+        if not i in banList and len( cfg[ i ] ) > 0:
+          data[ i ] = cfg[ i ]
       except:
         pass
     strData = json.dumps( data )
-    gLogger.always(" === Data to save: %s" % strData)
-    gLogger.always(" +++ is Data string? : %s" % isinstance(strData,str) )
-    gLogger.always(" +++ is Data unicode? : %s" % isinstance(strData,unicode) )
+    gLogger.info( "Data to save: %s" % strData )
     upc = UserProfileClient( USER_PROFILE_NAME, getRPCClient )
-    gLogger.always( " === upc.storeVar( %s , %s , %s )" % ( name , strData , permissions) )
     result = upc.storeVar( name , strData , permissions )
-    gLogger.always(result)
+    gLogger.debug( result )
     if not result["OK"]:
       return {"success":"false","error":result["Message"]}
 #    result = self.__setHistory(name)
