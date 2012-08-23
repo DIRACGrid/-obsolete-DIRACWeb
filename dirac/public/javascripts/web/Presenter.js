@@ -6,15 +6,16 @@ var contextMenu = false ; // Common context menu
 
 function initLoop(  initValues  ){
   Ext.onReady(  function(){
-    heartbeat = new Ext.util.TaskRunner();
+    heartbeat = new Ext.util.TaskRunner() ;
+    initAjax() ;
     if( window.location.hash  ){
-      var test = window.location.hash.split(  '#layout='  );
-      if( test.length == 2 && initValues  ){
-        initValues.defaultLayout = test[ 1 ];
+      var test = window.location.hash.split( '#layout=' ) ;
+      if( test.length == 2 && initValues ){
+        initValues.defaultLayout = test[ 1 ] ;
       }
     }
-    var mainContent = mainPanel(  initValues  );
-    renderInMainViewport([ mainContent ]);
+    var mainContent = mainPanel( initValues ) ;
+    renderInMainViewport( [ mainContent ] ) ;
   });
 }
 function mainPanel( initValues  ){
@@ -54,11 +55,19 @@ function mainPanel( initValues  ){
   });
   var get = new Ext.Toolbar.Button({
     cls               : 'x-btn-text-icon'
-    ,iconCls          : 'Restore'
+    ,iconCls          : 'Load'
     ,id               : 'getLayoutButton'
     ,menu             : createMenu( 'get' , initValues  )
     ,tooltip          : 'Click to open yours or others layout'
     ,text             : 'Open'
+  });
+  var mng = new Ext.Toolbar.Button({
+    cls               : 'x-btn-text-icon'
+    ,handler          : manager
+    ,iconCls          : 'Act'
+    ,id               : 'mngLayoutButton'
+    ,tooltip          : 'Click to set permissions or delete your layouts'
+    ,text             : 'Manage'
   });
   var del = new Ext.Toolbar.Button({
     cls               : 'x-btn-text-icon'
@@ -125,6 +134,7 @@ function mainPanel( initValues  ){
                           , '-'
                           , get
                           , set
+                          , mng
                           , del
                         ]
   });
@@ -135,7 +145,264 @@ function mainPanel( initValues  ){
   });
   return panel
 }
-function saveAs(){
+function manager(){
+  var store = new Ext.data.JsonStore({
+    autoLoad          : true
+    ,baseParams       : { 'getAvailbleLayouts' : true , 'userOnly' : true }
+    ,fields           : [ 'Name' , 'Group' , 'All' ]
+    ,idProperty       : 'Name'
+    ,root             : 'result'
+    ,url              : 'action'
+  }) ;
+  store.on( 'datachanged' , function( store ){
+    submit.enable() ;  
+  }) ;
+  var columns = [{
+    align             : 'left'
+    ,dataIndex        : 'Name'
+    ,editable         : false
+    ,id               : 'sl1'
+    ,sortable         : false
+  },{
+    align             : 'left'
+    ,css              : 'cursor:pointer;cursor:hand;'
+    ,dataIndex        : 'Group'
+    ,editable         : false
+    ,id               : 'sl2'
+    ,sortable         : false
+  },{
+    align             : 'left'
+    ,css              : 'cursor:pointer;cursor:hand;'
+    ,dataIndex        : 'All'
+    ,editable         : false
+    ,id               : 'sl3'
+    ,sortable         : false
+  }] ;
+  var grid = new Ext.grid.GridPanel({
+    anchor            : '-15'
+    ,autoScroll       : true
+    ,border           : false
+    ,columns          : columns
+    ,enableHdMenu     : false
+    ,hideHeaders      : true
+    ,loadMask         : true
+    ,split            : true    
+    ,store            : store
+    ,stripeRows       : true
+    ,width            : 200
+    ,viewConfig       : { forceFit  : true , scrollOffset : 1 }
+  });
+  grid.addListener( 'cellclick' , function( table , rowIndex , columnIndex ){
+    var record = table.getStore().getAt( rowIndex ) ;
+    var fieldName = table.getColumnModel().getDataIndex( 0 ) ;
+  });
+  var win = formWindow({
+    icon              : 'Load'
+    ,title            : 'Load layout'
+  }) ;
+  win.add( grid ) ;
+  var submit = win.buttons[ 0 ] ;
+  submit.setText( 'Save changes' ) ;
+  submit.setIconClass( 'Save' ) ;
+  submit.setHandler( function(){
+//    saveChanges() ;
+  }) ;
+  submit.disable() ;
+  var reset = win.buttons[ 1 ] ;
+  reset.setHandler( function(){ store.rejectChanges() }) ;
+  win.show() ;
+}
+function actionSuccess( response , options ){
+  if( ! options || ! options.params ){
+    return false ;
+  }
+  var kind = false ;
+  if( options.params.saveLayout ){
+    kind = 'save' ;
+  }else if( options.params.loadLayout ){
+    kind = 'load' ;
+  }
+  if( ! kind ){
+    return false ;
+  }
+  var response = Ext.util.JSON.decode( response.responseText ) ;
+  if( response.success != 'success' ){
+    return showError( response.error ) ;
+  }
+  redoLayout( response[ 'result' ] , 'save' ) ;
+  var mainPanel = Ext.getCmp( 'mainConteiner' ) ;
+  if( mainPanel ){
+      mainPanel.doLayout() ;
+  }
+  return true ;
+}
+function loadLayout( name ){
+  if( name ){
+    return
+  }
+  var params = new Object() ;
+  params[ 'loadLayout' ] = true ;
+  params[ 'Name' ] = name ;
+  var title = 'Load Layout' ;
+  var msg = 'Load the layout: ' + name + ' ?';
+  Ext.Msg.confirm( title , msg , function( btn ){
+    if( btn == 'yes' ){
+      ajax({
+        mask          : true
+        ,params       : params
+        ,success      : actionSuccess
+      }) ;
+    }
+  });
+  return true ;
+}
+function saveLayout( name , perm ){
+  var params = gatherInfo() ;
+  params[ 'saveLayout' ] = true ;
+  params[ 'Name' ] = name ;
+  var permissions = 'USER' ;
+  if( perm.group ){
+    permissions = permissions + ',GROUP' ;
+  }
+  if( perm.all ){
+    permissions = permissions + ',ALL' ;
+  }
+  params[ 'Permissions' ] = permissions ;
+  var title = 'Save Layout' ;
+  var welcome = Ext.getCmp( 'welcomeMessage' ) ;
+  if(welcome){
+    return showError( 'This is the default layout and can not be saved' ) ;
+  }
+  var msg = 'Save current layout to: ' + name + ' ?';
+  Ext.Msg.confirm( title , msg , function( btn ){
+    if( btn == 'yes' ){
+      ajax({
+        mask          : true
+        ,params       : params
+        ,success      : actionSuccess
+      }) ;
+    }
+  });
+  return true ;
+}
+function load( name ){
+  if( name ){
+    return loadLayout( name ) ;
+  }
+  var store = new Ext.data.JsonStore({
+    autoLoad          : true
+    ,baseParams       : { 'getAvailbleLayouts' : true }
+    ,fields           : [ 'Name' , 'User' , 'Group' ]
+    ,idProperty       : 'Name'
+    ,root             : 'result'
+    ,url              : 'action'
+  }) ;
+  var columns = [{
+    align             : 'left'
+    ,css              : 'cursor:pointer;cursor:hand;'
+    ,dataIndex        : 'Name'
+    ,editable         : false
+    ,id               : 'sl1'
+    ,sortable         : false
+  },{
+    align             : 'left'
+    ,css              : 'cursor:pointer;cursor:hand;'
+    ,dataIndex        : 'User'
+    ,editable         : false
+    ,id               : 'sl2'
+    ,sortable         : false
+  },{
+    align             : 'left'
+    ,css              : 'cursor:pointer;cursor:hand;'
+    ,dataIndex        : 'Group'
+    ,editable         : false
+    ,id               : 'sl3'
+    ,sortable         : false
+  }] ;
+  var userStore = new Ext.data.JsonStore({
+    autoLoad          : true
+    ,baseParams       : { 'getAvailbleLayouts' : true , 'username' : true }
+    ,fields           : [ 'User' ]
+    ,idProperty       : 'User'
+    ,root             : 'result'
+    ,url              : 'action'
+  }) ;
+  var user = new dropdownMenu({
+    combo             : false
+    ,emptyText        : 'Select Owner'
+    ,name             : 'selectOwner'
+    ,maxLength        : 20
+    ,store            : userStore
+    ,width            : 80
+  }) ;
+  var refresh = new Ext.Button({
+    cls               : 'x-btn-icon'
+//    cls               : 'x-btn-text-icon'
+    ,handler          : function(){ userStore.reload() }
+    ,icon             : gURLRoot + '/images/iface/refresh.gif'
+//    ,text             : 'Refresh'
+    ,minWidth         : '25'
+    ,tooltip          : 'Updates the list of users'
+  });
+  var reset = new Ext.Button({
+    cls               : 'x-btn-icon'
+    ,ctCls            : 'paddingButton'
+    ,handler          : function(){ user.reset() }
+    ,icon             : gURLRoot + '/images/iface/reset.gif'
+    ,minWidth         : '25'
+    ,tooltip          : 'Resets list of users menu'
+  }) ;
+  var tbar = new Ext.Toolbar({
+    items             : [
+                          user
+                          , refresh
+                          , reset
+                        ]
+  }) ;
+  var grid = new Ext.grid.GridPanel({
+    anchor            : '-15'
+    ,autoScroll       : true
+    ,border           : false
+    ,columns          : columns
+    ,enableHdMenu     : false
+    ,hideHeaders      : true
+    ,loadMask         : true
+    ,split            : true    
+    ,store            : store
+    ,stripeRows       : true
+    ,tbar             : tbar
+    ,width            : 200
+    ,viewConfig       : { forceFit  : true , scrollOffset : 1 }
+  });
+  grid.addListener( 'cellclick' , function( table , rowIndex , columnIndex ){
+    var record = table.getStore().getAt( rowIndex ) ;
+    var fieldName = table.getColumnModel().getDataIndex( 0 ) ;
+    submit.enable() ;
+  });
+  grid.on( 'resize' , function(){
+    toolbarElementsAutoresize( tbar , [ user ] ) ;
+  }) ;
+  var win = formWindow({
+    icon              : 'Load'
+    ,title            : 'Load layout'
+  }) ;
+  win.add( grid ) ;
+  var submit = win.buttons[ 0 ] ;
+  submit.setText( 'Load' ) ;
+  submit.setIconClass( 'Load' ) ;
+  submit.setHandler( function(){
+    if( name ){
+      loadLayout( name ) ;
+    }
+  }) ;
+  submit.disable() ;
+  win.buttons[ 1 ].hide() ; // Hiding reset button
+  win.show() ;
+}
+function save( name ){
+  if( name ){
+    return saveLayout( name , 'SAME' ) ;
+  }
   var params = gatherInfo() ;
   var welcome = Ext.getCmp('welcomeMessage') ;
   if(welcome){
@@ -143,7 +410,7 @@ function saveAs(){
   }
   var store = new Ext.data.JsonStore({
     autoLoad          : true
-    ,baseParams       : { 'getLayouts' : true }
+    ,baseParams       : { 'getUserLayouts' : true }
     ,fields           : [ 'Name' ]
     ,idProperty       : 'Name'
     ,root             : 'result'
@@ -157,26 +424,24 @@ function saveAs(){
     ,id               : 'sl1'
     ,sortable         : false
   }] ;
-  var chkBox = new Ext.form.Checkbox() ;
-  var group = createRemoteMenu({
-    baseParams        : { 'getGroup' : true }
+  var shareStore = new Ext.data.SimpleStore({
+    data              : [ [ 'Everyone' ] , [ 'Group' ] ]
+    ,fields           : [ 'value' ]
+  });
+  var share = new dropdownMenu({
+    combo             : true
+    ,name             : 'shareWith'
     ,maxLength        : 20
-    ,width            : 80
-  }) ;
-  var user = createRemoteMenu({
-    baseParams        : { 'getUsers' : true }
-    ,maxLength        : 20
+    ,selectOnFocus    : false
+    ,store            : shareStore
     ,width            : 80
   }) ;
   var bbar = new Ext.Toolbar({
     items             : [
-                          chkBox
-                          , 'Share profile with group: '
-                          , group
-                          , ' or user: '
-                          , user
+                          'Share profile with: '
+                          , share
                         ]
-  });
+  }) ;
   var regexp = new RegExp( /^[0-9a-zA-Z]+$/ ) ;
   var regmsg = 'Letters and numbers only are allowed' ;
   var save = genericID( 'save' , '' , regexp , regmsg , 'None' ) ;
@@ -205,14 +470,8 @@ function saveAs(){
   });
   grid.on({
     'resize'          : function(){
-                            toolbarElementsAutoresize( tbar , [ save , chkBox ] ) ;
-                          toolbarElementsAutoresize( bbar , [ group , user ] ) ;
-//                          var size = tbar.getSize() ;
-//                          var label = tbar.items.items[ 0 ].getEl() ;
-//                          var m = Ext.util.TextMetrics.createInstance( label ) ;
-//                          var labelWidth = m.getWidth( 'Save as:' ) ;
-//                          var nWidth = size.width - labelWidth - 10 ;
-//                          save.setWidth( nWidth ) ;
+                          toolbarElementsAutoresize( tbar , [ save , chkBox ] ) ;
+                          toolbarElementsAutoresize( bbar , [ share ] ) ;
                         }
   }) ;
   var win = formWindow({
@@ -223,11 +482,15 @@ function saveAs(){
   var submit = win.buttons[ 0 ] ;
   submit.setText( 'Save' ) ;
   submit.setIconClass( 'Save' ) ;
-  var reset = win.buttons[ 1 ] ;
-//  reset.disable() ;
-  reset.hide() ;
+  submit.setHandler( function(){
+    var name = save.getValue() ;
+    var perm = share.getRealValue() ;
+    var group = ( perm.indexOf( 'Group' ) > -1 ) ? true : false ;
+    var all = ( perm.indexOf( 'Everyone' ) > -1 ) ? true : false ;
+    saveLayout( name , { group : group , all : all } ) ;
+  }) ;
+  win.buttons[ 1 ].hide() ; // Hiding reset button
   win.show() ;
-  
 }
 function addPanel( init ){
   var url = false ;
@@ -402,7 +665,7 @@ function createMenu( mode , init ){
   }
   if( mode == 'set' ){
     var saveNew = new Ext.menu.Item({
-      handler         : function(){ saveAs() }
+      handler         : function(){ save() }
       ,icon           : gURLRoot + '/images/iface/save.gif'
       ,text           : 'Save as new layout'
     });
@@ -412,8 +675,8 @@ function createMenu( mode , init ){
     }
   }else if( mode == 'get' ){
     var open = new Ext.menu.Item({
-      handler         : function(){ syncLayout() }
-      ,icon           : gURLRoot + '/images/iface/reschedule.gif'
+      handler         : function(){ load() }
+      ,icon           : gURLRoot + '/images/iface/export.gif'
       ,text           : 'Load a new layout'
     });
     menu.addItem( open ) ;
@@ -490,6 +753,7 @@ function setColumnWidth( width ){
     return showError( e.name + ': ' + e.message ) ;
   }
 }
+////////////////////////////////////////////////////////////////////////////////
 function gatherInfo(){
   var url = '';
   try{
@@ -542,91 +806,6 @@ function changeIcon(id,state){
     button.setIconClass(btnClass);
   }catch(e){}
 }
-function saveLayout(name){
-  var params = gatherInfo();
-  params['setBookmarks'] = name;
-  var title = 'Save Layout';
-  var welcome = Ext.getCmp('welcomeMessage');
-  if(welcome){
-    Ext.Msg.alert(title,'This is the default layout and can not be saved')
-  }else{
-    var msg = 'Save current layout to: ' + name + ' ?';
-    Ext.Msg.confirm(title,msg,function(btn){
-      if(btn == 'yes'){
-        changeIcon('setLayoutButton','load');
-        Ext.Ajax.request({
-          failure:function(response){
-            changeIcon('setLayoutButton','normal');
-            AJAXerror(response.responseText);
-            return false
-          },
-          method:'POST',
-          params:params,
-          success:function(response){
-            changeIcon('setLayoutButton','normal');
-            var jsonData = Ext.util.JSON.decode(response.responseText);
-            if(jsonData['success'] == 'false'){
-              AJAXerror(response.responseText);
-              return false
-            }else{
-              redoLayout(jsonData['result'],'save');
-              var mainPanel = Ext.getCmp('mainConteiner');
-              if(mainPanel){
-                mainPanel.doLayout();
-              }
-            }
-          },
-          url:'action'
-        });
-      }
-    });
-  }
-}
-function loadLayout(name){
-  var title = 'Load Layout';
-  try{
-    var button = Ext.getCmp('getLayoutButton');
-    var length = button.menu.items.getCount();
-    if(length <= 0){
-      Ext.Msg.alert(title,'Seems you do not have any layout to load');
-      return;
-    }
-  }catch(e){
-    alert('Error: ' + e.name + ': ' + e.message);
-    return
-  }
-  var msg = 'Load the layout: ' + name + ' ?';
-  Ext.Msg.confirm(title,msg,function(btn){
-    if(btn == 'yes'){
-      changeIcon('getLayoutButton','load');
-      Ext.Ajax.request({
-        failure:function(response){
-          changeIcon('getLayoutButton','normal');
-          AJAXerror(response.responseText);
-          return false
-        },
-        method:'POST',
-        params:{'getBookmarks':name},
-        success:function(response){
-          changeIcon('getLayoutButton','normal');
-          var jsonData = Ext.util.JSON.decode(response.responseText);
-          if(jsonData['success'] == 'false'){
-            AJAXerror(response.responseText);
-            return false
-          }else{
-            redoLayout(jsonData['result'],'load');
-            var mainPanel = Ext.getCmp('mainConteiner');
-            if(mainPanel){
-              mainPanel.doLayout();
-            }
-          }
-        },
-        url:'action'
-      });
-    }
-  });
-}
-// change icon 'delLayoutButton'
 function deleteLayout(mode){
   var title = 'Delete Layout';
   if(mode == 'All'){
@@ -858,53 +1037,6 @@ function createPanel(img){
     });
   });
   return box
-}
-function createTable(){
-  function status(value){
-  if((value == 'Done')||(value == 'Completed')||(value == 'Good')||(value == 'Active')||(value == 'Cleared')){
-    return '<img src="'+gURLRoot+'/images/monitoring/done.gif">';
-  }else if((value == 'Failed')||(value == 'Bad')||(value == 'Banned')||(value == 'Aborted')){
-    return '<img src="'+gURLRoot+'/images/monitoring/failed.gif">';
-  }else if((value == 'Waiting')||(value == 'Stopped')||(value == 'Poor')||(value == 'Probing')){
-    return '<img src="'+gURLRoot+'/images/monitoring/waiting.gif">';
-  }else if(value == 'Deleted'){
-    return '<img src="'+gURLRoot+'/images/monitoring/deleted.gif">';
-  }else if(value == 'Matched'){
-    return '<img src="'+gURLRoot+'/images/monitoring/matched.gif">';
-  }else if((value == 'Running')||(value == 'Active')||(value == 'Fair')){
-    return '<img src="'+gURLRoot+'/images/monitoring/running.gif">';
-  }else if(value == 'NoMask'){
-    return '<img src="'+gURLRoot+'/images/monitoring/unknown.gif">';
-  }else{
-    return '<img src="'+gURLRoot+'/images/monitoring/unknown.gif">';
-  }
-  }
-  var reader = new Ext.data.ArrayReader({},[
-    {name:'Status'},
-    {name:'Number'}
-  ]);
-  var columns = [
-    {header:'',width:26,sortable:false,dataIndex:'Status',renderer:status,hideable:false},
-    {header:'Status',width:60,sortable:true,dataIndex:'Status',align:'left'},
-    {header:'Numbers',sortable:true,dataIndex:'Number',align:'left'}
-  ];
-  var store = new Ext.data.Store({
-    autoLoad:{params:{globalStat:'true'}},
-    proxy: new Ext.data.HttpProxy({
-      url:'https://lhcbtest.pic.es/DIRAC/LHCb-Production/diracAdmin/jobs/JobMonitor/action',
-      method:'POST',
-    }),
-    reader:reader
-  });
-  var grid = new Ext.grid.GridPanel({
-    columns:columns,
-    header:false,
-    loadMask:true,
-    store:store,
-    stripeRows:true,
-    viewConfig:{forceFit:true}
-  });
-  return grid
 }
 function changeURL(id,url){
   var winID = Ext.id();
