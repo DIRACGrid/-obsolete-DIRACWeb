@@ -1,6 +1,7 @@
 from dirac.lib.base import *
 from dirac.lib.diset import getRPCClient
 from dirac.lib.credentials import authorizeAction, getUsername
+from DIRAC.Core.Utilities.List import uniqueElements
 from DIRAC import gLogger
 from DIRAC import S_OK, S_ERROR
 from DIRAC.FrameworkSystem.Client.UserProfileClient import UserProfileClient
@@ -12,13 +13,15 @@ class PresenterController(BaseController):
 ################################################################################
   def display(self):
     if not authorizeAction():
-      return render("/login.mako")
-    c.select = dict()
-    result = self.__convert()
+      return render( "/login.mako" )
+#    result = self.__convert()
+#    if not result[ "OK" ]:
+#      gLogger.error( result[ "Message" ] )
+    result = self.__getHistory()
     if result["OK"]:
-      c.select = self.__getData()
-    if c.select.has_key("result"):
-      c.select = c.select["result"]
+      c.select = result[ "Value" ]
+#    if c.select.has_key("result"):
+#      c.select = c.select["result"]
     return render("web/Presenter.mako")
 ###############################################################################
   @jsonify
@@ -45,7 +48,7 @@ class PresenterController(BaseController):
       return {"success":"false","error":"Action is not defined"}
 ################################################################################
   def __saveLayout( self , cfg = False ) :
-    gLogger.always( "__saveLayout() function" )
+    gLogger.debug( "start __saveLayout()" )
     if not cfg :
       return { "success" : "false" , "error" : "Request is empty" }
     if not cfg.has_key( "Name" ):
@@ -71,18 +74,17 @@ class PresenterController(BaseController):
           data[ i ] = cfg[ i ]
       except:
         pass
-    strData = json.dumps( data )
-    gLogger.info( "Data to save: %s" % strData )
+    gLogger.info( "Data to save: %s" % data )
     upc = UserProfileClient( USER_PROFILE_NAME, getRPCClient )
-    result = upc.storeVar( name , strData , permissions )
+    result = upc.storeVar( name , data , permissions )
     gLogger.debug( result )
-    if not result["OK"]:
-      return {"success":"false","error":result["Message"]}
-#    result = self.__setHistory(name)
-#    if not result["OK"]:
-#      gLogger.error(result["Message"])
-#
-    return {"success":"false","error":"tests ongoing"}
+    if not result[ "OK" ]:
+      return { "success" : "false" , "error" : result[ "Message" ] }
+    history = self.__setHistory( name )
+    if not history[ "OK" ]:
+      gLogger.error( history[ "Message" ] )
+    gLogger.debug( "end __saveLayout()" )
+    return { "success" : "true" , "result" : data }
 ################################################################################
   def __getUsers(self):
     return
@@ -217,32 +219,46 @@ class PresenterController(BaseController):
       return S_ERROR( result["Message"] )
     return S_OK( result["Value"] )
 ################################################################################
-  def __setHistory(self,name=False):
-    gLogger.info("__setHistory(%s) function" % name)
+  def __setHistory( self , name = False ):
+    gLogger.info( "start __setHistory()")
     if not name:
-      return S_ERROR( "Name of the layout to save in history is absent" )
-    upc = UserProfileClient( "Default", getRPCClient )
+      return S_ERROR( "Name of the layout to be memorized is absent" )
+    upc = UserProfileClient( "Default" , getRPCClient )
     profile_name = USER_PROFILE_NAME + ".History"
-    gLogger.info("upc.retrieveVar(%s)" % profile_name)
-    result = upc.retrieveVar(profile_name)
-    gLogger.debug(result)
-    if not result["OK"]:
-      result = dict()
-      result["Value"] = dict()
-    data = result["Value"]
+    gLogger.info( "upc.retrieveVar( %s )" % profile_name )
+    history = list()
+    result = upc.retrieveVar( profile_name )
+    gLogger.debug( result )
+    if result[ "OK" ]:
+      result = result[ "Value" ]
     try:
-      data = list(data)
+      history = list( result )
     except:
-      data = list()
-    data.append(name)
-    while len(data) > 50:
-      data.popleft()
-    gLogger.info("upc.storeVar(%s,%s)" % (profile_name,data))      
-    result = upc.storeVar(profile_name,data)
-    gLogger.debug(result)
-    if not result["OK"]:
-      return S_ERROR( result["Message"] )
-    return S_OK( result["Value"] )
+      gLogger.error( "Failed to convert %s to list" % result )
+    history.append( name )
+    history = uniqueElements( history )
+    while len( history ) > 50:
+      history.popleft()
+    gLogger.info( "upc.storeVar( %s , %s )" % ( profile_name , history ))      
+    result = upc.storeVar( profile_name , history )
+    gLogger.debug( result )
+    if not result[ "OK" ]:
+      return S_ERROR( result[ "Message" ] )
+    gLogger.info( "end __setHistory()" )
+    return S_OK( result[ "Value" ] )
+################################################################################
+  def __getHistory( self ):
+    gLogger.info( "start __getHistory()")
+    upc = UserProfileClient( "Default" , getRPCClient )
+    profile_name = USER_PROFILE_NAME + ".History"
+    gLogger.info( "upc.retrieveVar( %s )" % profile_name )
+    history = list()
+    result = upc.retrieveVar( profile_name )
+    gLogger.always( result )
+    if not result[ "OK" ]:
+      return S_ERROR( result[ "Message" ] )
+    gLogger.info( "end __getHistory()" )
+    return S_OK( result[ "Value" ] )
 ################################################################################
   def __lastHistory(self):
     gLogger.info("__lastHistory() function")
