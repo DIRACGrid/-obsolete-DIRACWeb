@@ -1,8 +1,104 @@
+function initAjax(){
+  /*
+  This function can be used for error catching and to add parameters before or
+  after any ajax request. Right now it's used to remove mask from the body of
+  the page upon the end of ajax calls. Since it's enhancing ExtJS Ajax singleton
+  it should be called only once at the beggining of your JS code.
+  */
+  Ext.Ajax.on( 'requestcomplete' , function(){
+    Ext.getBody().unmask() ;
+  } , this ) ;
+  Ext.Ajax.on( 'requestexception' , function( conn , response , options ){
+    Ext.getBody().unmask() ;
+  } , this ) ;
+}
+function ajax( cfg ){
+  if( typeof cfg === 'undefined' ){
+    return false ;
+  }
+  if( ! cfg.success ){
+    return false ;
+  }
+  if( cfg.mask ){
+    Ext.getBody().mask( cfg.msg ? cfg.msg : 'Communicating with server' ) ;
+  }
+  Ext.Ajax.request({
+    failure           : cfg.failure ? cfg.failure : errorReport 
+    ,headers          : cfg.headers ? cfg.headers : undefined 
+    ,method           : cfg.method ? cfg.method : 'POST'
+    ,params           : cfg.params ? cfg.params : undefined
+//    ,scope            : cfg.scope ? cfg.scope : this
+    ,success          : cfg.success
+    ,timeout          : cfg.timeout ? cfg.timeout : 60000
+    ,url              : cfg.url ? cfg.url : 'action'
+  });
+}
+function dropdownMenu( cfg ){
+  if( typeof cfg === 'undefined' ){
+    return false ;
+  }
+  if( ! cfg.store ){
+    return false ;
+  }
+  var config = new Object({
+    anchor            : cfg.anchor ? cfg.anchor : '-15'
+    ,disabled         : cfg.disabled ? cfg.disabled : false
+    ,displayField     : cfg.displayField ? cfg.displayField : 'value'
+    ,emptyText        : cfg.emptyText ? cfg.emptyText : 'Select item from menu'
+    ,fieldLabel       : cfg.fieldLabel ? cfg.fieldLabel : 'Default title'
+    ,forceSelection   : cfg.forceSelection ? cfg.forceSelection : false
+    ,hiddenName       : cfg.name ? cfg.name : 'set_in_cfg_' + Ext.id()
+    ,hideOnSelect     : cfg.hideOnSelect ? cfg.hideOnSelect : false
+    ,id               : cfg.id ? cfg.id : Ext.id()
+    ,maxLength        : cfg.maxLength ? cfg.maxLength : 100
+    ,mode             : cfg.mode ? cfg.mode : 'local'
+    ,resizable        : cfg.resizable ? cfg.resizable : true
+    ,selectOnFocus    : cfg.selectOnFocus ? cfg.selectOnFocus : true
+    ,separator        : cfg.separator ? cfg.separator : ':::'
+    ,store            : cfg.store
+    ,triggerAction    : cfg.triggerAction ? cfg.triggerAction : 'all'
+    ,typeAhead        : cfg.typeAhead ? cfg.typeAhead : true
+    ,value            : cfg.value ? cfg.value : undefined
+    ,valueField       : cfg.valueField ? cfg.valueField : 'value'
+    ,visualseparator  : cfg.visualseparator ? cfg.visualseparator : ', '
+    ,width            : cfg.width ? cfg.width : 'auto'
+  })
+  var combo = ( cfg.combo) ?
+    new Ext.ux.form.LovCombo( config ) : new Ext.form.ComboBox( config ) ;
+  combo.on( 'render' , function(){
+    if( typeof dataSelect === 'undefined' || ! dataSelect.extra ){
+      return
+    }
+    if( ! dataSelect.extra[ this.hiddenName ] ){
+      return
+    }
+    var newValue = new Array() ;
+    var selection = dataSelect.extra[ this.hiddenName ] ;
+    var nameList = ( this.combo ) ?
+      selection.split( this.separator ) : new Array( selection ) ;
+    for( var i = 0 ; i < nameList.length ; i++ ){
+      var re = new RegExp( nameList[ i ] , "g" ) ;
+      if( this.store.find( 'value' , re ) != -1 ){
+        newValue.push( nameList[ i ] ) ;
+      }
+    }
+    newValue = ( this.combo ) ? 
+      newValue.join( this.separator ) : newValue[ 0 ] ;
+    combo.setValue( newValue ) ;
+    delete dataSelect.extra[ this.hiddenName ] ;
+  }) ;
+  return combo;
+}
 function toolbarElementsAutoresize( bar , elements ){
   /*
-  
   bar        : Object. Instance of Ext.Toolbar
-  elements   : Array. Items from toolbar items collection
+  elements   : Array of objects. Items from toolbar items collection
+  
+  Function is checking for existance of passed elements in toolbar. Calculates
+  the width without objects from elements array. Dividing the remain width by
+  number of elements. New width should be more then 25 pixels. Set new width on
+  per elements basis paying attention of kind of element. setWidth for form
+  elements, create-delete-insertButton for toolbar buttons.
   */
   if( ! bar.isXType( 'toolbar' , true ) ){
     return false ;
@@ -16,26 +112,50 @@ function toolbarElementsAutoresize( bar , elements ){
   }
   // initialConfig cuz bar.items contains already rendered items
   var clone = bar.initialConfig.items.slice() ;
-  var realItems = new Array() ;
+  var index = new Object() ;
+  var realItems = new Object() ;
+  var realLength = 0 ;
   for( var i = 0 ; i < elements.length ; i++ ){
-    var test = clone.indexOf( elements[ i ] ) ;
-    if( test > -1 ){
-      realItems.push( elements[ i ] ) ;
+    var ind = clone.indexOf( elements[ i ] ) ;
+    if( ind > -1 ){
+      realItems[ ind ] = elements[ i ].getXType() ; // !!! TEST THIS
+      index[ ind ] = elements[ i ] ;
+      realLength++ ;
     }
   }
-  if( ! realItems.length > 0 ){
+  if( ! realItems || ! realLength > 0 || ! index ){
     return false ;
   }
-  
-  for( var i = 0 ; i < realItems.length ; i++ ){
-    var xtype = realItems[ i ].getXType() ;
+  width = width - 4 ;
+  for( var i = 0 ; i < bar.items.getCount() ; i++ ){
+    if( ! realItems[ i ] ){
+      var id = bar.items.items[ i ].id ;
+      var el = Ext.get( id ) ;
+      var tmpW = Ext.num( el.getWidth() , 0 ) ;
+      if( tmpW > 0 ){
+        width = width - tmpW ;
+      }
+    }
   }
-  
-  var setWidth = Math.floor( width / realItems.length ) ;
-  for( var i = 0 ; i < realItems.length ; i++ ){
-    var index = bar.items.indexOf( realItems[ i ] ) ;
-    if( index ){
-      bar.items.items[ index ].setWidth( setWidth ) ;
+  if( width <= 0 ){
+    return false ;
+  }
+  var setWidth = Math.floor( width / realLength ) ;
+  if( ! setWidth > 25 ){
+    return false ;
+  }
+  for( var i = 0 ; i < bar.items.getCount() ; i++ ){
+    if( realItems[ i ] && index[ i ] ){
+      if( index[ i ].setWidth ){
+        index[ i ].setWidth( setWidth ) ;
+        continue ;
+      }
+      if( realItems[ i ] == '' ){
+        var tmp = clone[ i ].cloneConfig({ minWidth  : setWidth }) ;
+        Ext.fly( bar.items.get( i ).getEl() ).remove() ;
+        bar.items.removeAt( i ) ;
+        bar.insertButton( i , tmp ) ;
+      }
     }
   }
   return bar
@@ -177,26 +297,26 @@ function action(type,mode,id){
     url:'action'
   });
 }
-function errorReport(strobj){
-  var prefix = 'Error: ';
-  var postfix = '';
-  var error = 'Action has finished with error';
-  if(strobj){
-    if(strobj.substring) {
-      error = strobj;
-    }else{
-      try{
-        if(strobj.failureType == 'connect'){
-          error = 'Can not recieve service response';
-        }
-      }catch(e){}
-      try{
-        error = error + '\nMessage: ' + strobj.response.statusText;
-      }catch(e){}
-    }
+function errorReport( strobj ){
+  var prefix = 'Error: ' ;
+  var postfix = '' ;
+  var error = 'Action has finished with error' ;
+  if( ! strobj ){
+    return alert( prefix + error + postfix ) ;
   }
-  error = prefix + error + postfix;
-  alert(error);
+  if( strobj.substring ){
+      error = strobj ;
+  }else{
+    try{
+      if( strobj.failureType == 'connect' ){
+        error = 'Can not recieve service response' ;
+      }
+    }catch(e){}
+    try{
+      error = error + '\nService Response: ' + strobj.statusText ;
+    }catch(e){}
+  }
+  return alert( prefix + error + postfix ) ;
 }
 function AJAXerror(response){
   try{
@@ -1195,7 +1315,7 @@ function createRemoteMenu(item){
   });
   return combo
 }
-function createMenu(dataName,title,altValue){
+function createLovMenu(dataName,title,altValue){
   var data = 'Nothing to display';
 // test for dataSelect existence  
   try{
