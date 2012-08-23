@@ -4,8 +4,9 @@ from dirac.lib.credentials import authorizeAction, getUsername
 from DIRAC import gLogger
 from DIRAC import S_OK, S_ERROR
 from DIRAC.FrameworkSystem.Client.UserProfileClient import UserProfileClient
+import json
 
-USER_PROFILE_NAME = "Summary"
+USER_PROFILE_NAME = "Presenter"
 
 class PresenterController(BaseController):
 ################################################################################
@@ -24,9 +25,14 @@ class PresenterController(BaseController):
   def action(self):
     if not authorizeAction():
       return {"success":"false","error":"Insufficient rights"}
-    if request.params.has_key("getBookmarks") > 0:
-      name = str(request.params["getBookmarks"])
-      return self.__getData(name)
+    if request.params.has_key("getAvailbleLayouts"):
+      if request.params.has_key("username") :
+        return self.__getUsers()
+      if request.params.has_key("userOnly") :
+        return self.getData( user )
+      return self.__getData()
+    elif request.params.has_key("saveLayout"):
+      return self.__saveLayout(request.params)
     elif request.params.has_key("setBookmarks") and len(request.params["setBookmarks"]) > 0:
       name = str(request.params["setBookmarks"])
       return self.__setData(name)
@@ -37,6 +43,51 @@ class PresenterController(BaseController):
       return self.__delAllData()
     else:
       return {"success":"false","error":"Action is not defined"}
+################################################################################
+  def __saveLayout( self , cfg = False ) :
+    gLogger.always( "__saveLayout() function" )
+    if not cfg :
+      return { "success" : "false" , "error" : "Request is empty" }
+    if not cfg.has_key( "Name" ):
+      return { "success" : "false" , "error" : "Name of the layout is absent" }
+    try:
+      name = str( cfg[ "Name" ] )
+    except:
+      err = "Can't convert variable 'Name' to a string. "
+      err = err + "Seems there are non ASCII symbols in layout name"
+      return { "success" : "false" , "error" : err }
+    if not cfg.has_key( "Permissions" ):
+      return { "success" : "false" , "error" : "Permissions for the layout is absent" }
+    try:
+      permissions = str( cfg["Permissions"] )
+    except:
+      return { "success" : "false" , "error" : "Passed permissions are not string" }
+    permissions = { "ReadAccess" : permissions }
+    data = {}
+    for i in cfg:
+      try:
+        if not i in ["Name","Permissions","saveLayout"] and len(cfg[i]) > 0:
+          data[i] = cfg[i]
+      except:
+        pass
+    strData = json.dumps( data )
+    gLogger.always(" === Data to save: %s" % strData)
+    gLogger.always(" +++ is Data string? : %s" % isinstance(strData,str) )
+    gLogger.always(" +++ is Data unicode? : %s" % isinstance(strData,unicode) )
+    upc = UserProfileClient( USER_PROFILE_NAME, getRPCClient )
+    gLogger.always( " === upc.storeVar( %s , %s , %s )" % ( name , strData , permissions) )
+    result = upc.storeVar( name , strData , permissions )
+    gLogger.always(result)
+    if not result["OK"]:
+      return {"success":"false","error":result["Message"]}
+#    result = self.__setHistory(name)
+#    if not result["OK"]:
+#      gLogger.error(result["Message"])
+#
+    return {"success":"false","error":"tests ongoing"}
+################################################################################
+  def __getUsers(self):
+    return
 ################################################################################
   def __getAtomicData(self,name=False):
     gLogger.info("__getAtomicData(%s) function" % name)
