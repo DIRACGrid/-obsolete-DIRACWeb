@@ -117,69 +117,10 @@ class AccountingplotsController( BaseController ):
       del( retVal[ 'rpcStub' ] )
     return retVal
 
-  def __parseFormParams( self ):
-    pD = {}
-    extraParams = {}
-    pinDates = False
-    for name in request.params:
-      if name.find( "_" ) != 0:
-        continue
-      value = request.params[ name ]
-      name = name[1:]
-      pD[ name ] = str( value )
-    #Personalized title?
-    if 'plotTitle' in pD:
-      extraParams[ 'plotTitle' ] = pD[ 'plotTitle' ]
-      del( pD[ 'plotTitle' ] )
-    #Pin dates?
-    if 'pinDates' in pD:
-      pinDates = pD[ 'pinDates' ]
-      del( pD[ 'pinDates' ] )
-      pinDates = pinDates.lower() in ( "yes", "y", "true", "1" )
-    #Get plotname
-    if not 'grouping' in pD:
-      return S_ERROR( "Missing grouping!" )
-    grouping = pD[ 'grouping' ]
-    #Get plotname
-    if not 'typeName' in pD:
-      return S_ERROR( "Missing type name!" )
-    typeName = pD[ 'typeName' ]
-    del( pD[ 'typeName' ] )
-    #Get plotname
-    if not 'plotName' in pD:
-      return S_ERROR( "Missing plot name!" )
-    reportName = pD[ 'plotName' ]
-    del( pD[ 'plotName' ] )
-    #Get times
-    if not 'timeSelector' in pD:
-      return S_ERROR( "Missing time span!" )
-    #Find the proper time!
-    pD[ 'timeSelector' ] = int( pD[ 'timeSelector' ] )
-    if pD[ 'timeSelector' ] > 0:
-      end = Time.dateTime()
-      start = end - datetime.timedelta( seconds = pD[ 'timeSelector' ] )
-      if not pinDates:
-        extraParams[ 'lastSeconds' ] = pD[ 'timeSelector' ]
-    else:
-      if 'endTime' not in pD:
-        end = False
-      else:
-        end = Time.fromString( pD[ 'endTime' ] )
-        del( pD[ 'endTime' ] )
-      if 'startTime' not in pD:
-        return S_ERROR( "Missing starTime!" )
-      else:
-        start = Time.fromString( pD[ 'startTime' ] )
-        del( pD[ 'startTime' ] )
-    del( pD[ 'timeSelector' ] )
+  def __parseFormParams(self):
+    params = request.params
+    return parseFormParams(params)
 
-    for k in pD:
-      if k.find( "ex_" ) == 0:
-        extraParams[ k[3:] ] = pD[ k ]
-    #Listify the rest
-    for selName in pD:
-      pD[ selName ] = List.fromChar( pD[ selName ], "," )
-    return S_OK( ( typeName, reportName, start, end, pD, grouping, extraParams ) )
 
   def __translateToExpectedExtResult( self, retVal ):
     if retVal[ 'OK' ]:
@@ -269,3 +210,96 @@ class AccountingplotsController( BaseController ):
     response.headers['Pragma'] = "no-cache"
     response.headers['Expires'] = ( datetime.datetime.utcnow() - datetime.timedelta( minutes = -10 ) ).strftime( "%d %b %Y %H:%M:%S GMT" )
     return data
+
+  @jsonify
+  def getPlotListAndSelectionValues(self):
+    result = {}
+    try:
+      typeName = str( request.params[ 'typeName' ] )
+    except:
+      return S_ERROR( "Missing or invalid type name!" )
+    retVal = self.__getUniqueKeyValues( typeName )
+    if not retVal[ 'OK' ] and 'rpcStub' in retVal:
+      del( retVal[ 'rpcStub' ] )
+      return retVal
+    selectionValues = retVal['Value']
+    data = AccountingplotsController.__keysCache.get( "reportsList:%s" % typeName )
+    if not data:
+      repClient = ReportsClient( rpcClient = getRPCClient( "Accounting/ReportGenerator" ) )
+      retVal = repClient.listReports( typeName )
+      if not retVal[ 'OK' ]:
+        c.error = retVal[ 'Message' ]
+        return render ( "/error.mako" )
+      data = simplejson.dumps( retVal[ 'Value' ] )
+      AccountingplotsController.__keysCache.add( "reportsList:%s" % typeName, 300, data )
+    try:
+      plotsList = eval(data)
+    except:
+      return S_ERROR('Failed to convert a string to a list!')
+    return S_OK({'SelectionData':selectionValues, 'PlotList':plotsList})
+
+def parseFormParams(params):
+  pD = {}
+  extraParams = {}
+  pinDates = False
+  print 'Found it!!!',params
+  for name in params:
+    if name.find( "_" ) != 0:
+      continue
+    value = params[ name ]
+    name = name[1:]
+    pD[ name ] = str( value )
+  #Personalized title?
+  if 'plotTitle' in pD:
+    extraParams[ 'plotTitle' ] = pD[ 'plotTitle' ]
+    del( pD[ 'plotTitle' ] )
+  #Pin dates?
+  if 'pinDates' in pD:
+    pinDates = pD[ 'pinDates' ]
+    del( pD[ 'pinDates' ] )
+    pinDates = pinDates.lower() in ( "yes", "y", "true", "1" )
+  #Get plotname
+  if not 'grouping' in pD:
+    return S_ERROR( "Missing grouping!" )
+  grouping = pD[ 'grouping' ]
+  #Get plotname
+  if not 'typeName' in pD:
+    return S_ERROR( "Missing type name!" )
+  typeName = pD[ 'typeName' ]
+  del( pD[ 'typeName' ] )
+  #Get plotname
+  if not 'plotName' in pD:
+    return S_ERROR( "Missing plot name!" )
+  reportName = pD[ 'plotName' ]
+  del( pD[ 'plotName' ] )
+  #Get times
+  if not 'timeSelector' in pD:
+    return S_ERROR( "Missing time span!" )
+  #Find the proper time!
+  pD[ 'timeSelector' ] = int( pD[ 'timeSelector' ] )
+  if pD[ 'timeSelector' ] > 0:
+    end = Time.dateTime()
+    start = end - datetime.timedelta( seconds = pD[ 'timeSelector' ] )
+    if not pinDates:
+      extraParams[ 'lastSeconds' ] = pD[ 'timeSelector' ]
+  else:
+    if 'endTime' not in pD:
+      end = False
+    else:
+      end = Time.fromString( pD[ 'endTime' ] )
+      del( pD[ 'endTime' ] )
+    if 'startTime' not in pD:
+      return S_ERROR( "Missing starTime!" )
+    else:
+      start = Time.fromString( pD[ 'startTime' ] )
+      del( pD[ 'startTime' ] )
+  del( pD[ 'timeSelector' ] )
+
+  for k in pD:
+    if k.find( "ex_" ) == 0:
+      extraParams[ k[3:] ] = pD[ k ]
+  #Listify the rest
+  for selName in pD:
+    pD[ selName ] = List.fromChar( pD[ selName ], "," )
+  return S_OK( ( typeName, reportName, start, end, pD, grouping, extraParams ) )
+
