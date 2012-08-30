@@ -1,9 +1,28 @@
+import logging, tempfile
+from time import time, gmtime, strftime
+from types import ListType
+from DIRAC.Core.Utilities import Time
+
 from dirac.lib.base import *
 from dirac.lib.diset import getRPCClient
-from dirac.lib.credentials import authorizeAction, getUsername
-from DIRAC import gLogger
-from DIRAC import S_OK, S_ERROR
+from dirac.lib.credentials import authorizeAction
+from DIRAC import gLogger, S_OK, S_ERROR
+from DIRAC.Core.Utilities.List import sortList
+from DIRAC.Core.Utilities.DictCache import DictCache
+import dirac.lib.credentials as credentials
+import urlparse #for decode the URL
+import cgi # for decode the URL
+from DIRAC.AccountingSystem.private.FileCoding import extractRequestFromFileId
+
+########
 from DIRAC.FrameworkSystem.Client.UserProfileClient import UserProfileClient
+########
+import datetime
+from DIRAC.Core.Utilities import List
+from DIRAC.AccountingSystem.Client.ReportsClient import ReportsClient
+from dirac.controllers.systems.accountingPlots import parseFormParams
+import json
+log = logging.getLogger(__name__)
 
 USER_PROFILE_NAME = "Summary"
 
@@ -36,7 +55,102 @@ class PresenterController(BaseController):
     elif request.params.has_key("delAllBookmarks") and len(request.params["delAllBookmarks"]) > 0:
       return self.__delAllData()
     else:
-      return {"success":"false","error":"Action is not defined"}
+      c.result = {"success":"false","error":"Action is not defined"}
+      return c.result
+
+  def getPlotsParameters(self, url, translate=True):
+    """
+    The input parameter is an URL. It decode the URL and creates a dictionary,
+    which contains the detailes of the plot.
+    """
+    gLogger.debug('URL' + url)
+    result = None
+    parseRes = urlparse.urlparse(url)
+    if parseRes.query:
+      queryRes = cgi.parse_qs(parseRes.query)
+      if 'file' in queryRes:
+        fileId = queryRes[ 'file' ][0]
+
+      retVal = extractRequestFromFileId(fileId)
+
+      if not retVal[ 'OK' ]:
+        gLogger.error("Could not decode fileId", "'%s', error was %s" % (fileId, retVal[ 'Message' ]))
+        result = retVal
+      else:
+        if translate:
+          result = S_OK({'ReportName':retVal['Value'].get('reportName', ''),
+                     'Type':retVal['Value'].get('typeName', ''),
+                     'Conditions':str(retVal['Value'].get('condDict', '')),
+                     'Grouping':retVal['Value'].get('grouping', ''),
+                     'StartTime':str(retVal['Value'].get('startTime', '')),
+                     'EndTime':str(retVal['Value'].get('endTime', '')),
+                     'ExtraArguments':str(retVal['Value'].get('extraArgs', ''))
+                     })
+        else:
+          params = None
+          if not retVal['OK']:
+            return retVal
+          else:
+            params = retVal['Value']
+            if 'endTime' in params:
+              params['endTime'] = params['endTime'].strftime("%Y-%m-%d")
+            if 'startTime' in params:
+              params['startTime'] = params['startTime'].strftime("%Y-%m-%d")
+          result = S_OK(params)
+    return result
+
+  ###############################################################################
+  @jsonify
+  def getDetails(self):
+    """
+    it used provide a detailed description about the plot creation
+    """
+    gLogger.debug("Action" + str(request))
+    url = str(request.params.get('Url', ''))
+
+    try:
+      url = str(url);
+    except Exception, e:
+      return S_ERROR('StepId is not a number')
+    return self.getPlotsParameters(url)
+
+  ###############################################################################
+  @jsonify
+  def getPlotDecodedParameters(self):
+    """
+    It decodes a given URL and returns its requester.
+    """
+    result = S_ERROR("Can not decode the plot parameters!")
+    gLogger.debug("Action" + str(request))
+    url = str(request.params.get('Url', ''))
+    urlList = request.params.get('UrlList', "[]")
+    urlList = list(json.loads(urlList))
+    change = request.params.get('ReplaceTime','{}')
+    change = dict(json.loads(change))
+
+    if len(urlList) > 0:
+      values = {}
+      repClient = ReportsClient(rpcClient=getRPCClient("Accounting/ReportGenerator"))
+      for i in urlList:
+        retVal = self.getPlotsParameters(str(i), False)
+        if not retVal['OK']:
+          return retVal
+        else:
+          params = self.createProperDictionary(retVal['Value'])
+          for j in change: #change the time stamp before it will be decoded.
+            params[str(j)] = str(change[j])
+          retVal = parseFormParams(params)
+          if not retVal['OK']:
+            return retVal
+          params = retVal['Value']
+          retVal = repClient.generateDelayedPlot(*params)
+          values[i] = retVal['Value']
+      result = S_OK(values)
+    else:
+      result = self.getPlotsParameters(url, False)
+    return result
+
+
 ################################################################################
   def __getAtomicData(self,name=False):
     gLogger.info("__getAtomicData(%s) function" % name)

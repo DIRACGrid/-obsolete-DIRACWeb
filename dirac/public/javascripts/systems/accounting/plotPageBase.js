@@ -33,16 +33,23 @@ function renderPlotPage()
 }
 
 function fillSelectionPanel( plotRequest )
-{
+{ //When the plot edited using the presenter page a few attributes may does not exits.
+  // To avoid the crash we should check its existence, before we select one of them.
 	//Set the plot name
 	var plotSelector = gLeftSidebarPanel.find( "name", "plotName" )[0];
-	plotSelector.setValue( plotRequest._plotName );
+	if (plotSelector){
+	  plotSelector.setValue( plotRequest._plotName );
+	}
 	//Set grouping
 	var groupingSelector = gLeftSidebarPanel.find( "name", "grouping" )[0];
-	groupingSelector.setValue( plotRequest._grouping );
+	if (groupingSelector){
+	  groupingSelector.setValue( plotRequest._grouping );
+	}
 	//Set pinned
 	var pinningCheck = gLeftSidebarPanel.find( "name", "pinDates" )[0];
-	pinningCheck.setValue ( '_pinDates' in plotRequest && plotRequest[ '_pinDates' ]+"" == "true" )
+	if (pinningCheck){
+	  pinningCheck.setValue ( '_pinDates' in plotRequest && plotRequest[ '_pinDates' ]+"" == "true" )
+	}
 	//Extra params
 	for( k in plotRequest )
 	{
@@ -58,16 +65,21 @@ function fillSelectionPanel( plotRequest )
 	}
 	//Set title
 	var plotTitleText = gLeftSidebarPanel.find( "name", "plotTitle" )[0];
-	plotTitleText.setValue( plotRequest._plotTitle );
+	if (plotTitleText){
+	  plotTitleText.setValue( plotRequest._plotTitle );
+	}
 	//Set time
 	var timeSel = gLeftSidebarPanel.find( "name", "timeSelector" );
-	for( var i = 0; i < timeSel.length; i++ )
-	{
-		if( timeSel[i].value == plotRequest._timeSelector )
-			timeSel[i].setValue( true );
-		else
-			timeSel[i].setValue( false );
+	if (timeSel){
+	  for( var i = 0; i < timeSel.length; i++ )
+	  {
+	    if( timeSel[i].value == plotRequest._timeSelector )
+	      timeSel[i].setValue( true );
+	    else
+	      timeSel[i].setValue( false );
+	  }
 	}
+
 	if( plotRequest._timeSelector == -1 )
 	{
 		var timeSel = gLeftSidebarPanel.find( "name", "startTime" )[0];
