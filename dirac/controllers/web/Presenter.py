@@ -2,7 +2,7 @@ from dirac.lib.base import *
 from dirac.lib.diset import getRPCClient
 from dirac.lib.credentials import authorizeAction, getUsername
 from DIRAC.Core.Utilities.List import uniqueElements
-from DIRAC import gLogger
+from DIRAC import gConfig, gLogger
 from DIRAC import S_OK, S_ERROR
 from DIRAC.FrameworkSystem.Client.UserProfileClient import UserProfileClient
 import json
@@ -221,6 +221,7 @@ class PresenterController(BaseController):
 ################################################################################
   def __setHistory( self , name = False ):
     gLogger.info( "start __setHistory()")
+    history_length = gConfig.getOptions("/Website/" + USER_PROFILE_NAME + "/ShowHistory", 10 )
     if not name:
       return S_ERROR( "Name of the layout to be memorized is absent" )
     upc = UserProfileClient( "Default" , getRPCClient )
@@ -237,7 +238,7 @@ class PresenterController(BaseController):
       gLogger.error( "Failed to convert %s to list" % result )
     history.append( name )
     history = uniqueElements( history )
-    while len( history ) > 50:
+    while len( history ) > history_length:
       history.popleft()
     gLogger.info( "upc.storeVar( %s , %s )" % ( profile_name , history ))      
     result = upc.storeVar( profile_name , history )
@@ -249,87 +250,18 @@ class PresenterController(BaseController):
 ################################################################################
   def __getHistory( self ):
     gLogger.info( "start __getHistory()")
+    history_length = gConfig.getValue("/Website/" + USER_PROFILE_NAME + "/ShowHistory", 10 )
+    gLogger.debug( "History length: %s" % history_length )
     upc = UserProfileClient( "Default" , getRPCClient )
     profile_name = USER_PROFILE_NAME + ".History"
     gLogger.info( "upc.retrieveVar( %s )" % profile_name )
-    history = list()
     result = upc.retrieveVar( profile_name )
-    gLogger.always( result )
+    gLogger.debug( result )
     if not result[ "OK" ]:
       return S_ERROR( result[ "Message" ] )
+    result = result[ "Value" ]
+    if not isinstance( result , list ):
+      return S_ERROR( "List expected: %s" % result )
+    history = result[ :history_length ]
     gLogger.info( "end __getHistory()" )
-    return S_OK( result[ "Value" ] )
-################################################################################
-  def __lastHistory(self):
-    gLogger.info("__lastHistory() function")
-    upc = UserProfileClient( "Default", getRPCClient )
-    profile_name = USER_PROFILE_NAME + ".History"
-    gLogger.info("upc.retrieveVar(%s)" % profile_name)
-    result = upc.retrieveVar(profile_name)
-    gLogger.debug(result)
-    if not result["OK"]:
-      return S_ERROR( result["Message"] )
-    data = result["Value"]
-    try:
-      data = list(data)
-    except:
-      return S_ERROR( "Failed to convert %s to list" % data )
-    last = ""
-    if len(data) > 0:
-      last = data.pop()
-    return S_OK( last )
-################################################################################
-  def __convert(self):
-    gLogger.info("START of DATA CONVERTION")
-    upc = UserProfileClient( "Default", getRPCClient )
-    profile_name = USER_PROFILE_NAME + ".History"
-    gLogger.info("1) Init of history var")
-    result = upc.storeVar(profile_name,list())
-    if not result["OK"]:
-      gLogger.info("Initialization of history records has failed")
-      return S_OK()
-    gLogger.info("Done")
-    gLogger.info("2) Get old data")
-    result = self.__getData()
-    if not result["result"]:
-      gLogger.info("getData returns no result")
-      return S_OK()
-    gLogger.info("Done")
-    gLogger.info("3) Is bookmark exists")
-    data = result["result"]["layouts"]
-    if not data.has_key("Bookmarks"):
-      gLogger.info("No old Bookmarks found")    
-      return S_OK()
-    data = data["Bookmarks"]
-    gLogger.info("Done")
-    gLogger.info("4) Is layouts exists")
-    if not data.has_key("layouts"):
-      gLogger.info("No layouts to convert")
-      return S_OK()
-    layouts = data["layouts"]
-    gLogger.info("Done")
-    gLogger.info("5) Layouts is dict")
-    try:
-      layouts = dict(layouts)
-    except:
-      gLogger.info("Layouts '%s' is not dictionary" % layouts)
-      return S_OK()
-    gLogger.info("Done")
-    upc = UserProfileClient( USER_PROFILE_NAME, getRPCClient )
-    gLogger.info("6) Deleting old data")
-    old = self.__delData("Bookmarks")
-    gLogger.info("Should be empty: %s" % old)
-    gLogger.info("Done")
-    gLogger.info("8) Saving old data to new")
-    for i in layouts:
-      gLogger.info("Name: '%s'" % i)
-      gLogger.info("Data: '%s'" % layouts[i])
-      result = upc.storeVar(i,layouts[i])
-      gLogger.info(result)
-    if data.has_key("defaultLayout"):
-      name = data["defaultLayout"]
-      result = self.__setHistory(name)
-      if not result["OK"]:
-        gLogger.error(result["Message"])
-    gLogger.info("GOOD END of DATA CONVERTION")
-    return S_OK()
+    return S_OK( history )
