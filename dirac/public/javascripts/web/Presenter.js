@@ -4,6 +4,526 @@ var refeshID = 0;
 var layout = 'default';
 var heartbeat = '';
 var contextMenu = '';
+var timeout = 60000; // the time out set to 60 second...
+var plotData = null; // it stores the decoded URL.
+
+Ext.ns('Presenter');
+
+/*-------------------------------------------------------------------------------------------------------------*/
+Presenter.GetRequest = function(opname, url, params, scope, success) {
+  // The code copied from the ProductionStep.js
+  var conn = new Ext.data.Connection();
+  conn.request({
+    url : url,
+    method : 'GET',
+    params : params,
+    scope : scope,
+    timeout : timeout,
+    success : function(response) {
+      var result = '';
+      if (response) { // check that it is really OK... AZ: !! ??
+        var str = '';
+        try {
+          result = Ext.decode(response.responseText);
+          if (!result.OK)
+            str = result.Message;
+        } catch (e2) {
+          str = "unparsable reply from the portal: " + e2.message;
+        }
+        if (str) {
+          Ext.MessageBox.show({
+            title : opname + ' fail',
+            msg : str,
+            buttons : Ext.MessageBox.OK,
+            icon : Ext.MessageBox.ERROR
+          });
+          return;
+        }
+      }
+      success.call(scope, result.Value);
+    },
+    failure : connectBugger(opname)
+  });
+}
+/*-------------------------------------------------------------------------------------------------------------*/
+connectBugger = function(origin) {
+  //It is copied from the Step.js
+  return function(response, options) {
+    var str;
+    if (response) {
+      try {
+        var result = Ext.decode(response.responseText);
+        if (result.OK)
+          str = "page and web service versions mismatch.";
+        else
+          str = result.Message;
+      } catch (e2) {
+        str = "unparsable reply from the portal: " + e2.message;
+      }
+    } else
+      str = "can't communicate with portal";
+    // Ext.Msg.alert('While loading '+origin, str);
+    Ext.MessageBox.show({
+      title : 'While loading ' + origin,
+      msg : str,
+      buttons : Ext.MessageBox.OK,
+      icon : Ext.MessageBox.ERROR
+    });
+  }
+}
+/*-------------------------------------------------------------------------------------------------------------*/
+Presenter.UrlDetail = Ext.extend(Ext.Panel, {
+  //It creates a panel using a template.
+  tplMarkup : [ '<b>ReportName:</b> {ReportName}<br/>',
+      '<b>Type:</b> {Type}<br/>', '<b>Conditions:</b> {Conditions}<br/>',
+      '<b>Grouping:</b> {Grouping}<br/>', '<b>StartTime:</b> {StartTime}<br/>',
+      '<b>EndTime:</b> {EndTime}<br/>',
+      '<b>ExtraArguments:</b> {ExtraArguments}<br/>' ],
+  initComponent : function() {
+    this.tpl = new Ext.Template(this.tplMarkup);
+    Presenter.UrlDetail.superclass.initComponent.call(this);
+  },
+  updateDetail : function(data) {
+    this.tpl.overwrite(this.body, data);
+  },
+
+  onDataChanged : function() {
+    if (typeof this.Url == 'undefined')
+      return;
+    Presenter.GetRequest('web', 'getDetails', {
+      'Url' : this.Url
+    }, this, this.updateDetail);
+  }
+});
+Ext.reg('urldetail', Presenter.UrlDetail);
+
+/*-------------------------------------------------------------------------------------------------------------*/
+function urlDetailWindow(url) {
+  // It creates the window which shows a detailed information of the selected
+  // plot.
+  var panel = new Presenter.UrlDetail({
+    Url : url
+  });
+  var win = new Ext.Window({
+    title : 'Details of this plot: ',
+    items : panel,
+    Url : url,
+    x : Ext.EventObject.getPageX(),
+    y : Ext.EventObject.getPageY()
+  });
+  win.show();
+  panel.onDataChanged();
+}
+/*-------------------------------------------------------------------------------------------------------------*/
+function editPlot(url, boxID) {
+  // Creates the window which store the
+  // Form panel. It makes an request to the controller
+  // in order to decode the selected URL.
+  win = Ext.getCmp("PAMainWindow");
+  if (win) {
+    win.close();
+    win.destroy();
+  }
+  gLeftSidebarPanel = createPlotAttributePanel(url, boxID);
+
+  Ext.Ajax.request({
+    url : 'getPlotDecodedParameters',
+    params : {
+      'Url' : url
+    },
+    success : getPlotDataForGivenAccountingType,
+    failure : function() {
+      alert("Error while decoding plot parameters");
+    }
+  });
+}
+/*-------------------------------------------------------------------------------------------------------------*/
+function getPlotDataForGivenAccountingType(ajaxResponse, ajaxRequest) {
+  // It is used to get all the data based on the accounting
+  // typeName. The typeName is retrieved using the accounting
+  // request. The typeName is one of the parameter of the
+  // decoded url (The URL of the image whereat the right click
+  // is performed.).
+  var result = Ext.util.JSON.decode(ajaxResponse.responseText);
+  if (!result.OK) {
+    alert("Could not retrive the information about the plot: " + result.Message);
+    return;
+  }
+
+  plotData = result.Value;
+
+  var typeName = plotData['typeName'];
+  var url = getAccountingRootUrl() + 'getPlotListAndSelectionValues';
+
+  // get the selected attributes used to build the panel.
+  // an ajax request made to the accounting system controller in order to
+  // retrieve the data.
+  Ext.Ajax.request({
+    url : url,
+    params : {
+      'typeName' : typeName
+    },
+    success : createPlotPageWidgets,
+    failure : function() {
+      alert("Error while refreshing selectors");
+    }
+  });
+}
+/*-------------------------------------------------------------------------------------------------------------*/
+function createPlotPageWidgets(ajaxResponse, ajaxRequest) {
+  // It creates the widgets which store the accounting information.
+  // The widgets are created dinamically using the information returned by the
+  // accounting controller.
+  var result = Ext.util.JSON.decode(ajaxResponse.responseText);
+  if (!result.OK) {
+    alert("Could create the plot page: " + result.Message);
+    return;
+  }
+
+  var selectorData = result.Value;
+
+  var selectionData = selectorData['SelectionData'];
+  var plotsList = selectorData['PlotList'];
+
+  appendToLeftPanel(createComboBox("plotName", "Plot to generate",
+      "Select a plot", plotsList));
+
+  var orderKeys = [];
+  for (key in selectionData) {
+    orderKeys.push([ key, key ]);
+  }
+  orderKeys.push([ 'Country', 'Country' ]);
+  orderKeys.push([ 'Grid', 'Grid' ]);
+
+  appendToLeftPanel(createComboBox("grouping", "Group by", "Select grouping",
+      orderKeys));
+
+  appendTimeSelectorToLeftPanel();
+
+  var selWidgets = []
+
+  for (key in selectionData) {
+    selWidgets.push(createMultiselect(key, key, selectionData[key]));
+  }
+  var radioPanel = new Ext.form.FieldSet({
+    anchor : '90%',
+    title : "Selection conditions",
+    name : "Selection conditions",
+    collapsible : true,
+    autoHeight : true,
+    collapsed : true,
+    triggerAction : 'all',
+    items : selWidgets
+  });
+
+  appendToLeftPanel(radioPanel);
+
+  var advWidgets = [];
+  advWidgets.push(createTextField("plotTitle", "Plot title", ""));
+  advWidgets.push(createCheckBox("pinDates", "Pin dates", "true"));
+  advWidgets
+      .push(createCheckBox("ex_staticUnits", "Do not scale units", "true"));
+
+  var advPanel = new Ext.form.FieldSet({
+    anchor : '90%',
+    title : "Advanced options",
+    name : "Advanced options",
+    collapsible : true,
+    autoHeight : true,
+    collapsed : true,
+    triggerAction : 'all',
+    items : advWidgets
+  });
+
+  appendToLeftPanel(advPanel);
+
+  var win = new Ext.Window({
+    id : 'PAMainWindow',
+    title : 'Details of this plot: ',
+    items : gLeftSidebarPanel,
+    autoScroll : true,
+    autoHeight : false,
+    autoWidth : true,
+    maximizable : true,
+    resizable : true,
+    waitMsgTarget : true,
+    waitTitle : 'Updating...',
+    waitMsg : 'Loading...',
+    width : 300,
+    height : 550,
+    minWidth : 200,
+    margins : '2 0 2 2',
+    cmargins : '2 2 2 2'
+  });
+  win.doLayout();
+  win.show();
+  //It creates a dictionary which contains the selected values.
+  var selectValues = createProperDictionary(plotData);
+  //This method is re-used from the plotPageBase.js.
+  //It is used to select the values in different widgets.
+  fillSelectionPanel(selectValues);
+}
+/*-------------------------------------------------------------------------------------------------------------*/
+function createPlotAttributePanel(url, boxId)
+{
+  //It creates the Main panel used to store the plot related informations.
+  //This plot panel is replace the Accounting main panel.
+  var panel = new Ext.FormPanel({
+    id : 'PlotAttributteForm',
+    'BoxId':boxId,
+    'Url':url,
+    labelAlign : 'top',
+    split : true,
+    region : 'west',
+    collapsible : true,
+    width : 300,
+    minWidth : 200,
+    margins : '2 0 2 2',
+    cmargins : '2 2 2 2',
+    layoutConfig : {
+      border : true,
+      animate : true
+    },
+    bodyStyle : 'padding: 5px',
+    title : 'Plot attribute values editor',
+    buttonAlign : 'center',
+    waitMsgTarget : true,
+    waitTitle : 'Updating...',
+    waitMsg : 'Loading...',
+    autoScroll : true,
+    items : [ {
+      layout : 'form',
+      border : false,
+      buttons : [ {
+        text : 'Apply',
+        tooltip:'Apply these cahges to the selected plot.',
+        handler : applyHandler,
+        createNewTab : false
+      }, {
+        text : 'Apply all',
+        handler : applyAllHandler,
+        createNewTab : false,
+        tooltip:"Apply the selected time to all plots."
+      }, {
+        text : 'Reset',
+        tooltip:'Clear all selected values.',
+        handler: cbLeftPanelResetHandler,
+      }]
+    } ]
+  });
+return panel;
+}
+/*-------------------------------------------------------------------------------------------------------------*/
+function createProperDictionary(plotAttributtes) {
+  // The decoded dictionary contains the name of the attribute values without _
+  // This method is used to create a new dictionary with keys which contains _
+  var selectValues = {}
+  for (i in plotAttributtes) {
+    if (i == 'reportName')
+      selectValues["_plotName"] = plotAttributtes[i];
+    else
+      selectValues["_" + i] = plotAttributtes[i];
+  }
+
+  if ("condDict" in plotAttributtes) {
+    // used to select the items in the select condition multiple-selection combo
+    // box.
+    for (i in plotAttributtes["condDict"])
+      selectValues["_" + i] = plotAttributtes["condDict"][i].toString();
+  }
+
+  if ("extraArgs" in plotAttributtes) {
+    for (i in plotAttributtes["extraArgs"])
+      selectValues["_" + i] = plotAttributtes["extraArgs"][i].toString();
+  }
+  if (!("timeSelector" in selectValues))
+    selectValues["_timeSelector"] = -1;
+  return selectValues;
+}
+/*-------------------------------------------------------------------------------------------------------------*/
+function parseSelectedAttributes(newValues, oldValues){
+  //It collects the informations which are changed.
+  for (i in oldValues) {
+    if ( !(i in newValues)){
+      newValues[i] = oldValues[i]
+    }
+  }
+  return newValues;
+}
+/*-------------------------------------------------------------------------------------------------------------*/
+function getAccountingRootUrl() {
+  // We are using the accounting system to make GET requests.
+  // This method used to build the root URL to the accounting
+  // controller.
+  var baseurl = document.location.protocol + '//' + document.location.hostname
+      + gURLRoot + '/' + gPageDescription.selectedSetup;
+  var url = baseurl + '/' + gPageDescription.userData.group
+      + '/systems/accountingPlots/'
+  return url;
+}
+/*-------------------------------------------------------------------------------------------------------------*/
+function applyHandler(submitButton, clickEvent) {
+  // When the apply button is presed the selected attributes must applied to the
+  // selected plot. It aslo check the plot attributes by making a generatePlot
+  // request to the accounting system.
+
+  itemContainer = Ext.getCmp('PlotAttributteForm');
+  var newparams = parseLeftPanelSelections(itemContainer);
+
+  var oldParams = createProperDictionary(plotData);
+  var params = parseSelectedAttributes(newparams, oldParams);
+  var url = getAccountingRootUrl() + 'generatePlot';
+  Ext.Ajax.request({
+    url : url,
+    params : params,
+    success : applyResult,
+    failure : function() {
+      alert("Error while generating the plot!");
+    }
+  });
+}
+/*-------------------------------------------------------------------------------------------------------------*/
+function applyResult(data) {
+  // It creates a new URL and apply the change of the presenter page.
+  var result = Ext.util.JSON.decode(data.responseText);
+  if (!result.success) {
+    window.alert("Request failed: " + result['Message'])
+    return;
+  }
+  newUrl = getAccountingRootUrl() + "getPlotImg?file=" + result.data + " ";
+  // &nocache=" + ( new Date() ).getTime();
+  //Usually the nocahe parameter in the URL..., I leave it as it is now, but
+  //it should be check the needs of this parameter.
+  itemContainer = Ext.getCmp('PlotAttributteForm');
+  boxid = itemContainer.BoxId;
+  changePlot(boxid, newUrl);
+  win = Ext.getCmp("PAMainWindow");
+  if (win) {
+    win.close();
+  }
+}
+/*-------------------------------------------------------------------------------------------------------------*/
+function changePlot(boxid, url) {
+  // It changes the URL of a given picture. It means it change the selected
+  // picture in the presenter page.
+  try {
+    var box = Ext.getCmp(boxid);
+    var mainPanel = Ext.getCmp('mainConteiner');
+    var index = mainPanel.items.indexOf(box);
+    var newPanel = createPanel(url);
+    mainPanel.remove(box);
+    mainPanel.insert(index, newPanel);
+    mainPanel.doLayout();
+    var current = Ext.getCmp('currentID');
+    if (current) {
+      current.setText('Current Layout: <b>' + layout + '*</b>');
+    }
+  } catch (e) {
+    alert('Error: ' + e.name + ': ' + e.message);
+    return
+
+  }
+}
+/*-------------------------------------------------------------------------------------------------------------*/
+function applyAllHandler(submitButton, clickEvent) {
+  // It builds a list of URL of the images and made a request to the Presenter
+  // controler to decode the URL and apply the changes. As well after the result
+  // selected attributes are encoded.
+  try {
+    var mainPanel = Ext.getCmp('mainConteiner');
+    var length = mainPanel.items.getCount();
+    var urls = new Array();
+    for ( var i = 0; i < length; i++) {
+      var j = mainPanel.getComponent(i);
+      if (j.id != 'welcomeMessage') {
+        var tmpSrc = j.autoEl.src;
+        if (tmpSrc.search(/&dummythingforrefresh/i) > 0) {
+          tmpSrc = tmpSrc.split('&dummythingforrefresh')[0];
+        }
+        urls.push(tmpSrc);
+      }
+    }
+  } catch (e) {
+    alert('Error: ' + e.name + ': ' + e.message);
+    return;
+  }
+  var change = getTimeOfSelection()
+
+  // convert dictionaries to string
+  var jchange = JSON.stringify(change);
+  var jurls = JSON.stringify(urls);
+  // this request to decode the url and after apply change of the time and date
+  // and return the url and the encoded parameters.
+  Ext.Ajax.request({
+    url : 'getPlotDecodedParameters',
+    params : {
+      'UrlList' : jurls,
+      'ReplaceTime' : jchange
+    },
+    success : changePlotUsingDecodedParameters,
+    failure : function() {
+      alert("Error while decoding plot parameters");
+    }
+  });
+}
+/*-------------------------------------------------------------------------------------------------------------*/
+function changePlotUsingDecodedParameters(response, opts) {
+  // This method replace all the plots using a dictionary which contains the
+  // required decoded parameters which are used to create the URL.
+  var result = Ext.util.JSON.decode(response.responseText);
+  if (!result.OK) {
+    alert("Could not retrive the information about the plot: " + result.Message);
+    return;
+  }
+  // It is a dictionary which contains the original URl as a key and the value
+  // is the decoded URL. The decoded URL contains the midified time.
+  var selectedValues = result['Value'];
+  // Iterates on the images and change the image using the modified url.
+  try {
+    var mainPanel = Ext.getCmp('mainConteiner');
+    var length = mainPanel.items.getCount();
+    var url = new String();
+    for ( var i = 0; i < length; i++) {
+      var j = mainPanel.getComponent(i);
+      if (j.id != 'welcomeMessage') {
+        var tmpSrc = j.autoEl.src;
+        if (tmpSrc.search(/&dummythingforrefresh/i) > 0) {
+          tmpSrc = tmpSrc.split('&dummythingforrefresh')[0];
+        }
+        var decodedUrl = selectedValues[tmpSrc];
+        var newUrl = getAccountingRootUrl() + "getPlotImg?file="
+            + decodedUrl.plot + " ";
+        changePlot(j.id, newUrl);
+      }
+    }
+  } catch (e) {
+    alert('Error: ' + e.name + ': ' + e.message);
+    return;
+  }
+  win = Ext.getCmp("PAMainWindow");
+  if (win) {
+    win.close();
+  }
+}
+/*-------------------------------------------------------------------------------------------------------------*/
+function getTimeOfSelection() {
+  // Apply all only use the time otherwise all the plots will become same. This
+  // method is used to return the selected time and date.
+  itemContainer = Ext.getCmp('PlotAttributteForm');
+  var newparams = parseLeftPanelSelections(itemContainer);
+  change = {};
+  if ("_timeSelector" in newparams) {
+    change["_timeSelector"] = newparams["_timeSelector"];
+  }
+  if ("_startTime" in newparams) {
+    change["_startTime"] = newparams["_startTime"];
+  }
+  if ("_endTime" in newparams) {
+    change["_endTime"] = newparams["_endTime"];
+  }
+  return change;
+}
+/*-------------------------------------------------------------------------------------------------------------*/
 function initLoop(initValues){
   Ext.onReady(function(){
     if(window.location.hash){
@@ -780,9 +1300,8 @@ function createPanel(img){
       evt.stopEvent();
       contextMenu.removeAll();
       contextMenu.add({
-          disabled:true,
-          handler:function(){
-            return
+          handler : function() {
+            editPlot(img,boxID);
           },
           icon:gURLRoot + '/images/iface/edit.gif',
           text:'Edit'
@@ -818,6 +1337,12 @@ function createPanel(img){
           },
           icon:gURLRoot + '/images/iface/url.gif',
           text:'Show URL'
+        },{
+          handler : function() {
+            urlDetailWindow(img);
+          },
+          icon : gURLRoot + '/images/iface/info.gif',
+          text : 'Plot details'
         });
       contextMenu.showAt(evt.xy);
     });
