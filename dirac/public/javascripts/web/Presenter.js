@@ -8,12 +8,6 @@ function initLoop(  initValues  ){
   Ext.onReady(  function(){
     heartbeat = new Ext.util.TaskRunner() ;
     initAjax() ;
-    if( window.location.hash  ){
-      var test = window.location.hash.split( '#layout=' ) ;
-      if( test.length == 2 && initValues ){
-        initValues.defaultLayout = test[ 1 ] ;
-      }
-    }
     var mainContent = mainPanel( initValues ) ;
     renderInMainViewport( [ mainContent ] ) ;
   });
@@ -117,7 +111,7 @@ function mainPanel( initValues  ){
                           , auto  
                           , timeStamp 
                           , '->' 
-                          , current
+                          , column
                         ]
     ,bodyStyle        : 'padding:5px;'
     ,defaults         : { bodyStyle : 'padding:5px' }
@@ -128,20 +122,50 @@ function mainPanel( initValues  ){
     ,monitorResize    : true
     ,region           : 'center'
     ,tbar             : [ 
-                          column
+                          current
                           , '->'
                           , add
                           , '-'
                           , get
                           , set
-                          , mng
+//                          , mng
                           , del
                         ]
   });
   panel.on( 'render'  , function(){
-    if( initValues  ){
-      redoLayout( initValues  , 'load'  );
+    var test = false ;
+    if( initValues && initValues.history && Ext.isArray( initValues.history ) ){
+      test = initValues.history[ 0 ] ;
     }
+    if( window.location.hash  ){
+      var obj = window.location.hash.split( '#' ) ;
+      if( obj.length == 2 ){
+        obj = Ext.urlDecode( obj[ 1 ]) ;
+      }
+      if( obj && obj.layout && obj.owner && obj.group ){
+        if( ! test ){
+          test = new Object() ;
+        }
+        test.name = obj.layout ;
+        test.user = obj.owner ;
+        test.group = obj.group ;
+      }
+    }
+    if( initValues && initValues.layout ){
+      var l = initValues.layout ;
+      if( test.name == l.name && test.user == l.user && test.group == l.group ){
+        return redoLayout( initValues.layout ) ;
+      }
+    }
+    if( ! test ){
+      return ;
+    }
+    test[ 'loadLayout' ] = true ;
+    ajax({
+      mask          : true
+      ,params       : test
+      ,success      : actionSuccess
+    }) ;
   });
   return panel
 }
@@ -149,8 +173,8 @@ function manager(){
   var store = new Ext.data.JsonStore({
     autoLoad          : true
     ,baseParams       : { 'getAvailbleLayouts' : true , 'userOnly' : true }
-    ,fields           : [ 'Name' , 'Group' , 'All' ]
-    ,idProperty       : 'Name'
+    ,fields           : [ 'name' , 'group' , 'All' ]
+    ,idProperty       : 'name'
     ,root             : 'result'
     ,url              : 'action'
   }) ;
@@ -159,14 +183,14 @@ function manager(){
   }) ;
   var columns = [{
     align             : 'left'
-    ,dataIndex        : 'Name'
+    ,dataIndex        : 'name'
     ,editable         : false
     ,id               : 'sl1'
     ,sortable         : false
   },{
     align             : 'left'
     ,css              : 'cursor:pointer;cursor:hand;'
-    ,dataIndex        : 'Group'
+    ,dataIndex        : 'group'
     ,editable         : false
     ,id               : 'sl2'
     ,sortable         : false
@@ -226,25 +250,39 @@ function actionSuccess( response , options ){
     return false ;
   }
   var response = Ext.util.JSON.decode( response.responseText ) ;
-  if( response.success != 'success' ){
+  if( response.success != 'true' ){
     return showError( response.error ) ;
   }
-  redoLayout( response[ 'result' ] , 'save' ) ;
-  var mainPanel = Ext.getCmp( 'mainConteiner' ) ;
+  if( kind == 'save' ){
+    return true ;
+  }
+  redoLayout( response[ 'result' ] ) ;
+  var mainPanel = Ext.getCmp( 'mainConteiner' );
   if( mainPanel ){
-      mainPanel.doLayout() ;
+    mainPanel.doLayout() ;
   }
   return true ;
 }
-function loadLayout( name ){
-  if( name ){
-    return
+function loadLayout( layout , win ){
+  if( ! layout ){
+    return showError( 'loadLayout function: Layout object is absent' ) ;
+  }
+  if( ! layout.name ){
+    return showError( 'loadLayout function: Layout name is absent' ) ;
+  }
+  if( ! layout.user ){
+    return showError( 'loadLayout function: Owner username is absent' ) ;
+  }
+  if( ! layout.group ){
+    return showError( 'loadLayout function: Owner group is absent' ) ;
   }
   var params = new Object() ;
   params[ 'loadLayout' ] = true ;
-  params[ 'Name' ] = name ;
+  params[ 'name' ] = layout.name ;
+  params[ 'user' ] = layout.user ;
+  params[ 'group' ] = layout.group ;
   var title = 'Load Layout' ;
-  var msg = 'Load the layout: ' + name + ' ?';
+  var msg = 'Load the layout: ' + layout.name + ' ?';
   Ext.Msg.confirm( title , msg , function( btn ){
     if( btn == 'yes' ){
       ajax({
@@ -252,6 +290,9 @@ function loadLayout( name ){
         ,params       : params
         ,success      : actionSuccess
       }) ;
+      if( win ){
+        win.close() ;
+      }
     }
   });
   return true ;
@@ -259,7 +300,7 @@ function loadLayout( name ){
 function saveLayout( name , perm ){
   var params = gatherInfo() ;
   params[ 'saveLayout' ] = true ;
-  params[ 'Name' ] = name ;
+  params[ 'name' ] = name ;
   var permissions = 'USER' ;
   if( perm.group ){
     permissions = permissions + ',GROUP' ;
@@ -267,7 +308,11 @@ function saveLayout( name , perm ){
   if( perm.all ){
     permissions = permissions + ',ALL' ;
   }
-  params[ 'Permissions' ] = permissions ;
+  if( perm == 'SAME' ){
+    params[ 'permissions' ] = perm ;
+  }else{
+    params[ 'permissions' ] = permissions ;
+  }
   var title = 'Save Layout' ;
   var welcome = Ext.getCmp( 'welcomeMessage' ) ;
   if(welcome){
@@ -292,62 +337,62 @@ function load( name ){
   var store = new Ext.data.JsonStore({
     autoLoad          : true
     ,baseParams       : { 'getAvailbleLayouts' : true }
-    ,fields           : [ 'Name' , 'User' , 'Group' ]
-    ,idProperty       : 'Name'
+    ,fields           : [ 'name' , 'user' , 'group' ]
+    ,idProperty       : 'name'
     ,root             : 'result'
     ,url              : 'action'
+  }) ;
+  store.on( 'load' , function( store, record ){
+    if( store.reader.jsonData ){
+      userStore.loadData( store.reader.jsonData ) ;
+    }
   }) ;
   var columns = [{
     align             : 'left'
     ,css              : 'cursor:pointer;cursor:hand;'
-    ,dataIndex        : 'Name'
+    ,dataIndex        : 'name'
     ,editable         : false
     ,id               : 'sl1'
     ,sortable         : false
   },{
     align             : 'left'
     ,css              : 'cursor:pointer;cursor:hand;'
-    ,dataIndex        : 'User'
+    ,dataIndex        : 'user'
     ,editable         : false
     ,id               : 'sl2'
     ,sortable         : false
   },{
     align             : 'left'
     ,css              : 'cursor:pointer;cursor:hand;'
-    ,dataIndex        : 'Group'
+    ,dataIndex        : 'group'
     ,editable         : false
     ,id               : 'sl3'
     ,sortable         : false
   }] ;
   var userStore = new Ext.data.JsonStore({
-    autoLoad          : true
-    ,baseParams       : { 'getAvailbleLayouts' : true , 'username' : true }
-    ,fields           : [ 'User' ]
-    ,idProperty       : 'User'
-    ,root             : 'result'
-    ,url              : 'action'
+    fields            : [ { name : 'user' } ]
+    ,root             : 'users'
   }) ;
   var user = new dropdownMenu({
     combo             : false
+    ,displayField     : 'user'
     ,emptyText        : 'Select Owner'
     ,name             : 'selectOwner'
     ,maxLength        : 20
     ,store            : userStore
     ,width            : 80
   }) ;
-  var refresh = new Ext.Button({
-    cls               : 'x-btn-icon'
-//    cls               : 'x-btn-text-icon'
-    ,handler          : function(){ userStore.reload() }
-    ,icon             : gURLRoot + '/images/iface/refresh.gif'
-//    ,text             : 'Refresh'
-    ,minWidth         : '25'
-    ,tooltip          : 'Updates the list of users'
-  });
+  user.addListener( 'collapse' , function( combo ){
+    var value = combo.getRawValue() ;
+    store.filter( 'user' , value ) ;
+  }) ;
   var reset = new Ext.Button({
     cls               : 'x-btn-icon'
     ,ctCls            : 'paddingButton'
-    ,handler          : function(){ user.reset() }
+    ,handler          : function(){
+                          user.reset() ;
+                          store.clearFilter() ;
+                        }
     ,icon             : gURLRoot + '/images/iface/reset.gif'
     ,minWidth         : '25'
     ,tooltip          : 'Resets list of users menu'
@@ -355,7 +400,6 @@ function load( name ){
   var tbar = new Ext.Toolbar({
     items             : [
                           user
-                          , refresh
                           , reset
                         ]
   }) ;
@@ -376,8 +420,14 @@ function load( name ){
   });
   grid.addListener( 'cellclick' , function( table , rowIndex , columnIndex ){
     var record = table.getStore().getAt( rowIndex ) ;
-    var fieldName = table.getColumnModel().getDataIndex( 0 ) ;
-    submit.enable() ;
+    var name = record.get( table.getColumnModel().getDataIndex( 0 ) ) ;
+    var user = record.get( table.getColumnModel().getDataIndex( 1 ) ) ;
+    var group = record.get( table.getColumnModel().getDataIndex( 2 ) ) ;
+    loadLayout({
+      group           : group
+      ,name           : name
+      ,user           : user
+    }, win ) ;
   });
   grid.on( 'resize' , function(){
     toolbarElementsAutoresize( tbar , [ user ] ) ;
@@ -388,14 +438,11 @@ function load( name ){
   }) ;
   win.add( grid ) ;
   var submit = win.buttons[ 0 ] ;
-  submit.setText( 'Load' ) ;
-  submit.setIconClass( 'Load' ) ;
+  submit.setText( 'Refresh' ) ;
+  submit.setIconClass( 'Refresh' ) ;
   submit.setHandler( function(){
-    if( name ){
-      loadLayout( name ) ;
-    }
+    store.reload()
   }) ;
-  submit.disable() ;
   win.buttons[ 1 ].hide() ; // Hiding reset button
   win.show() ;
 }
@@ -411,15 +458,15 @@ function save( name ){
   var store = new Ext.data.JsonStore({
     autoLoad          : true
     ,baseParams       : { 'getUserLayouts' : true }
-    ,fields           : [ 'Name' ]
-    ,idProperty       : 'Name'
+    ,fields           : [ 'name' ]
+    ,idProperty       : 'name'
     ,root             : 'result'
     ,url              : 'action'
   }) ;
   var columns = [{
     align             : 'left'
     ,css              : 'cursor:pointer;cursor:hand;'
-    ,dataIndex        : 'Name'
+    ,dataIndex        : 'name'
     ,editable         : false
     ,id               : 'sl1'
     ,sortable         : false
@@ -648,19 +695,34 @@ function createAutoMenuItem( num , text ){
   });
   return item
 }
-function createLayoutMenuItem( value , group ){
+function createLayoutMenuItem( layout , mode ){
+  if( ! layout.name ){
+    return showError( 'createLayoutMenuItem function: Layout name is absent' ) ;
+  }
+  var text = layout.name ;
+  if( mode == 'get' ){
+    var handler = function(){ load( layout ) } ;
+    if( layout.user && layout.group ){
+      text = text + ' by ' + layout.user + '@' + layout.group ;
+    }
+  }else{
+    var handler = function(){ save( layout.name ) } ;
+    if( layout.group ){
+      text = text + ' @' + layout.group ;
+    }
+  }
   var item = new Ext.menu.Item({
-    handler           : ( group == 'set' ) ? saveLayout( value ) : loadLayout( value )
-    ,text             : value
+    handler           : handler
+    ,text             : text
   });
   return item
 }
 function createMenu( mode , init ){
   var menu = new Ext.menu.Menu() ;
-  if( init && init.layoutNames ){
-    var layouts = init.layoutNames ;
-    if( layouts.length > 0 ){
-      layouts = layouts.split( ';' ) ;
+  var history = false ;
+  if( init && init.history && Ext.isArray( init.history ) ){
+    if( init.history.length > 0 ){
+      history = init.history ;
     }
   }
   if( mode == 'set' ){
@@ -670,7 +732,7 @@ function createMenu( mode , init ){
       ,text           : 'Save as new layout'
     });
     menu.addItem( saveNew ) ;
-    if(layouts){
+    if( history ){
       menu.addItem( new Ext.menu.Separator() ) ;
     }
   }else if( mode == 'get' ){
@@ -680,7 +742,7 @@ function createMenu( mode , init ){
       ,text           : 'Load a new layout'
     });
     menu.addItem( open ) ;
-    if(layouts){
+    if( history ){
       menu.addItem( new Ext.menu.Separator() ) ;
     }
   }else if( mode == 'column' ){
@@ -702,12 +764,10 @@ function createMenu( mode , init ){
   }else{
     return false ;
   }
-  if(layouts){
-    var length = layouts.length ;
-    for( var i = 0 ; i < length ; i++ ){
-      if( layouts[ i ].length > 0 ){
-        menu.addItem( createLayoutMenuItem( layouts[ i ] , mode ) ) ;
-      }
+  if( history ){
+    var len = history.length ;
+    for( var i = 0 ; i < len ; i++ ){
+      menu.addItem( createLayoutMenuItem( history[ i ] , mode ) ) ;
     }
   }
   return menu ;
@@ -753,206 +813,117 @@ function setColumnWidth( width ){
     return showError( e.name + ': ' + e.message ) ;
   }
 }
-////////////////////////////////////////////////////////////////////////////////
+function updateTimestamp(){
+  var stamp = Ext.getCmp( 'timeStamp' ) ;
+  if( stamp ){
+    var d = new Date() ;
+    var hh = d.getHours() ;
+    if(hh < 10){
+      hh = '0' + hh ;
+    }
+    var mm = d.getMinutes() ;
+    if(mm < 10){
+      mm = '0' + mm ;
+    }
+    stamp.setText( 'Updated: ' + hh + ":" + mm) ;
+    stamp.show() ;
+  }
+}
 function gatherInfo(){
-  var url = '';
+  var url = '' ;
   try{
-    var mainPanel = Ext.getCmp('mainConteiner');
-    var length = mainPanel.items.getCount();
-    for(var i=0; i<length; i++){
-      if(mainPanel.getComponent(i).id != 'welcomeMessage'){
-        var tmpSrc = mainPanel.getComponent(i).autoEl.src;
-        if(tmpSrc.search(/&dummythingforrefresh/i) > 0){
-          tmpSrc = tmpSrc.split('&dummythingforrefresh')[0];
-        }
-        url = url + tmpSrc + ';';
+    var mainPanel = Ext.getCmp( 'mainConteiner' ) ;
+    var length = mainPanel.items.getCount() ;
+    for( var i = 0 ; i < length ; i++ ){
+      if( mainPanel.getComponent( i ).id == 'welcomeMessage'){
+        continue ;
       }
+      var tmpSrc = mainPanel.getComponent( i ).autoEl.src ;
+      if( tmpSrc.search(/&dummythingforrefresh/i) > 0 ){
+        tmpSrc = tmpSrc.split( '&dummythingforrefresh' )[ 0 ] ;
+      }
+      if( tmpSrc.slice( -1 ) == '?' ){
+        tmpSrc = tmpSrc.slice( 0 , -1 ) ;
+      }
+      url = url + tmpSrc + ';' ;
     }
   }catch(e){
-    alert('Error: ' + e.name + ': ' + e.message);
-    return
+    return showError( e.name + ': ' + e.message ) ;
   }
-  if(url){
-    url = url.replace(/&/g,'[ampersand]');
+  if( url ){
+    url = url.replace(/&/g,'[ampersand]') ;
   }
-  var params = {'columns':columnWidth,'refresh':refreshRate,'url':url};  
-  return params
+  return { 'columns' : columnWidth , 'refresh' : refreshRate , 'url' : url } ;  
 }
-function changeIcon(id,state){
-  if(id == 'del'){
-    id = 'actLayoutButton';
+function redoLayout( layout ){
+  if( !layout ){
+    return showError( 'Function redoLayout expects at least one argument' ) ;
   }
-  var button = Ext.getCmp(id);
-  var btnClass = 0;
-  if(id == 'getLayoutButton' && state == 'load'){
-    btnClass = 'Loading';
-  }else if(id == 'getLayoutButton' && state == 'normal'){
-    btnClass = 'Restore';
-  }else if(id == 'setLayoutButton' && state == 'load'){
-    btnClass = 'Loading';
-  }else if(id == 'setLayoutButton' && state == 'normal'){
-    btnClass = 'Save';
-  }else if(id == 'actLayoutButton' && state == 'load'){
-    btnClass = 'Loading';
-  }else if(id == 'actLayoutButton' && state == 'normal'){
-    btnClass = 'Act';
+  if( !layout.name ){
+    return showError( 'Function redoLayout: layout object has no name' ) ;
   }
-  try{
-    if(state == 'load'){
-      button.disable();
-    }else{
-      button.enable();
+  if( !layout.url ){
+    return showError( 'Function redoLayout: layout object should have url property' ) ;
+  }
+  columnWidth = layout[ 'columns' ] / 1 ;
+  Ext.num( columnWidth , -1 ) ; 
+  if( columnWidth == -1 ){
+    showError( 'Function redoLayout: failed to covert columns to a number' ) ;
+  }
+  refreshRate = layout[ 'refresh' ] / 1 ;
+  refreshRate = Ext.num( refreshRate , -1 ) ;
+  if( refreshRate == -1 ){
+    showError( 'Function redoLayout: failed to covert refreshRate to a number' ) ;
+  }
+  var hash = Ext.urlEncode({
+    group             : layout.group
+    ,layout           : layout.name
+    ,owner            : layout.user
+  }) ;
+  window.location.hash = hash ;
+  var current = Ext.getCmp( 'currentID' ) ;
+  if( current ){
+    current.setText( 'Current Layout: <b>' + layout.name + '</b>' ) ;
+    document.title = layout.name ;
+  }
+  updateTimestamp() ;
+  var plotSrc = layout.url ;
+  plotSrc = plotSrc.replace( /\[ampersand\]/g , '&' ) ;
+  var plots = plotSrc.split( ';' ) ;
+  for( var i = 0 ; i < plots.length ; i++ ){
+    if( plots[ i ].search( /&dummythingforrefresh/i ) > 0 ){
+      plots[ i ] = plots[ i ].split( '&dummythingforrefresh' )[ 0 ] ;
     }
-    button.setIconClass(btnClass);
-  }catch(e){}
-}
-function deleteLayout(mode){
-  var title = 'Delete Layout';
-  if(mode == 'All'){
-    var msg = 'Do you really want to delete all layouts stored at remote service?';
-    var params = {'delAllBookmarks':true};
+    if( plots[ i ].slice( -1 ) == '?' ){
+      plots[ i ] = plots[ i ].slice( 0 , -1 ) ;
+    }
+  }
+  var mainPanel = Ext.getCmp( 'mainConteiner' );
+  if( !mainPanel ){
+    return showError( 'Function redoLayout: Failed to get main container' ) ;
+  }
+  if( !plots ){
+    return true ;
+  }
+  var length = mainPanel.items.getCount() - 1 ;
+  for( var i = length ; i >= 0 ; i-- ){
+    var tmp = mainPanel.getComponent( i ) ;
+    mainPanel.remove( tmp , true ) ;
+  }
+  if( plots.length > 0 ){
+    for( var i = 0 ; i < plots.length ; i++ ){
+      if( plots[ i ].length < 1 ){
+        continue ;
+      }
+      mainPanel.add( createPanel( plots[ i ] ) ) ;
+    }
   }else{
-    var msg = 'Do you really want to delete layout: ' + layout + ' ?';
-    var params = {'delBookmarks':layout};
+    mainPanel.add( newLayout() ) ;
   }
-  Ext.Msg.confirm(title,msg,function(btn){
-    if(btn == 'yes'){
-      if(mode == 'All'){
-        Ext.Msg.confirm(title,'Are you sure?',function(btn){
-          if(btn == 'yes'){
-            changeIcon('del','load');
-            action(params,'del');
-          }
-        });
-      }else{
-        changeIcon('del','load');
-        action(params,'del');
-      }
-    }
-  });
+
+//  enableButtons( false ) ;
 }
-function action(params,mode){
-  Ext.Ajax.request({
-    failure:function(response){
-      changeIcon(mode,'normal');
-      AJAXerror(response.responseText);
-      return false
-    },
-    method:'POST',
-    params:params,
-    success:function(response){
-      changeIcon(mode,'normal');
-      var jsonData = Ext.util.JSON.decode(response.responseText);
-      if(jsonData['success'] == 'false'){
-        AJAXerror(response.responseText);
-        return false
-      }else{
-        redoLayout(jsonData['result'],mode);
-        var mainPanel = Ext.getCmp('mainConteiner');
-        if(mainPanel){
-          mainPanel.doLayout();
-        }
-      }
-    },
-    url:'action'
-  });
-}
-function updateTimestamp(){
-  var stamp = Ext.getCmp('timeStamp');
-  if(stamp){
-    var d = new Date();
-    var hh = d.getHours();
-    if(hh < 10){
-      hh = '0' + hh;
-    }
-    var mm = d.getMinutes()
-    if(mm < 10){
-      mm = '0' + mm;
-    }
-    stamp.setText('Updated: ' + hh + ":" + mm);
-    stamp.show();
-  }
-}
-function redoLayout(result,mode){
-// ToDo set some kind of check here
-  if(!result){
-    return
-  }
-  if(mode != 'import'){
-//    resetMenu(result);
-  }
-  if(mode == 'sync'){
-    return // just to update the menues
-  }
-  if(result.defaultLayout){
-    if(result.defaultLayout == ''){
-      layout = 'default';
-    }else{
-      layout = result.defaultLayout;
-    }
-  }else if(mode == 'import'){
-    layout = layout + '*';
-  }else{
-    layout = 'default';
-  }
-  window.location.hash = 'layout=' + layout;
-  var current = Ext.getCmp('currentID');
-  if(current){
-    current.setText('Current Layout: <b>' + layout + '</b>');
-    document.title = layout;
-  }
-  updateTimestamp();
-  if(result.layouts){
-    for(var i in result.layouts){
-      if(i == layout){
-        var plotSrc = result.layouts[i]['url'];
-        plotSrc = plotSrc.replace(/\[ampersand\]/g,'&');
-        var plots = plotSrc.split(';');
-        for(var j = 0; j < plots.length; j++){
-          if(plots[j].search(/&dummythingforrefresh/i) > 0){
-            plots[j] = plots[j].split('&dummythingforrefresh')[0];
-          }
-        }
-        columnWidth = result.layouts[i]['columns'];
-        refreshRate = result.layouts[i]['refresh'];
-      }
-    }
-  }else if(mode == 'import'){
-    if(result.plots){
-      var plots = result.plots.split(';');
-    }
-  }
-  var mainPanel = Ext.getCmp('mainConteiner');
-  if(mainPanel){
-      try{
-        if(plots){
-          var length = mainPanel.items.getCount() - 1;
-          for(i=length; i>=0; i--){
-            var tmp = mainPanel.getComponent(i);
-            mainPanel.remove(tmp,true);
-          }
-          if(plots.length > 0){
-            for(i=0; i<plots.length; i++){
-              if(plots[i].length > 0){
-                mainPanel.add(createPanel(plots[i]));
-              }
-            }
-          }
-        }else{
-          var length = mainPanel.items.getCount() - 1;
-          for(i=length; i>=0; i--){
-            var tmp = mainPanel.getComponent(i);
-            mainPanel.remove(tmp,true);
-          }
-          mainPanel.add(newLayout());
-        }
-      }catch(e){
-        alert('Error: ' + e.name + ': ' + e.message);
-        return
-      }
-  }
-  enableButtons( false );
-}
+////////////////////////////////////////////////////////////////////////////////
 function fullSize( link ){
   var html = '<img src="' + link + '" />' ;
   var win = new Ext.Window({
@@ -975,7 +946,7 @@ function createPanel(img){
   }
   var boxID = Ext.id();
   var width = 100 / columnWidth ;
-  width = '.' + width ;
+  width = '.' + Math.round( width ) ;
   var box = new Ext.BoxComponent({
     autoEl:{
       tag:'img',
@@ -1027,6 +998,9 @@ function createPanel(img){
           handler:function(){
             if(img.search(/&dummythingforrefresh/i) > 0){
               img = img.split('&dummythingforrefresh')[0];
+            }
+            if( img.slice( -1 ) == '?' ){
+              img = img.slice( 0 , -1 ) ;
             }
             Ext.Msg.alert('Show URL',img);
           },
