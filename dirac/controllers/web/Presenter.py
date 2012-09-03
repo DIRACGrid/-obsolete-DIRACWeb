@@ -1,6 +1,6 @@
 from dirac.lib.base import *
 from dirac.lib.diset import getRPCClient
-from dirac.lib.credentials import authorizeAction, getUsername
+from dirac.lib.credentials import authorizeAction, getUsername, getSelectedGroup
 from DIRAC.Core.Utilities.List import uniqueElements
 from DIRAC import gConfig, gLogger
 from DIRAC import S_OK, S_ERROR
@@ -14,60 +14,146 @@ class PresenterController(BaseController):
   def display(self):
     if not authorizeAction():
       return render( "/login.mako" )
-#    result = self.__convert()
-#    if not result[ "OK" ]:
-#      gLogger.error( result[ "Message" ] )
+    c.select = dict()
+#    self.__clearHistory()
     result = self.__getHistory()
-    if result["OK"]:
-      c.select = result[ "Value" ]
-#    if c.select.has_key("result"):
-#      c.select = c.select["result"]
+    if result[ "OK" ]:
+      history = result[ "Value" ]
+      gLogger.info( "init history %s" % history )
+      c.select[ "history" ] = history
+      if history and len( history ) > 0:
+        result = self.__loadLayout( history[ 0 ] )
+        gLogger.always( "result: %s " % result )
+        if result.has_key( "result" ):
+          c.select[ "layout" ] = result[ "result" ]
     return render("web/Presenter.mako")
 ###############################################################################
   @jsonify
   def action(self):
     if not authorizeAction():
-      return {"success":"false","error":"Insufficient rights"}
-    if request.params.has_key("getAvailbleLayouts"):
-      if request.params.has_key("username") :
-        return self.__getUsers()
-      if request.params.has_key("userOnly") :
-        return self.getData( user )
-      return self.__getData()
-    elif request.params.has_key("saveLayout"):
-      return self.__saveLayout(request.params)
-    elif request.params.has_key("setBookmarks") and len(request.params["setBookmarks"]) > 0:
-      name = str(request.params["setBookmarks"])
-      return self.__setData(name)
-    elif request.params.has_key("delBookmarks") and len(request.params["delBookmarks"]) > 0:
-      name = str(request.params["delBookmarks"])
-      return self.__delData(name)
-    elif request.params.has_key("delAllBookmarks") and len(request.params["delAllBookmarks"]) > 0:
-      return self.__delAllData()
+      return { "success" : "false" , "error" : "Insufficient rights" }
+    if request.params.has_key( "getAvailbleLayouts" ):
+      return self.__getLayout()
+    elif request.params.has_key( "loadLayout" ):
+      return self.__loadLayout( request.params )
+    elif request.params.has_key( "saveLayout" ):
+      return self.__saveLayout( request.params )
+    elif request.params.has_key( "deleteLayout" ):
+      return self.__delLayout( request.params[ "deleteLayout" ] )
     else:
       return {"success":"false","error":"Action is not defined"}
+################################################################################      
+  def __getLayout( self ) :
+    gLogger.debug( "start __getLayout()" )
+    upc = UserProfileClient( USER_PROFILE_NAME, getRPCClient )
+    result = upc.listAvailableVars()
+    gLogger.always( result )
+    if not result[ "OK" ]:
+      return { "success" : "false" , "error" : result[ "Message" ] }
+    result = result[ "Value" ]
+    def toObj( array ):
+      if not len( array ) > 3 :
+        gLogger.error( "Length of array %s should be more then 3" % array )        
+        return { 'user' : 'undefined' , 'group' : 'undefined' , 'VO' : 'undefined' , 'name' : 'undefined' }
+      return { 'user' : array[ 0 ] , 'group' : array[ 1 ] , 'VO' : array[ 2 ] , 'name' : array[ 3 ] }
+    availble = map( toObj , result )
+    gLogger.always( availble )
+    users = list()
+    for i in result :
+      if len( i ) > 1 :
+        users.append( { "user" : i[ 0 ] } )
+    users = uniqueElements( users )
+    gLogger.debug( "end __getLayout()" )
+    return { "success" : "true" , "result" : availble , "users" : users }
+################################################################################
+  def __delLayout( self , name = False ) :
+    gLogger.debug( "start __delLayout()" )
+    if not name:
+      return { "success" : "false" , "error" : "Name of the layout is absent" }
+    try:
+      name = str( name )
+    except Exception , x :
+      err = "Can't convert variable to a string. Seems there are non ASCII symbols"
+      err = err + "\n" + str( x )
+      return { "success" : "false" , "error" : err }
+    upc = UserProfileClient( USER_PROFILE_NAME, getRPCClient )
+    result = upc.deleteVar( name )
+    gLogger.debug( result )
+    if not result[ "OK" ]:
+      return { "success" : "false" , "error" : result[ "Message" ] }
+    history = self.__delHistory( name )
+    if not history[ "OK" ]:
+      gLogger.error( history[ "Message" ] )
+    gLogger.debug( "end __delLayout()" )
+    return { "success" : "true" , "result" : result[ "Value" ] , "history" : history }
+################################################################################
+  def __loadLayout( self , cfg = False ) :
+    gLogger.debug( "start __loadLayout()" )
+    if not cfg :
+      return { "success" : "false" , "error" : "Request is empty" }
+    if not cfg.has_key( "name" ):
+      return { "success" : "false" , "error" : "Name of the layout is absent" }
+    if not cfg.has_key( "user" ):
+      return { "success" : "false" , "error" : "Owner Username of the layout is absent" }
+    if not cfg.has_key( "group" ):
+      return { "success" : "false" , "error" : "Owner group of the layout is absent" }
+    try:
+      name = str( cfg[ "name" ] )
+      user = str( cfg[ "user" ] )
+      group = str( cfg[ "group" ] )
+    except Exception , x :
+      err = "Can't convert variable to a string. Seems there are non ASCII symbols"
+      err = err + "\n" + str( x )
+      return { "success" : "false" , "error" : err }
+    upc = UserProfileClient( USER_PROFILE_NAME, getRPCClient )
+    result = upc.retrieveVarFromUser( user , group, name )
+    gLogger.debug( result )
+    if not result[ "OK" ]:
+      return { "success" : "false" , "error" : result[ "Message" ] }
+    history = self.__setHistory( { "name" : name , "user" : user , "group" : group } )
+    if not history[ "OK" ]:
+      gLogger.error( history[ "Message" ] )
+    for i in result[ "Value" ] :
+      try:
+        result[ "Value" ][ i ] = str( result[ "Value" ][ i ] )
+      except:
+        continue
+    result[ "Value" ][ "name" ] = name
+    result[ "Value" ][ "user" ] = user
+    result[ "Value" ][ "group" ] = group
+    gLogger.debug( "end __saveLayout()" )
+    return { "success" : "true" , "result" : result[ "Value" ] , "history" : history }
 ################################################################################
   def __saveLayout( self , cfg = False ) :
     gLogger.debug( "start __saveLayout()" )
     if not cfg :
       return { "success" : "false" , "error" : "Request is empty" }
-    if not cfg.has_key( "Name" ):
+    if not cfg.has_key( "name" ):
       return { "success" : "false" , "error" : "Name of the layout is absent" }
     try:
-      name = str( cfg[ "Name" ] )
-    except:
-      err = "Can't convert variable 'Name' to a string. "
-      err = err + "Seems there are non ASCII symbols in layout name"
+      name = str( cfg[ "name" ] )
+    except Exception , x :
+      err = "Can't convert variable to a string. Seems there are non ASCII symbols"
+      err = err + "\n" + str( x )
       return { "success" : "false" , "error" : err }
-    if not cfg.has_key( "Permissions" ):
+    if not cfg.has_key( "permissions" ):
       return { "success" : "false" , "error" : "Permissions for the layout is absent" }
     try:
-      permissions = str( cfg["Permissions"] )
+      permissions = str( cfg["permissions"] )
     except:
       return { "success" : "false" , "error" : "Passed permissions are not string" }
-    permissions = { "ReadAccess" : permissions }
+    gLogger.info( "perm - %s" % permissions )
+    upc = UserProfileClient( USER_PROFILE_NAME, getRPCClient )
+    if permissions == "SAME" :
+      result = upc.getVarPermissions( name )
+      gLogger.debug( result )
+      if not result[ "OK" ]:
+        return { "success" : "false" , "error" : result[ "Message" ] }
+      permissions = result[ "Value" ]
+    else:
+      permissions = { "ReadAccess" : permissions }
     data = {}
-    banList = [ "Name" , "Permissions" , "saveLayout" ]
+    banList = [ "name" , "permissions" , "saveLayout" , "user" , "group" ]
     for i in cfg:
       try:
         if not i in banList and len( cfg[ i ] ) > 0:
@@ -75,168 +161,81 @@ class PresenterController(BaseController):
       except:
         pass
     gLogger.info( "Data to save: %s" % data )
-    upc = UserProfileClient( USER_PROFILE_NAME, getRPCClient )
     result = upc.storeVar( name , data , permissions )
     gLogger.debug( result )
     if not result[ "OK" ]:
       return { "success" : "false" , "error" : result[ "Message" ] }
-    history = self.__setHistory( name )
+    history = self.__setHistory( { 'name' : name , 'user' : user , 'group' : group } )
     if not history[ "OK" ]:
       gLogger.error( history[ "Message" ] )
     gLogger.debug( "end __saveLayout()" )
-    return { "success" : "true" , "result" : data }
+    return { "success" : "true" , "result" : result[ "Value" ] , "history" : history  }
 ################################################################################
-  def __getUsers(self):
-    return
-################################################################################
-  def __getAtomicData(self,name=False):
-    gLogger.info("__getAtomicData(%s) function" % name)
-    upc = UserProfileClient( USER_PROFILE_NAME, getRPCClient )
+  def __delHistory( self , name = False ):
+    gLogger.info( "start __delHistory()")
     if not name:
-      gLogger.info("upc.retrieveAllVars()")
-      result = upc.retrieveAllVars()
-    else:
-      gLogger.info("upc.retrieveVar(%s)" % name)
-      result = upc.retrieveVar(name)
-    gLogger.debug(result)
-    if not result["OK"]:
-      if result['Message'].find("No data for") != -1:
-        return {"success":"true","result":{}}
-      return {"success":"false","error":result["Message"]}
-    result = result["Value"]
-    return {"success":"true","result":result}
-################################################################################
-  def __getData(self,name=False):
-    gLogger.info("__getData(%s) function" % name)
-    upc = UserProfileClient( USER_PROFILE_NAME, getRPCClient )
-    gLogger.info("upc.retrieveAllVars()")
-    result = upc.retrieveAllVars()
-    gLogger.debug(result)
-    if not result["OK"]:
-      if result['Message'].find("No data for") != -1:
-        return {"success":"true","result":{}}
-      return {"success":"false","error":result["Message"]}
-    callback = dict()
-    callback["layouts"] = result["Value"]
-    keys = result["Value"].keys()
-    callback["layoutNames"] = ";".join(keys)
-    if not name:
-      last = self.__lastHistory()
-      if not last["OK"]:
-        last = ""
-      else:
-        last = last["Value"]
-    else:
-      last = name
-    callback["defaultLayout"] = last
-    if name:
-      result = self.__setHistory(name)
-      if not result["OK"]:
-        gLogger.error(result["Message"])
-    return {"success":"true","result":callback}
-################################################################################
-  def __setData(self,name=False):
-    gLogger.info("__setData(%s) function" % name)
-    if not name:
-      return {"success":"false","error":"Name of the layout is absent"}
-    data = {}
-    for i in request.params:
-      try:
-        if len(request.params[i]) > 0:
-          data[i] = str(request.params[i])
-      except:
-        pass
-    gLogger.info("Data to save: %s" % data)
-    upc = UserProfileClient( USER_PROFILE_NAME, getRPCClient )
-    gLogger.info("upc.storeVar(%s,%s)" % (name,data))
-    result = upc.storeVar(name,data)
-    gLogger.debug(result)
-    if not result["OK"]:
-      return {"success":"false","error":result["Message"]}
-    result = self.__setHistory(name)
-    if not result["OK"]:
-      gLogger.error(result["Message"])
-    return self.__getData()
-################################################################################
-  def __delData(self,name=False):
-    gLogger.info("__delData(%s) function" % name)
-    if not name:
-      return {"success":"false","error":"Name of the layout is absent"}
-    upc = UserProfileClient( USER_PROFILE_NAME, getRPCClient )
-    gLogger.info("upc.deleteVar(%s)" % name)
-    result = upc.deleteVar(name)
-    gLogger.debug(result)
-    if not result["OK"]:
-      return {"success":"false","error":result["Message"]}
-    result = self.__delHistory(name)
-    if not result["OK"]:
-      gLogger.error(result["Message"])
-    return self.__getData()    
-################################################################################
-  def __delAllData(self):
-    gLogger.info("__delAllData(%s) function")
-    upc = UserProfileClient( USER_PROFILE_NAME, getRPCClient )
-    username = getUsername()
-    if not type(username) == type({}):
-      username = list(username)
-    gLogger.info("upc.deleteProfiles(%s)" % username)
-    result = upc.deleteProfiles(username)
-    gLogger.debug(result)
-    if not result["OK"]:
-      gLogger.error(result["Message"])
-      return {"success":"false","error":result["Message"]}
-    result = self.__delHistory()
-    if not result["OK"]:
-      gLogger.error(result["Message"])
-    return self.__getData()
-################################################################################
-  def __delHistory(self,name=False):
-    gLogger.info("__delHistory(%s) function" % name)
-    upc = UserProfileClient( "Default", getRPCClient )
+      return S_ERROR( "Name of the layout to be deleted is absent" )
+    result = self.__getHistory()
+    gLogger.info( "!!! returns: %s" % result )    
+    if not result[ "OK" ]:
+      return S_ERROR( result[ "Message" ] )
+    result = result[ "Value" ]
+    history = list()
+    for i in result:
+      if not i["name"] == name:
+        history.append( i )
+    upc = UserProfileClient( "Default" , getRPCClient )
     profile_name = USER_PROFILE_NAME + ".History"
-    gLogger.info("upc.retrieveVar(%s)" % profile_name)
-    result = upc.retrieveVar(profile_name)
-    gLogger.debug(result)
-    if not result["OK"]:
-      return S_ERROR( result["Message"] )
-    data = result["Value"]
-    try:
-      data = list(data)
-    except:
-      return S_ERROR( "Failed to convert '%s' to list" % data )
-    if name:
-      if data.count(name) > 0:
-        while data.count(name) > 0:
-          data.remove(name)
-    else:
-      data = list()
-    while len(data) > 50:
-      data.popleft()
-    gLogger.info("upc.storeVar(%s,%s)" % (profile_name,data))
-    result = upc.storeVar(profile_name,data)
-    gLogger.debug(result)
-    if not result["OK"]:
-      return S_ERROR( result["Message"] )
-    return S_OK( result["Value"] )
+    gLogger.info( "upc.storeVar( %s , %s )" % ( profile_name , history ))      
+    result = upc.storeVar( profile_name , history )
+    gLogger.debug( result )
+    if not result[ "OK" ]:
+      return S_ERROR( result[ "Message" ] )
+    gLogger.info( "end __delHistory()" )
+    return S_OK( result[ "Value" ] )
 ################################################################################
-  def __setHistory( self , name = False ):
+  def __clearHistory( self ):
+    gLogger.info( "start __clearHistory()")
+    upc = UserProfileClient( "Default" , getRPCClient )
+    profile_name = USER_PROFILE_NAME + ".History"
+    result = upc.deleteVar( profile_name )
+    gLogger.info( "upc.deleteVar( %s )" % profile_name )
+    gLogger.info( "end __clearHistory()")
+    if not result[ "OK" ]:
+      return { "success" : "false" , "error" : result[ "Message" ] }
+    return { "success" : "true" , "result" : result[ "Value" ] }
+################################################################################
+  def __setHistory( self , cfg = False ):
     gLogger.info( "start __setHistory()")
     history_length = gConfig.getOptions("/Website/" + USER_PROFILE_NAME + "/ShowHistory", 10 )
-    if not name:
-      return S_ERROR( "Name of the layout to be memorized is absent" )
+    if not cfg :
+      return S_ERROR( "Object with layout properties to be memorized in history is absent" )
+    if not cfg.has_key( "name" ):
+      return S_ERROR( "Object with layout properties to be memorized in history is absent" )
+    result = self.__delHistory( cfg[ "name" ] )
+    try:
+      for key , value in cfg.items():
+        cfg[ key ] = str( value )
+    except Exception , x :
+      err = "Failed to convert to string. "
+      err = err + x
+      gLogger.error( err )
+      return S_ERROR( err )
     upc = UserProfileClient( "Default" , getRPCClient )
     profile_name = USER_PROFILE_NAME + ".History"
     gLogger.info( "upc.retrieveVar( %s )" % profile_name )
     history = list()
     result = upc.retrieveVar( profile_name )
-    gLogger.debug( result )
+    gLogger.info( result )
     if result[ "OK" ]:
       result = result[ "Value" ]
+    else:
+      result = ""
     try:
       history = list( result )
     except:
       gLogger.error( "Failed to convert %s to list" % result )
-    history.append( name )
+    history.append( cfg )
     history = uniqueElements( history )
     while len( history ) > history_length:
       history.popleft()
@@ -256,7 +255,7 @@ class PresenterController(BaseController):
     profile_name = USER_PROFILE_NAME + ".History"
     gLogger.info( "upc.retrieveVar( %s )" % profile_name )
     result = upc.retrieveVar( profile_name )
-    gLogger.debug( result )
+    gLogger.info( result )
     if not result[ "OK" ]:
       return S_ERROR( result[ "Message" ] )
     result = result[ "Value" ]
