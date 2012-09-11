@@ -159,6 +159,9 @@ p.footer {
 .refreshSplitButton {
   background-image:url("../images/iface/refresh.gif") !important;
 }
+.Delete {
+  background-image:url("../images/iface/close.gif") !important;
+}
 .Refresh {
   background-image:url("../images/iface/refresh.gif") !important;
 }
@@ -194,6 +197,9 @@ p.footer {
 }
 .LessEqual {
   background-image:url("../images/iface/lequal.gif") !important;
+}
+.Load {
+  background-image:url("../images/iface/export.gif") !important;
 }
 .metaselect {
   font: 11px tahoma,arial,helvetica,sans-serif;

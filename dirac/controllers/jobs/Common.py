@@ -1,18 +1,14 @@
-import logging, datetime, tempfile
-from time import time, gmtime, strftime
+import dirac.lib.credentials as credentials
+
+from time import time
 
 from dirac.lib.base import *
-from dirac.lib.diset import getRPCClient, getTransferClient
-from dirac.lib.credentials import authorizeAction
-from DIRAC import gConfig, gLogger
-from DIRAC.Core.Utilities.List import sortList
-from DIRAC.AccountingSystem.Client.ReportsClient import ReportsClient
-from DIRAC.Core.Utilities.DictCache import DictCache
-import dirac.lib.credentials as credentials
-from DIRAC.Interfaces.API.Dirac import Dirac
+from dirac.lib.diset import getRPCClient
+from dirac.lib.credentials import getUsername, getSelectedGroup
+from DIRAC import gLogger, S_OK, S_ERROR
+from DIRAC.Core.Utilities.List import uniqueElements
 from DIRAC.FrameworkSystem.Client.PlottingClient  import PlottingClient
-
-log = logging.getLogger(__name__)
+from DIRAC.FrameworkSystem.Client.UserProfileClient import UserProfileClient
 
 class CommonController(BaseController):
 ################################################################################
@@ -157,103 +153,3 @@ class CommonController(BaseController):
       c.result = ["No Selections"]
     return c.result
 ################################################################################
-  def matvey_cpu(self):
-    data = self.parseFile(None,'cpu')
-    return self.buildPlot(data,{"title":"CPU","limit_labels":300,"cumulate_data":False})
-################################################################################
-  def matvey_mem(self):
-    data = self.parseFile(None,'mem')
-    return self.buildPlot(data,{"title":"Memory","limit_labels":300,"cumulate_data":False})
-################################################################################
-  def matvey_rss(self):
-    data = self.parseFile(None,'rss')
-    return self.buildPlot(data,{"title":"RSS","limit_labels":300,"cumulate_data":False})
-################################################################################
-  def matvey_vsize(self):
-    data = self.parseFile(None,'vsz')
-    return self.buildPlot(data,{"title":"VSIZE","limit_labels":300,"cumulate_data":False})  
-################################################################################
-  def parseFile(self,filename,type):
-    logfile = open("/tmp/log.30.08.2010","r")
-    uniqList = []
-    megaList = []
-    while 1:
-      log = logfile.readline()
-      if not log:
-        break
-      d = {}
-      line = log
-      line = line.replace("'","")
-      line = line.replace("\"","")
-      line = line.split("; ")
-      for i in line:
-        if i.count('time') > 0:
-          key,value = i.split(': ')
-          d[key] = value
-          pass
-        elif i.count('pidList') > 0:
-          i = i.replace(']\n','')
-          i = i.replace('pidList: [','')
-          d['pidList'] = i.split(", ")
-          pass
-        else:
-          i = i.split(" :(")
-          if i[0] == 'PID':
-            pass
-          else:
-            d[i[0]] = {}
-            i[1] = i[1].replace(')','')
-            i[1] = i[1].replace('(','')
-            tmpList = i[1].split(', ')
-            for j in tmpList:
-              key,value = j.split(': ')
-              d[i[0]][key] = value
-      megaList.append(d)
-      uniqList.extend(d['pidList'])
-    for i in megaList:
-      if i.has_key('PID'):
-        del i
-    for i in megaList:
-      if not i.has_key('time'):
-        del i
-    uniqList = set(uniqList)
-    uniqList = list(uniqList)
-    try:
-      ind = uniqList.index('PID')
-      if ind > 0:
-        del uniqList[ind]
-    except:
-      pass
-    legend = {}
-    for i in uniqList:
-      for j in megaList:
-        if j.has_key(i):
-          legend[i] = str(i) + ': ' + j[i]["cmd"]
-          break
-    print legend
-    data = {}
-    for j in uniqList:
-      if legend.has_key(j):
-        data[legend[j]] = {}
-    for i in megaList:
-      for j in uniqList:
-        if legend.has_key(j):
-          if i.has_key(j):
-            data[legend[j]][i['time']] = i[j][type]
-          else:
-            data[legend[j]][i['time']] = 0
-    return data
-################################################################################
-  def buildPlot(self,data,title):
-    cl = PlottingClient()
-    result = cl.lineGraph(data,'Memory',title)
-    if result["OK"]:
-      plot = result["Value"]
-      response.headers['Content-type'] = 'image/png'
-      response.headers['Content-Length'] = len(plot)
-      response.headers['Content-Transfer-Encoding'] = 'Binary'
-      response.headers['Cache-Control'] = 'no-cache' # cache switchoff
-      response.headers['Expires'] = '-1' # cache switchoff for old clients
-      return plot
-    else:
-      return result["Message"]
