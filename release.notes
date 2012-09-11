@@ -1,3 +1,6 @@
+[web2012091201]
+CHANGE: New Presenter page. Introduce improved Save/Load mechanism
+
 [web2012082901]
 CHANGE: Platforms are taken automatically from CS. Change in menu data structure taken from CS and used in launchpad
 
