@@ -1,16 +1,19 @@
-var columnWidth = 3 ;     // 3 Columns per page
-var refreshRate = 0 ;     // Autorefresh is off
+var columnWidth = 3 ;         // 3 Columns per page
+var refreshRate = 0 ;         // Autorefresh is off
 var currentLayout = '' ;      // Layout not set by default
-var heartbeat = false ;   // Updater reference
-var contextMenu = false ; // Common context menu
+var currentUser = '' ;        // Owner of a layout
+var currentGroup = '' ;       // Same as owner but group
+var currentVO = '' ;          // VO of the layout
+var heartbeat = false ;       // Updater reference
+var contextMenu = false ;     // Common context menu
 
 function initLoop(  initValues  ){
-//  if( ! window.location.hash ){
-//    deleteCooke( 'lastLocationHash' ) ;
-//  }
   Ext.onReady(  function(){
     heartbeat = new Ext.util.TaskRunner() ;
     initAjax() ;
+    currentUser = gPageDescription.userData.username ;
+    currentGroup = gPageDescription.userData.group ;
+    currentVO = '' ;
     var mainContent = mainPanel( initValues ) ;
     renderInMainViewport( [ mainContent ] ) ;
   });
@@ -68,7 +71,7 @@ function mainPanel( initValues  ){
   });
   var del = new Ext.Toolbar.Button({
     cls               : 'x-btn-text-icon'
-    ,handler          : function(){ deleteLayout() }
+    ,handler          : function(){ deleteLayout( currentLayout ) }
     ,iconCls          : 'Delete'
     ,id               : 'deleteLayoutButton'
     ,tooltip          : 'Click to remove current layout and load previous one'
@@ -97,7 +100,7 @@ function mainPanel( initValues  ){
     ,text             : 'Disabled'
     ,tooltip          : 'Click to set the time for autorefresh'
   });
-  auto.on(  'menuhide'  , function( button  , menu  ){
+  auto.on( 'menuhide'  , function( button  , menu  ){
     var length = menu.items.getCount();
     for(  var i = 0; i < length; i++  ){
       if( menu.items.items[ i ].checked ){
@@ -136,39 +139,50 @@ function mainPanel( initValues  ){
                         ]
   });
   panel.on( 'render'  , function(){
-    var test = false ;
-    if( initValues && initValues.history && Ext.isArray( initValues.history ) ){
-      test = initValues.history[ 0 ] ;
-    }
+    var params = [ 'name' , 'user' , 'group' ] ;
+    var hash = false ;
+    var layout = false ;
     if( window.location.hash  ){
-      var obj = window.location.hash.split( '#' ) ;
-      if( obj.length == 2 ){
-        obj = Ext.urlDecode( obj[ 1 ] ) ;
-      }
-      if( obj && obj.layout && obj.owner && obj.group ){
-        if( ! test ){
-          test = new Object() ;
-        }
-        test.name = obj.layout ;
-        test.user = obj.owner ;
-        test.group = obj.group ;
+      hash = window.location.hash.split( '#' ) ;
+      if( hash.length == 2 ){
+        hash = Ext.urlDecode( hash[ 1 ] ) ;
       }
     }
     if( initValues && initValues.layout ){
-      var l = initValues.layout ;
-      if( test.name == l.name && test.user == l.user && test.group == l.group ){
-        return redoLayout( initValues.layout ) ;
+      layout = initValues.layout ;
+    }
+    var loadHash = true ;
+    var loadLayout = true ;
+    var testHash = '' ;
+    var testLayout = '' ;
+    for( var i = 0 ; i < params.length ; i++ ){
+      var tName = params[ i ] ;
+      if( hash && hash[ tName ] ){
+        testHash = testHash + hash[ tName ] ;
+      }else{
+        loadHash = false ;
+      }
+      if( layout && layout[ tName ] ){
+        testLayout = testLayout + layout[ tName ] ;
+      }else{
+        loadLayout = false ;
       }
     }
-    if( ! test ){
-      return ;
+    if( loadHash && loadLayout && testHash === testLayout ){
+      return redoLayout( initValues.layout ) ;
     }
-    test[ 'loadLayout' ] = true ;
-    ajax({
-      mask          : true
-      ,params       : test
-      ,success      : actionSuccess
-    }) ;
+    if( loadHash ){
+      hash[ 'loadLayout' ] = true ;
+      ajax({
+        mask          : true
+        ,params       : hash
+        ,success      : actionSuccess
+      }) ;
+      return true ;
+    }
+    if( loadLayout ){
+      return redoLayout( initValues.layout ) ;
+    }
   });
   return panel
 }
@@ -181,23 +195,99 @@ function actionSuccess( response , options ){
     kind = 'save' ;
   }else if( options.params.loadLayout ){
     kind = 'load' ;
+  }else if( options.params.deleteLayout ){
+    kind = 'delete' ;
   }
   if( ! kind ){
-    return false ;
+    return showError( 'Unable to get the type of operation' ) ;
   }
   var response = Ext.util.JSON.decode( response.responseText ) ;
   if( response.success != 'true' ){
     return showError( response.error ) ;
+  }
+  if( response[ 'history' ] ){
+    if( kind == 'save' ){
+      Ext.getCmp( 'setLayoutButton' ).menu = createMenu( 'set' , response ) ;
+    }else if( kind == 'load' ){
+      Ext.getCmp( 'getLayoutButton' ).menu = createMenu( 'get' , response ) ;
+    }else if( kind == 'delete'){
+      Ext.getCmp( 'setLayoutButton' ).menu = createMenu( 'set' , response ) ;
+      Ext.getCmp( 'getLayoutButton' ).menu = createMenu( 'get' , response ) ;
+    }
+  }
+  if( kind == 'delete' ){
+    return deleteOptions() ;
   }
   redoLayout( response[ 'result' ] ) ;
   var mainPanel = Ext.getCmp( 'mainConteiner' );
   if( mainPanel ){
     mainPanel.doLayout() ;
   }
-  if( response[ 'history' ] && response[ 'history' ] != 'false' ){
-    Ext.getCmp( 'setLayoutButton' ).menu = createMenu( 'set' , response ) ;
-    Ext.getCmp( 'getLayoutButton' ).menu = createMenu( 'get' , response ) ;
+  return true ;
+}
+function deleteOptions(){
+  var title = 'Choose layout to load' ;
+  var msg = 'Do you want to load last used layout? ' ;
+  msg = msg + 'Press "No" to load a start-up screen';
+  Ext.Msg.confirm( title , msg , function( btn ){
+    if( btn == 'yes' ){
+      var params = new Object() ;
+      params[ 'loadLayout' ] = true ;
+      params[ 'loadLast' ] = true ;
+      ajax({
+        mask          : true
+        ,params       : params
+        ,success      : actionSuccess
+      }) ;
+      return true ;
+    }else{
+      var mainPanel = Ext.getCmp( 'mainConteiner' );
+      if( !mainPanel ){
+        return showError( 'Function deleteOptions: Failed to get main container' ) ;
+      }
+      var length = mainPanel.items.getCount() - 1 ;
+      for( var i = length ; i >= 0 ; i-- ){
+        var tmp = mainPanel.getComponent( i ) ;
+        mainPanel.remove( tmp , true ) ;
+      }
+      mainPanel.add( newLayout() ) ;
+      currentLayout = '' ;
+      var current = Ext.getCmp( 'currentID' ) ;
+      if( current ){
+        current.setText( 'Current Layout: <b>' + currentLayout + '</b>' ) ;
+      }
+      document.title = currentLayout ;
+      mainPanel.doLayout();
+    }
+  });
+}
+function deleteLayout( name ){
+  if( ! name ){
+    return showError( 'Name of the layout to delete is absent' ) ;
   }
+  var welcome = Ext.getCmp('welcomeMessage') ;
+  if(welcome){
+    return showError( 'This is the default layout and can not be deleted' ) ;
+  }
+  var params = new Object() ;
+  if( currentUser != gPageDescription.userData.username ){
+    return showError( 'Unable to delete layout of user ' + currentUser ) ;
+  }
+  params[ 'deleteLayout' ] = true ;
+  params[ 'name' ] = name ;
+  params[ 'user' ] = gPageDescription.userData.username ;
+  params[ 'group' ] = gPageDescription.userData.group ;
+  var title = 'Delete Layout' ;
+  var msg = 'Delete layout: ' + name + ' by ' + currentUser +  '@' + currentGroup + ' ?';
+  Ext.Msg.confirm( title , msg , function( btn ){
+    if( btn == 'yes' ){
+      ajax({
+        mask          : true
+        ,params       : params
+        ,success      : actionSuccess
+      }) ;
+    }
+  });
   return true ;
 }
 function loadLayout( layout , win ){
@@ -239,18 +329,21 @@ function saveLayout( name , perm , win ){
     return showError( 'saveLayout function: Name of the layout is absent' ) ;
   }
   if( ! perm ){
-    return showError( 'saveLayout function: Permissions for layout is absent' ) ;
+    perm = 'User' ;
   }
   var params = gatherInfo() ;
   params[ 'saveLayout' ] = true ;
   params[ 'name' ] = name ;
   params[ 'permissions' ] = perm ;
+  params[ 'user' ] = gPageDescription.userData.username ;
+  params[ 'group' ] = gPageDescription.userData.group ;
   var title = 'Save Layout' ;
   var welcome = Ext.getCmp( 'welcomeMessage' ) ;
   if(welcome){
     return showError( 'This is the default layout and can not be saved' ) ;
   }
-  var msg = 'Save current layout to: ' + name + ' ?';
+  var msg = 'Save current layout to: \'' + name + '\' with ';
+  msg = msg + 'permissions: \'' + perm + '\'?';
   Ext.Msg.confirm( title , msg , function( btn ){
     if( btn == 'yes' ){
       ajax({
@@ -315,10 +408,11 @@ function load( name ){
     ,name             : 'selectOwner'
     ,maxLength        : 20
     ,store            : userStore
+    ,valueField       : 'user'
     ,width            : 80
   }) ;
-  user.addListener( 'collapse' , function( combo ){
-    var value = combo.getRawValue() ;
+  user.addListener( 'valid' , function( combo ){
+    var value = combo.getValue() ;
     store.filter( 'user' , value ) ;
   }) ;
   var reset = new Ext.Button({
@@ -378,13 +472,10 @@ function load( name ){
   submit.setHandler( function(){
     store.reload()
   }) ;
-  win.buttons[ 1 ].hide() ; // Hiding reset button
+  win.buttons[ 1 ].hide() ; // Hide reset button
   win.show() ;
 }
-function save( name ){
-  if( name ){
-    return saveLayout( name , 'SAME' ) ;
-  }
+function save(){
   var params = gatherInfo() ;
   var welcome = Ext.getCmp('welcomeMessage') ;
   if(welcome){
@@ -421,14 +512,13 @@ function save( name ){
     ,sortable         : false
   }] ;
   var shareStore = new Ext.data.SimpleStore({
-    data              : [ [ 'All' ] , [ 'VO' ] , [ 'Group' ] , [ 'User' ] ]
+    data              : [ [ 'All' ] , [ 'VO' ] , [ 'Group' ] ]
     ,fields           : [ 'value' ]
   });
   var share = new dropdownMenu({
     combo             : false
     ,name             : 'shareWith'
     ,maxLength        : 20
-    ,selectOnFocus    : false
     ,store            : shareStore
     ,width            : 80
   }) ;
@@ -446,6 +536,14 @@ function save( name ){
   }else{
     save.setValue( currentLayout ) ;
   }
+  save.on( 'keyup' , function(){
+    var tmpValue = save.getRawValue() ;
+    if( tmpValue.length > 0 ){
+      submit.enable() ;
+    }else{
+      submit.disable() ;
+    }
+  }) ;
   var tbar = new Ext.Toolbar({
     items             : [
                           'Save as:'
@@ -470,17 +568,18 @@ function save( name ){
   });
   grid.addListener( 'cellclick' , function( table , rowIndex , columnIndex ){
     var record = table.getStore().getAt( rowIndex ) ;
-    var name = record.get( table.getColumnModel().getDataIndex( 0 ) ) ;
+    var layoutName = record.get( table.getColumnModel().getDataIndex( 0 ) ) ;
     var group = record.get( table.getColumnModel().getDataIndex( 1 ) ) ;
     var permission = record.get( table.getColumnModel().getDataIndex( 2 ) ) ;
-    if( ! name ){
+    if( ! layoutName ){
       return showError( 'Failed to get name variable from the record' ) ;
     }
     if( ! permission ){
       return showError( 'Failed to get permission variable from the record' ) ;
     }
-    save.setValue( name ) ;
+    save.setValue( layoutName ) ;
     share.setValue( permission ) ;
+    submit.enable() ;
   });
   grid.on({
     'resize'          : function(){
@@ -496,11 +595,14 @@ function save( name ){
   var submit = win.buttons[ 0 ] ;
   submit.setText( 'Save' ) ;
   submit.setIconClass( 'Save' ) ;
+  if( ! currentLayout ){
+    submit.disable() ;
+  }
   submit.setHandler( function(){
-    var name = save.getValue() ;
+    var layoutName = save.getValue() ;
     var perm = 'USER' ;
     perm = share.getRawValue() ;
-    saveLayout( name , perm , win ) ;
+    saveLayout( layoutName , perm , win ) ;
   }) ;
   win.buttons[ 1 ].hide() ; // Hiding reset button
   win.show() ;
@@ -540,9 +642,9 @@ function addPanel( init ){
   }
 }
 function addPanelForm(){
-  var html = 'In the Path text field you can put any URL of an image.<br>To ' ;
-  html = html + 'delete the image simple do right mouse click over it and ' ;
-  html = html + 'select \'remove\' action' ;
+  var html = 'In the Path field put URL of an image to display.<br>' ;
+  html = html + 'To remove an image use context menu available with ';
+  html = html + 'the right mouse click on the image itself' ;
   var regexp = new RegExp( /\b((?:[a-z][\w-]+:(?:\/{1,3}|[a-z0-9%])|www\d{0,3}[.]|[a-z0-9.\-]+[.][a-z]{2,4}\/)(?:[^\s()<>]+|\(([^\s()<>]+|(\([^\s()<>]+\)))*\))+(?:\(([^\s(<>]+|(\([^\s()<>]+\)))*\)|[^\s`!()\[\]{};:'".,<>?«»“”‘’]))/i );
   var url = genericID('url','Path',regexp,'Only a valid URL is allowed','None');
   var label = new Ext.form.Label({
@@ -650,17 +752,19 @@ function setChk( value ){
   }
 }
 function createColumnMenuItem( num ){
-  var width = 100 ;
+  var width = 99 ;
   if( num > 0 ){
-    width = Math.floor( 100 / num ) ;
+    width = Math.floor( 99 / num ) ;
   }
   width = width - 1 ;
   width = '.' + width ;
   var item = new Ext.menu.CheckItem({
     checked           : setChk( num )
-    ,checkHandler     : function(){
-                          columnWidth = num ;
-                          setColumnWidth( width ) ;
+    ,checkHandler     : function( item , checked ){
+                          if( checked ){
+                            columnWidth = num ;
+                            setColumnWidth( width ) ;
+                          }
                         }
     ,group            : 'column'
     ,text             : ( num > 1 ) ? num + ' Columns' : num + ' Column'
@@ -670,7 +774,11 @@ function createColumnMenuItem( num ){
 function createAutoMenuItem( num , text ){
   var item = new Ext.menu.CheckItem({
     checked           : setChk( num )
-    ,checkHandler     : function(){ setRefresh( num ) }
+    ,checkHandler     : function( item , checked ){
+                          if( checked ){
+                            setRefresh( num ) ;
+                          }
+                        }
     ,group            : 'refresh'
     ,text             : text
   });
@@ -687,7 +795,11 @@ function createLayoutMenuItem( layout , mode ){
       text = text + ' by ' + layout.user + '@' + layout.group ;
     }
   }else{
-    var handler = function(){ save( layout.name ) } ;
+    var permissions = 'User' ;
+    if( layout.permissions ){
+      permissions = layout.permissions ;
+    }
+    var handler = function(){ saveLayout( layout.name , permissions ) } ;
     if( layout.group ){
       text = text + ' @' + layout.group ;
     }
@@ -700,11 +812,29 @@ function createLayoutMenuItem( layout , mode ){
 }
 function createMenu( mode , init ){
   var menu = new Ext.menu.Menu() ;
-  var history = false ;
-  if( init && init.history && Ext.isArray( init.history ) ){
-    if( init.history.length > 0 ){
-      history = init.history ;
+  var historySave = false ;
+  var historyLoad = false ;
+  var err = false ;
+  if( init && init.history ){
+    var history = init.history ;
+    if( history[ 'Save' ] && history[ 'Save' ].length > 0 ){
+      if( Ext.isArray( history[ 'Save' ] ) ){
+        historySave = history[ 'Save' ] ;
+      }else{
+        err = err + history[ 'Save' ].toString() ;
+      }
     }
+    if( history[ 'Load' ] && history[ 'Load' ].length > 0 ){
+      if( Ext.isArray( history[ 'Load' ] ) ){
+        historyLoad = history[ 'Load' ] ;
+      }else{
+        err = err + history[ 'Load' ].toString() ;
+      }
+    }
+  }
+  if( err ){
+    err = 'Due an error history can not be displayed: \n' + err ;
+    showError( err ) ;
   }
   if( mode == 'set' ){
     var saveNew = new Ext.menu.Item({
@@ -713,8 +843,12 @@ function createMenu( mode , init ){
       ,text           : 'Save as new layout'
     });
     menu.addItem( saveNew ) ;
-    if( history ){
+    if( historySave ){
       menu.addItem( new Ext.menu.Separator() ) ;
+      var len = historySave.length ;
+      for( var i = 0 ; i < len ; i++ ){
+        menu.addItem( createLayoutMenuItem( historySave[ i ] , mode ) ) ;
+      }
     }
   }else if( mode == 'get' ){
     var open = new Ext.menu.Item({
@@ -723,8 +857,12 @@ function createMenu( mode , init ){
       ,text           : 'Load a new layout'
     });
     menu.addItem( open ) ;
-    if( history ){
+    if( historyLoad ){
       menu.addItem( new Ext.menu.Separator() ) ;
+      var len = historyLoad.length ;
+      for( var i = 0 ; i < len ; i++ ){
+        menu.addItem( createLayoutMenuItem( historyLoad[ i ] , mode ) ) ;
+      }
     }
   }else if( mode == 'column' ){
     for( var i = 1 ; i < 6 ; i++ ){
@@ -744,12 +882,6 @@ function createMenu( mode , init ){
     }
   }else{
     return false ;
-  }
-  if( history ){
-    var len = history.length ;
-    for( var i = 0 ; i < len ; i++ ){
-      menu.addItem( createLayoutMenuItem( history[ i ] , mode ) ) ;
-    }
   }
   return menu ;
 }
@@ -851,6 +983,7 @@ function redoLayout( layout ){
   if( columnWidth == -1 ){
     showError( 'Function redoLayout: failed to covert columns to a number' ) ;
   }
+  Ext.getCmp( 'columnButton' ).menu = createMenu( 'column' ) ;
   refreshRate = layout[ 'refresh' ] / 1 ;
   refreshRate = Ext.num( refreshRate , -1 ) ;
   if( refreshRate == -1 ){
@@ -891,8 +1024,8 @@ function redoLayout( layout ){
   }
   var hash = Ext.urlEncode({
     group             : layout.group
-    ,layout           : layout.name
-    ,owner            : layout.user
+    ,name           : layout.name
+    ,user            : layout.user
   }) ;
   window.location.hash = hash ;
   var current = Ext.getCmp( 'currentID' ) ;
@@ -901,6 +1034,8 @@ function redoLayout( layout ){
     document.title = layout.name ;
   }
   currentLayout = layout.name ;
+  currentUser = layout.user ;
+  currentGroup = layout.group ;
   updateTimestamp() ;
   enableButtons( true ) ;
 }
@@ -926,7 +1061,7 @@ function createPanel(img){
     mainPanel.remove(welcome);
   }
   var boxID = Ext.id();
-  var width = 100 / columnWidth ;
+  var width = 99 / columnWidth ;
   width = '.' + Math.round( width ) ;
   var box = new Ext.BoxComponent({
     autoEl:{
@@ -938,6 +1073,10 @@ function createPanel(img){
     cls:'pointer',
     id:boxID
   });
+  var notAccountingPlot = true ;
+  if( img.search( 'accountingPlots\/getPlotImg' ) > 0 ){
+    notAccountingPlot = false ;
+  }
   box.on('render',function(){
     box.el.on('click', function(evt,div,x,y,z) {
       fullSize(img);
@@ -980,6 +1119,9 @@ function createPanel(img){
             if(img.search(/&dummythingforrefresh/i) > 0){
               img = img.split('&dummythingforrefresh')[0];
             }
+            if( img.search(/&nocache/i) > 0 ){
+              img = img.split( '&nocache' )[ 0 ] ;
+            }
             if( img.slice( -1 ) == '?' ){
               img = img.slice( 0 , -1 ) ;
             }
@@ -987,6 +1129,25 @@ function createPanel(img){
           },
           icon:gURLRoot + '/images/iface/url.gif',
           text:'Show URL'
+        },{
+          disabled: notAccountingPlot ,
+          handler:function(){
+            if( img.search(/&dummythingforrefresh/i) > 0 ){
+              img = img.split( '&dummythingforrefresh' )[ 0 ] ;
+            }
+            if( img.search(/&nocache/i) > 0 ){
+              img = img.split( '&nocache' )[ 0 ] ;
+            }
+            if( img.slice( -1 ) == '?' ){
+              img = img.slice( 0 , -1 ) ;
+            }
+//            var hash = img.split( '?' )[ 1 ] ;
+//            hash = hash.split( 'file=' )[ 1 ] ;
+
+            var fff
+          },
+          icon:gURLRoot + '/images/iface/info.gif',
+          text:'Plot details'
         });
       contextMenu.showAt(evt.xy);
     });
