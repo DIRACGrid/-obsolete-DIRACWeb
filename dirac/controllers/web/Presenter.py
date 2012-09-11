@@ -157,7 +157,7 @@ class PresenterController(BaseController):
     data = dict()
     for key , value in request.params.items():
       try:
-        if not key in SAVE_LAYOUT_ARGS and len( value ) > 0:
+        if len( value ) > 0:
           data[ key ] = str( value )
       except:
         pass
@@ -165,7 +165,7 @@ class PresenterController(BaseController):
       err = "Data to store has zero length"
       gLogger.error( "Result %s: %s" % ( msg , err ) )      
       return { "success" : "false" , "error" : err }
-    for i in LOAD_LAYOUT_ARGS : # Add params to layout if they are absent
+    for i in LOAD_LAYOUT_ARGS : # Add vital params to layout if they are absent
       if not data.has_key( i ):
         data[ i ] = args[ i ]
     upc = UserProfileClient( USER_PROFILE_NAME, getRPCClient )
@@ -481,22 +481,21 @@ class PresenterController(BaseController):
     err = list()
     done = list()
     gLogger.info( "Saving old data to new place" )
+    upcnew = UserProfileClient( USER_PROFILE_NAME, getRPCClient )
+    permissions = "USER"
+    user = str( getUsername() )
+    group = str( getSelectedGroup() )
     for i in layouts:
-      kwargs = dict()
-      gLogger.info("Name: '%s'" % i)
-      kwargs[ "name" ] = i
-      kwargs[ "permissions" ] = "USER"
-      kwargs[ "user" ] = str( getUsername() )
-      kwargs[ "group" ] = str( getSelectedGroup() )
-      kwargs[ "data" ] = dict()
-      kwargs[ "data" ][ "url" ] = layouts[ i ][ "url" ]
-      kwargs[ "data" ][ "columns" ] = layouts[ i ][ "columns" ]
-      kwargs[ "data" ][ "refresh" ] = layouts[ i ][ "refresh" ]
-      result = self.__saveLayout( **kwargs )
-      if result.has_key( "error" ):
-        err.append( result["error"] )
+      data = dict()
+      data[ "url" ] = layouts[ i ][ "url" ]
+      data[ "columns" ] = layouts[ i ][ "columns" ]
+      data[ "refresh" ] = layouts[ i ][ "refresh" ]
+      result = upcnew.storeVar( i , data , permissions )
+      gLogger.debug( result )
+      if not result[ "OK" ]:
+        err.append( result[ "Message" ] )
         continue
-      done.append( result[ "result" ] )
+      done.append( result[ "Value" ] )
       result = upc.deleteVar( i )
       if not result["OK"]:
         gLogger.error( "Result %s: %s" % ( msg , result[ "Message" ] ) )
