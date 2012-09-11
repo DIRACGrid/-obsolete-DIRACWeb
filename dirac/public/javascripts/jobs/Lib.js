@@ -1315,7 +1315,7 @@ function createRemoteMenu(item){
   });
   return combo
 }
-function createLovMenu(dataName,title,altValue){
+function createMenu(dataName,title,altValue){
   var data = 'Nothing to display';
 // test for dataSelect existence  
   try{
