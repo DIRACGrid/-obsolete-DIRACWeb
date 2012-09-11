@@ -1,3 +1,9 @@
+[web2012082901]
+CHANGE: Platforms are taken automatically from CS. Change in menu data structure taken from CS and used in launchpad
+
+[web2012082301]
+CHANGE: Remove LHCb specific features as RunID and RunStatus
+
 [web2012072701]
 NEW: Interface to DIRAC FileCatalog. Use it on your own risk
 
