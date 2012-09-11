@@ -142,13 +142,13 @@ function proxyUpload(){
   });
   var panel = new Ext.FormPanel({
     autoHeight:true,
-    buttons:[submit,reset,close],
+    //buttons:[submit,reset,close],
     defaultType:'textfield',
     defaults:{
       anchor:'-5',
       allowBlank:false
     },
-    frame:true,
+//    frame:true,
     fileUpload:true,
     items:[new Ext.ux.form.FileUploadField({
       buttonOffset:2,
@@ -188,6 +188,8 @@ function proxyUpload(){
   });
   var window = new Ext.Window({
     iconCls:'icon-grid',
+    buttonAlign:'center',
+    buttons:[submit,reset,close],
     closable:true,
     width:400,
 //    height:400,
