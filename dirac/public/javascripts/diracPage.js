@@ -127,29 +127,11 @@ function initTopFrame( pageDescription ){
   if(gPageDescription.userData && gPageDescription.userData.username && gPageDescription.userData.username != 'Anonymous'){
     var upmenu = new Ext.menu.Menu({
       items:[{
-        handler:function(){
-          loadFile({
-            '/stylesheets/fileupload.css':'css',
-            '/javascripts/FileUploadField.js':null,
-            '/javascripts/systems/ProxyUpload.js':function(){
-              proxyUpload() ;
-            }
-          });
-        },
-        text:'Proxy Upload'
+        handler:proxyUpload // look in /javascripts/systems/ProxyUpload.js
+        ,text:'Proxy Upload'
       },{
-        handler:function(){
-          loadFile({
-            '/stylesheets/fileupload.css':'css',
-            '/javascripts/FileUploadField.js':null,
-            '/stylesheets/lovCombo.css':'css',
-            '/javascripts/lovCombo.js':null,
-            '/javascripts/jobs/Launchpad.js':function(){
-              submitJobNew() ;
-            }
-          });
-        },
-        text:'Job Launchpad'
+        handler:submitJobNew // check it at /javascripts/jobs/Launchpad.js
+        ,text:'Job Launchpad'
       }]
     });
     var tools = new Ext.Toolbar.Button({
@@ -278,33 +260,4 @@ function getCookie( cookieName )
 function deleteCooke( cookieName )
 {
   document.cookie = cookieName + '=;expires=Thu, 01-Jan-1970 00:00:01 GMT';
-}
-
-function loadFile(data){
-  if(!data) return;
-  var addLoadHandler = function(script, data){
-    script.onload = script.onreadystatechange = function( ){
-      if(!script.readyState || script.readyState == "loaded" || script.readyState == "complete"){
-        if(typeof data == "function") data( );
-        script.onload = script.readystatechange = null; 
-      }
-    }
-  }
-  var head = document.getElementsByTagName("head")[0];    
-  for(file in data){
-    if(data.hasOwnProperty(file)){
-      if(data[file] == 'css'){
-        var el = document.createElement('link');
-        el.setAttribute('type','text/css');
-        el.setAttribute('rel','stylesheet');
-        el.setAttribute('href',gURLRoot+file);
-      }else{
-        var el = document.createElement('script');
-        el.setAttribute('type','text/javascript');
-        el.setAttribute('src',gURLRoot+file);
-        addLoadHandler(el, data[file]);
-      }
-      head.appendChild(el);
-    }
-  }  
 }
