@@ -2,59 +2,60 @@ var gURLRoot = ''; // Required to set-up the proper path to the pictures.
                     // String.
 var gMainLayout = false; // Main Layout object
 var gPageDescription = {}; // Main object describing the page layout
-function showError(msg){
-  if(Ext.isEmpty(msg)){
-    msg = 'Error is not set or an empty value';
+
+function showError( msg ){
+  if( Ext.isEmpty( msg )){
+    msg = 'Error is not set or an empty value' ;
   }
-  alert('Error: ' + msg + '\nPlease, use the forum http://groups.google.com/group/diracgrid-forum to clarify situation');
+  alert(
+    'Error: ' + msg + '\nPlease, use the forum ' +
+    'http://groups.google.com/group/diracgrid-forum' +
+    ' to clarify situation'
+  );
 }
-function initDiracPage( urlRoot, pageDescription )
-{
-  if( urlRoot[ urlRoot.length - 1 ] == "/" )
+
+function initDiracPage( urlRoot, pageDescription ){
+  if( urlRoot[ urlRoot.length - 1 ] == "/" ){
     urlRoot = urlRoot.substring( 0, urlRoot.length -1 );
+  }
   gURLRoot = urlRoot;
   gPageDescription = pageDescription;
   Ext.QuickTips.init();
   Ext.namespace('dirac');
   //Check for lastLocationHash
   var lastHash = getCookie( "lastLocationHash" );
-  if( lastHash )
-  {
+  if( lastHash ){
     document.location.hash = lastHash;
     var expiration = new Date();
     var nH = ( expiration.getHours() + 1 ) % 24;
-    if( nH )
+    if( nH ){
       expiration.setHours( nH )
-    else
+    }else{
       expiration.setDate( expiration.getDate() + 1 );
+    }
     deleteCooke( 'lastLocationHash' );
   }
 }
 
-function renderInMainViewport( componentsList )
-{
+function renderInMainViewport( componentsList ){
   var topFrame = initTopFrame( gPageDescription );
   var bottomFrame = initBottomFrame( gPageDescription );
   var viewportItems = [ topFrame ];
-  for( var iPos = 0; iPos < componentsList.length; iPos++ )
-  {
+  for( var iPos = 0; iPos < componentsList.length; iPos++ ){
     viewportItems.push( componentsList[ iPos ] );
   }
   viewportItems.push( bottomFrame );
-  gMainLayout = new Ext.Viewport( {
-      layout : 'border',
-      plain : true,
-      items : viewportItems
-    }
-  );
+  gMainLayout = new Ext.Viewport({
+    layout : 'border',
+    plain : true,
+    items : viewportItems
+  });
   initNotificationsChecker();
 }
 
-function __addClickHandlerToMenuSubEntries( menuEntry )
-{
+function __addClickHandlerToMenuSubEntries( menuEntry ){
   var hndlMenu = [];
-  for( var i = 0; i < menuEntry.length; i++ )
-  {
+  for( var i = 0; i < menuEntry.length; i++ ){
     if( menuEntry[i].menu )
     {
       menuEntry[i].menu = __addClickHandlerToMenuSubEntries( menuEntry[i].menu );
@@ -124,7 +125,10 @@ function initTopFrame( pageDescription ){
     }
     navItems.push( menuEntry );
   }
-  if(gPageDescription.userData && gPageDescription.userData.username && gPageDescription.userData.username != 'Anonymous'){
+  if( gPageDescription.userData &&
+        gPageDescription.userData.username &&
+        gPageDescription.userData.username != 'Anonymous'
+  ){
     var upmenu = new Ext.menu.Menu({
       items:[{
         handler:proxyUpload // look in /javascripts/systems/ProxyUpload.js
@@ -144,8 +148,7 @@ function initTopFrame( pageDescription ){
   navItems.push( "->" );
   navItems.push( "Selected setup:" );
   // Set the handler
-  for( var i = 0; i< pageDescription[ 'setupMenu' ].length; i++ )
-  {
+  for( var i = 0; i< pageDescription[ 'setupMenu' ].length; i++ ){
 	  pageDescription[ 'setupMenu' ][i].handler = redirectWithHashHandler;
   }
   var setupButton = new Ext.Toolbar.Button({
@@ -153,8 +156,7 @@ function initTopFrame( pageDescription ){
     menu : pageDescription[ 'setupMenu' ]
   });
   navItems.push( setupButton );
-  if( 'voIcon' in pageDescription && pageDescription[ 'voIcon' ] )
-  {
+  if( 'voIcon' in pageDescription && pageDescription[ 'voIcon' ] ){
 	  var iconLogo = '<a href=' + pageDescription[ 'voURL' ]  + ' target="_blank">'
 	  var iconLocation = pageDescription[ 'voIcon' ]
 	  while( iconLocation[0 ] == "/" )
@@ -171,67 +173,65 @@ function initTopFrame( pageDescription ){
   return topBar
 }
 
-function initBottomFrame( pageDescription )
-{
-  var navItems = [ pageDescription['pagePath'], '->', { 'id' : 'mainNotificationStats', 'text' : '' }, "-" ];
-  var userObject = pageDescription[ 'userData' ];
+function initBottomFrame( pageDescription ){
+  var navItems = [
+                    pageDescription['pagePath']
+                    , '->'
+                    , { 'id' : 'mainNotificationStats', 'text' : '' }
+                    , "-"
+                  ] ;
+  var userObject = pageDescription[ 'userData' ] ;
   if( userObject.group ){
-  	navItems.push( userObject[ 'username' ]+"@" );
+  	navItems.push( userObject[ 'username' ] + "@" ) ;
   	// Set the handler
-  	for( var i = 0; i< userObject.groupMenu.length; i++ )
-  	{
-  		userObject.groupMenu[i].handler = redirectWithHashHandler;
+  	for( var i = 0; i< userObject.groupMenu.length; i++ ){
+  		userObject.groupMenu[i].handler = redirectWithHashHandler ;
   	}
     var userGroupMenu = new Ext.Toolbar.Button({
-      text : userObject.group,
-      menu : userObject.groupMenu
+      menu: userObject.groupMenu
+      ,text: userObject.group
     });
-    navItems.push( userGroupMenu );
+    navItems.push( userGroupMenu ) ;
   }else{
-  	navItems.push( userObject[ 'username' ] );
+  	navItems.push( userObject[ 'username' ] ) ;
   }
-  navItems.push( "("+userObject.DN+")" );
+  navItems.push( "(" + userObject.DN + ")" ) ;
   var bottomBar = new Ext.Toolbar({
-    region:'south',
-    id:'diracBottomBar',
-    items : navItems
-  });
-  return bottomBar;
+    id: 'diracBottomBar'
+    ,items: navItems
+    ,region: 'south'
+  }) ;
+  return bottomBar ;
 }
 
-function mainPageRedirectHandler( item, a, b )
-{
+function mainPageRedirectHandler( item, a, b ){
   window.location = item.url;
 }
 
-function redirectWithHashHandler( item )
-{
+function redirectWithHashHandler( item ){
 	var newLocation = item.url;
 	var queryString = window.location.search.substring(1);
 	if( queryString )
 		newLocation += "?" + queryString;
-	if( document.location.hash )
-	{
+	if( document.location.hash ){
 	  var expiration = new Date();
     var nH = ( expiration.getHours() + 1 ) % 24;
-    if( nH )
+    if( nH ){
       expiration.setHours( nH )
-    else
+    }else{
       expiration.setDate( expiration.getDate() + 1 );
+    }
 		setCookie( "lastLocationHash", document.location.hash, expiration, gURLRoot || "/" );
 	}
 	
 	window.location = newLocation;
 }
 
-
 // Cookie utilities
-function setCookie( cookieName, value, expirationDate, path, domain, secure )
-{
+function setCookie( cookieName, value, expirationDate, path, domain, secure ){
   var cookie_string = cookieName + "=" + escape ( value );
 
-  if ( expirationDate )
-  {
+  if ( expirationDate ){
     cookie_string += "; expires=" + expirationDate.toGMTString();
   }
 
@@ -248,16 +248,15 @@ function setCookie( cookieName, value, expirationDate, path, domain, secure )
 }
 
 
-function getCookie( cookieName )
-{
-  var matchResults = document.cookie.match ( '(^|;) ?' + cookieName + '=([^;]*)(;|$)' );
-  if ( matchResults )
+function getCookie( cookieName ){
+  var matchResults = document.cookie.match( '(^|;) ?' + cookieName + '=([^;]*)(;|$)' );
+  if( matchResults ){
     return ( unescape ( matchResults[2] ) );
-  else
+  }else{
     return null;
+  }
 }
 
-function deleteCooke( cookieName )
-{
+function deleteCooke( cookieName ){
   document.cookie = cookieName + '=;expires=Thu, 01-Jan-1970 00:00:01 GMT';
 }
