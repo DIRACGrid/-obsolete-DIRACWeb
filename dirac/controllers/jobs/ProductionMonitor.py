@@ -506,7 +506,7 @@ class ProductionmonitorController(BaseController):
   def __dataQuery(self,prodid):
     id = int(prodid)
     RPC = getRPCClient("Transformation/TransformationManager")
-    res = RPC.getBookkeepingQueryForTransformation(id)
+    res = RPC.getTransformationInputDataQuery(id)
     gLogger.info("-= #######",res)
     if not res['OK']:
       c.result = {"success":"false","error":res["Message"]}
