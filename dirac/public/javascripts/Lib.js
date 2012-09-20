@@ -27,7 +27,6 @@ function ajax( cfg ){
     ,headers          : cfg.headers ? cfg.headers : undefined 
     ,method           : cfg.method ? cfg.method : 'POST'
     ,params           : cfg.params ? cfg.params : undefined
-//    ,scope            : cfg.scope ? cfg.scope : this
     ,success          : cfg.success
     ,timeout          : cfg.timeout ? cfg.timeout : 60000
     ,url              : cfg.url ? cfg.url : 'action'
@@ -99,6 +98,13 @@ function toolbarElementsAutoresize( bar , elements ){
   number of elements. New width should be more then 25 pixels. Set new width on
   per elements basis paying attention of kind of element. setWidth for form
   elements, create-delete-insertButton for toolbar buttons.
+
+  Example:
+  
+    gridpanel.on( 'resize' , function(){
+      toolbarElementsAutoresize( toolbar , [ button ] ) ;
+    }) ;
+    
   */
   if( ! bar.isXType( 'toolbar' , true ) ){
     return false ;
@@ -160,7 +166,7 @@ function toolbarElementsAutoresize( bar , elements ){
   }
   return bar
 }
-function smartPosition(){
+function smartPositionX(){
   var minWidth = 350 ;
   var width = Ext.num( Ext.getBody().getViewSize().width , 640 ) ;
   var x = Ext.num( Ext.EventObject.xy[ 0 ] , 0 ) ;
@@ -168,6 +174,9 @@ function smartPosition(){
     x = width - minWidth - 10 ;
   }
   x = x - 8 ;
+  return x
+}
+function smartPositionY(){
   var minHeight = 200 ;
   var height = Ext.num( Ext.getBody().getViewSize().height , 480 ) ;
   var y = Ext.num( Ext.EventObject.xy[ 1 ] , 0 ) ;
@@ -175,17 +184,14 @@ function smartPosition(){
     y = height - minHeight - 10 ;
   }
   y = y - 8 ;
-  var callback = new Object({
-    x:  x
-    ,y: y
-  }) ;
-  return callback
+  return y
 }
-function formWindow( cfg ){
+function displayWindow( cfg ){
+  var minWidth = 350 ;
+  var minHeight = 200 ;
   if( ! cfg ){
     var cfg = new Object() ;
   }
-  x , y = smartPosition() ;
   var submit = new Ext.Button({
     cls               : 'x-btn-text-icon'
     ,handler          : Ext.emptyFn
@@ -229,8 +235,8 @@ function formWindow( cfg ){
     ,shim             : false
     ,title            : cfg.title ? cfg.title : 'Default title'
     ,width            : minWidth
-    ,x                : x
-    ,y                : y
+    ,x                : smartPositionX
+    ,y                : smartPositionY
   }) ;
   return win
 }
