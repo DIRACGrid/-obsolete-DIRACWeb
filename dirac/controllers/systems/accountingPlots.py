@@ -228,8 +228,7 @@ class AccountingplotsController( BaseController ):
       repClient = ReportsClient( rpcClient = getRPCClient( "Accounting/ReportGenerator" ) )
       retVal = repClient.listReports( typeName )
       if not retVal[ 'OK' ]:
-        c.error = retVal[ 'Message' ]
-        return render ( "/error.mako" )
+        return retVal
       data = simplejson.dumps( retVal[ 'Value' ] )
       AccountingplotsController.__keysCache.add( "reportsList:%s" % typeName, 300, data )
     try:
