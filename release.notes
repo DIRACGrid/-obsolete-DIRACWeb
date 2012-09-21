@@ -1,3 +1,11 @@
+[web2012092101]
+FIX: ProxyUpload from main page is fixed
+FIX: Fix convert function in Presenter.py
+FIX: Use generic method for ProductionMonitor
+FIX: Several fixes in Presenter.js
+CHANGE: Add parseFormParams method in accountingPlots
+CHANGE: Removed registration form from portal frame
+
 [web2012091201]
 CHANGE: New Presenter page. Introduce improved Save/Load mechanism
 
