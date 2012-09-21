@@ -347,10 +347,10 @@ class PresenterController(BaseController):
     gLogger.info( result )
     if not result[ "OK" ]:
       if result[ "Message" ].find( "No data" ) < 0 :
-        gLogger.info( "Result %s: %s" % ( msg , result[ "Message" ] ) )
-        return S_OK( list() ) # Nothing to delete, return an empty list
-      gLogger.error( "Result %s: %s" % ( msg , result[ "Message" ] ) )
-      return S_ERROR( result[ "Message" ] )
+        gLogger.error( "Result %s: %s" % ( msg , result[ "Message" ] ) )
+        return S_ERROR( result[ "Message" ] )
+      gLogger.info( "Result %s: %s" % ( msg , result[ "Message" ] ) )
+      return S_OK( list() ) # Nothing to delete, return an empty list
     else:
       result = result[ "Value" ]
     if not isinstance( result , list ):
