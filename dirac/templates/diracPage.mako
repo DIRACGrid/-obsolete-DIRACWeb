@@ -22,9 +22,17 @@ pageTitle = "%s as %s@%s" % ( pageTitle, selectedGroup, selectedSetup )
   ${ h.javascript_link( "/ext/DDView.js" ) }
   ${ h.javascript_link( "/javascripts/web/userNotifications.js" ) }
   ${ h.javascript_link( "/javascripts/diracPage.js" ) }
+  ${ h.javascript_link( "/javascripts/Lib.js" ) }
+  ${ h.javascript_link( "/javascripts/systems/ProxyUpload.js" ) }
+  ${ h.javascript_link( "/javascripts/FileUploadField.js" ) }
+  ${ h.javascript_link( "/javascripts/lovCombo.js" ) }
+  ${ h.javascript_link( "/javascripts/jobs/Launchpad.js" ) }
   ${ h.stylesheet_link( "/stylesheets/dirac.css" ) }
+  ${ h.stylesheet_link( "/stylesheets/fileupload.css" ) }
+  ${ h.stylesheet_link( "/stylesheets/lovCombo.css" ) }
   ${ h.stylesheet_link( "/ext/resources/css/ext-all.css" ) }
   ${ h.stylesheet_link( "/ext/resources/css/Multiselect.css" ) }
+
   ${self.head_tags()}
  </head>
  <body>
