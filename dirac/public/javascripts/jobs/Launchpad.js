@@ -24,12 +24,6 @@ function bytesToSize(bytes, precision){
     return bytes + ' B';
   }
 }
-function loadLaunchpadOpts(options){
-  for(var i in options){
-    var ss = options[i];
-    var tt = 0;
-  }
-}
 function submitJobNew(){
   var formID = Ext.id(); // from panel
   var innID =  Ext.id(); // For JDL and Sandboxescontainer

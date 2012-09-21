@@ -207,12 +207,13 @@ function actionSuccess( response , options ){
   }
   if( response[ 'history' ] ){
     if( kind == 'save' ){
-      Ext.getCmp( 'setLayoutButton' ).menu = createMenu( 'set' , response ) ;
+      Ext.getCmp( 'setLayoutButton' ).menu = createMenu( 'set' , response );
     }else if( kind == 'load' ){
-      Ext.getCmp( 'getLayoutButton' ).menu = createMenu( 'get' , response ) ;
+      Ext.getCmp( 'getLayoutButton' ).menu = createMenu( 'get' , response );
     }else if( kind == 'delete'){
-      Ext.getCmp( 'setLayoutButton' ).menu = createMenu( 'set' , response ) ;
-      Ext.getCmp( 'getLayoutButton' ).menu = createMenu( 'get' , response ) ;
+      deleteCooke( "lastLocationHash" );
+      Ext.getCmp( 'setLayoutButton' ).menu = createMenu( 'set' , response );
+      Ext.getCmp( 'getLayoutButton' ).menu = createMenu( 'get' , response );
     }
   }
   if( kind == 'delete' ){
@@ -243,21 +244,22 @@ function deleteOptions(){
     }else{
       var mainPanel = Ext.getCmp( 'mainConteiner' );
       if( !mainPanel ){
-        return showError( 'Function deleteOptions: Failed to get main container' ) ;
+        return showError( 'Function deleteOptions: Failed to get main container' );
       }
       var length = mainPanel.items.getCount() - 1 ;
       for( var i = length ; i >= 0 ; i-- ){
-        var tmp = mainPanel.getComponent( i ) ;
-        mainPanel.remove( tmp , true ) ;
+        var tmp = mainPanel.getComponent( i );
+        mainPanel.remove( tmp , true );
       }
-      mainPanel.add( newLayout() ) ;
+      mainPanel.add( newLayout() );
       currentLayout = '' ;
-      var current = Ext.getCmp( 'currentID' ) ;
+      var current = Ext.getCmp( 'currentID' );
       if( current ){
-        current.setText( 'Current Layout: <b>' + currentLayout + '</b>' ) ;
+        current.setText( 'Current Layout: <b>' + currentLayout + '</b>' );
       }
       document.title = currentLayout ;
       mainPanel.doLayout();
+      window.location.hash = '' ;
     }
   });
 }
@@ -607,38 +609,41 @@ function save(){
   win.buttons[ 1 ].hide() ; // Hiding reset button
   win.show() ;
 }
+function layoutDirty(){
+  if( currentLayout.length > 0 && currentLayout.charAt( 0 ) != '*' ){
+    currentLayout = '*' + currentLayout ;
+  }
+  var current = Ext.getCmp( 'currentID' ) ;
+  if( current ){
+    current.setText( 'Current Layout: <b>' + currentLayout + '</b>' ) ;
+  }
+}
 function addPanel( init ){
   var url = false ;
   try{
     url = init[ 'url' ] ;
-  }catch(e){
-    return showError( e.name + ': ' + e.message ) ;
+  }catch( e ){
+    return showError( e.name + ': ' + e.message );
   }
   if( ! url ){
-    return showError( 'The Path input field is empty or invalid' ) ;
+    return showError( 'The Path input field is empty or invalid' );
   }
   try{
-    var mainPanel = new Ext.getCmp( 'mainConteiner' ) ;
-    var width = 0;
+    var mainPanel = new Ext.getCmp( 'mainConteiner' );
+    var width = 0 ;
     if( columnWidth > 0 ){
       width = ( mainPanel.getInnerWidth() - 30 ) / columnWidth ;
     }
-    width = Math.round( width ) ;
-    var tmpPanel = createPanel( url ) ;
-    tmpPanel.setWidth( width ) ;
-    mainPanel.add( tmpPanel ) ;
-    if( currentLayout.length > 0 && currentLayout.charAt( 0 ) != '*' ){
-      currentLayout = '*' + currentLayout ;
-    }
-    var current = Ext.getCmp( 'currentID' ) ;
-    if( current ){
-      current.setText( 'Current Layout: <b>' + currentLayout + '</b>' ) ;
-    }
+    width = Math.round( width );
+    var tmpPanel = createPanel( url );
+    tmpPanel.setWidth( width );
+    mainPanel.add( tmpPanel );
+    layoutDirty();
     document.title = currentLayout ;
-    mainPanel.doLayout() ;
-    enableButtons( true ) ;
-  }catch(e){
-    return showError( e.name + ': ' + e.message ) ;
+    mainPanel.doLayout();
+    enableButtons( true );
+  }catch( e ){
+    return showError( e.name + ': ' + e.message );
   }
 }
 function addPanelForm(){
@@ -944,29 +949,20 @@ function updateTimestamp(){
 }
 function gatherInfo(){
   var url = '' ;
-  try{
-    var mainPanel = Ext.getCmp( 'mainConteiner' ) ;
-    var length = mainPanel.items.getCount() ;
-    for( var i = 0 ; i < length ; i++ ){
-      if( mainPanel.getComponent( i ).id == 'welcomeMessage'){
-        continue ;
-      }
-      var tmpSrc = mainPanel.getComponent( i ).autoEl.src ;
-      if( tmpSrc.search(/&dummythingforrefresh/i) > 0 ){
-        tmpSrc = tmpSrc.split( '&dummythingforrefresh' )[ 0 ] ;
-      }
-      if( tmpSrc.slice( -1 ) == '?' ){
-        tmpSrc = tmpSrc.slice( 0 , -1 ) ;
-      }
-      url = url + tmpSrc + ';' ;
+  var mainPanel = Ext.getCmp( 'mainConteiner' );
+  if( ! mainPanel ){
+    return showError( 'Can not get mainConteiner in gatherInfo function' );
+  }
+  var length = mainPanel.items.getCount();
+  for( var i = 0 ; i < length ; i++ ){
+    if( mainPanel.getComponent( i ).id == 'welcomeMessage'){
+      continue ;
     }
-  }catch(e){
-    return showError( e.name + ': ' + e.message ) ;
+    var tmpSrc = mainPanel.getComponent( i ).autoEl.src ;
+    url = url + normalizeURL( tmpSrc ) + ';' ;
   }
-  if( url ){
-    url = url.replace(/&/g,'[ampersand]') ;
-  }
-  return { 'columns' : columnWidth , 'refresh' : refreshRate , 'url' : url } ;  
+  url = url.replace( /&/g , '[ampersand]' );
+  return { 'columns' : columnWidth , 'refresh' : refreshRate , 'url' : url };  
 }
 function redoLayout( layout ){
   if( !layout ){
@@ -993,12 +989,10 @@ function redoLayout( layout ){
   plotSrc = plotSrc.replace( /\[ampersand\]/g , '&' ) ;
   var plots = plotSrc.split( ';' ) ;
   for( var i = 0 ; i < plots.length ; i++ ){
-    if( plots[ i ].search( /&dummythingforrefresh/i ) > 0 ){
-      plots[ i ] = plots[ i ].split( '&dummythingforrefresh' )[ 0 ] ;
+    if( Ext.isEmpty( plots[ i ] ) ){
+      continue;
     }
-    if( plots[ i ].slice( -1 ) == '?' ){
-      plots[ i ] = plots[ i ].slice( 0 , -1 ) ;
-    }
+    plots[ i ] = normalizeURL( plots[ i ] );
   }
   var mainPanel = Ext.getCmp( 'mainConteiner' );
   if( !mainPanel ){
@@ -1039,234 +1033,156 @@ function redoLayout( layout ){
   updateTimestamp() ;
   enableButtons( true ) ;
 }
-////////////////////////////////////////////////////////////////////////////////
 function fullSize( link ){
   var html = '<img src="' + link + '" />' ;
   var win = new Ext.Window({
-    collapsible:true,
-    constrain:true,
-    constrainHeader:true,
-    html:html,
-    layout:'fit',
-    minHeight:200,
-    minWidth:320,
-    title:'Actual size'
+    collapsible: true
+    ,constrain: true
+    ,constrainHeader: true
+    ,html: html
+    ,layout: 'fit'
+    ,minHeight: 200
+    ,minWidth: 320
+    ,title: 'Actual size'
   });
   win.show();
 }
-function createPanel(img){
-  var welcome = Ext.getCmp('welcomeMessage');
-  if(welcome){
-    var mainPanel = Ext.getCmp('mainConteiner');
-    mainPanel.remove(welcome);
+function normalizeURL( url ){
+  if( Ext.isEmpty( url ) ){
+    return showError( 'url parameter in normalizeURL function is missing' );
   }
-  var boxID = Ext.id();
+  if( url.search( /&dummythingforrefresh/i ) > 0 ){
+    url = url.split( '&dummythingforrefresh' )[ 0 ];
+  }
+  if( url.search( /&nocache/i ) > 0 ){
+    url = url.split( '&nocache' )[ 0 ];
+  }
+  if( url.slice( -1 ) == '?' ){
+    url = url.slice( 0 , -1 ) ;
+  }
+  return url
+}
+function createPanel( img ){
+  var welcome = Ext.getCmp( 'welcomeMessage' );
+  if( welcome ){
+    var mainPanel = Ext.getCmp( 'mainConteiner' );
+    mainPanel.remove( welcome );
+  }
   var width = 99 / columnWidth ;
-  width = '.' + Math.round( width ) ;
+  width = '.' + Math.round( width );
   var box = new Ext.BoxComponent({
-    autoEl:{
-      tag:'img',
-      style:'cursor:pointer;cursor:hand;',
-      src:img
-    },
-    columnWidth:width,
-    cls:'pointer',
-    id:boxID
+    autoEl: {
+      src: img
+      ,style: 'cursor:pointer;cursor:hand;'
+      ,tag: 'img'
+    }
+    ,columnWidth: width
+    ,cls: 'pointer'
   });
-  var notAccountingPlot = true ;
-  if( img.search( 'accountingPlots\/getPlotImg' ) > 0 ){
-    notAccountingPlot = false ;
-  }
-  box.on('render',function(){
-    box.el.on('click', function(evt,div,x,y,z) {
-      fullSize(img);
+  box.on( 'render' , function(){
+    var notAccountingPlot = true ;
+    if( img.search( 'accountingPlots\/getPlotImg' ) > 0 ){
+      notAccountingPlot = false ;
+    }
+    box.el.on( 'click' , function(){
+      fullSize( img );
     });
-    box.el.on('contextmenu', function(evt,div,x,y,z) {
+    box.el.on( 'contextmenu' , function( evt ){
       evt.stopEvent();
       contextMenu.removeAll();
       contextMenu.add({
-          disabled:true,
-          handler:function(){
-            return
-          },
-          icon:gURLRoot + '/images/iface/edit.gif',
-          text:'Edit'
-        },{
-          handler:function(){
-            var mainPanel = Ext.getCmp('mainConteiner');
-            mainPanel.remove(box);
-            var current = Ext.getCmp('currentID');
-            if(current){
-              current.setText('Current Layout: <b>' + layout + '*</b>');
-            }
-          },
-          icon:gURLRoot + '/images/iface/close.gif',
-          text:'Remove'
-        },{
-          handler:function(){
-            window.open(img)
-          },
-          icon:gURLRoot + '/images/iface/new-window.gif',
-          text:'Open in new window'
-        },{
-          handler:function(){
-            changeURL(boxID,img);
-          },
-          icon:gURLRoot + '/images/iface/edit.gif',
-          text:'Change URL'
-        },{
-          handler:function(){
-            if(img.search(/&dummythingforrefresh/i) > 0){
-              img = img.split('&dummythingforrefresh')[0];
-            }
-            if( img.search(/&nocache/i) > 0 ){
-              img = img.split( '&nocache' )[ 0 ] ;
-            }
-            if( img.slice( -1 ) == '?' ){
-              img = img.slice( 0 , -1 ) ;
-            }
-            Ext.Msg.alert('Show URL',img);
-          },
-          icon:gURLRoot + '/images/iface/url.gif',
-          text:'Show URL'
-        },{
-          disabled: notAccountingPlot ,
-          handler:function(){
-            if( img.search(/&dummythingforrefresh/i) > 0 ){
-              img = img.split( '&dummythingforrefresh' )[ 0 ] ;
-            }
-            if( img.search(/&nocache/i) > 0 ){
-              img = img.split( '&nocache' )[ 0 ] ;
-            }
-            if( img.slice( -1 ) == '?' ){
-              img = img.slice( 0 , -1 ) ;
-            }
-//            var hash = img.split( '?' )[ 1 ] ;
-//            hash = hash.split( 'file=' )[ 1 ] ;
-
-            var fff
-          },
-          icon:gURLRoot + '/images/iface/info.gif',
-          text:'Plot details'
-        });
-      contextMenu.showAt(evt.xy);
+//        disabled: notAccountingPlot
+//        ,handler: function(){
+//          
+//        }
+//        ,icon:gURLRoot + '/images/iface/edit.gif'
+//        ,text:'Edit Selections'
+//      },{
+//        disabled: notAccountingPlot
+//        ,handler: function(){
+//          
+//        }
+//        ,icon:gURLRoot + '/images/iface/edit.gif'
+//        ,text:'Edit Plot'
+//      },{
+        handler: function(){
+          var mainPanel = Ext.getCmp( 'mainConteiner' );
+          mainPanel.remove( box );
+          layoutDirty();
+        }
+        ,icon: gURLRoot + '/images/iface/close.gif'
+        ,text: 'Remove'
+      },{
+        handler: function(){
+          window.open( img );
+        }
+        ,icon: gURLRoot + '/images/iface/new-window.gif'
+        ,text: 'Open in new window'
+      },{
+        handler: function(){
+          changeURL( box , img );
+        }
+        ,icon: gURLRoot + '/images/iface/edit.gif'
+        ,text: 'Change URL'
+      },{
+        handler: function(){
+          var url = normalizeURL( img )
+          Ext.Msg.alert( 'Show URL' , url );
+        }
+        ,icon: gURLRoot + '/images/iface/url.gif'
+        ,text: 'Show URL'
+//      },{
+//        disabled: notAccountingPlot
+//        ,handler:function(){
+//          plotDetails( img );
+//        }
+//        ,icon: gURLRoot + '/images/iface/info.gif'
+//        ,text: 'Plot details'
+      });
+      contextMenu.showAt( evt.xy );
     });
   });
   return box
 }
-function changeURL(id,url){
-  var winID = Ext.id();
-  var pathID = Ext.id();
-  var changeValue = ''
-  if((url)||(url != null)||(url != '')){
-    changeValue = url;
-  }
-  var change = new Ext.Button({
-    cls:"x-btn-text-icon",
-    handler:function(){
-      try{
-        var pathField = Ext.getCmp(pathID);
-        var path = pathField.getValue();
-      }catch(e){
-        alert('Error: ' + e.name + ': ' + e.message);
-        return
-      }
-      if((path == null) || (path == '')){
-        alert('Textarea is empty, please input url ther')
-        return
-      }
-      try{
-        var box = Ext.getCmp(id);
-        var mainPanel = Ext.getCmp('mainConteiner');
-        var index = mainPanel.items.indexOf(box);
-        var newPanel = createPanel(path);
-        mainPanel.remove(box);
-        mainPanel.insert(index,newPanel);
-        mainPanel.doLayout();
-        var current = Ext.getCmp('currentID');
-        if(current){
-          current.setText('Current Layout: <b>' + layout + '*</b>');
-        }
-      }catch(e){
-        alert('Error: ' + e.name + ': ' + e.message);
-        return
-      }
-      var win = Ext.getCmp(winID);
-      try{
-        win.close();
-      }catch(e){
-        alert('Error: ' + e.name + ': ' + e.message)
-      }
-    },
-    icon:gURLRoot+'/images/iface/edit.gif',
-    minWidth:'150',
-    tooltip:'',
-    text:'Change URL'
-  });
-  var cancel = new Ext.Button({
-    cls:"x-btn-text-icon",
-    handler:function(){
-      var win = Ext.getCmp(winID);
-      try{
-        win.close();
-      }catch(e){
-        alert('Error: ' + e.name + ': ' + e.message)
-      }
-    },
-    icon:gURLRoot+'/images/iface/reset.gif',
-    minWidth:'100',
-    tooltip:'Click here to discard changes and close the window',
-    text:'Cancel'
-  });
-  var textarea = new Ext.form.TextArea({
-    allowBlank:false,
-    anchor:'100%',
-    allowBlank:true,
-    id:pathID,
-    enableKeyEvents:true,
-    fieldLabel:'Path',
-    selectOnFocus:true,
-    value:changeValue
-  });
-  var win = new Ext.Window({
-    buttonAlign:'center',
-    buttons:[change,cancel],
-    collapsible:true,
-    constrain:true,
-    constrainHeader:true,
-    height:200,
-    id:winID,
-    items:textarea,
-    layout:'fit',
-    maximizable:false,
-    minHeight:200,
-    minWidth:320,
-    title:'Create panel',
-    width:320
-  });
-  win.on('resize',function(panel){
-    newHeight = panel.getInnerHeight() - 10;
-    var path = Ext.getCmp(pathID);
-    path.setHeight(newHeight);
-  })
+function plotDetails( url ){
 
-  win.show();
 }
-function AJAXerror(response){
-  try{
-    gMainLayout.container.unmask();
-  }catch(e){}
-  try{
-    var jsonData = Ext.util.JSON.decode(response);
-    if(jsonData['success'] == 'false'){
-      alert('Error: ' + jsonData['error']);
-      return;
-    }else{
-      alert('data: ' + jsonData.toSource() + '\nError: Server response has wrong data structure');
-      return;
-    }
-  }catch(e){
-    alert('Error: ' + e.name + ': ' + e.message);
-    return
+function changeURL( box , url ){
+  if( Ext.isEmpty( box ) ){
+    return showError( 'first parameter in changeURL function is missing' ) ;
   }
+  if( Ext.isEmpty( url ) ){
+    return showError( 'url parameter in changeURL function is missing' ) ;
+  }
+  var textarea = new Ext.form.TextArea({
+    allowBlank: false
+    ,anchor: '100%'
+    ,enableKeyEvents: true
+    ,fieldLabel: 'Path'
+    ,selectOnFocus: true
+    ,value: url
+  });
+  var win = formWindow({
+    icon: 'Change'
+    ,title: 'Change URL'
+  }) ;
+  win.add( textarea ) ;
+  var submit = win.buttons[ 0 ] ;
+  submit.setText( 'Change URL' ) ;
+  submit.setIconClass( 'Change' ) ;
+  submit.setHandler( function(){
+    var value = textarea.getValue();
+    if( Ext.isEmpty( value ) ){
+      return showError( 'Textarea seems to be empty, please put an url there' ) ;
+    }
+    var mainPanel = Ext.getCmp( 'mainConteiner' );
+    var index = mainPanel.items.indexOf( box );
+    var newPanel = createPanel( value );
+    mainPanel.remove( box );
+    mainPanel.insert( index , newPanel );
+    mainPanel.doLayout();
+    layoutDirty();
+  }) ;
+  win.buttons[ 1 ].hide();
+  win.show();
 }

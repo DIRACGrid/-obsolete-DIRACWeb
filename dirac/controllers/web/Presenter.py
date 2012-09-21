@@ -472,8 +472,13 @@ class PresenterController(BaseController):
       gLogger.info( "Result %s: %s" % ( msg , result ) )
       return S_OK( result )
     result = result[ "Value" ]
+    if not result.has_key( "Bookmarks" ):
+      result = "No old Bookmarks found"
+      gLogger.info( "Result %s: %s" % ( msg , result ) )
+      return S_OK( result )
+    data = result[ "Bookmarks" ]
     try:
-      layouts = dict( result )
+      layouts = dict( data )
     except:
       result = "Layouts '%s' is not dictionary, can't convert" % layouts
       gLogger.info( "Result %s: %s" % ( msg , result ) )

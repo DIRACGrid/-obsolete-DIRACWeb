@@ -161,11 +161,18 @@ def getUserData():
       userData.append( "groupProperties : %s" % properties )
     else:
       userData.append( "groupProperties : []" )
-    availableGroups = [ "{ text : '%s', url : '%s' }" % ( groupName,
-                                                                        diracURL( controller = 'web/userdata',
-                                                                                  action = 'changeGroup',
-                                                                                  id = groupName )
-                                                                         ) for groupName in credentials.getAvailableGroups() ]
+    availableGroups = list()
+    for groupName in credentials.getAvailableGroups():
+      properties = credentials.getProperties( groupName )
+      if not len( properties ) > 0:
+        continue
+      if ( "Pilot" in properties ) or ( "GenericPilot" in properties ):
+        continue
+      url = diracURL( controller = 'web/userdata',
+                      action = 'changeGroup',
+                      id = groupName )
+      availableGroups.append( "{ text : '%s', url : '%s' }" %
+                                ( groupName , url ) )
     userData.append( "groupMenu : [%s]" % ",".join( availableGroups ) )
   dn = credentials.getUserDN()
   if not dn:
