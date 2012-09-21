@@ -1091,20 +1091,20 @@ function createPanel( img ){
       evt.stopEvent();
       contextMenu.removeAll();
       contextMenu.add({
-        disabled: notAccountingPlot
-        ,handler: function(){
-          
-        }
-        ,icon:gURLRoot + '/images/iface/edit.gif'
-        ,text:'Edit Selections'
-      },{
-        disabled: notAccountingPlot
-        ,handler: function(){
-          
-        }
-        ,icon:gURLRoot + '/images/iface/edit.gif'
-        ,text:'Edit Plot'
-      },{
+//        disabled: notAccountingPlot
+//        ,handler: function(){
+//          
+//        }
+//        ,icon:gURLRoot + '/images/iface/edit.gif'
+//        ,text:'Edit Selections'
+//      },{
+//        disabled: notAccountingPlot
+//        ,handler: function(){
+//          
+//        }
+//        ,icon:gURLRoot + '/images/iface/edit.gif'
+//        ,text:'Edit Plot'
+//      },{
         handler: function(){
           var mainPanel = Ext.getCmp( 'mainConteiner' );
           mainPanel.remove( box );
@@ -1131,13 +1131,13 @@ function createPanel( img ){
         }
         ,icon: gURLRoot + '/images/iface/url.gif'
         ,text: 'Show URL'
-      },{
-        disabled: notAccountingPlot
-        ,handler:function(){
-          plotDetails( img );
-        }
-        ,icon: gURLRoot + '/images/iface/info.gif'
-        ,text: 'Plot details'
+//      },{
+//        disabled: notAccountingPlot
+//        ,handler:function(){
+//          plotDetails( img );
+//        }
+//        ,icon: gURLRoot + '/images/iface/info.gif'
+//        ,text: 'Plot details'
       });
       contextMenu.showAt( evt.xy );
     });
