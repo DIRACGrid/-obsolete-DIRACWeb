@@ -69,13 +69,17 @@ function __addClickHandlerToMenuSubEntries( menuEntry ){
   return hndlMenu;
 }
 function helpEntry(){
-  var url = 'http://marwww.in2p3.fr/~atsareg/Docs/DIRAC/build/html/diracindex.html';
-  if(gPageDescription.helpURL){
-    url = gPageDescription.helpURL
+  var url = 'http://diracgrid.org/files/docs/diracindex.html' ;
+  if( gPageDescription.helpURL ){
+    url = gPageDescription.helpURL ;
   }
-  var html = '<iframe id="help_frame" src =' + url + '></iframe>';
-  var panel = new Ext.Panel({border:0,autoScroll:false,html:html});
-  panel.on('resize',function(){
+  var html = '<iframe id="help_frame" src =' + url + '></iframe>' ;
+  var panel = new Ext.Panel({
+    autoScroll: false
+    ,border: 0
+    ,html: html
+  });
+  panel.on( 'resize' , function(){
     var wwwFrame = document.getElementById('help_frame');
     wwwFrame.height = panel.getInnerHeight() - 4;
     wwwFrame.width = panel.getInnerWidth() - 4;
@@ -156,14 +160,20 @@ function initTopFrame( pageDescription ){
     menu : pageDescription[ 'setupMenu' ]
   });
   navItems.push( setupButton );
-  if( 'voIcon' in pageDescription && pageDescription[ 'voIcon' ] ){
+  if( pageDescription[ 'voURL' ] && pageDescription[ 'voIcon' ] ){
 	  var iconLogo = '<a href=' + pageDescription[ 'voURL' ]  + ' target="_blank">'
-	  var iconLocation = pageDescription[ 'voIcon' ]
-	  while( iconLocation[0 ] == "/" )
-		  iconLocation = iconLocation.substring( 1, iconLocation.length );
-	  var iconLocation = gURLRoot+"/"+iconLocation;
-	  iconLogo = iconLogo + '<img src="' + iconLocation + '"/></a>'
-	  navItems.push( iconLogo )
+	  var iconLocation = pageDescription[ 'voIcon' ];
+	  if(
+	    ( iconLocation.substring( 0 , 7 ) != 'http://' ) &&
+	    ( iconLocation.substring( 0 , 8 ) != 'https://' )
+	  ){
+	    if( iconLocation.charAt( 0 ) == '/' ){
+		    iconLocation = iconLocation.substring( 1, iconLocation.length );
+		  }
+	    iconLocation = gURLRoot + "/" + iconLocation ;
+	  }
+	  iconLogo = iconLogo + '<img src="' + iconLocation + '"/></a>' ;
+	  navItems.push( iconLogo );
   }
   var topBar = new Ext.Toolbar({
     id:'diracTopBar',
