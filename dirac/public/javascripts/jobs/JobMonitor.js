@@ -49,7 +49,6 @@ function getPageOptions( response ){
   var jsonData = Ext.decode( response.responseText );
   if( jsonData[ 'result' ] ){
     isShowRequest = Ext.util.Format.undef( jsonData.result[ 'ShowRequest' ] );
-    //(myValue.toLowerCase() === 'true');;
     isShowStagerReport =
       Ext.util.Format.undef( jsonData.result[ 'ShowStagerReport' ] );
     isShowLogFile = Ext.util.Format.undef( jsonData.result[ 'ShowLogFile' ] );
