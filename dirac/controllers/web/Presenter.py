@@ -418,6 +418,7 @@ class PresenterController(BaseController):
         group = value[ "group" ]
       else:
         group = "Undefined"
+      perm = perm.capitalize()
       data.append( { "name" : name , "permission" : perm , "group" : group } )
     gLogger.info( "Result %s: %s" % ( msg , data ) )
     return { "success" : "true" , "result" : data }
@@ -445,11 +446,6 @@ class PresenterController(BaseController):
     if not permissions:
       err = "'permissions' argument for parsePermissions function is absent"
       return S_ERROR( err )
-    if permissions == "SAME" :
-      result = self.__getPermissions( name )
-      if not result[ "OK" ]:
-        return S_ERROR( result[ "Message" ] )
-      return S_OK( result[ "Value" ] )
     permissions = permissions.strip()
     permissions = permissions.upper()
     allPermissions = [ "USER" , "GROUP" , "VO" , "ALL" ]

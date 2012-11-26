@@ -419,6 +419,8 @@ class JobmonitorController(BaseController):
       return self.__getStats(selector)
     elif request.params.has_key("globalStat"):
       return self.__globalStat()
+    elif request.params.has_key("getPageOptions") and len(request.params["getPageOptions"]) > 0:
+      return self.__getPageOptions()
     elif request.params.has_key("getPlotSrc") and len(request.params["getPlotSrc"]) > 0:
       id = request.params["getPlotSrc"]
       if request.params.has_key("type") and len(request.params["type"]) > 0:
@@ -445,6 +447,16 @@ class JobmonitorController(BaseController):
     else:
       c.result = {"success":"false","error":"The request parameters can not be recognized or they are not defined"}
       return c.result
+################################################################################
+  def __getPageOptions( self ):
+    gLogger.info( "start __getPageOptions" )
+    callback = dict()
+    for i in [ "ShowRequest" , "ShowStagerReport" , "ShowLogFile" ]:
+      value = gConfig.getValue( "/Website/JobMonitor/Context/%s" % i , 'false' )
+      callback[ i ] = value
+    gLogger.debug( "Page options: %s" % callback )
+    gLogger.info( "end __getPageOptions" )
+    return { "success" : "true" , "result" : callback }
 ################################################################################
   def __getPlatform( self ):
     gLogger.info( "start __getPlatform" )
