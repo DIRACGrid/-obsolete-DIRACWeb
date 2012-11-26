@@ -1,3 +1,11 @@
+[web2012112601]
+FIX: Minor fixes in Presenter
+FIX: Rename MetaCatalogue to MetaCatalog.py
+FIX: Add __init__.py in controllers/data
+CHANGE: Both protocols http and https could be used as url for logo
+CHANGE: Registration function is re-written in modular way
+CHANGE: Hide non generic options in JobMonitor like ShowRequest or Stager Report. Can be switched on in CS
+
 [web2012092101]
 FIX: ProxyUpload from main page is fixed
 FIX: Fix convert function in Presenter.py
