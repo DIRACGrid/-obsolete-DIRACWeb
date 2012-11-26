@@ -17,7 +17,7 @@ log = logging.getLogger(__name__)
 R_NUMBER = 25 #
 P_NUMBER = 0 # 
 
-class MetacatalogueController(BaseController):
+class MetacatalogController(BaseController):
   __imgCache = DictCache()
 ################################################################################
   def display(self):
@@ -30,7 +30,7 @@ class MetacatalogueController(BaseController):
 #      groupProperty = credentials.getProperties(group)
 #      if ( "JobAdministrator" or "JobSharing" ) not in groupProperty: #len(groupProperty) == 1 and groupProperty[0] == "NormalUser":
 #        c.select["extra"] = {"owner":credentials.getUsername()}
-    return render("data/MetaCatalogue.mako")
+    return render("data/MetaCatalog.mako")
 ################################################################################
   @jsonify
   def submit( self ) :

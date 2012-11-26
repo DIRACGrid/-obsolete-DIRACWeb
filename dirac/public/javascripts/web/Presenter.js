@@ -9,6 +9,7 @@ var contextMenu = false ;     // Common context menu
 
 function initLoop(  initValues  ){
   Ext.onReady(  function(){
+    deleteCooke( 'lastLocationHash' );
     heartbeat = new Ext.util.TaskRunner() ;
     initAjax() ;
     currentUser = gPageDescription.userData.username ;
@@ -382,21 +383,30 @@ function load( name ){
     ,css              : 'cursor:pointer;cursor:hand;'
     ,dataIndex        : 'name'
     ,editable         : false
+    ,header           : 'Name'
     ,id               : 'sl1'
+    ,menuDisabled     : true
+    ,resizable        : false
     ,sortable         : false
   },{
     align             : 'left'
     ,css              : 'cursor:pointer;cursor:hand;'
     ,dataIndex        : 'user'
     ,editable         : false
+    ,header           : 'User'
     ,id               : 'sl2'
+    ,menuDisabled     : true
+    ,resizable        : false
     ,sortable         : false
   },{
     align             : 'left'
     ,css              : 'cursor:pointer;cursor:hand;'
     ,dataIndex        : 'group'
     ,editable         : false
+    ,header           : 'Group'
     ,id               : 'sl3'
+    ,menuDisabled     : true
+    ,resizable        : false
     ,sortable         : false
   }] ;
   var userStore = new Ext.data.JsonStore({
@@ -439,10 +449,8 @@ function load( name ){
     ,autoScroll       : true
     ,border           : false
     ,columns          : columns
-    ,enableHdMenu     : false
-    ,hideHeaders      : true
     ,loadMask         : true
-    ,split            : true    
+//    ,split            : true    
     ,store            : store
     ,stripeRows       : true
     ,tbar             : tbar
@@ -496,25 +504,34 @@ function save(){
     ,css              : 'cursor:pointer;cursor:hand;'
     ,dataIndex        : 'name'
     ,editable         : false
+    ,header           : 'Name'
     ,id               : 's1'
+    ,menuDisabled     : true
+    ,resizable        : false
     ,sortable         : false
   },{
     align             : 'left'
     ,css              : 'cursor:pointer;cursor:hand;'
     ,dataIndex        : 'group'
     ,editable         : false
+    ,header           : 'Group'
     ,id               : 's2'
+    ,menuDisabled     : true
+    ,resizable        : false
     ,sortable         : false
   },{
     align             : 'left'
     ,css              : 'cursor:pointer;cursor:hand;'
     ,dataIndex        : 'permission'
     ,editable         : false
+    ,header           : 'Permissions'
     ,id               : 's3'
+    ,menuDisabled     : true
+    ,resizable        : false
     ,sortable         : false
   }] ;
   var shareStore = new Ext.data.SimpleStore({
-    data              : [ [ 'All' ] , [ 'VO' ] , [ 'Group' ] ]
+    data              : [ [ 'All' ] , [ 'VO' ] , [ 'Group' ] , [ 'User' ] ]
     ,fields           : [ 'value' ]
   });
   var share = new dropdownMenu({
@@ -526,12 +543,12 @@ function save(){
   }) ;
   var bbar = new Ext.Toolbar({
     items             : [
-                          'Share profile with: '
+                          'Share layout with: '
                           , share
                         ]
   }) ;
   var regexp = new RegExp( /^[0-9a-zA-Z]+$/ ) ;
-  var regmsg = 'Letters and numbers only are allowed' ;
+  var regmsg = 'Letters and numbers are allowed' ;
   var save = genericID( 'save' , '' , regexp , regmsg , 'None' ) ;
   if( currentLayout.length > 0 && currentLayout.charAt( 0 ) == '*' ){
     save.setValue( currentLayout.slice( 1 ) ) ;
@@ -558,10 +575,10 @@ function save(){
     ,bbar             : bbar
     ,border           : false
     ,columns          : columns
-    ,enableHdMenu     : false
-    ,hideHeaders      : true
+//    ,enableHdMenu     : false
+//    ,hideHeaders      : true
     ,loadMask         : true
-    ,split            : true    
+//    ,split            : true    
     ,store            : store
     ,stripeRows       : true
     ,tbar             : tbar
@@ -602,7 +619,7 @@ function save(){
   }
   submit.setHandler( function(){
     var layoutName = save.getValue() ;
-    var perm = 'USER' ;
+    var perm = 'User' ;
     perm = share.getRawValue() ;
     saveLayout( layoutName , perm , win ) ;
   }) ;
@@ -935,15 +952,25 @@ function updateTimestamp(){
   var stamp = Ext.getCmp( 'timeStamp' ) ;
   if( stamp ){
     var d = new Date() ;
-    var hh = d.getHours() ;
+    var hh = d.getUTCHours();
     if(hh < 10){
-      hh = '0' + hh ;
+      hh = '0' + hh;
     }
-    var mm = d.getMinutes() ;
+    var mm = d.getUTCMinutes();
     if(mm < 10){
-      mm = '0' + mm ;
+      mm = '0' + mm;
     }
-    stamp.setText( 'Updated: ' + hh + ":" + mm) ;
+    var mon = d.getUTCMonth() + 1;
+    if(mon < 10){
+      mon = '0' + mon;
+    }
+    var day = d.getUTCDate();
+    if(day < 10){
+      day = '0' + day;
+    }
+    var dateText = 'Updated: ' + d.getUTCFullYear() + '-' + mon + '-' + day ;
+    dateText = dateText + ' ' + hh + ':' + mm + ' [UTC]';
+    stamp.setText( dateText );
     stamp.show() ;
   }
 }
