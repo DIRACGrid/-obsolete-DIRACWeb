@@ -952,15 +952,25 @@ function updateTimestamp(){
   var stamp = Ext.getCmp( 'timeStamp' ) ;
   if( stamp ){
     var d = new Date() ;
-    var hh = d.getUTCHours() ;
+    var hh = d.getUTCHours();
     if(hh < 10){
-      hh = '0' + hh ;
+      hh = '0' + hh;
     }
-    var mm = d.getUTCMinutes() ;
+    var mm = d.getUTCMinutes();
     if(mm < 10){
-      mm = '0' + mm ;
+      mm = '0' + mm;
     }
-    stamp.setText( 'Updated: ' + hh + ':' + mm + ' [UTC]') ;
+    var mon = d.getUTCMonth() + 1;
+    if(mon < 10){
+      mon = '0' + mon;
+    }
+    var day = d.getUTCDate();
+    if(day < 10){
+      day = '0' + day;
+    }
+    var dateText = 'Updated: ' + d.getUTCFullYear() + '-' + mon + '-' + day ;
+    dateText = dateText + ' ' + hh + ':' + mm + ' [UTC]';
+    stamp.setText( dateText );
     stamp.show() ;
   }
 }
