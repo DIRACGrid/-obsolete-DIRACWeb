@@ -1,3 +1,4 @@
+# -*- coding: utf-8 -*-
 import os
 import socket
 
@@ -209,8 +210,10 @@ class GeneralController( BaseController ):
       return {"success":"true","result":self.getVOList()}
     elif request.params.has_key("getCountries") and len(request.params["getCountries"]) > 0:
       return {"success":"true","result":self.getCountries()}
+    elif request.params.has_key("send_message") and len(request.params["send_message"]) > 0:
+      return self.__sendMessage()
     elif request.params.has_key("registration_request") and len(request.params["registration_request"]) > 0:
-      return self.registerUser()
+      return self.__registerUser()
     else:
       return {"success":"false","error":"The request parameters can not be recognized or they are not defined"}
 ################################################################################
@@ -349,16 +352,22 @@ class GeneralController( BaseController ):
 
 
 
-  def __sendAMail( self , sendDict = None , body = None , sendTo = None ):
+  def __sendMail( self , sendDict = None , title = None , body = None , fromAddress = None ):
 
     """
-    Sending a "new user has registered" email using sendDict: { e-mail : name }
-    as source of the info and body as an e-mail body
-    Return JSON structure
+    Sending an email using sendDict: { e-mail : name } as addressbook
+    title and body is the e-mail's Subject and Body
+    fromAddress is an email address in behalf of whom the message is sent
+    Return success/failure JSON structure
     """
 
     if not sendDict:
       result = ""
+      gLogger.debug( result )
+      return { "success" : "false" , "error" : result }
+
+    if not title:
+      result = "title argument is missing"
       gLogger.debug( result )
       return { "success" : "false" , "error" : result }
       
@@ -367,8 +376,8 @@ class GeneralController( BaseController ):
       gLogger.debug( result )
       return { "success" : "false" , "error" : result }
 
-    if not sendTo:
-      result = "sendTo argument is missing"
+    if not fromAddress:
+      result = "fromAddress argument is missing"
       gLogger.debug( result )
       return { "success" : "false" , "error" : result }
 
@@ -377,14 +386,8 @@ class GeneralController( BaseController ):
     gLogger.debug( "Initializing Notification client" )
     ntc = NotificationClient( lambda x , timeout: getRPCClient( x , timeout = timeout , static = True ) )
 
-    if socket.gethostname().find( '.' ) >= 0:
-      hostname = socket.gethostname()
-    else:
-      hostname = socket.gethostbyaddr( socket.gethostname() )[ 0 ]
-    title = "New user has sent registration request to %s" % hostname
-
     for email , name in sendDict.iteritems():
-      result = ntc.sendMail( email , title , body , sendTo , False )
+      result = ntc.sendMail( email , title , body , fromAddress , False )
       if not result[ "OK" ]:
         error = name + ": " + result[ "Message" ]
         sentFailed.append( error )
@@ -416,7 +419,7 @@ class GeneralController( BaseController ):
 
 
 
-  def __checkUnicode( self , name = None , value = None ):
+  def __checkUnicode( self , text = None ):
 
     """
     Check if value is unicode or not and return properly converted string
@@ -424,18 +427,79 @@ class GeneralController( BaseController ):
     """
 
     try:
-      value = value.decode( 'utf-8' , "replace" )
+      text = text.decode( 'utf-8' , "replace" )
     except :
       pass
-    value = value.encode( "utf-8" )
-    result = "%s - %s" % ( name , value )
-    gLogger.debug( result )
+    text = text.encode( "utf-8" )
+    gLogger.debug( text )
     
-    return result
+    return text
 
 
 
-  def registerUser( self ):
+  def __sendMessage( self ):
+  
+    """
+    This function is used to send a mail to specific group of DIRAC user
+    Expected parameters from request are group, title, body
+    """
+    
+    gLogger.info("Start message broadcasting")
+
+    checkUserCredentials()
+    dn = getUserDN()
+    if not dn:
+      error = "Certificate is not loaded in the browser or DN is absent"
+      gLogger.error( "Service response: %s" % error )
+      return { "success" : "false" , "error" : error }
+    username = getUsername()
+    if username == "anonymous":
+      error = "Sending an anonymous message is forbidden"
+      gLogger.error( "Service response: %s" % error )
+      return { "success" : "false" , "error" : error }
+    gLogger.info( "DN: %s" % dn )
+
+    email = gConfig.getValue( "/Registry/Users/%s/Email" % username , "" )
+    gLogger.debug( "/Registry/Users/%s/Email - '%s'" % ( username , email ) )
+    emil = email.strip()
+      
+    if not email:
+      error = "Can't find value for option /Registry/Users/%s/Email" % user
+      gLogger.error( "Service response: %s" % error )
+      return { "success" : "false" , "error" : error }
+
+    test = [ "group" , "title" , "body" ]
+    for i in test:
+      if not request.params.has_key( i )
+        error = "The required parameter %s is absent in request" % i
+        gLogger.error( "Service response: %s" % error )
+        return { "success" : "false" , "error" : error }
+
+    group = request.params[ "group" ]
+    users = gConfig.getValue( "/Registry/Groups/%s/Users" % group , [] )
+    if not len( users ) > 0:
+      error = "No users for %s group found" % group
+      gLogger.error( "Service response: %s" % error )
+      return { "success" : "false" , "error" : error }
+
+    sendDict = self.__getMailDict( users )
+    if not len( sendDict ) > 0:
+      error = "Can't get a mail address for users in %s group" % group
+      gLogger.debug( "Service response: %s" % error )
+      return { "success" : "false" , "error" : error }
+    gLogger.debug( "Final dictionary with mails to be used %s" % sendDict )
+    
+    title = self.__checkUnicode( request.params[ "title" ] )
+    gLogger.debug( "email title: %s" % title )
+
+    body = self.__checkUnicode( request.params[ "body" ] )
+    gLogger.debug( "email body: %s" % body )
+
+    return self.__sendMail( sendDict , title , body , userMail )
+
+
+
+  def __registerUser( self ):
 
     """
     This function is used to notify DIRAC admins about user registration request
@@ -483,7 +547,8 @@ class GeneralController( BaseController ):
     body = str()
     for i in request.params:
       if not i in [ "registration_request" , "email" , "vo" ]:
-        info = self.__checkUnicode( i , request.params[ i ] )
+        text = self.__checkUnicode( request.params[ i ] )
+        info = "%s - %s" % ( i , text )
         body = body + info + "\n"
     body = body + "DN - " + dn
     gLogger.debug( "email body: %s" % body )
@@ -498,14 +563,20 @@ class GeneralController( BaseController ):
     gLogger.info( "Chosen admin(s): %s" % adminList )
     
     sendDict = self.__getMailDict( adminList )
-    if not len(sendDict) > 0:
+    if not len( sendDict ) > 0:
       error = "Can't get in contact with administrators about your request\n"
       error = error + "Most likely this DIRAC instance is not configured yet"
       gLogger.debug( "Service response: %s" % error )
       return { "success" : "false" , "error" : error }
     gLogger.debug( "Final dictionary with mails to be used %s" % sendDict )
 
-    return self.__sendAMail( sendDict , body , userMail )
+    if socket.gethostname().find( '.' ) >= 0:
+      hostname = socket.gethostname()
+    else:
+      hostname = socket.gethostbyaddr( socket.gethostname() )[ 0 ]
+    title = "New user has sent registration request to %s" % hostname
+
+    return self.__sendMail( sendDict , title , body , userMail )
 
 
 
