@@ -23,7 +23,7 @@ function ajax( cfg ){
     Ext.getBody().mask( cfg.msg ? cfg.msg : 'Communicating with server' ) ;
   }
   Ext.Ajax.request({
-    failure           : cfg.failure ? cfg.failure : errorReport 
+    failure           : cfg.failure ? cfg.failure : showError
     ,headers          : cfg.headers ? cfg.headers : undefined 
     ,method           : cfg.method ? cfg.method : 'POST'
     ,params           : cfg.params ? cfg.params : undefined
@@ -696,7 +696,7 @@ function itemsPerPage(){
   });
   return combo
 }
-function table( cfg ){
+function getDatagrid( cfg ){
   if( Ext.isEmpty( cfg ) ){
     return false ;
   }
