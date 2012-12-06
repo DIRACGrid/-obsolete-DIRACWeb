@@ -139,7 +139,7 @@ function initData(){
     groupTextTpl: '<tpl if="datagrid.getStore().groupField==\'FullCountry\'">{group}:</tpl><tpl if="datagrid.getStore().groupField!=\'FullCountry\'">{text},</tpl> {[values.rs.length]} {[values.rs.length > 1 ? "Sites" : "Site"]}',
   })
   store.setDefaultSort('FullCountry','ASC'); // Default sorting
-  var grid = new table({
+  var grid = new getDatagrid({
     autorefresh: autorefreshMenu
     ,disableIPP: true
     ,columns: columns
@@ -148,14 +148,42 @@ function initData(){
     ,tbar: tbar
     ,view: view
   });
-  grid.addListener( 'cellcontextmenu' , function(
-    grid , rowIndex , columnIndex , e
-  ){
-    e.stopEvent();
-    var menu = 
-    menu.showAt( coords );
-  });
   return grid
+}
+function getMenu( record ){
+  var menu = new Ext.menu.Menu();
+  var site = record.get( 'Site' );
+  var showjobs = new Ext.menu.Item({
+    handler:function(){ jump( 'site' , site ) }
+    ,icon: gURLRoot + '/images/iface/go.gif'
+    ,text:'Show Job(s)'
+  });
+  menu.add( showjobs );
+  var ban = new Ext.menu.Item({
+    handler: function(){
+      actSite( 'ban' , new Array( site ) )
+    }
+    ,icon: gURLRoot + '/images/iface/ban.gif'
+    ,text: 'Ban Site'  
+  });
+  var allow = new Ext.menu.Item({
+    handler: function(){
+          actSite( 'allow' , new Array( site ) )
+    }
+    ,icon: gURLRoot + '/images/iface/unban.gif'
+    ,text: 'Allow Site'
+  });
+
+  var mask = record.get( 'MaskStatus' ) ;
+  if( mask == 'Active' ){
+    menu.add( ban );
+  }else if( mask == 'Banned' ){
+    menu.add( allow );
+  }else{
+    menu.add( ban );
+    menu.add( allow );
+  }
+  return menu
 }
 function setChk(value){
   if(value == refreshRate){
@@ -189,36 +217,6 @@ function setRefresh( time , datagrid ){
       },
       interval: time
     });
-  }
-}
-function setMenuItems( selections ){
-  var id = selections.Site;
-  if(dirac.menu){
-    dirac.menu.add({
-      handler:function(){ jump( 'site' , id ) }
-        ,icon: gURLRoot + '/images/iface/go.gif'      
-      ,text:'Show Job(s)'
-    });
-    if( ( selections[ 'MaskStatus' ] == 'Active' )
-            || ( selections[ 'MaskStatus' ] == 'NoMask' ) ){
-      dirac.menu.add({
-        handler: function(){
-          actSite( 'ban' , new Array( selections[ 'Site' ] ) )
-        }
-        ,icon: gURLRoot + '/images/iface/ban.gif'
-        ,text: 'Ban Site'
-      });
-    }
-    if( ( selections[ 'MaskStatus' ] == 'Banned' )
-            || ( selections[ 'MaskStatus' ] == 'NoMask' ) ){
-      dirac.menu.add({
-        handler: function(){
-          actSite( 'allow' , new Array( selections[ 'Site' ] ) )
-        }
-        ,icon: gURLRoot + '/images/iface/unban.gif'
-        ,text: 'Allow Site'
-      });
-    }
   }
 }
 function actSite( action , sitename ){
