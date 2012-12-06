@@ -775,6 +775,29 @@ function table( cfg ){
     ,view: cfg.view ? cfg.view : undefined
     ,viewConfig : cfg.viewConfig ? cfg.viewConfig : undefined
   });
+  datagrid.addListener( 'cellcontextmenu' , function(
+    grid , rowIndex , columnIndex , e
+  ){
+    e.stopEvent();
+    var record = grid.getStore().getAt( rowIndex ); // Get the Record for the row
+    var fieldName = grid.getColumnModel().getDataIndex( columnIndex ); // Get field name for the column
+    var cellvalue = new Ext.menu.Item({
+      handler: function(){
+        Ext.Msg.minWidth = 360;
+        Ext.Msg.alert( 'Cell value is:' , record.get( fieldName ) );
+      }
+      ,text: 'Show value'
+    });
+    var menu = new Ext.menu.Menu();
+    try{
+      menu = getMenu( record );
+    }catch(e){}
+    if( menu.items.getCount() > 0 ){
+      menu.add( '-' );
+    }
+    menu.add( cellvalue );
+    menu.showAt( Ext.EventObject.xy );
+  });
   datagrid.getStore().on('load',function(){
     var date = false;
     try{
