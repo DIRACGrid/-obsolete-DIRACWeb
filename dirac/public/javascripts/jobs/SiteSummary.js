@@ -1,19 +1,44 @@
-var dataSelect = ''; // Required to store the data for filters fields. Object.
-var dataMngr = ''; // Required to connect form and table. Object.
-var tableMngr = ''; // Required to handle configuration data for table. Object.
 var refreshRate = 0; // autorefresh is off
-var refeshID = 0;
-// Main routine
-function initSiteSummary(reponseSelect){
+var dataSelect , heartbeat , datagrid ;
+function init(reponseSelect){
   dataSelect = reponseSelect;
   Ext.onReady(function(){
-    var record = initRecord();
-    var store = initStore(record,{'groupBy':'FullCountry'});
-    renderData(store);
+    heartbeat = new Ext.util.TaskRunner();
+    Ext.override( Ext.PagingToolbar , {
+      onRender :  Ext.PagingToolbar.prototype.onRender.createSequence(function(
+        ct , position
+      ){
+        this.first.hide();
+        for( var i = 9; i > 0 ; i-- ){
+          Ext.fly( this.items.get( i ).getEl() ).remove() ;
+          this.items.removeAt( i ) ;
+        }
+        this.loading.removeClass( 'x-btn-icon' );
+        this.loading.setText( 'Refresh' );
+        this.loading.addClass( 'x-btn-text-icon' );
+      })
+    });
+    datagrid = initData();
+    renderInMainViewport( [ initSidebar( datagrid ) , datagrid ] );
   });
 }
-// function describing data structure, should be individual per page
-function initRecord(){
+function initSidebar( datagrid ){
+  var select = selectPanel( datagrid );
+  var bar = sideBar();
+  bar.insert( 0 , select );
+  bar.setTitle( 'SiteSummary' );
+  var selectors = {
+    'status': 'Status'
+    ,'gridtype': 'GridType'
+    ,'maskstatus': 'MaskStatus'
+    ,'country': 'Country'
+  };
+  for( var i in selectors ){
+    select.add( createMenu( i , selectors[ i ] ) );
+  }
+  return bar
+}
+function initData(){
   var record = new Ext.data.Record.create([
     {name:'GridType'},
     {name:'Site'},
@@ -34,32 +59,15 @@ function initRecord(){
     {name:'Tier'},
     {name:'FullCountry'},
     {name:'MaskStatusIcon',mapping:'MaskStatus'},
+    {name:'SiteCheckbox',mapping:'Site'},
     {name:'StatusIcon',mapping:'Status'}
   ]);
-  return record
-}
-// Initialisation of selection sidebar, all changes with selection items should goes here
-function initSidebar(){
-  var selectStatusSiteSummary = createMenu('status','Status'); // Initializing Owner Menu
-  var selectGridType = createMenu('gridtype','GridType'); // Initializing Application status Menu
-  var selectMaskStatus = createMenu('maskstatus','MaskStatus'); // Initializing JobStatus Menu
-  var selectCountry = createMenu('country','Country'); // Initializing JobGroup Menu
-  var dateSelect = dateSelectMenu(); // Initializing date dialog
-  var id = genericID('id','JobID'); // Initialize field for JobIDs
-  var select = selectPanel(); // Initializing container for selection objects
-//  select.buttons[2].hide(); // Remove refresh button
-  // Insert object to container BEFORE buttons:
-  select.insert(0,selectStatusSiteSummary);
-  select.insert(1,selectGridType);
-  select.insert(2,selectMaskStatus);
-  select.insert(3,selectCountry);
-  var bar = sideBar();
-  bar.insert(0,select);
-  bar.setTitle('SiteSummary');
-  return bar
-}
-function initData(store){
+  var store = initStore( record , { 'groupBy' : 'FullCountry' } );
+  var sm = new Ext.grid.CheckboxSelectionModel({
+    header: ''
+  }) ;
   var columns = [
+    sm,
     {header:'Name',sortable:true,dataIndex:'Site',align:'left',hideable:false},
     {header:'Tier',sortable:true,dataIndex:'Tier',align:'left'},
     {header:'GridType',sortable:true,dataIndex:'GridType',align:'left'},
@@ -81,56 +89,73 @@ function initData(store){
     {header:'Stalled',sortable:true,dataIndex:'Stalled',align:'left'},
     {header:'Failed',sortable:true,dataIndex:'Failed',align:'left'}
   ];
-  var refresh = new Ext.Toolbar.Button({
-    cls:"x-btn-text-icon",
-    handler:function(){
-      refreshCycle();
-    },
-    iconCls:'Refresh',
-    text:'Refresh',
-    tooltip:'Click the button for manual refresh.'
-  });
-  var timeStamp = {
-    disabled:true,
-    disabledClass:'my-disabled',
-    hidden:true,
-    id:'timeStamp',
-    text:'Updated: '
-  };
-  var auto = new Ext.Toolbar.Button({
-    cls:"x-btn-text",
-    id:'autoButton',
-    menu:new Ext.menu.Menu({items:[
-      {checked:setChk(0),checkHandler:function(){refreshYO(0,true);},group:'refresh',text:'Disabled'},
-      {checked:setChk(900000),checkHandler:function(){refreshYO(900000,true,'Each 15m');},group:'refresh',text:'15 Minutes'},
-      {checked:setChk(3600000),checkHandler:function(){refreshYO(3600000,true,'Each Hour');},group:'refresh',text:'One Hour'},
-      {checked:setChk(86400000),checkHandler:function(){refreshYO(86400000,true,'Each Day');},group:'refresh',text:'One Day'},
-    ]}),
-    text:'Disabled',
-    tooltip:'Click to set the time for autorefresh'
-  });
-  auto.on('menuhide',function(button,menu){
-    var length = menu.items.getCount();
-    for(var i = 0; i < length; i++){
-      if(menu.items.items[i].checked){
-        button.setText(menu.items.items[i].text);
-      }
-    }
-  });
-  dirac.tbar = ['->',refresh,'-','Auto:',auto,timeStamp];
+  var autorefreshMenu = [{
+    checked: setChk( 900000 )
+    ,checkHandler: function(){ setRefresh( 900000 , datagrid ) }
+    ,group: 'refresh'
+    ,text: '15 Minutes'
+  },{
+    checked: setChk( 1800000 )
+    ,checkHandler: function(){ setRefresh( 1800000 , datagrid ) }
+    ,group: 'refresh'
+    ,text: '30 Minutes'
+  },{
+    checked: setChk( 3600000 )
+    ,checkHandler: function(){ setRefresh( 3600000 , datagrid ) }
+    ,group: 'refresh'
+    ,text: 'One Hour'
+  },{
+    checked: setChk( 0 )
+    ,checkHandler: function(){ setRefresh( 0 ) }
+    ,group: 'refresh'
+    ,text: 'Disabled'
+  }];
+  var tbar = [{
+    cls: 'x-btn-text-icon'
+    ,handler: function(){ datagrid.getSelectionModel().selectAll() }
+    ,icon: gURLRoot + '/images/iface/checked.gif'
+    ,text: 'Select All'
+    ,tooltip: 'Click to select all rows'
+  },{
+    cls: 'x-btn-text-icon'
+    ,handler: function(){ datagrid.getSelectionModel().clearSelections() }
+    ,icon: gURLRoot + '/images/iface/unchecked.gif'
+    ,text: 'Select None'
+    ,tooltip: 'Click to uncheck selected row(s)'
+  },'->',{
+    cls: 'x-btn-text-icon'
+    ,handler: function(){ doAction( 'ban' , datagrid ) }
+    ,icon: gURLRoot + '/images/iface/ban.gif'
+    ,text: 'Ban'
+    ,tooltip: 'Click to ban selected sites(s)'
+  },{
+    cls: 'x-btn-text-icon'
+    ,handler: function(){ doAction( 'allow' , datagrid ) }
+    ,icon: gURLRoot + '/images/iface/unban.gif'
+    ,text: 'Allow'
+    ,tooltip: 'Click to allow selected site(s)'
+  }];
   var view = new Ext.grid.GroupingView({
-    groupTextTpl: '<tpl if="dataMngr.store.groupField==\'FullCountry\'">{group}:</tpl><tpl if="dataMngr.store.groupField!=\'FullCountry\'">{text},</tpl> {[values.rs.length]} {[values.rs.length > 1 ? "Sites" : "Site"]}',
+    groupTextTpl: '<tpl if="datagrid.getStore().groupField==\'FullCountry\'">{group}:</tpl><tpl if="datagrid.getStore().groupField!=\'FullCountry\'">{text},</tpl> {[values.rs.length]} {[values.rs.length > 1 ? "Sites" : "Site"]}',
   })
   store.setDefaultSort('FullCountry','ASC'); // Default sorting
-  tableMngr = {'store':store,'columns':columns,'tbar':dirac.tbar,'view':view};
-  var t = table(tableMngr);
-  t.addListener('cellclick',function(table,rowIndex,columnIndex){
-    showMenu('main',table,rowIndex,columnIndex);
+  var grid = new table({
+    autorefresh: autorefreshMenu
+    ,disableIPP: true
+    ,columns: columns
+    ,sm: sm
+    ,store: store
+    ,tbar: tbar
+    ,view: view
   });
-  var bar = t.getBottomToolbar();
-  bar.hide();
-  t.footer = false;
-  return t
+  grid.addListener( 'cellcontextmenu' , function(
+    grid , rowIndex , columnIndex , e
+  ){
+    e.stopEvent();
+    var menu = 
+    menu.showAt( coords );
+  });
+  return grid
 }
 function setChk(value){
   if(value == refreshRate){
@@ -139,60 +164,110 @@ function setChk(value){
     return false
   }
 }
-function refreshYO(delay,start,text){
-  var select = Ext.getCmp('selectPanel');
-  if(select && select.form){
-    select.form.submit();
-  }
-  if(refeshID != 0){
-    clearTimeout(refeshID);
-  }
-  if(delay == 0){
-    clearTimeout(refeshID);
+function doAction( action , datagrid ){
+  var selectModel = datagrid.getSelectionModel();
+  var sitename = new Array();
+  selectModel.each( function( record ){
+    sitename.push( record.get( 'Site' ) );
+  });
+  var siteLength = sitename.length;
+  if( siteLength <= 0 ){
+    return showError( 'You should select at least one site' );
   }else{
-    if(!start){
-      var select = Ext.getCmp('selectPanel');
-      if(select && select.form){
-        select.form.submit();
-      }
-    }
-    start = false;
-    refeshID = setTimeout('refreshYO(' + delay + ',false)',delay);
+    return actSite( action , sitename ) ;
   }
 }
-function setMenuItems(selections){
-  if(selections){
-    var id = selections.Site;
+function setRefresh( time , datagrid ){
+  if( time == 0 ){
+    refreshRate = 0;
+    heartbeat.stopAll();  
   }else{
-    return
+    refreshRate = time;
+    heartbeat.start({
+      run:function(){
+        datagrid.getStore().load();
+      },
+      interval: time
+    });
   }
+}
+function setMenuItems( selections ){
+  var id = selections.Site;
   if(dirac.menu){
-    dirac.menu.add(
-      {handler:function(){jump('site',id)},text:'Show Job(s)'}
-    );
+    dirac.menu.add({
+      handler:function(){ jump( 'site' , id ) }
+        ,icon: gURLRoot + '/images/iface/go.gif'      
+      ,text:'Show Job(s)'
+    });
+    if( ( selections[ 'MaskStatus' ] == 'Active' )
+            || ( selections[ 'MaskStatus' ] == 'NoMask' ) ){
+      dirac.menu.add({
+        handler: function(){
+          actSite( 'ban' , new Array( selections[ 'Site' ] ) )
+        }
+        ,icon: gURLRoot + '/images/iface/ban.gif'
+        ,text: 'Ban Site'
+      });
+    }
+    if( ( selections[ 'MaskStatus' ] == 'Banned' )
+            || ( selections[ 'MaskStatus' ] == 'NoMask' ) ){
+      dirac.menu.add({
+        handler: function(){
+          actSite( 'allow' , new Array( selections[ 'Site' ] ) )
+        }
+        ,icon: gURLRoot + '/images/iface/unban.gif'
+        ,text: 'Allow Site'
+      });
+    }
   }
 }
-function renderData(store){
-  var leftBar = initSidebar();
-  var mainContent = initData(store);
-  renderInMainViewport([ leftBar, mainContent ]);
-  dataMngr = {'form':leftBar,'store':store};
-}
-function afterDataLoad(store){
-  var stamp = Ext.getCmp('timeStamp');
-  if(stamp){
-    var d = new Date();
-    var hh = d.getHours();
-    if(hh < 10){
-      hh = '0' + hh;
-    }
-    var mm = d.getMinutes()
-    if(mm < 10){
-      mm = '0' + mm;
-    }
-    stamp.setText('Updated: ' + hh + ":" + mm);
-    stamp.show();
+function actSite( action , sitename ){
+  if( Ext.isEmpty( sitename , true ) ){
+    return showError( 'Argument sitename in actSite function is missing' );
   }
+  if( ! Ext.isArray( sitename ) ){
+    return showError( 'Argument sitename in actSite function must be an array' );
+  }
+  if( Ext.isEmpty( action , true ) ){
+    return showError( 'Argument action in actSite function is missing' );
+  }
+  actTitle = action.charAt( 0 ).toUpperCase() + action.slice( 1 );
+  var title = actTitle + ' site';
+  sitenameString = sitename.join( ', ' );
+  var msg = 'Do you want to ' + action ;
+  if( sitename.length > 1 ){
+    msg = msg + ' the sites: ' + sitenameString + ' ?';
+  }else{
+    msg = msg + ' the site: ' + sitenameString + ' ?';
+  }
+  Ext.Msg.confirm( title , msg , function( btn ){
+    if( btn == 'yes' ){
+      ajax({
+        mask: true
+        ,params: { 'action' : action , 'name' : sitename }
+        ,success: actionSuccess
+      }) ;
+    }
+  });
+  return
+}
+function actionSuccess( response ){
+  Ext.getBody().unmask() ;
+  if( Ext.isEmpty( response ) ){
+    return showError( 'Argument response in actionSuccess function is missing' );
+  }
+  var msg = Ext.util.JSON.decode( response.responseText ) ;
+  if( Ext.isEmpty( msg ) ){
+    return showError( 'Server response is null or empty' );
+  }
+  if( !Ext.isEmpty( msg.success ) ){
+    return datagrid.getStore().load() ;
+  }
+  if( !Ext.isEmpty( msg.error ) ){
+    datagrid.getStore().load() ;
+    return showError( msg.error );
+  }
+  return showError( 'Server response have no success or error messages' );
 }
 function jump(type,id){
   var url = document.location.protocol + '//' + document.location.hostname + gURLRoot + '/' + gPageDescription.selectedSetup
@@ -204,8 +279,4 @@ function jump(type,id){
   var form = document.getElementById('redirform');
   form.submit();
 }
-function AJAXsuccess(value,id,response){
-  try{
-    gMainLayout.container.unmask();
-  }catch(e){}
-}
+function afterDataLoad(){};
