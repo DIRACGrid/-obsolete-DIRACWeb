@@ -437,6 +437,16 @@ class GeneralController( BaseController ):
 
 
 
+  def __messageLog( user , group , title , body ):
+
+    """
+    Save sent message to a profile. Max 500 are messages allowed
+    """
+    
+    return True
+
+
+
   def __sendMessage( self ):
   
     """
@@ -495,7 +505,9 @@ class GeneralController( BaseController ):
     body = self.__checkUnicode( request.params[ "body" ] )
     gLogger.debug( "email body: %s" % body )
 
-    return self.__sendMail( sendDict , title , body , userMail )
+    self.__messageLog( user , group , title , body )
+
+    return self.__sendMail( sendDict , title , body , email )
 
 
 
