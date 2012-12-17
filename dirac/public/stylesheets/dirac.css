@@ -146,6 +146,10 @@ p.footer {
 }
 
 /* By Matvey */
+.tinny{
+  font: 12px arial,tahoma,helvetica,sans-serif;
+  padding : 0px 0px 5px 0px;
+}
 .my-disabled * {
   cursor:default ! important;
 }
