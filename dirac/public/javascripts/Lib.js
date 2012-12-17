@@ -490,7 +490,6 @@ function flag(code){
 function sideBar(){
   var panel = new Ext.Panel({
     autoScroll:true,
-    id:id,
     split:true,
     region:'west',
     collapsible:true,
