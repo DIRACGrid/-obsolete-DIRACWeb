@@ -295,7 +295,7 @@ class GeneralController( BaseController ):
 
 
 
-  def __getMailDict( self , names = None ):
+  def getMailDict( self , names = None ):
   
     """
     Convert list of usernames to dict like { e-mail : full name }
@@ -312,18 +312,18 @@ class GeneralController( BaseController ):
       emil = email.strip()
       
       if not email:
-        gLogger.error("Can't find value for option /Registry/Users/%s/Email" % user)
+        gLogger.error( "Can't find value for option /Registry/Users/%s/Email" % user )
         continue
 
-      fname = gConfig.getValue("/Registry/Users/%s/FullName" % user,"")
-      gLogger.debug("/Registry/Users/%s/FullName - '%s'" % (user,fname))
+      fname = gConfig.getValue( "/Registry/Users/%s/FullName" % user , "" )
+      gLogger.debug( "/Registry/Users/%s/FullName - '%s'" % ( user , fname ) )
       fname = fname.strip()
 
       if not fname:
         fname = user
-        gLogger.debug("FullName is absent, name to be used: %s" % fname)
+        gLogger.debug( "FullName is absent, name to be used: %s" % fname )
 
-      resultDict[email] = fname
+      resultDict[ email ] = fname
 
     return resultDict
 
@@ -352,7 +352,7 @@ class GeneralController( BaseController ):
 
 
 
-  def __sendMail( self , sendDict = None , title = None , body = None , fromAddress = None ):
+  def sendMail( self , sendDict = None , title = None , body = None , fromAddress = None ):
 
     """
     Sending an email using sendDict: { e-mail : name } as addressbook
@@ -419,7 +419,7 @@ class GeneralController( BaseController ):
 
 
 
-  def __checkUnicode( self , text = None ):
+  def checkUnicode( self , text = None ):
 
     """
     Check if value is unicode or not and return properly converted string
@@ -480,7 +480,7 @@ class GeneralController( BaseController ):
 
     test = [ "group" , "title" , "body" ]
     for i in test:
-      if not request.params.has_key( i )
+      if not request.params.has_key( i ):
         error = "The required parameter %s is absent in request" % i
         gLogger.error( "Service response: %s" % error )
         return { "success" : "false" , "error" : error }
@@ -499,15 +499,15 @@ class GeneralController( BaseController ):
       return { "success" : "false" , "error" : error }
     gLogger.debug( "Final dictionary with mails to be used %s" % sendDict )
     
-    title = self.__checkUnicode( request.params[ "title" ] )
+    title = self.checkUnicode( request.params[ "title" ] )
     gLogger.debug( "email title: %s" % title )
 
-    body = self.__checkUnicode( request.params[ "body" ] )
+    body = self.checkUnicode( request.params[ "body" ] )
     gLogger.debug( "email body: %s" % body )
 
     self.__messageLog( user , group , title , body )
 
-    return self.__sendMail( sendDict , title , body , email )
+    return self.sendMail( sendDict , title , body , email )
 
 
 
@@ -559,7 +559,7 @@ class GeneralController( BaseController ):
     body = str()
     for i in request.params:
       if not i in [ "registration_request" , "email" , "vo" ]:
-        text = self.__checkUnicode( request.params[ i ] )
+        text = self.checkUnicode( request.params[ i ] )
         info = "%s - %s" % ( i , text )
         body = body + info + "\n"
     body = body + "DN - " + dn
@@ -588,7 +588,83 @@ class GeneralController( BaseController ):
       hostname = socket.gethostbyaddr( socket.gethostname() )[ 0 ]
     title = "New user has sent registration request to %s" % hostname
 
-    return self.__sendMail( sendDict , title , body , userMail )
+    return self.sendMail( sendDict , title , body , userMail )
+
+
+
+  def getRequesterEmail( self ):
+
+    """
+    """
+
+    user = getUsername()
+    if not user:
+      gLogger.debug( "user value is empty" )
+      return None
+
+    if user == "anonymous":
+      gLogger.debug( "user is anonymous" )
+      return None
+    
+    email = gConfig.getValue( "/Registry/Users/%s/Email" % user , "" )
+    gLogger.debug( "/Registry/Users/%s/Email - '%s'" % ( user , email ) )
+    emil = email.strip()
+      
+    if not email:
+      return None
+    return email
+
+
+
+  def grouplistFromRequest( self ):
+
+    """
+    """
+
+    if not "group" in request.params:
+      return None
+
+    if not len( request.params[ "group" ] ) > 0:
+      return None
+
+    separator = gConfig.getValue( "/Website/ListSeparator" , ":::" )
+    group = request.params[ "group" ].split( separator )
+    return group
+
+
+
+  def userlistFromRequest( self ):
+
+    """
+    """
+
+    if not "user" in request.params:
+      return None
+
+    if not len( request.params[ "user" ] ) > 0:
+      return None
+
+    separator = gConfig.getValue( "/Website/ListSeparator" , ":::" )
+    user = request.params[ "user" ].split( separator )
+    return user
+
+
+
+  def userlistFromGroup( self , groupname = None ):
+
+    """
+    """
+
+    if not groupname:
+      gLogger.debug( "Argument groupname is missing" )
+      return None
+
+    users = gConfig.getValue( "/Registry/Groups/%s/Users" % groupname , [] )
+    gLogger.debug( "%s users: %s" % ( groupname , users ) )
+    if not len( users ) > 0:
+      gLogger.debug( "No users for group %s found" % groupname )
+      return None
+    return users
 
 
 
