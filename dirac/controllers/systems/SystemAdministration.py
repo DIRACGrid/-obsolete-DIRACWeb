@@ -73,7 +73,7 @@ class SystemadministrationController( BaseController ):
 
     checkUserCredentials()
 
-    request = self.__request()
+    request = self.request()
 
     callback = list()
     
@@ -147,11 +147,11 @@ class SystemadministrationController( BaseController ):
   @jsonify
   def action(self):
 
-  """
-  Processing of incoming requests
-  """
+    """
+    Processing of incoming requests
+    """
 
-# Authorize    
+    # Authorize    
     if "get" in request.params:
       get = request.params[ "get" ]
       if ( get == "email" ) and ( "user" in request.params ):
