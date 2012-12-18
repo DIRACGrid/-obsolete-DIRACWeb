@@ -46,6 +46,12 @@ class SystemadministrationController( BaseController ):
 
 
   def flatten( self , dataDict ):
+
+    """
+    Flatten dict of dicts structure returned by getOverallStatus() method of
+    SystemAdministrator client
+    """
+
     for kind , a in dataDict.items():
       for system , b in a.items():
         for name , c in b.items():
@@ -60,6 +66,11 @@ class SystemadministrationController( BaseController ):
   @jsonify
   def submit( self ):
 
+    """
+    Returns flatten list of components (services, agents) installed on hosts
+    taken at /Registry/Hosts section which has SystemAdministrator up & running
+    """
+
     checkUserCredentials()
 
     request = self.__request()
@@ -72,12 +83,12 @@ class SystemadministrationController( BaseController ):
       return { "success" : "false" , "error" : result[ "Message" ] }
     hosts = result[ "Value" ]
     gLogger.always( "Hosts: %s" % hosts )
-      
-    for i in hosts:
 
+    for i in hosts:
       client = SystemAdministratorClient( i , None )
       result = client.getOverallStatus()
-      gLogger.always( "Results: %s" % result )
+      gLogger.debug( "Result of getOverallStatus(): %s" % result )
+
       if not result[ "OK" ]:
         continue
       overall = result[ "Value" ]
@@ -90,9 +101,10 @@ class SystemadministrationController( BaseController ):
 
 
 
-  def __request(self):
+  def request(self):
 
     """
+    Parsing incoming request. Returns dict with param names as keys
     """
 
     req = dict()
@@ -134,50 +146,26 @@ class SystemadministrationController( BaseController ):
 
   @jsonify
   def action(self):
+
+  """
+  Processing of incoming requests
+  """
+
+# Authorize    
     if "get" in request.params:
       get = request.params[ "get" ]
       if ( get == "email" ) and ( "user" in request.params ):
         return self.__returnEmail()
       elif get == "user":
-        return self.__returnUsers()
+        return self.__returnListFromCS( "/Registry/Users" )
       elif get == "group":
-        return self.__returnGroups()
+        return self.__returnListFromCS( "/Registry/Groups" )
       else:
         error = "The request parameters get '%s' is not defined" % get
         gLogger.debug( error )
         return { "success" : "false" , "error" : error }
     elif "action" in request.params:
-      action = request.params[ "action" ]
-      
-      if not "host" in request.params:
-        error = "Hostname to perform an action at is not in request"
-        gLogger.debug( error )
-        return { "success" : "false" , "error" : error }
-      host = request.params[ "host" ]
-
-      if not "system" in request.params:
-        error = "Name of system to perform an action on is not in request"
-        gLogger.debug( error )
-        return { "success" : "false" , "error" : error }
-      system = request.params[ "system" ]
-      
-      if not "name" in request.params:
-        error = "name of service to perform an action on is not in request"
-        gLogger.debug( error )
-        return { "success" : "false" , "error" : error }
-      service = request.params[ "name" ]
-      
-      if action == "restart":
-        return self.__serviceDoAction( action , host , system , service )
-      elif action == "start":
-        return self.__serviceDoAction( action , host , system , service )
-      elif action == "stop":
-        return self.__serviceDoAction( action , host , system , service )
-      else:
-        error = "The request parameters action '%s' is unknown" % action
-        gLogger.debug( error )
-        return { "success" : "false" , "error" : error }
-
+      return self.__componentAction( request.params[ "action" ] )
     elif "send" in request.params:
       return self.__sendMessage()
     else:
@@ -187,51 +175,120 @@ class SystemadministrationController( BaseController ):
 
 
 
-  def __serviceDoAction( self , action = None , host = None , system = None , component = None ):
+  def __componentAction( self , action = None ):
 
     """
+    Actions which should be done on components. The only parameters is an action
+    to perform.
+    Returns standard JSON response structure with with service response
+    or error messages
     """
 
     if ( not action ) or ( not len( action ) > 0 ):
       error = "Action is not defined or has zero length"
       gLogger.debug( error )
       return { "success" : "false" , "error" : error }    
-    if ( not host ) or ( not len( host ) > 0 ):
-      error = "Hostname is not defined or has zero length"
+
+    if action not in [ "restart" , "start" , "stop" ]:
+      error = "The request parameters action '%s' is unknown" % action
       gLogger.debug( error )
       return { "success" : "false" , "error" : error }
-    if ( not system ) or ( not len( system ) > 0 ):
-      error = "Name of system is not defined or has zero length"
+
+    result = dict()
+    for i in request.params:
+      if i == "action":
+        continue
+
+      target = i.split( " @ " , 1 )
+      if not len( target ) == 2:
+        continue
+
+      host = request.params[ i ]
+      if not host in result:
+        result[ host ] = list()
+      result[ host ].append( [ target[ 0 ] , target[ 1 ] ] )
+
+    if not len( result ) > 0:
+      error = "Failed to get component(s) for %s" % action
       gLogger.debug( error )
       return { "success" : "false" , "error" : error }
-    if ( not component ) or ( not len( component ) > 0 ):
-      error = "Name of component is not defined or has zero length"
-      gLogger.debug( error )
-      return { "success" : "false" , "error" : error }
-    
-    client = SystemAdministratorClient( host , None )
-    
-    if action == "restart":
-      result = client.restartComponent( system , component )
-    elif action == "start":
-      result = client.startComponent( system , component )
-    elif action == "stop":
-      result = client.stopComponent( system , component )
+
+    actionSuccess = list()
+    actionFailed = list()
+
+    for hostname in result.keys():
+
+      if not len( result[ hostname ] ) > 0:
+        continue
+
+      client = SystemAdministratorClient( hostname , None )
+
+      for i in result[ hostname ]:
+
+        system = i[ 0 ]
+        component = i[ 1 ]
+
+        try:
+          if action == "restart":
+            result = client.restartComponent( system , component )
+          elif action == "start":
+            result = client.startComponent( system , component )
+          elif action == "stop":
+            result = client.stopComponent( system , component )
+          else:
+            result = list()
+            result[ "Message" ] = "Action %s is not valid" % action
+        except Exception, x:
+          result = list()
+          result[ "Message" ] = "Exception: %s" % str( x )
+        gLogger.debug( "Result: %s" % result )
+
+        if not result[ "OK" ]:
+          error = hostname + ": " + result[ "Message" ]
+          actionFailed.append( error )
+          gLogger.error( "Failure during component %s: %s" % ( action , error ) )
+        else:
+          gLogger.always( "Successfully %s component %s" % ( action , component ) )
+          actionSuccess.append( component )
+
+    success = ", ".join( actionSuccess )
+    failure = "\n".join( actionFailed )
+
+    if len( actionSuccess ) > 1:
+      sText = "Components"
     else:
-      result = "Action %s is not valid" % action
+      sText = "Component"
+      
+    if len( actionFailed ) > 1:
+      fText = "Components"
+    else:
+      fText = "Component"
+
+    if len( success ) > 0 and len( failure ) > 0:
+      sMessage = "%s %sed successfully: " % ( sText , action , success)
+      fMessage = "Failed to %s %s:\n%s" % ( action , fText , failure )
+      result = sMessage + "\n\n" + fMessage
+      gLogger.debug( result )
+      return { "success" : "true" , "result" : result }
+    elif len( success ) > 0 and len( failure ) < 1:
+      result = "%s %sed successfully: %s" % ( sText , action , success )
+      gLogger.debug( result )
+      return { "success" : "true" , "result" : result }
+    elif len( success ) < 1 and len( failure ) > 0:
+      result = "Failed to %s %s:\n%s" % ( action , fText , failure )
       gLogger.debug( result )
       return { "success" : "false" , "error" : result }
-
-    if not result['OK']:
-      gLogger.debug( result['Message'] )
-      return { "success" : "false" , "error" : result['Message'] }
-    return { "success" : "true" , "result" : result['Value'] }
+    else:
+      result = "No action has performed due technical failure. Check the logs please"
+      gLogger.debug( result )
+      return { "success" : "false" , "error" : result }
 
 
 
   def __sendMessage( self ):
 
     """
+    Send message(not implemented yet) or email getting parameters from request
     """
 
     getEmail = self.__returnEmail()
@@ -287,12 +344,15 @@ class SystemadministrationController( BaseController ):
 
 
 
-  def __returnUsers( self ):
+  def __returnListFromCS( self , path = None ):
 
     """
+    Return list of subsections from section defined by path argument as JSON
     """
     
-    result = gConfig.getSections( "/Registry/Users" )
+    if not path:
+      return { "success" : "false" , "error" : "Path argument is undefined" }
+    result = gConfig.getSections( path )
     if not result[ "OK" ]:
       return { "success" : "false" , "error" : result[ "Message" ] }
     groups = result[ "Value" ]
@@ -301,23 +361,10 @@ class SystemadministrationController( BaseController ):
 
 
 
-  def __returnGroups( self ):
-
-    """
-    """
-    
-    result = gConfig.getSections( "/Registry/Groups" )
-    if not result[ "OK" ]:
-      return { "success" : "false" , "error" : result[ "Message" ] }
-    groups = result[ "Value" ]
-    groups = map( lambda x : { "group" : x } , groups )
-    return { "success" : "true" , "result" : groups }
-
-
-
   def __returnEmail( self ):
-
+  
     """
+    Return email of owner of the request as JSON structure
     """
 
     email = GeneralController().getRequesterEmail()
