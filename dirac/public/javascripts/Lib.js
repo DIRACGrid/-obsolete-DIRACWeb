@@ -668,30 +668,21 @@ function itemsPerPage(){
     data: [ [ 25 ] , [ 50 ] , [ 100 ] , [ 200 ] , [ 500 ] , [ 1000 ] ]
     ,fields:[ 'value' ]
   } );
-  //Set this value by default 25 or get it from extra limit
-  var pageSize = 25;
-  if(dataSelect){
-    if(dataSelect.extra){
-      if(dataSelect.extra.limit){ // Will be deleted in table function
-        pageSize = dataSelect.extra.limit/1;
-      }
-    }
-  }
   var combo = new Ext.form.ComboBox({
-    allowBlank:false,
-    displayField:'value',
-    editable:false,
-    maxLength:4,
-    maxLengthText:'The maximum value for this field is 1000',
-    minLength:1,
-    minLengthText:'The minimum value for this field is 1',
-    mode:'local',
-    selectOnFocus:true,
-    store:store,
-    triggerAction:'all',
-    typeAhead:true,
-    value:pageSize,
-    width:50
+    allowBlank:false
+    ,displayField:'value'
+    ,editable:false
+    ,maxLength:4
+    ,maxLengthText:'The maximum value for this field is 1000'
+    ,minLength:1
+    ,minLengthText:'The minimum value for this field is 1'
+    ,mode:'local'
+    ,selectOnFocus:true
+    ,store:store
+    ,triggerAction:'all'
+    ,typeAhead:true
+    ,value: 25
+    ,width:50
   });
   return combo
 }
@@ -730,6 +721,7 @@ function getDatagrid( cfg ){
   });
   bbaritems.push( updateStamp );
   var ipp = itemsPerPage();
+  //TODO set value using passed value from extra
   ipp.on('collapse' , function(){
     if( ! this.rendered ){
       return false
@@ -789,7 +781,7 @@ function getDatagrid( cfg ){
     });
     var menu = new Ext.menu.Menu();
     try{
-      menu = getMenu( record );
+      menu = getMenu( record , grid );
     }catch(e){}
     if( menu.items.getCount() > 0 ){
       menu.add( '-' );
