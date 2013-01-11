@@ -1,6 +1,6 @@
 var refreshRate = 0; // autorefresh is off
 var heartbeat , datagrid ;
-function init(){
+function init( init ){
   Ext.onReady(function(){
     heartbeat = new Ext.util.TaskRunner();
     Ext.override( Ext.PagingToolbar , {
@@ -18,11 +18,22 @@ function init(){
       })
     });
     Ext.Ajax.timeout = 1000 * 60 * 50 ;
-    datagrid = initData();
+
+    datagrid = new Ext.TabPanel({
+      margins:'2 0 2 0'
+      ,region: 'center'
+      ,split: true
+    });
+    if( init && init[ "hosts" ] ){
+      for( var i = 0; i < init[ "hosts" ].length; i++){
+        initData( init[ "hosts" ][ i ] );
+      }
+    }
+
     renderInMainViewport( [ initSidebar( datagrid ) , datagrid ] );
   });
 }
-function initSidebar( datagrid ){
+function initSidebar(){
   var result = [
     '<a href="#" onclick="javascript:sendMessage()">Send a message</a>'
     ,'<a href="#" onclick="javascript:sendMail()">Send an e-mail</a>'
@@ -46,7 +57,7 @@ function initSidebar( datagrid ){
   });
   return panel;
 }
-function initData(){
+function initData( host ){
   var record = new Ext.data.Record.create([
     { name: 'System' }
     ,{ name: 'Host' }
@@ -59,18 +70,28 @@ function initData(){
     ,{ name: 'Timeup' }
     ,{ name: 'Type' }
   ]);
-  var store = initStore( record , { 'groupBy' : 'Host' } );
+  var store = new Ext.data.GroupingStore({
+    autoLoad: true
+    ,baseParams: { hostname : host}
+    ,groupField: 'Type'
+    ,proxy: new Ext.data.HttpProxy({
+      method: 'POST'
+      ,url: 'submit'
+    })
+    ,reader: new Ext.data.JsonReader({
+      root: 'result'
+      ,totalProperty: 'total'
+    } , record )
+  });
+  store.on('load',function(){
+    datagrid.add( grid );
+  });
   var sm = new Ext.grid.CheckboxSelectionModel({
     header: ''
   }) ;
   var columns = [
     sm
   ,{
-    align: 'left'
-    ,dataIndex: 'Host'
-    ,header: 'Hostname'
-    ,sortable: true
-  },{
     align: 'left'
     ,dataIndex: 'System'
     ,header: 'System'
@@ -121,17 +142,17 @@ function initData(){
   }];
   var autorefreshMenu = [{
     checked: setChk( 900000 )
-    ,checkHandler: function(){ setRefresh( 900000 , datagrid ) }
+    ,checkHandler: function(){ setRefresh( 900000 , grid ) }
     ,group: 'refresh'
     ,text: '15 Minutes'
   },{
     checked: setChk( 1800000 )
-    ,checkHandler: function(){ setRefresh( 1800000 , datagrid ) }
+    ,checkHandler: function(){ setRefresh( 1800000 , grid ) }
     ,group: 'refresh'
     ,text: '30 Minutes'
   },{
     checked: setChk( 3600000 )
-    ,checkHandler: function(){ setRefresh( 3600000 , datagrid ) }
+    ,checkHandler: function(){ setRefresh( 3600000 , grid ) }
     ,group: 'refresh'
     ,text: 'One Hour'
   },{
@@ -142,37 +163,38 @@ function initData(){
   }];
   var tbar = [{
     cls: 'x-btn-text-icon'
-    ,handler: function(){ datagrid.getSelectionModel().selectAll() }
+    ,handler: function(){ grid.getSelectionModel().selectAll() }
     ,icon: gURLRoot + '/images/iface/checked.gif'
     ,text: 'Select All'
     ,tooltip: 'Click to select all rows'
   },{
     cls: 'x-btn-text-icon'
-    ,handler: function(){ datagrid.getSelectionModel().clearSelections() }
+    ,handler: function(){ grid.getSelectionModel().clearSelections() }
     ,icon: gURLRoot + '/images/iface/unchecked.gif'
     ,text: 'Select None'
     ,tooltip: 'Click to uncheck selected row(s)'
   },'->',{
     cls: 'x-btn-text-icon'
-    ,handler: function(){ action( 'restart' , datagrid ) }
+    ,handler: function(){ action( 'restart' , grid ) }
     ,icon: gURLRoot + '/images/iface/resetButton.gif'
     ,text: 'Restart'
     ,tooltip: 'Click to restart selected service(s), agent(s) or mind(s)'
   },{
     cls: 'x-btn-text-icon'
-    ,handler: function(){ action( 'start' , datagrid ) }
+    ,handler: function(){ action( 'start' , grid ) }
     ,icon: gURLRoot + '/images/iface/submit.gif'
     ,text: 'Start'
     ,tooltip: 'Click to start selected service(s), agent(s) or mind(s)'
   },{
     cls: 'x-btn-text-icon'
-    ,handler: function(){ action( 'stop' , datagrid ) }
+    ,handler: function(){ action( 'stop' , grid ) }
     ,icon: gURLRoot + '/images/iface/ban.gif'
     ,text: 'Stop'
     ,tooltip: 'Click to stop selected service(s), agent(s) or mind(s)'
   }];
   var view = new Ext.grid.GroupingView({
-    groupTextTpl: '<tpl if="datagrid.getStore().groupField==\'Host\'">{group}:</tpl><tpl if="datagrid.getStore().groupField!=\'Host\'">{text},</tpl> {[values.rs.length]} {[values.rs.length > 1 ? "Records" : "Record"]}'
+    groupTextTpl: '{[values.rs.length]} {[values.rs.length > 1 ?' +
+                  ' "Records" : "Record"]} ({text})'
     ,hideGroupedColumn: true
   })
   store.setDefaultSort('Type','ASC'); // Default sorting
@@ -180,9 +202,12 @@ function initData(){
     autorefresh: autorefreshMenu
     ,disableIPP: true
     ,columns: columns
+    ,region: undefined
     ,sm: sm
+    ,split: undefined
     ,store: store
     ,tbar: tbar
+    ,title: host
     ,view: view
   });
   return grid
@@ -202,13 +227,13 @@ function uptime( value , cell , record ){
   }
   return value ;
 }
-function getMenu( record ){
+function getMenu( record , grid ){
   var menu = new Ext.menu.Menu();
   var host = record.get( 'Host' );
   var entity = record.get( 'Type' , 'Entity' );
   var restart = new Ext.menu.Item({
     handler:function(){
-      action( 'restart' , datagrid )
+      action( 'restart' , grid )
     }
     ,icon: gURLRoot + '/images/iface/resetButton.gif'
     ,text:'Restart ' + entity
@@ -216,14 +241,14 @@ function getMenu( record ){
   menu.add( restart );
   var stop = new Ext.menu.Item({
     handler: function(){
-      action( 'stop' , datagrid )
+      action( 'stop' , grid )
     }
     ,icon: gURLRoot + '/images/iface/ban.gif'
     ,text: 'Stop ' + entity
   });
   var start = new Ext.menu.Item({
     handler: function(){
-      action( 'start' , datagrid )
+      action( 'start' , grid )
     }
     ,icon: gURLRoot + '/images/iface/submit.gif'
     ,text: 'Start ' + entity
@@ -244,7 +269,7 @@ function setChk(value){
     return false
   }
 }
-function setRefresh( time , datagrid ){
+function setRefresh( time , tab ){
   if( time == 0 ){
     refreshRate = 0;
     heartbeat.stopAll();  
@@ -252,14 +277,14 @@ function setRefresh( time , datagrid ){
     refreshRate = time;
     heartbeat.start({
       run:function(){
-        datagrid.getStore().load();
+        tab.getStore().load();
       },
       interval: time
     });
   }
 }
-function action( action , datagrid ){
-  var selectModel = datagrid.getSelectionModel();
+function action( action , grid ){
+  var selectModel = grid.getSelectionModel();
   if( ! selectModel.getCount() > 0 ){
     return showError( 'You should select at least one record' );
   }
@@ -267,24 +292,24 @@ function action( action , datagrid ){
   var cmpName = new Array();
   params.action = action;
   selectModel.each( function( record ){
-    var target = record.get( 'System' ) + ' @ ' + record.get( 'Name' );
+    var target = record.get( 'Name' ) + ' @ ' + record.get( 'Host' );
     if( ! params[ target ] ){
       params[ target ] = new Array();
     }
-    var host = record.get( 'Host' );
-    params[ target ].push( host );
+    var sys = record.get( 'System' );
+    params[ target ].push( sys );
     cmpName.push( target );
   });
 
   var paramString = cmpName.join( ', ' );
   var title = action.charAt( 0 ).toUpperCase() + action.slice( 1 );
   var msg = 'Do you want to ' + action ;
-  if( cmpname.length > 1 ){
+  if( cmpName.length > 1 ){
     title = title + ' components'; 
-    msg = msg + ' the components: ' + paramsString + ' ?';
+    msg = msg + ' the components: ' + paramString + ' ?';
   }else{
     title = title + ' component'; 
-    msg = msg + ' the component: ' + paramsString + ' ?';
+    msg = msg + ' the component: ' + paramString + ' ?';
   }
 
   Ext.Msg.confirm( title , msg , function( btn ){
@@ -292,13 +317,15 @@ function action( action , datagrid ){
       ajax({
         mask: true
         ,params: params
-        ,success: actionSuccess
+        ,success: function( response ){
+          actionSuccess( response , grid );
+        }
       }) ;
     }
   });
   return
 }
-function actionSuccess( response ){
+function actionSuccess( response , grid ){
   Ext.getBody().unmask() ;
   if( Ext.isEmpty( response ) ){
     return showError( 'Argument response in actionSuccess function is missing' );
@@ -307,12 +334,21 @@ function actionSuccess( response ){
   if( Ext.isEmpty( msg ) ){
     return showError( 'Server response is null or empty' );
   }
-  if( ! Ext.isEmpty( msg.success ) ){
-    
-    return datagrid.getStore().load() ;
-  }
   if( ! Ext.isEmpty( msg.error ) ){
     return showError( msg.error );
+  }
+  if( ! Ext.isEmpty( msg.result ) ){
+    var msg = new Ext.Tip({
+      baseCls:'success',
+      floating: true
+      ,html: msg.result
+      ,width: 300
+    });
+    var x = Ext.num( Ext.getBody().getViewSize().width , 640 );
+    x = ( ( x / 2 ) - ( msg.width / 2 ) );
+    msg.showAt( [ x , 5 ] );
+    setTimeout( function(){ msg.destroy() } , 3000 );
+    return grid.getStore().load() ;
   }
   return showError( 'Server response have no success nor error messages' );
 }
