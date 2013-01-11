@@ -1,6 +1,6 @@
 from dirac.lib.base import *
 from dirac.lib.credentials import getUserDN, getUsername, getAvailableGroups
-from dirac.lib.credentials import getProperties, checkUserCredentials
+from dirac.lib.credentials import getProperties, checkUserCredentials, getSelectedGroup
 from DIRAC import gConfig, gLogger
 from DIRAC.FrameworkSystem.Client.SystemAdministratorClient import SystemAdministratorClient
 from dirac.controllers.info.general import GeneralController
@@ -13,14 +13,19 @@ class SystemadministrationController( BaseController ):
 
   """
   Controller is used to perform standard operation on DIRAC services
-  
   """
 
   def display( self ):
+  
+    c.init = dict()
+    
+    result = gConfig.getSections( "/Registry/Hosts" )
+    if result[ "Value" ]:
+      c.init[ "hosts" ] = result[ "Value" ]
+    
     return render( "systems/SystemAdministration.mako" )
 
 
-  """
   def __getSelectionData( self ):
 
     callback = {}
@@ -41,7 +46,6 @@ class SystemadministrationController( BaseController ):
       hosts = result[ "Value" ]
     callback[ "hosts" ] =  map( lambda x: [ x ] , hosts )
     return callback
-  """
 
 
 
@@ -68,34 +72,32 @@ class SystemadministrationController( BaseController ):
 
     """
     Returns flatten list of components (services, agents) installed on hosts
-    taken at /Registry/Hosts section which has SystemAdministrator up & running
+    returned by getHosts function
     """
 
     checkUserCredentials()
-
-    request = self.request()
+    DN = getUserDN()
+    group = getSelectedGroup()
 
     callback = list()
     
-    gLogger.always( "Get services" )
-    result = gConfig.getSections( "/Registry/Hosts" )
+    request = self.request()
+    if not 'Hostname' in request:
+      return { "success" : "false" , "error" : "Name of the host is absent" }
+    
+    host = request[ 'Hostname' ]
+    client = SystemAdministratorClient( host , None , delegatedDN=DN ,
+                                          delegatedGroup=group )
+    result = client.getOverallStatus()
+    gLogger.debug( "Result of getOverallStatus(): %s" % result )
+
     if not result[ "OK" ]:
       return { "success" : "false" , "error" : result[ "Message" ] }
-    hosts = result[ "Value" ]
-    gLogger.always( "Hosts: %s" % hosts )
+    overall = result[ "Value" ]
 
-    for i in hosts:
-      client = SystemAdministratorClient( i , None )
-      result = client.getOverallStatus()
-      gLogger.debug( "Result of getOverallStatus(): %s" % result )
-
-      if not result[ "OK" ]:
-        continue
-      overall = result[ "Value" ]
-
-      for record in self.flatten( overall ):
-        record[ "Host" ] = i
-        callback.append( record )
+    for record in self.flatten( overall ):
+      record[ "Host" ] = host
+      callback.append( record )
 
     return { "success" : "true" , "result" : callback }
 
@@ -184,6 +186,9 @@ class SystemadministrationController( BaseController ):
     or error messages
     """
 
+    DN = getUserDN()
+    group = getSelectedGroup()
+
     if ( not action ) or ( not len( action ) > 0 ):
       error = "Action is not defined or has zero length"
       gLogger.debug( error )
@@ -203,16 +208,22 @@ class SystemadministrationController( BaseController ):
       if not len( target ) == 2:
         continue
 
-      host = request.params[ i ]
+      system = request.params[ i ]
+      gLogger.always( "System: %s" % system )
+      host = target[ 1 ]
+      gLogger.always( "Host: %s" % host )
+      component = target[ 0 ]
+      gLogger.always( "Component: %s" % component )
       if not host in result:
         result[ host ] = list()
-      result[ host ].append( [ target[ 0 ] , target[ 1 ] ] )
+      result[ host ].append( [ system , component ] )
 
     if not len( result ) > 0:
       error = "Failed to get component(s) for %s" % action
       gLogger.debug( error )
       return { "success" : "false" , "error" : error }
-
+      
+    gLogger.always( result )
     actionSuccess = list()
     actionFailed = list()
 
@@ -221,7 +232,8 @@ class SystemadministrationController( BaseController ):
       if not len( result[ hostname ] ) > 0:
         continue
 
-      client = SystemAdministratorClient( hostname , None )
+      client = SystemAdministratorClient( hostname , None , delegatedDN=DN ,
+                                          delegatedGroup=group )
 
       for i in result[ hostname ]:
 
