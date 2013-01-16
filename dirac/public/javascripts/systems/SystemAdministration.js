@@ -20,7 +20,9 @@ function init( init ){
     Ext.Ajax.timeout = 1000 * 60 * 50 ;
 
     datagrid = new Ext.TabPanel({
-      margins:'2 0 2 0'
+      activeTab: 0
+      ,items: [ sysInfo() ]
+      ,margins:'2 0 2 0'
       ,region: 'center'
       ,split: true
     });
@@ -32,6 +34,280 @@ function init( init ){
 
     renderInMainViewport( [ initSidebar( datagrid ) , datagrid ] );
   });
+}
+function sysInfo(){
+  var record = new Ext.data.Record.create([
+    { name: 'Host' }
+    ,{ name: 'Status' }
+    ,{ name: 'Version' }
+    ,{ name: 'Load1' }
+    ,{ name: 'Load5' }
+    ,{ name: 'Load15' }
+    ,{ name: 'Memory' }
+    ,{ name: 'Disk' }
+    ,{ name: 'Swap' }
+  ]);
+  var store = new Ext.data.Store({
+    autoLoad: true
+    ,proxy: new Ext.data.HttpProxy({
+      method: 'POST'
+      ,timeout: 360000
+      ,url: 'sysinfo'
+    })
+    ,reader: new Ext.data.JsonReader({
+      root: 'result'
+      ,totalProperty: 'total'
+    } , record )
+    ,sortInfo: { field: 'Host' , direction: 'ASC' }
+  });
+  var sm = new Ext.grid.CheckboxSelectionModel({
+    header: ''
+  }) ;
+  var columns = [
+    sm
+  ,{
+    align: 'left'
+    ,dataIndex: 'Host'
+    ,header: 'Hostname'
+    ,sortable: true
+  },{
+    align: 'left'
+    ,dataIndex: 'Status'
+    ,header: 'Status'
+    ,sortable: true
+  },{
+    align: 'left'
+    ,dataIndex: 'Version'
+    ,header: 'Version'
+    ,sortable: true
+  },{
+    align: 'left'
+    ,dataIndex: 'Load1'
+    ,header: 'Load 1 minute'
+    ,sortable: true
+  },{
+    align: 'left'
+    ,dataIndex: 'Load5'
+    ,header: 'Load 5 minutes'
+    ,sortable: true
+  },{
+    align: 'left'
+    ,dataIndex: 'Load15'
+    ,header: 'Load 15 minutes'
+    ,sortable: true
+  },{
+    align: 'left'
+    ,dataIndex: 'Memory'
+    ,fixed:true
+    ,header: 'Memory'
+    ,renderer: pbar
+    ,sortable: true
+  },{
+    align: 'left'
+    ,dataIndex: 'Disk'
+    ,header: 'Disk'
+    ,sortable: true
+  },{
+    align: 'left'
+    ,dataIndex: 'Swap'
+    ,fixed:true
+    ,header: 'Swap'
+    ,renderer: pbar
+    ,sortable: true
+  }];
+  var autorefreshMenu = [{
+    checked: setChk( 900000 )
+    ,checkHandler: function(){ setRefresh( 900000 , grid ) }
+    ,group: 'refresh'
+    ,text: '15 Minutes'
+  },{
+    checked: setChk( 1800000 )
+    ,checkHandler: function(){ setRefresh( 1800000 , grid ) }
+    ,group: 'refresh'
+    ,text: '30 Minutes'
+  },{
+    checked: setChk( 3600000 )
+    ,checkHandler: function(){ setRefresh( 3600000 , grid ) }
+    ,group: 'refresh'
+    ,text: 'One Hour'
+  },{
+    checked: setChk( 0 )
+    ,checkHandler: function(){ setRefresh( 0 ) }
+    ,group: 'refresh'
+    ,text: 'Disabled'
+  }];
+  var tbar = [{
+    cls: 'x-btn-text-icon'
+    ,handler: function(){ grid.getSelectionModel().selectAll() }
+    ,icon: gURLRoot + '/images/iface/checked.gif'
+    ,text: 'Select All'
+    ,tooltip: 'Click to select all rows'
+  },{
+    cls: 'x-btn-text-icon'
+    ,handler: function(){ grid.getSelectionModel().clearSelections() }
+    ,icon: gURLRoot + '/images/iface/unchecked.gif'
+    ,text: 'Select None'
+    ,tooltip: 'Click to uncheck selected row(s)'
+  },'->',{
+    cls: 'x-btn-text-icon'
+    ,handler: function(){ action( 'restart' , grid ) }
+    ,icon: gURLRoot + '/images/iface/resetButton.gif'
+    ,text: 'Restart'
+    ,tooltip: 'Restart all DIRAC components except Web server'
+  },{
+    cls: 'x-btn-text-icon'
+    ,handler: function(){ actionHost( 'update' ) }
+    ,icon: gURLRoot + '/images/iface/lightning.png'
+    ,text: 'Update'
+    ,tooltip: 'Click to update DIRAC software'
+//  },{
+//    cls: 'x-btn-text-icon'
+//    ,handler: function(){ actionHost( 'undo' ) }
+//    ,icon: gURLRoot + '/images/iface/undo.png'
+//    ,disabled: true
+//    ,text: 'Revert'
+//    ,tooltip: 'Replace <DIRACROOT>/pro link by <DIRACROOT>/old'
+  }];
+  var grid = new getDatagrid({
+    autorefresh: autorefreshMenu
+    ,disableIPP: true
+    ,columns: columns
+    ,region: undefined
+    ,menu: menuHost
+    ,sm: sm
+    ,split: undefined
+    ,store: store
+    ,tbar: tbar
+    ,title: 'Overall System Information'
+  });
+  grid.on( 'rowclick' , function( grid , rowIndex , e ){
+    var record = grid.getStore().getAt( rowIndex );
+    var host = record.get( 'Host' );
+    if( Ext.isEmpty( host ) ){
+      return showError( 'Failed to get value Host from data record' );
+    }
+    var tpanel = grid.findParentByType( 'tabpanel' );
+//    var isTab = false ;
+    var result = tpanel.findBy(function(){
+      if( this.title == host ){
+        tpanel.setActiveTab( this );
+//        isTab = true;
+      }
+    });
+//    if( ! isTab ){
+//      return showError( 'Tab ' + host + ' does not exists' );
+//    }
+  });
+  return grid
+}
+
+function menuHost( record , grid ){
+  var menu = new Ext.menu.Menu();
+  var host = record.get( 'Host' );
+  var restart = new Ext.menu.Item({
+    handler:function(){
+      restartHost( host )
+    }
+    ,icon: gURLRoot + '/images/iface/resetButton.gif'
+    ,text:'Restart'
+  });
+  menu.add( restart );
+  var update = new Ext.menu.Item({
+    handler:function(){
+      updateHost( grid )
+    }
+    ,icon: gURLRoot + '/images/iface/lightning.png'
+    ,text:'Update'
+  });
+  menu.add( update );
+  var error = new Ext.menu.Item({
+    handler:function(){
+      errorDisplay( host );
+    }
+    ,icon: gURLRoot + '/images/iface/error.png'
+    ,text:'Show Errors'
+  });
+  menu.add( error );
+  return menu
+}
+
+function restartHost( host ){
+  if( Ext.isEmpty( host ) ){
+    return showError( 'Failed to get value Host from data record' );
+  }
+  if( ! Ext.isArray( host ) ){
+    host = new Array( host );
+  }
+  var params = new Object();
+  for( var i = 0 ; i < host.length ; i++ ){
+    params[ host[ i ] ] = 'restart';  
+  }
+  var hostString = host.join( ', ' );
+  var title = 'Restart DIRAC';
+  var msg = 'Do you want to restart all DIRAC components on ';
+  if( host.length > 1 ){
+    title = title + ' components';
+    msg = msg + ' the hosts: ' + hostString + ' ?';
+  }else{
+    title = title + ' component';
+    msg = msg + ' the host: ' + hostString + ' ?';
+  }
+  Ext.Msg.confirm( title , msg , function( btn ){
+    if( btn == 'yes' ){
+      ajax({
+        mask: true
+        ,end: function(){ storeReload( host ) }
+        ,params: params
+        ,success: success
+        ,url: 'restarthost'
+      }) ;
+    }
+  });
+  return  
+}
+
+function pbar( value ){
+  if( ! value ){
+    return
+  }
+  var id = Ext.id();
+  var values = value.split( '/' );
+  var text = values[ 1 ];
+  var percent = values[ 0 ].replace( '%' , '' );
+  percent = percent.replace( '.' , '' );
+  if( percent.length < 2 ){
+    percent = '0' + percent;
+  }
+  percent = '.' + percent;
+  (function(){
+    new Ext.ProgressBar({
+      height: 14
+      ,renderTo: id
+      ,text: text
+      ,value: percent
+    });
+  }).defer(25)
+  return '<span id="' + id + '"></span>';
+}
+function showInfo( response , panel ){
+  if(! Ext.isEmpty( response.DiskOccupancy ) ){
+    var disk = response.DiskOccupancy.split( ',' );
+    for( var i = 0 ; i < disk.length ; i++ ){
+      var values = disk[ i ].split( ':' );
+      var percent = values[1].replace( '%' , '' );
+      if( percent.length < 2 ){
+        percent = '0' + percent;
+      }
+      percent = '.' + percent;
+      var tmp = new Ext.ProgressBar({
+        text: values[ 0 ]
+        ,value: percent
+//        ,width: 300
+      });
+      panel.add( tmp );
+    }
+  }
+  panel.doLayout();
 }
 function initSidebar(){
   var result = [
@@ -203,6 +479,7 @@ function initData( host ){
     ,disableIPP: true
     ,columns: columns
     ,region: undefined
+    ,menu: getMenu
     ,sm: sm
     ,split: undefined
     ,store: store
@@ -315,21 +592,20 @@ function action( action , grid ){
   Ext.Msg.confirm( title , msg , function( btn ){
     if( btn == 'yes' ){
       ajax({
-        mask: true
-        ,params: params
-        ,success: function( response ){
-          actionSuccess( response , grid );
+        end: function(){
+          grid.getStore().load()
         }
+        ,mask: true
+        ,params: params
+        ,success: success
       }) ;
     }
   });
   return
 }
-function actionSuccess( response , grid ){
-  Ext.getBody().unmask() ;
-  if( Ext.isEmpty( response ) ){
-    return showError( 'Argument response in actionSuccess function is missing' );
-  }
+
+function success( response , opt ){
+  Ext.getBody().unmask();
   var msg = Ext.util.JSON.decode( response.responseText ) ;
   if( Ext.isEmpty( msg ) ){
     return showError( 'Server response is null or empty' );
@@ -337,20 +613,26 @@ function actionSuccess( response , grid ){
   if( ! Ext.isEmpty( msg.error ) ){
     return showError( msg.error );
   }
+  if( ! Ext.isEmpty( opt.end ) ){
+    opt.end();
+  }
   if( ! Ext.isEmpty( msg.result ) ){
-    var msg = new Ext.Tip({
-      baseCls:'success',
-      floating: true
-      ,html: msg.result
-      ,width: 300
-    });
-    var x = Ext.num( Ext.getBody().getViewSize().width , 640 );
-    x = ( ( x / 2 ) - ( msg.width / 2 ) );
-    msg.showAt( [ x , 5 ] );
-    setTimeout( function(){ msg.destroy() } , 3000 );
-    return grid.getStore().load() ;
+    return showTip( msg.result );
   }
   return showError( 'Server response have no success nor error messages' );
 }
-function afterDataLoad(){};
 
+function showTip( text ){
+  var msg = new Ext.Tip({
+    baseCls:'success'
+    ,floating: true
+    ,html: text
+    ,width: 300
+  });
+  var x = Ext.num( Ext.getBody().getViewSize().width , 640 );
+  x = ( ( x / 2 ) - ( msg.width / 2 ) );
+  setTimeout( function(){ msg.destroy() } , 3000 );
+  return msg.showAt( [ x , 5 ] );
+}
+
+function afterDataLoad(){}
