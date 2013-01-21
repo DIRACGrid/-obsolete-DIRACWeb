@@ -241,6 +241,11 @@ class SystemadministrationController( BaseController ):
       gLogger.always( result )
 
       if not result[ "OK" ]:
+        if result[ "Message" ].find( "Unexpected EOF" ) > 0:
+          msg = "Signal 'Unexpected EOF' received. Most likely DIRAC components"
+          msg = i + ": " + msg + " were successfully restarted."
+          self.actionSuccess.append( msg )
+          continue
         error = i + ": " + result[ "Message" ]
         self.actionFailed.append( error )
         gLogger.error( "Failure during restarting components on host: %s" % i )
