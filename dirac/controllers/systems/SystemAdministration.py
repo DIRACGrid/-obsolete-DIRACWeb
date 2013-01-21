@@ -216,6 +216,42 @@ class SystemadministrationController( BaseController ):
 
 
 
+  @jsonify
+  def restartHost( self ):
+
+    """
+    Restart all DIRAC components on a given host
+    """
+
+    if not "hostname" in request.params:
+      return { "success" : "false" , "error" : "No hostname given" }
+    hosts = request.params[ "hostname" ].split( "," )
+
+    DN = getUserDN()
+    group = getSelectedGroup()
+
+    self.action = "restart"
+    self.actionSuccess = list()
+    self.actionFailed = list()
+
+    for i in hosts:
+      client = SystemAdministratorClient( str( i ) , None , delegatedDN=DN ,
+                                          delegatedGroup=group )
+      result = client.restartComponent( str( "*" ) , str( "*" ) )
+      gLogger.always( result )
+
+      if not result[ "OK" ]:
+        error = i + ": " + result[ "Message" ]
+        self.actionFailed.append( error )
+        gLogger.error( "Failure during restarting components on host: %s" % i )
+      else:
+        gLogger.always( "Successfully restart components on host %s" % i )
+        self.actionSuccess.append( i )
+      
+    self.prefix = "Host"
+    return self.__aftermath()
+
+
   def __componentAction( self , action = None ):
 
     """
@@ -231,12 +267,13 @@ class SystemadministrationController( BaseController ):
     if ( not action ) or ( not len( action ) > 0 ):
       error = "Action is not defined or has zero length"
       gLogger.debug( error )
-      return { "success" : "false" , "error" : error }    
+      return { "success" : "false" , "error" : error }
 
     if action not in [ "restart" , "start" , "stop" ]:
       error = "The request parameters action '%s' is unknown" % action
       gLogger.debug( error )
       return { "success" : "false" , "error" : error }
+    self.action = action
 
     result = dict()
     for i in request.params:
@@ -263,8 +300,8 @@ class SystemadministrationController( BaseController ):
       return { "success" : "false" , "error" : error }
       
     gLogger.always( result )
-    actionSuccess = list()
-    actionFailed = list()
+    self.actionSuccess = list()
+    self.actionFailed = list()
 
     for hostname in result.keys():
 
@@ -296,38 +333,44 @@ class SystemadministrationController( BaseController ):
 
         if not result[ "OK" ]:
           error = hostname + ": " + result[ "Message" ]
-          actionFailed.append( error )
+          self.actionFailed.append( error )
           gLogger.error( "Failure during component %s: %s" % ( action , error ) )
         else:
           gLogger.always( "Successfully %s component %s" % ( action , component ) )
-          actionSuccess.append( component )
+          self.actionSuccess.append( component )
 
-    success = ", ".join( actionSuccess )
-    failure = "\n".join( actionFailed )
+    self.prefix = "Component"
+    return self.__aftermath()
 
-    if len( actionSuccess ) > 1:
-      sText = "Components"
+
+  def __aftermath( self ):
+
+    action = self.action
+
+    success = ", ".join( self.actionSuccess )
+    failure = "\n".join( self.actionFailed )
+
+    if len( self.actionSuccess ) > 1:
+      sText = self.prefix + "s"
     else:
-      sText = "Component"
+      sText = self.prefix
       
-    if len( actionFailed ) > 1:
-      fText = "Components"
+    if len( self.actionFailed ) > 1:
+      fText = self.prefix + "s"
     else:
-      fText = "Component"
+      fText = self.prefix
 
     if len( success ) > 0 and len( failure ) > 0:
       sMessage = "%s %sed successfully: " % ( sText , action , success)
       fMessage = "Failed to %s %s:\n%s" % ( action , fText , failure )
       result = sMessage + "\n\n" + fMessage
-      gLogger.debug( result )
       return { "success" : "true" , "result" : result }
     elif len( success ) > 0 and len( failure ) < 1:
       result = "%s %sed successfully: %s" % ( sText , action , success )
-      gLogger.debug( result )
       return { "success" : "true" , "result" : result }
     elif len( success ) < 1 and len( failure ) > 0:
       result = "Failed to %s %s:\n%s" % ( action , fText , failure )
-      gLogger.debug( result )
+      gLogger.always( result )
       return { "success" : "false" , "error" : result }
     else:
       result = "No action has performed due technical failure. Check the logs please"
