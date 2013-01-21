@@ -1,3 +1,8 @@
+[web2013012101]
+NEW: Initial release of SystemAdministration web page. To get it working, uncomment the line 138 in web.cfg file
+FIX: Fixing typo in ProductionMonitor.py
+CHANGE: Version of software displays in bottom left corner
+
 [web2012112601]
 FIX: Minor fixes in Presenter
 FIX: Rename MetaCatalogue to MetaCatalog.py

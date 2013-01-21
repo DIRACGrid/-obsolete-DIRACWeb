@@ -390,7 +390,7 @@ class ProductionmonitorController(BaseController):
     if res["OK"]:
       resString = "%s extended by %s successfully" % (id,tasks)
     else:
-      resString = "%s failed to extend: %s" % (id,result["Message"])
+      resString = "%s failed to extend: %s" % (id,res["Message"])
     c.result = {"success":"true","showResult":[resString],"result":resString}
     gLogger.info("#######",res)
     return c.result
