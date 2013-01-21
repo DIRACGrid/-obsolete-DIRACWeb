@@ -460,11 +460,13 @@ function action( record ){
     this.postfix = 'DIRAC components on host';
     this.url = this.action + 'Host';
     this.prepare();
+    var hosts = new Array();
     for( var i = 0 ; i < this.record.length ; i++){
       var host = this.record[ i ].get( 'Host' );
+      hosts.push( host );
       this.msg = this.msg + ' ' + host + ', ';
-      this.params[ host ] = this.action;  
     }
+    this.params[ 'hostname' ] = hosts.join( ',' );
     this.showMsg();
   }  
   this.doCmpAction = function( action ){
