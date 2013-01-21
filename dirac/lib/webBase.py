@@ -8,6 +8,9 @@ from dirac.lib.webconfig import gWebConfig
 import dirac.lib.helpers as helpers
 from pylons import request
 from DIRAC import gMonitor, gLogger
+from DIRAC.ConfigurationSystem.Client.Helpers.CSGlobals import getCSExtensions
+from DIRAC.Core.Utilities import InstallTools
+
 
 def currentPath():
   rD = request.environ[ 'pylons.routes_dict' ]
@@ -133,11 +136,38 @@ def getSetups():
                                                                 id = setupName ) ) for setupName in gWebConfig.getSetups() ]
   return "[%s]" % ",".join( availableSetups )
 
+def getVersion():
+  result = InstallTools.getInfo( getCSExtensions() )
+  if not result[ "OK" ]:
+    return ""
+
+  dirac = ""
+  values = result[ "Value" ]
+  if "DIRAC" in values:
+    dirac = "DIRAC: %s" % str( values[ "DIRAC" ] )
+
+  if "Extensions" in values:
+    ext = values[ "Extensions" ]
+    if not len( ext ) > 0:
+      return dirac
+    extResult = list()
+    for i in ext:
+      extResult.append( "%s: %s" % ( i , ext[ i ] ) )
+    ext = ", ".join( extResult )
+    version = "%s, %s" % ( dirac , ext )
+  return version
+
 def pagePath():
   path = currentPath()
   schemaPath = gWebConfig.getSchemaPathFromURL( path )
   dirList = [ dir for dir in schemaPath.split( "/" ) if not dir.strip() == "" ]
-  return "'%s'" % " > ".join( dirList )
+  ver = getVersion()
+  path = "'%s&nbsp;&nbsp;&nbsp;&nbsp;%s'" % ( " > ".join( dirList ) , ver )
+  print getVersion()
+  return path
+  
+#def pagePath():
+#  return "'%s %s'" % ( str( getVersion() ) , str( pageRoute() ) )
 
 def pageName():
   path = request.environ[ "pylons.routes_dict" ]
