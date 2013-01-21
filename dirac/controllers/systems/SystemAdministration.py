@@ -3,6 +3,7 @@ from dirac.lib.credentials import getUserDN, getUsername, getAvailableGroups
 from dirac.lib.credentials import getProperties, checkUserCredentials, getSelectedGroup
 from DIRAC import gConfig, gLogger
 from DIRAC.FrameworkSystem.Client.SystemAdministratorClient import SystemAdministratorClient
+from DIRAC.FrameworkSystem.Client.SystemAdministratorIntegrator import SystemAdministratorIntegrator
 from dirac.controllers.info.general import GeneralController
 from DIRAC.Core.Utilities.List import uniqueElements
 
@@ -166,6 +167,8 @@ class SystemadministrationController( BaseController ):
         error = "The request parameters get '%s' is not defined" % get
         gLogger.debug( error )
         return { "success" : "false" , "error" : error }
+    elif "showSysInfo" in request.params:
+      return self.__getSysInfo()
     elif "action" in request.params:
       return self.__componentAction( request.params[ "action" ] )
     elif "send" in request.params:
@@ -174,6 +177,42 @@ class SystemadministrationController( BaseController ):
       result = "The request parameters are not defined"
       gLogger.debug( result )
       return { "success" : "false" , "error" : result }
+
+
+
+  @jsonify
+  def sysinfo( self ):
+
+    DN = getUserDN()
+    group = getSelectedGroup()
+
+    #TODO: remove hosts code after v6r7 since it will be built-in
+    result = gConfig.getSections( "/Registry/Hosts" )
+    if not result[ "Value" ]:
+      return { "success" : "false" , "error" : result[ "Message" ] }
+    hosts = result[ "Value" ]
+
+    client = SystemAdministratorIntegrator( hosts = hosts , delegatedDN=DN ,
+                                          delegatedGroup=group )
+    result = client.getHostInfo()
+    gLogger.debug( result )
+    if not result[ "OK" ]:
+      return { "success" : "false" , "error" : result[ "Message" ] }
+    result = result[ "Value" ]
+
+    callback = list()
+    for i in result:
+      if result[ i ][ "OK" ]:
+        tmp = result[ i ][ "Value" ]
+      else:
+        tmp = dict()
+      tmp[ "Host" ] = i
+      callback.append( tmp )
+
+    total = len( callback )
+    if not total > 0:
+      return { "success" : "false" , "error" : "No system information found" }
+    return { "success" : "true" , "result" : callback , "total" : total }
 
 
 
