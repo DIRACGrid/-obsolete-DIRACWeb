@@ -138,36 +138,22 @@ function sysInfo(){
   }];
   var tbar = [{
     cls: 'x-btn-text-icon'
-    ,handler: function(){ grid.getSelectionModel().selectAll() }
-    ,icon: gURLRoot + '/images/iface/checked.gif'
-    ,text: 'Select All'
-    ,tooltip: 'Click to select all rows'
-  },{
-    cls: 'x-btn-text-icon'
-    ,handler: function(){ grid.getSelectionModel().clearSelections() }
-    ,icon: gURLRoot + '/images/iface/unchecked.gif'
-    ,text: 'Select None'
-    ,tooltip: 'Click to uncheck selected row(s)'
-  },'->',{
-    cls: 'x-btn-text-icon'
-    ,handler: function(){ action( 'restart' , grid ) }
     ,icon: gURLRoot + '/images/iface/resetButton.gif'
     ,text: 'Restart'
     ,tooltip: 'Restart all DIRAC components except Web server'
-  },{
-    cls: 'x-btn-text-icon'
-    ,handler: function(){ actionHost( 'update' ) }
-    ,icon: gURLRoot + '/images/iface/lightning.png'
-    ,text: 'Update'
-    ,tooltip: 'Click to update DIRAC software'
 //  },{
 //    cls: 'x-btn-text-icon'
-//    ,handler: function(){ actionHost( 'undo' ) }
-//    ,icon: gURLRoot + '/images/iface/undo.png'
-//    ,disabled: true
-//    ,text: 'Revert'
-//    ,tooltip: 'Replace <DIRACROOT>/pro link by <DIRACROOT>/old'
+//    ,icon: gURLRoot + '/images/iface/lightning.png'
+//    ,text: 'Update'
+//    ,tooltip: 'Click to update DIRAC software'
   }];
+  for( var i = 0 ; i < tbar.length ; i++ ){
+    tbar[ i ] = new Ext.Toolbar.Button( tbar[ i ] );
+    tbar[ i ].on( 'click' , function( btn ){
+      var act = new action( grid.getSelectionModel().getSelections() );
+      act.doHostAction( btn.text );
+    });
+  }  
   var grid = new getDatagrid({
     autorefresh: autorefreshMenu
     ,disableIPP: true
@@ -180,7 +166,7 @@ function sysInfo(){
     ,tbar: tbar
     ,title: 'Overall System Information'
   });
-  grid.on( 'rowclick' , function( grid , rowIndex , e ){
+  grid.on( 'rowdblclick' , function( grid , rowIndex , e ){
     var record = grid.getStore().getAt( rowIndex );
     var host = record.get( 'Host' );
     if( Ext.isEmpty( host ) ){
@@ -201,69 +187,33 @@ function sysInfo(){
   return grid
 }
 
-function menuHost( record , grid ){
-  var menu = new Ext.menu.Menu();
+function menuHost( record ){
   var host = record.get( 'Host' );
-  var restart = new Ext.menu.Item({
-    handler:function(){
-      restartHost( host )
-    }
-    ,icon: gURLRoot + '/images/iface/resetButton.gif'
-    ,text:'Restart'
+  var act = new action( [ record ] );
+  var menu = new Ext.menu.Menu({
+    items:[{
+      handler:function(){
+        act.doHostAction( 'restart' );
+      }
+      ,icon: gURLRoot + '/images/iface/resetButton.gif'
+      ,text:'Restart'
+      /*
+    },{
+      handler:function(){
+        act.doHostAction( 'update' );
+      }
+      ,icon: gURLRoot + '/images/iface/lightning.png'
+      ,text:'Update'
+    },{
+      handler:function(){
+        errorDisplay( host );
+      }
+      ,icon: gURLRoot + '/images/iface/error.png'
+      ,text:'Show Errors'
+      */
+    }]  
   });
-  menu.add( restart );
-  var update = new Ext.menu.Item({
-    handler:function(){
-      updateHost( grid )
-    }
-    ,icon: gURLRoot + '/images/iface/lightning.png'
-    ,text:'Update'
-  });
-  menu.add( update );
-  var error = new Ext.menu.Item({
-    handler:function(){
-      errorDisplay( host );
-    }
-    ,icon: gURLRoot + '/images/iface/error.png'
-    ,text:'Show Errors'
-  });
-  menu.add( error );
   return menu
-}
-
-function restartHost( host ){
-  if( Ext.isEmpty( host ) ){
-    return showError( 'Failed to get value Host from data record' );
-  }
-  if( ! Ext.isArray( host ) ){
-    host = new Array( host );
-  }
-  var params = new Object();
-  for( var i = 0 ; i < host.length ; i++ ){
-    params[ host[ i ] ] = 'restart';  
-  }
-  var hostString = host.join( ', ' );
-  var title = 'Restart DIRAC';
-  var msg = 'Do you want to restart all DIRAC components on ';
-  if( host.length > 1 ){
-    title = title + ' components';
-    msg = msg + ' the hosts: ' + hostString + ' ?';
-  }else{
-    title = title + ' component';
-    msg = msg + ' the host: ' + hostString + ' ?';
-  }
-  Ext.Msg.confirm( title , msg , function( btn ){
-    if( btn == 'yes' ){
-      ajax({
-        mask: true
-        ,end: function(){ storeReload( host ) }
-        ,params: params
-        ,success: success
-        ,url: 'restarthost'
-      }) ;
-    }
-  });
-  return  
 }
 
 function pbar( value ){
@@ -289,26 +239,7 @@ function pbar( value ){
   }).defer(25)
   return '<span id="' + id + '"></span>';
 }
-function showInfo( response , panel ){
-  if(! Ext.isEmpty( response.DiskOccupancy ) ){
-    var disk = response.DiskOccupancy.split( ',' );
-    for( var i = 0 ; i < disk.length ; i++ ){
-      var values = disk[ i ].split( ':' );
-      var percent = values[1].replace( '%' , '' );
-      if( percent.length < 2 ){
-        percent = '0' + percent;
-      }
-      percent = '.' + percent;
-      var tmp = new Ext.ProgressBar({
-        text: values[ 0 ]
-        ,value: percent
-//        ,width: 300
-      });
-      panel.add( tmp );
-    }
-  }
-  panel.doLayout();
-}
+
 function initSidebar(){
   var result = [
     '<a href="#" onclick="javascript:sendMessage()">Send a message</a>'
@@ -333,6 +264,7 @@ function initSidebar(){
   });
   return panel;
 }
+
 function initData( host ){
   var record = new Ext.data.Record.create([
     { name: 'System' }
@@ -358,6 +290,7 @@ function initData( host ){
       root: 'result'
       ,totalProperty: 'total'
     } , record )
+    ,sortInfo: { field: "Type" , direction: "ASC" }
   });
   store.on('load',function(){
     datagrid.add( grid );
@@ -387,18 +320,6 @@ function initData( host ){
     ,dataIndex: 'Type'
     ,header: 'Type'
     ,sortable: true
-/*
-  },{
-    align: 'left'
-    ,dataIndex: 'Setup'
-    ,header: 'Setup'
-    ,sortable: true
-  },{
-    align: 'left'
-    ,dataIndex: 'Installed'
-    ,header: 'Installed'
-    ,sortable: true
-*/
   },{
     align: 'left'
     ,dataIndex: 'RunitStatus'
@@ -439,41 +360,34 @@ function initData( host ){
   }];
   var tbar = [{
     cls: 'x-btn-text-icon'
-    ,handler: function(){ grid.getSelectionModel().selectAll() }
-    ,icon: gURLRoot + '/images/iface/checked.gif'
-    ,text: 'Select All'
-    ,tooltip: 'Click to select all rows'
-  },{
-    cls: 'x-btn-text-icon'
-    ,handler: function(){ grid.getSelectionModel().clearSelections() }
-    ,icon: gURLRoot + '/images/iface/unchecked.gif'
-    ,text: 'Select None'
-    ,tooltip: 'Click to uncheck selected row(s)'
-  },'->',{
-    cls: 'x-btn-text-icon'
-    ,handler: function(){ action( 'restart' , grid ) }
     ,icon: gURLRoot + '/images/iface/resetButton.gif'
     ,text: 'Restart'
     ,tooltip: 'Click to restart selected service(s), agent(s) or mind(s)'
   },{
     cls: 'x-btn-text-icon'
-    ,handler: function(){ action( 'start' , grid ) }
     ,icon: gURLRoot + '/images/iface/submit.gif'
     ,text: 'Start'
     ,tooltip: 'Click to start selected service(s), agent(s) or mind(s)'
   },{
     cls: 'x-btn-text-icon'
-    ,handler: function(){ action( 'stop' , grid ) }
-    ,icon: gURLRoot + '/images/iface/ban.gif'
+    ,icon: gURLRoot + '/images/iface/stop.gif'
     ,text: 'Stop'
     ,tooltip: 'Click to stop selected service(s), agent(s) or mind(s)'
   }];
+  for( var i = 0 ; i < tbar.length ; i++ ){
+    tbar[ i ] = new Ext.Toolbar.Button( tbar[ i ] );
+    tbar[ i ].on( 'click' , function( btn ){
+      var records = grid.getSelectionModel().getSelections();
+      var act = new action( records );
+      Ext.apply( act , { finnaly: function(){ grid.getStore().load() } } );
+      act.doCmpAction( btn.text );
+    });
+  }
   var view = new Ext.grid.GroupingView({
     groupTextTpl: '{[values.rs.length]} {[values.rs.length > 1 ?' +
                   ' "Records" : "Record"]} ({text})'
     ,hideGroupedColumn: true
   })
-  store.setDefaultSort('Type','ASC'); // Default sorting
   var grid = new getDatagrid({
     autorefresh: autorefreshMenu
     ,disableIPP: true
@@ -489,119 +403,121 @@ function initData( host ){
   });
   return grid
 }
-function uptime( value , cell , record ){
-  if( record.get( 'RunitStatus' ) != 'Run' ){
-    return '<b>&mdash;</b>'
-  }
-  if( value < 30 ){
-    return '<font color="#FF3300"><b>' + value + '</b></font>' ;
-  }
-  if( value < ( 60 * 5 ) ){
-    return '<font color="#FFCC00"><b>' + value + '</b></font>' ;
-  }
-  if( value < ( 60 * 10 ) ){
-    return '<font color="#00CC00">' + value + '</font>' ;
-  }
-  return value ;
-}
-function getMenu( record , grid ){
-  var menu = new Ext.menu.Menu();
-  var host = record.get( 'Host' );
-  var entity = record.get( 'Type' , 'Entity' );
-  var restart = new Ext.menu.Item({
-    handler:function(){
-      action( 'restart' , grid )
-    }
-    ,icon: gURLRoot + '/images/iface/resetButton.gif'
-    ,text:'Restart ' + entity
-  });
-  menu.add( restart );
-  var stop = new Ext.menu.Item({
-    handler: function(){
-      action( 'stop' , grid )
-    }
-    ,icon: gURLRoot + '/images/iface/ban.gif'
-    ,text: 'Stop ' + entity
-  });
-  var start = new Ext.menu.Item({
-    handler: function(){
-      action( 'start' , grid )
-    }
-    ,icon: gURLRoot + '/images/iface/submit.gif'
-    ,text: 'Start ' + entity
-  });
 
+function action( record ){
+  this.record = record;
+  this.title = undefined;
+  this.msg = undefined;
+  this.action = undefined;
+  this.params = new Object();
+  this.url = 'action';
+  this.postfix = 'component';
+  this.finnaly = function(){
+    return new Ext.emptyFn
+  }
+  this.check = function(){
+//    if( ! Ext.isArray( this.record ){
+//      showError( 'Argument record is not an array' );
+//      return false;
+//    }
+    if( ! this.record.length > 0 ){
+      showError( 'No records has been selected' );
+      return false;
+    }
+    return true;
+  }
+  this.prepare = function(){
+    this.title = this.action;
+    this.msg = this.msg + ' ' + this.action;
+    if( this.record.length > 1 ){
+      this.title = this.title + ' ' + this.postfix + 's';
+    }else{
+      this.title = this.title + ' ' + this.postfix;
+    }
+    this.msg = 'Do you want to ' + this.title + ':'
+    this.title = this.title.charAt( 0 ).toUpperCase() + this.title.slice( 1 );
+  }
+  this.showMsg = function(){
+    this.msg = this.msg.slice( 0 , -2 );
+    this.msg = this.msg + '?';
+    return Ext.Msg.confirm( this.title , this.msg , function( btn ){
+      if( btn == 'yes' ){
+        ajax({
+          end: this.scope.finnaly
+          ,mask: true
+          ,params: this.scope.params
+          ,success: success
+          ,url: this.scope.url
+        }) ;
+      }
+    } , { scope: this });
+  }
+  this.doHostAction = function( action ){
+    if( ! this.check() ){
+      return false;
+    }
+    this.action = action.toLowerCase();
+    this.postfix = 'DIRAC components on host';
+    this.url = this.action + 'Host';
+    this.prepare();
+    for( var i = 0 ; i < this.record.length ; i++){
+      var host = this.record[ i ].get( 'Host' );
+      this.msg = this.msg + ' ' + host + ', ';
+      this.params[ host ] = this.action;  
+    }
+    this.showMsg();
+  }  
+  this.doCmpAction = function( action ){
+    if( ! this.check() ){
+      return false;
+    }
+    this.action = action.toLowerCase();
+    this.params.action = this.action;
+    this.prepare();
+    for( var i = 0 ; i < this.record.length ; i++){
+      var rec = this.record[ i ];
+      var target = rec.get( 'Name' ) + ' @ ' + rec.get( 'Host' );
+      if( ! this.params[ target ] ){
+        this.params[ target ] = new Array();
+      }
+      this.msg = this.msg + ' ' + target + ', ';
+      this.params[ target ].push( rec.get( 'System' ) );
+    }
+    this.showMsg();
+  }
+}
+
+function getMenu( record , grid ){
+  var act = new action( [ record ] );
+  Ext.apply( act , { finnaly: function(){ grid.getStore().load() } } );
+  var menu = new Ext.menu.Menu({
+    items:[{
+      handler:function(){
+        act.doCmpAction( 'restart' );
+      }
+      ,icon: gURLRoot + '/images/iface/resetButton.gif'
+      ,text:'Restart'
+    },{
+      handler: function(){
+        act.doCmpAction( 'stop' );
+      }
+      ,icon: gURLRoot + '/images/iface/ban.gif'
+      ,text: 'Stop'
+    },{
+      handler: function(){
+        act.doCmpAction( 'start' );
+      }
+      ,icon: gURLRoot + '/images/iface/submit.gif'
+      ,text: 'Start'
+    }]  
+  });
   var status = record.get( 'RunitStatus' ) ;
   if( status == 'Run' ){
-    menu.add( stop );
+    menu.items.items[ 2 ].disable();
   }else if( status == 'Down' ){
-    menu.add( start );
+    menu.items.items[ 1 ].disable();
   }
   return menu
-}
-function setChk(value){
-  if(value == refreshRate){
-    return true
-  }else{
-    return false
-  }
-}
-function setRefresh( time , tab ){
-  if( time == 0 ){
-    refreshRate = 0;
-    heartbeat.stopAll();  
-  }else{
-    refreshRate = time;
-    heartbeat.start({
-      run:function(){
-        tab.getStore().load();
-      },
-      interval: time
-    });
-  }
-}
-function action( action , grid ){
-  var selectModel = grid.getSelectionModel();
-  if( ! selectModel.getCount() > 0 ){
-    return showError( 'You should select at least one record' );
-  }
-  var params = new Object();
-  var cmpName = new Array();
-  params.action = action;
-  selectModel.each( function( record ){
-    var target = record.get( 'Name' ) + ' @ ' + record.get( 'Host' );
-    if( ! params[ target ] ){
-      params[ target ] = new Array();
-    }
-    var sys = record.get( 'System' );
-    params[ target ].push( sys );
-    cmpName.push( target );
-  });
-
-  var paramString = cmpName.join( ', ' );
-  var title = action.charAt( 0 ).toUpperCase() + action.slice( 1 );
-  var msg = 'Do you want to ' + action ;
-  if( cmpName.length > 1 ){
-    title = title + ' components'; 
-    msg = msg + ' the components: ' + paramString + ' ?';
-  }else{
-    title = title + ' component'; 
-    msg = msg + ' the component: ' + paramString + ' ?';
-  }
-
-  Ext.Msg.confirm( title , msg , function( btn ){
-    if( btn == 'yes' ){
-      ajax({
-        end: function(){
-          grid.getStore().load()
-        }
-        ,mask: true
-        ,params: params
-        ,success: success
-      }) ;
-    }
-  });
-  return
 }
 
 function success( response , opt ){
@@ -633,6 +549,45 @@ function showTip( text ){
   x = ( ( x / 2 ) - ( msg.width / 2 ) );
   setTimeout( function(){ msg.destroy() } , 3000 );
   return msg.showAt( [ x , 5 ] );
+}
+
+function uptime( value , cell , record ){
+  if( record.get( 'RunitStatus' ) != 'Run' ){
+    return '<b>&mdash;</b>'
+  }
+  if( value < 30 ){
+    return '<font color="#FF3300"><b>' + value + '</b></font>' ;
+  }
+  if( value < ( 60 * 5 ) ){
+    return '<font color="#FFCC00"><b>' + value + '</b></font>' ;
+  }
+  if( value < ( 60 * 10 ) ){
+    return '<font color="#00CC00">' + value + '</font>' ;
+  }
+  return value ;
+}
+
+function setChk(value){
+  if(value == refreshRate){
+    return true
+  }else{
+    return false
+  }
+}
+
+function setRefresh( time , tab ){
+  if( time == 0 ){
+    refreshRate = 0;
+    heartbeat.stopAll();  
+  }else{
+    refreshRate = time;
+    heartbeat.start({
+      run:function(){
+        tab.getStore().load();
+      },
+      interval: time
+    });
+  }
 }
 
 function afterDataLoad(){}
