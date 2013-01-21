@@ -12,25 +12,40 @@ function initAjax(){
     Ext.getBody().unmask() ;
   } , this ) ;
 }
+function aError( response , opt ){
+  Ext.getBody().unmask();
+  var error = 'Action has finished with error\n';
+  if( ! Ext.isEmpty( response.failureType ) ){
+    error = error + 'Type of failure: ' + response.failureType + '\n';
+  }
+  var service = 'Server response: ';
+  if( ! Ext.isEmpty( response.status ) ){
+    service = service + response.status + ' ';
+  }
+  if( ! Ext.isEmpty( response.statusText ) ){
+    service = service + response.statusText + '\n';
+  }
+  if( service !== 'Server response: ' ){
+    error = error + service;
+  }
+  return showError( error );
+}
 function ajax( cfg ){
   if( typeof cfg === 'undefined' ){
-    return false ;
-  }
-  if( ! cfg.success ){
     return false ;
   }
   if( cfg.mask ){
     Ext.getBody().mask( cfg.msg ? cfg.msg : 'Communicating with server' ) ;
   }
   Ext.Ajax.request({
-    failure           : cfg.failure ? cfg.failure : showError
-    ,headers          : cfg.headers ? cfg.headers : undefined 
-    ,method           : cfg.method ? cfg.method : 'POST'
-    ,params           : cfg.params ? cfg.params : undefined
-//    ,scope            : cfg.scope ? cfg.scope : this
-    ,success          : cfg.success
-    ,timeout          : cfg.timeout ? cfg.timeout : 60000
-    ,url              : cfg.url ? cfg.url : 'action'
+    failure: cfg.failure ? cfg.failure : aError
+    ,headers: cfg.headers ? cfg.headers : undefined
+    ,end: cfg.end ? cfg.end : new Ext.emptyFn
+    ,method: cfg.method ? cfg.method : 'POST'
+    ,params: cfg.params ? cfg.params : undefined
+    ,success: cfg.success ? cfg.success : new Ext.emptyFn
+    ,timeout: cfg.timeout ? cfg.timeout : 60000
+    ,url: cfg.url ? cfg.url : 'action'
   });
 }
 function createMenu( dataName , title ){
@@ -748,6 +763,22 @@ function getDatagrid( cfg ){
     ,refreshText:'Click to refresh current page'
     ,store: cfg.store ? cfg.store : new Ext.data.Store()
   });
+  if( cfg.tbar ){
+    var selection = [{
+        cls: 'x-btn-text-icon'
+        ,handler: function(){ grid.getSelectionModel().selectAll() }
+        ,icon: gURLRoot + '/images/iface/checked.gif'
+        ,text: 'Select All'
+        ,tooltip: 'Click to select all rows'
+      },{
+        cls: 'x-btn-text-icon'
+        ,handler: function(){ grid.getSelectionModel().clearSelections() }
+        ,icon: gURLRoot + '/images/iface/unchecked.gif'
+        ,text: 'Select None'
+        ,tooltip: 'Click to uncheck selected row(s)'
+      },'->'];
+    cfg.tbar = selection.concat( cfg.tbar );
+  }
   var datagrid = new Ext.grid.GridPanel({
     autoHeight: cfg.autoHeight ? cfg.autoHeight : false
     ,bbar: cfg.bbar ? cfg.bbar : bbar
@@ -756,6 +787,7 @@ function getDatagrid( cfg ){
     ,labelAlign: cfg.labelAlign ? cfg.labelAlign : 'left'
     ,loadMask: cfg.loadMask ? cfg.loadMask : true
     ,margins: cfg.margins ? cfg.margins : '2 0 2 0'
+    ,menu: cfg.menu ? cfg.menu : new Ext.menu.Menu()
     ,region: cfg.region ? cfg.region : 'center'
     ,sm: cfg.params ? cfg.params : undefined
     ,split: cfg.split ? cfg.split : true
@@ -779,10 +811,7 @@ function getDatagrid( cfg ){
       }
       ,text: 'Show value'
     });
-    var menu = new Ext.menu.Menu();
-    try{
-      menu = getMenu( record , grid );
-    }catch(e){}
+    menu = grid.menu( record , grid );
     if( menu.items.getCount() > 0 ){
       menu.add( '-' );
     }
