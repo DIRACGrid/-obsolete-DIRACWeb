@@ -146,6 +146,10 @@ p.footer {
 }
 
 /* By Matvey */
+.tinny{
+  font: 12px arial,tahoma,helvetica,sans-serif;
+  padding : 0px 0px 5px 0px;
+}
 .my-disabled * {
   cursor:default ! important;
 }
@@ -200,6 +204,15 @@ p.footer {
 }
 .Load {
   background-image:url("../images/iface/export.gif") !important;
+}
+.success {
+  border: 1px solid;
+  color: #4F8A10;
+  background-color: #DFF2BF;
+  padding: 5px;
+  font-size: 12px;
+  font-weight: bold;
+  text-align: center;
 }
 .metaselect {
   font: 11px tahoma,arial,helvetica,sans-serif;
