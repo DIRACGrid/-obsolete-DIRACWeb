@@ -1,9 +1,7 @@
-var refreshRate = 0; // autorefresh is off
-var dataSelect , heartbeat , datagrid ;
+var dataSelect , datagrid ;
 function init(reponseSelect){
   dataSelect = reponseSelect;
   Ext.onReady(function(){
-    heartbeat = new Ext.util.TaskRunner();
     Ext.override( Ext.PagingToolbar , {
       onRender :  Ext.PagingToolbar.prototype.onRender.createSequence(function(
         ct , position
@@ -89,40 +87,7 @@ function initData(){
     {header:'Stalled',sortable:true,dataIndex:'Stalled',align:'left'},
     {header:'Failed',sortable:true,dataIndex:'Failed',align:'left'}
   ];
-  var autorefreshMenu = [{
-    checked: setChk( 900000 )
-    ,checkHandler: function(){ setRefresh( 900000 , datagrid ) }
-    ,group: 'refresh'
-    ,text: '15 Minutes'
-  },{
-    checked: setChk( 1800000 )
-    ,checkHandler: function(){ setRefresh( 1800000 , datagrid ) }
-    ,group: 'refresh'
-    ,text: '30 Minutes'
-  },{
-    checked: setChk( 3600000 )
-    ,checkHandler: function(){ setRefresh( 3600000 , datagrid ) }
-    ,group: 'refresh'
-    ,text: 'One Hour'
-  },{
-    checked: setChk( 0 )
-    ,checkHandler: function(){ setRefresh( 0 ) }
-    ,group: 'refresh'
-    ,text: 'Disabled'
-  }];
   var tbar = [{
-    cls: 'x-btn-text-icon'
-    ,handler: function(){ datagrid.getSelectionModel().selectAll() }
-    ,icon: gURLRoot + '/images/iface/checked.gif'
-    ,text: 'Select All'
-    ,tooltip: 'Click to select all rows'
-  },{
-    cls: 'x-btn-text-icon'
-    ,handler: function(){ datagrid.getSelectionModel().clearSelections() }
-    ,icon: gURLRoot + '/images/iface/unchecked.gif'
-    ,text: 'Select None'
-    ,tooltip: 'Click to uncheck selected row(s)'
-  },'->',{
     cls: 'x-btn-text-icon'
     ,handler: function(){ doAction( 'ban' , datagrid ) }
     ,icon: gURLRoot + '/images/iface/ban.gif'
@@ -140,9 +105,10 @@ function initData(){
   })
   store.setDefaultSort('FullCountry','ASC'); // Default sorting
   var grid = new getDatagrid({
-    autorefresh: autorefreshMenu
+    autorefresh: true
     ,disableIPP: true
     ,columns: columns
+    ,menu: getMenu
     ,sm: sm
     ,store: store
     ,tbar: tbar
@@ -150,47 +116,35 @@ function initData(){
   });
   return grid
 }
-function getMenu( record ){
-  var menu = new Ext.menu.Menu();
-  var site = record.get( 'Site' );
-  var showjobs = new Ext.menu.Item({
-    handler:function(){ jump( 'site' , site ) }
-    ,icon: gURLRoot + '/images/iface/go.gif'
-    ,text:'Show Job(s)'
-  });
-  menu.add( showjobs );
-  var ban = new Ext.menu.Item({
-    handler: function(){
-      actSite( 'ban' , new Array( site ) )
-    }
-    ,icon: gURLRoot + '/images/iface/ban.gif'
-    ,text: 'Ban Site'  
-  });
-  var allow = new Ext.menu.Item({
-    handler: function(){
-          actSite( 'allow' , new Array( site ) )
-    }
-    ,icon: gURLRoot + '/images/iface/unban.gif'
-    ,text: 'Allow Site'
-  });
 
-  var mask = record.get( 'MaskStatus' ) ;
+function getMenu( record ){
+  var site = record.get( 'Site' );
+  var mask = record.get( 'MaskStatus' );
+  var menu = new Ext.menu.Menu({
+    items:[{
+      handler:function(){ jump( 'site' , site ) }
+      ,icon: gURLRoot + '/images/iface/go.gif'
+      ,text:'Show Job(s)'
+    },{
+      handler: function(){
+        actSite( 'ban' , new Array( site ) )
+      }
+      ,icon: gURLRoot + '/images/iface/ban.gif'
+      ,text: 'Ban Site'
+    },{
+      handler: function(){
+        actSite( 'allow' , new Array( site ) )
+      }
+      ,icon: gURLRoot + '/images/iface/unban.gif'
+      ,text: 'Allow Site'
+    }]
+  });
   if( mask == 'Active' ){
-    menu.add( ban );
-  }else if( mask == 'Banned' ){
-    menu.add( allow );
+    menu.items.items[ 2 ].disable();
   }else{
-    menu.add( ban );
-    menu.add( allow );
+    menu.items.items[ 1 ].disable();
   }
   return menu
-}
-function setChk(value){
-  if(value == refreshRate){
-    return true
-  }else{
-    return false
-  }
 }
 function doAction( action , datagrid ){
   var selectModel = datagrid.getSelectionModel();
@@ -203,20 +157,6 @@ function doAction( action , datagrid ){
     return showError( 'You should select at least one site' );
   }else{
     return actSite( action , sitename ) ;
-  }
-}
-function setRefresh( time , datagrid ){
-  if( time == 0 ){
-    refreshRate = 0;
-    heartbeat.stopAll();  
-  }else{
-    refreshRate = time;
-    heartbeat.start({
-      run:function(){
-        datagrid.getStore().load();
-      },
-      interval: time
-    });
   }
 }
 function actSite( action , sitename ){
