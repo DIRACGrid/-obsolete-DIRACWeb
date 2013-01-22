@@ -707,13 +707,49 @@ function getDatagrid( cfg ){
   }
   var bbaritems = [ '-' ];
   if( cfg.autorefresh ){
-    if( typeof cfg.autorefresh != 'object' ){
-      return false ;
+    var task = {
+      run: function(){
+        datagrid.getStore().load();
+      }
+      ,interval: 0
+    }
+    var heartbeat = new Ext.util.TaskRunner();
+    var autoMenu = [{
+      handler: function(){
+        this.setChecked( true );
+        heartbeat.start( Ext.apply( task , { interval: 900000 } ) );
+      }
+      ,group: 'refresh'
+      ,text: '15 Minutes'
+    },{
+      handler: function(){
+        this.setChecked( true );
+        heartbeat.start( Ext.apply( task , { interval: 1800000 } ) );
+      }
+      ,group: 'refresh'
+      ,text: '30 Minutes'
+    },{
+      handler: function(){
+        this.setChecked( true );
+        heartbeat.start( Ext.apply( task , { interval: 3600000 } ) );
+      }
+      ,group: 'refresh'
+      ,text: 'One Hour'
+    },{
+      checked: true
+      ,handler: function(){
+        this.setChecked( true );
+        heartbeat.stopAll();
+       }
+      ,group: 'refresh'
+      ,text: 'Disabled'
+    }];
+    for( var i = 0 ; i < autoMenu.length ; i++ ){
+      autoMenu[ i ] = new Ext.menu.CheckItem( autoMenu[ i ] );
     }
     var autorefresh = new Ext.Toolbar.Button({
       cls: 'x-btn-text'
-      ,id: 'autorefreshTableButton'
-      ,menu: cfg.autorefresh
+      ,menu: autoMenu
       ,text: 'Disabled'
       ,tooltip: 'Click to set the time for autorefresh'
     });
