@@ -89,17 +89,39 @@ function initData(){
   ];
   var tbar = [{
     cls: 'x-btn-text-icon'
-    ,handler: function(){ doAction( 'ban' , datagrid ) }
     ,icon: gURLRoot + '/images/iface/ban.gif'
     ,text: 'Ban'
     ,tooltip: 'Click to ban selected sites(s)'
   },{
     cls: 'x-btn-text-icon'
-    ,handler: function(){ doAction( 'allow' , datagrid ) }
     ,icon: gURLRoot + '/images/iface/unban.gif'
     ,text: 'Allow'
     ,tooltip: 'Click to allow selected site(s)'
   }];
+  for( var i = 0 ; i < tbar.length ; i++ ){
+    tbar[ i ] = new Ext.Toolbar.Button( tbar[ i ] );
+    tbar[ i ].on( 'click' , function( btn ){
+      var records = grid.getSelectionModel().getSelections();
+      var sites = new Array();
+      for( var i = 0 ; i < records.length ; i++ ){
+        var status = records[ i ].get( 'MaskStatus' );
+        if( btn.text == 'Ban' && status == 'Active' ){
+          sites.push( records[ i ].get( 'Site' ) );
+        }else if( btn.text == 'Allow' && status == 'Banned' ){
+          sites.push( records[ i ].get( 'Site' ) );
+        }
+      }
+      if( ! sites.length > 0 ){
+        return showError( 'Please, select properly the sites to perform action on it' );
+      }
+      var act = new popup( sites );
+      Ext.apply( act , {
+        action: btn.text.toLowerCase()
+        ,finnaly: function(){ grid.getStore().load() }
+      });
+      act.showMsg();
+    });
+  }
   var view = new Ext.grid.GroupingView({
     groupTextTpl: '<tpl if="datagrid.getStore().groupField==\'FullCountry\'">{group}:</tpl><tpl if="datagrid.getStore().groupField!=\'FullCountry\'">{text},</tpl> {[values.rs.length]} {[values.rs.length > 1 ? "Sites" : "Site"]}',
   })
@@ -117,23 +139,27 @@ function initData(){
   return grid
 }
 
-function getMenu( record ){
+function getMenu( record , grid ){
   var site = record.get( 'Site' );
   var mask = record.get( 'MaskStatus' );
+  var act = new popup( [ site ] );
+  Ext.apply( act , { finnaly: function(){ grid.getStore().load() } } );
   var menu = new Ext.menu.Menu({
     items:[{
-      handler:function(){ jump( 'site' , site ) }
+      handler:function(){ jump( site ) }
       ,icon: gURLRoot + '/images/iface/go.gif'
       ,text:'Show Job(s)'
     },{
       handler: function(){
-        actSite( 'ban' , new Array( site ) )
+        Ext.apply( act , { action: 'ban' } );
+        act.showMsg();
       }
       ,icon: gURLRoot + '/images/iface/ban.gif'
       ,text: 'Ban Site'
     },{
       handler: function(){
-        actSite( 'allow' , new Array( site ) )
+        Ext.apply( act , { action: 'allow' } );
+        act.showMsg();
       }
       ,icon: gURLRoot + '/images/iface/unban.gif'
       ,text: 'Allow Site'
@@ -146,73 +172,70 @@ function getMenu( record ){
   }
   return menu
 }
-function doAction( action , datagrid ){
-  var selectModel = datagrid.getSelectionModel();
-  var sitename = new Array();
-  selectModel.each( function( record ){
-    sitename.push( record.get( 'Site' ) );
-  });
-  var siteLength = sitename.length;
-  if( siteLength <= 0 ){
-    return showError( 'You should select at least one site' );
-  }else{
-    return actSite( action , sitename ) ;
+
+function popup( sitename ){
+  this.site = sitename;
+  this.action = undefined;
+  this.finnaly = function(){
+    return new Ext.emptyFn
   }
-}
-function actSite( action , sitename ){
-  if( Ext.isEmpty( sitename , true ) ){
-    return showError( 'Argument sitename in actSite function is missing' );
-  }
-  if( ! Ext.isArray( sitename ) ){
-    return showError( 'Argument sitename in actSite function must be an array' );
-  }
-  if( Ext.isEmpty( action , true ) ){
-    return showError( 'Argument action in actSite function is missing' );
-  }
-  actTitle = action.charAt( 0 ).toUpperCase() + action.slice( 1 );
-  var title = actTitle + ' site';
-  sitenameString = sitename.join( ', ' );
-  var msg = 'Do you want to ' + action ;
-  if( sitename.length > 1 ){
-    msg = msg + ' the sites: ' + sitenameString + ' ?';
-  }else{
-    msg = msg + ' the site: ' + sitenameString + ' ?';
-  }
-  Ext.Msg.confirm( title , msg , function( btn ){
-    if( btn == 'yes' ){
-      ajax({
-        mask: true
-        ,params: { 'action' : action , 'name' : sitename }
-        ,success: actionSuccess
-      }) ;
+  this.showMsg = function(){
+    var title = this.action.charAt( 0 ).toUpperCase() + this.action.slice( 1 );
+    var msg = 'Do you want to ' + this.action ;
+    if( this.site.length > 1 ){
+      title = title + ' sites';
+      msg = msg + ' the sites: ' + this.site.join( ', ' ) + ' ?';
+    }else{
+      title = title + ' site';
+      msg = msg + ' the site: ' + this.site + ' ?';
     }
-  });
-  return
-}
-function actionSuccess( response ){
-  Ext.getBody().unmask() ;
-  if( Ext.isEmpty( response ) ){
-    return showError( 'Argument response in actionSuccess function is missing' );
+    msg = msg + '<br><br>' + 'Comment:';
+    Ext.Msg.prompt( title , msg ,
+      function( btn , text ){
+        if( btn == 'ok' ){
+          ajax({
+            end: this.finnaly
+            ,mask: true
+            ,params: {
+              comment: text
+              ,name: this.site
+            }
+            ,success: success
+            ,url: this.action + 'Site'
+          });
+        }
+      } , this , 50 ,
+      this.action + ' by ' + gPageDescription.userData.username
+        + '@' + gPageDescription.userData.group
+    );
   }
+}
+
+function success( response , opt ){
+  Ext.getBody().unmask();
   var msg = Ext.util.JSON.decode( response.responseText ) ;
   if( Ext.isEmpty( msg ) ){
     return showError( 'Server response is null or empty' );
   }
-  if( !Ext.isEmpty( msg.success ) ){
-    return datagrid.getStore().load() ;
-  }
-  if( !Ext.isEmpty( msg.error ) ){
-    datagrid.getStore().load() ;
+  if( ! Ext.isEmpty( msg.error ) ){
     return showError( msg.error );
   }
-  return showError( 'Server response have no success or error messages' );
+  if( ! Ext.isEmpty( opt.end ) ){
+    opt.end();
+  }
+  if( ! Ext.isEmpty( msg.result ) ){
+    return showTip( msg.result );
+  }
+  return showError( 'Server response have no success nor error messages' );
 }
-function jump(type,id){
-  var url = document.location.protocol + '//' + document.location.hostname + gURLRoot + '/' + gPageDescription.selectedSetup
-  url = url + '/' + gPageDescription.userData.group + '/jobs/JobMonitor/display';
-  var post_req = '<form id="redirform" action="' + url + '" method="POST" >';
-  post_req = post_req + '<input type="hidden" name="' + type + '" value="' + id + '">';
-  post_req = post_req + '</form>';
+
+function jump( id ){
+  var url = document.location.protocol + '//' + document.location.hostname
+              + gURLRoot + '/' + gPageDescription.selectedSetup + '/' 
+              + gPageDescription.userData.group + '/jobs/JobMonitor/display';
+  var post_req = '<form id="redirform" action="' + url + '" method="POST" >'
+                   + '<input type="hidden" name="site" value="' + id + '">'
+                   + '</form>';
   document.body.innerHTML = document.body.innerHTML + post_req;
   var form = document.getElementById('redirform');
   form.submit();
