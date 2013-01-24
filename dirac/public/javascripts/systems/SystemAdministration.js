@@ -1,8 +1,6 @@
-var refreshRate = 0; // autorefresh is off
-var heartbeat , datagrid ;
+var datagrid ;
 function init( init ){
   Ext.onReady(function(){
-    heartbeat = new Ext.util.TaskRunner();
     Ext.override( Ext.PagingToolbar , {
       onRender :  Ext.PagingToolbar.prototype.onRender.createSequence(function(
         ct , position
@@ -115,27 +113,6 @@ function sysInfo(){
     ,renderer: pbar
     ,sortable: true
   }];
-  var autorefreshMenu = [{
-    checked: setChk( 900000 )
-    ,checkHandler: function(){ setRefresh( 900000 , grid ) }
-    ,group: 'refresh'
-    ,text: '15 Minutes'
-  },{
-    checked: setChk( 1800000 )
-    ,checkHandler: function(){ setRefresh( 1800000 , grid ) }
-    ,group: 'refresh'
-    ,text: '30 Minutes'
-  },{
-    checked: setChk( 3600000 )
-    ,checkHandler: function(){ setRefresh( 3600000 , grid ) }
-    ,group: 'refresh'
-    ,text: 'One Hour'
-  },{
-    checked: setChk( 0 )
-    ,checkHandler: function(){ setRefresh( 0 ) }
-    ,group: 'refresh'
-    ,text: 'Disabled'
-  }];
   var tbar = [{
     cls: 'x-btn-text-icon'
     ,icon: gURLRoot + '/images/iface/resetButton.gif'
@@ -155,7 +132,7 @@ function sysInfo(){
     });
   }  
   var grid = new getDatagrid({
-    autorefresh: autorefreshMenu
+    autorefresh: true
     ,disableIPP: true
     ,columns: columns
     ,region: undefined
@@ -337,27 +314,6 @@ function initData( host ){
     ,header: 'PID'
     ,sortable: true
   }];
-  var autorefreshMenu = [{
-    checked: setChk( 900000 )
-    ,checkHandler: function(){ setRefresh( 900000 , grid ) }
-    ,group: 'refresh'
-    ,text: '15 Minutes'
-  },{
-    checked: setChk( 1800000 )
-    ,checkHandler: function(){ setRefresh( 1800000 , grid ) }
-    ,group: 'refresh'
-    ,text: '30 Minutes'
-  },{
-    checked: setChk( 3600000 )
-    ,checkHandler: function(){ setRefresh( 3600000 , grid ) }
-    ,group: 'refresh'
-    ,text: 'One Hour'
-  },{
-    checked: setChk( 0 )
-    ,checkHandler: function(){ setRefresh( 0 ) }
-    ,group: 'refresh'
-    ,text: 'Disabled'
-  }];
   var tbar = [{
     cls: 'x-btn-text-icon'
     ,icon: gURLRoot + '/images/iface/resetButton.gif'
@@ -389,7 +345,7 @@ function initData( host ){
     ,hideGroupedColumn: true
   })
   var grid = new getDatagrid({
-    autorefresh: autorefreshMenu
+    autorefresh: true
     ,disableIPP: true
     ,columns: columns
     ,region: undefined
@@ -448,7 +404,7 @@ function action( record ){
           ,params: this.scope.params
           ,success: success
           ,url: this.scope.url
-        }) ;
+        });
       }
     } , { scope: this });
   }
@@ -540,19 +496,6 @@ function success( response , opt ){
   return showError( 'Server response have no success nor error messages' );
 }
 
-function showTip( text ){
-  var msg = new Ext.Tip({
-    baseCls:'success'
-    ,floating: true
-    ,html: text
-    ,width: 300
-  });
-  var x = Ext.num( Ext.getBody().getViewSize().width , 640 );
-  x = ( ( x / 2 ) - ( msg.width / 2 ) );
-  setTimeout( function(){ msg.destroy() } , 3000 );
-  return msg.showAt( [ x , 5 ] );
-}
-
 function uptime( value , cell , record ){
   if( record.get( 'RunitStatus' ) != 'Run' ){
     return '<b>&mdash;</b>'
@@ -567,29 +510,6 @@ function uptime( value , cell , record ){
     return '<font color="#00CC00">' + value + '</font>' ;
   }
   return value ;
-}
-
-function setChk(value){
-  if(value == refreshRate){
-    return true
-  }else{
-    return false
-  }
-}
-
-function setRefresh( time , tab ){
-  if( time == 0 ){
-    refreshRate = 0;
-    heartbeat.stopAll();  
-  }else{
-    refreshRate = time;
-    heartbeat.start({
-      run:function(){
-        tab.getStore().load();
-      },
-      interval: time
-    });
-  }
 }
 
 function afterDataLoad(){}
