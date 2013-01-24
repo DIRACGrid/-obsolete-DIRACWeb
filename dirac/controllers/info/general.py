@@ -677,8 +677,46 @@ class GeneralController( BaseController ):
 
     return vo
 
+  def aftermath( self ):
 
-  @jsonify
+    """
+    """
+
+    action = self.action
+
+    success = ", ".join( self.actionSuccess )
+    failure = "\n".join( self.actionFailed )
+
+    if len( self.actionSuccess ) > 1:
+      sText = self.prefix + "s"
+    else:
+      sText = self.prefix
+      
+    if len( self.actionFailed ) > 1:
+      fText = self.prefix + "s"
+    else:
+      fText = self.prefix
+
+    if len( success ) > 0 and len( failure ) > 0:
+      sMessage = "%s %sed successfully: " % ( sText , action , success)
+      fMessage = "Failed to %s %s:\n%s" % ( action , fText , failure )
+      result = sMessage + "\n\n" + fMessage
+      return { "success" : "true" , "result" : result }
+    elif len( success ) > 0 and len( failure ) < 1:
+      result = "%s %sed successfully: %s" % ( sText , action , success )
+      return { "success" : "true" , "result" : result }
+    elif len( success ) < 1 and len( failure ) > 0:
+      result = "Failed to %s %s:\n%s" % ( action , fText , failure )
+      gLogger.always( result )
+      return { "success" : "false" , "error" : result }
+    else:
+      result = "No action has performed due technical failure. Check the logs please"
+      gLogger.debug( result )
+      return { "success" : "false" , "error" : result }
+  
+
+
+
   def getCountriesReversed(self):
 
     """
