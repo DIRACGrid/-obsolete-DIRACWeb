@@ -887,3 +887,15 @@ function getDatagrid( cfg ){
   });
   return datagrid;
 }
+function showTip( text ){
+  var msg = new Ext.Tip({
+    baseCls:'success'
+    ,floating: true
+    ,html: text
+    ,width: 300
+  });
+  var x = Ext.num( Ext.getBody().getViewSize().width , 640 );
+  x = ( ( x / 2 ) - ( msg.width / 2 ) );
+  setTimeout( function(){ msg.destroy() } , 3000 );
+  return msg.showAt( [ x , 5 ] );
+}
