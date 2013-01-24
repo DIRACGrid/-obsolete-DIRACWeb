@@ -5,6 +5,14 @@ function init( initSelection ){
     Ext.override ( Ext.PagingToolbar , {
       onRender : Ext.PagingToolbar.prototype.onRender.createSequence(
         function( ct , position ){
+          this.first.hide();
+          for( var i = 9 ; i > 0 ; i-- ){
+            if( Ext.isEmpty( this.items.get( i ) ) ){
+              continue;
+            }
+            Ext.fly( this.items.get( i ).getEl() ).remove() ;
+            this.items.removeAt( i ) ;
+          }
           this.loading.removeClass('x-btn-icon') ;
           this.loading.setText('Refresh') ;
           this.loading.addClass('x-btn-text-icon') ;
@@ -118,7 +126,8 @@ function querySelector( metaname , type ){
   var selector = createRemoteMenu({
     baseParams        : { 'getMeta' : metaname }
     ,name             : metaname
-  }) ;
+  });
+  selector.forceSelection = false;
   if( type == 'datetime' ){
     selector = new Ext.form.DateField({
       emptyText       : 'YYYY-mm-dd'
@@ -484,8 +493,17 @@ function initFilesPanel(){
     text:'Save',
     tooltip:'Click to save selected data'
   }];
+  var bbar = [ '->' , {
+    text: 'Displaying 0 items'
+  }];
   var dataTable = new Ext.grid.GridPanel({
     autoHeight:false,
+    bbar: new Ext.PagingToolbar({
+      displayInfo: true
+      ,pageSize: store.getTotalCount()
+      ,refreshText:'Click to refresh current page'
+      ,store: store
+    }),
     columns:columns,
     labelAlign:'left',
     margins:'2 0 2 0',
