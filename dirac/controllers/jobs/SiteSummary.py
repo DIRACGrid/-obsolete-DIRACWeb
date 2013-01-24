@@ -6,10 +6,11 @@ from DIRAC.Core.Utilities import Time
 from dirac.lib.base import *
 from dirac.lib.diset import getRPCClient
 from dirac.lib.credentials import authorizeAction
+from dirac.controllers.info.general import GeneralController
 #from dirac.lib.sessionManager import *
 from DIRAC import gConfig, gLogger
 from DIRAC.Core.Utilities.DictCache import DictCache
-import dirac.lib.credentials as credentials
+from dirac.lib.credentials import getUserDN, getUsername, getSelectedGroup
 
 ########
 from DIRAC.FrameworkSystem.Client.UserProfileClient import UserProfileClient
@@ -61,7 +62,7 @@ class SitesummaryController(BaseController):
               jobs = result["Records"]
               head = result["ParameterNames"]
               headLength = len(head)
-              countryCode = self.__countries()
+              countryCode = GeneralController().getCountries()
               for i in jobs:
                 tmp = {}
                 for j in range(0,headLength):
@@ -144,7 +145,7 @@ class SitesummaryController(BaseController):
       if result.has_key("Country") and len(result["Country"]) > 0:
         country = []
         country.append(["All"])
-        countryCode = self.__countries()
+        countryCode = GeneralController().getCountries()
         for i in result["Country"]:
           if countryCode.has_key(i):
             j = countryCode[i]
@@ -185,7 +186,7 @@ class SitesummaryController(BaseController):
       numberOfJobs = 500
       if request.params.has_key("country") and len(request.params["country"]) > 0:
         if str(request.params["country"]) != "All":
-          code = self.__reverseCountry()
+          code = GeneralController().getCountriesReversed()
           tmpValue = str(request.params["country"]).split(separator)
           newValue = []
           for i in tmpValue:
@@ -215,314 +216,59 @@ class SitesummaryController(BaseController):
       globalSort = []
     gLogger.info("REQUEST:",req)
     return req
-################################################################################
-  def getImg(self):
-    if "name" not in request.params:
-      c.result = "file name is absent"
-      return c.result
-    name = request.params["name"]
-    if name.find( ".png" ) < -1:
-      c.result = "Not a valid image file"
-      return c.result
-    gLogger.info("request for the file:", name)
-    res = imgCache.exists(name)
-    gLogger.info("exists? ", res)
-    data = imgCache.getKeys()
-    gLogger.info("getKeys ", data) 
-#    tmpFile.seek( 0 )
-#    data = tmpFile.read()
-#    response.headers['Content-type'] = 'image/png'
-#    response.headers['Content-Disposition'] = 'attachment; filename="%s"' % name
-#    response.headers['Content-Length'] = len(data)
-#    response.headers['Content-Transfer-Encoding'] = 'Binary'
-    return data
-################################################################################
-  def __reverseCountry(self):
-    result = self.__countries()
-    name = {}
-    for code, country in result.items():
-      name[country] = code
-    return name
-################################################################################
-  def __countries(self):
-    countries = {
-    "af": "Afghanistan",
-    "al": "Albania",
-    "dz": "Algeria",
-    "as": "American Samoa",
-    "ad": "Andorra",
-    "ao": "Angola",
-    "ai": "Anguilla",
-    "aq": "Antarctica",
-    "ag": "Antigua and Barbuda",
-    "ar": "Argentina",
-    "am": "Armenia",
-    "aw": "Aruba",
-    "au": "Australia",
-    "at": "Austria",
-    "az": "Azerbaijan",
-    "bs": "Bahamas",
-    "bh": "Bahrain",
-    "bd": "Bangladesh",
-    "bb": "Barbados",
-    "by": "Belarus",
-    "be": "Belgium",
-    "bz": "Belize",
-    "bj": "Benin",
-    "bm": "Bermuda",
-    "bt": "Bhutan",
-    "bo": "Bolivia",
-    "ba": "Bosnia and Herzegowina",
-    "bw": "Botswana",
-    "bv": "Bouvet Island",
-    "br": "Brazil",
-    "io": "British Indian Ocean Territory",
-    "bn": "Brunei Darussalam",
-    "bg": "Bulgaria",
-    "bf": "Burkina Faso",
-    "bi": "Burundi",
-    "kh": "Cambodia",
-    "cm": "Cameroon",
-    "ca": "Canada",
-    "cv": "Cape Verde",
-    "ky": "Cayman Islands",
-    "cf": "Central African Republic",
-    "td": "Chad",
-    "cl": "Chile",
-    "cn": "China",
-    "cx": "Christmas Island",
-    "cc": "Cocos Islands",
-    "co": "Colombia",
-    "km": "Comoros",
-    "cg": "Congo",
-    "cd": "Congo",
-    "ck": "Cook Islands",
-    "cr": "Costa Rica",
-    "ci": "Cote D'Ivoire",
-    "hr": "Croatia",
-    "cu": "Cuba",
-    "cy": "Cyprus",
-    "cz": "Czech Republic",
-    "dk": "Denmark",
-    "dj": "Djibouti",
-    "dm": "Dominica",
-    "do": "Dominican Republic",
-    "tp": "East Timor",
-    "ec": "Ecuador",
-    "eg": "Egypt",
-    "sv": "El Salvador",
-    "gq": "Equatorial Guinea",
-    "er": "Eritrea",
-    "ee": "Estonia",
-    "et": "Ethiopia",
-    "fk": "Falkland Islands",
-    "fo": "Faroe Islands",
-    "fj": "Fiji",
-    "fi": "Finland",
-    "fr": "France",
-    "fx": "France, metropolitan",
-    "gf": "French Guiana",
-    "pf": "French Polynesia",
-    "tf": "French Southern Territories",
-    "ga": "Gabon",
-    "gm": "Gambia",
-    "ge": "Georgia",
-    "de": "Germany",
-    "gh": "Ghana",
-    "gi": "Gibraltar",
-    "gr": "Greece",
-    "gl": "Greenland",
-    "gd": "Grenada",
-    "gp": "Guadeloupe",
-    "gu": "Guam",
-    "gt": "Guatemala",
-    "gn": "Guinea",
-    "gw": "Guinea-Bissau",
-    "gy": "Guyana",
-    "ht": "Haiti",
-    "hm": "Heard and Mc Donald Islands",
-    "va": "Vatican City",
-    "hn": "Honduras",
-    "hk": "Hong Kong",
-    "hu": "Hungary",
-    "is": "Iceland",
-    "in": "India",
-    "id": "Indonesia",
-    "ir": "Iran",
-    "iq": "Iraq",
-    "ie": "Ireland",
-    "il": "Israel",
-    "it": "Italy",
-    "jm": "Jamaica",
-    "jp": "Japan",
-    "jo": "Jordan",
-    "kz": "Kazakhstan",
-    "ke": "Kenya",
-    "ki": "Kiribati",
-    "kp": "Korea",
-    "kr": "Korea",
-    "kw": "Kuwait",
-    "kg": "Kyrgyzstan",
-    "la": "Lao",
-    "lv": "Latvia",
-    "lb": "Lebanon",
-    "ls": "Lesotho",
-    "lr": "Liberia",
-    "ly": "Libyan",
-    "li": "Liechtenstein",
-    "lt": "Lithuania",
-    "lu": "Luxembourg",
-    "mo": "Macau",
-    "mk": "Macedonia",
-    "mg": "Madagascar",
-    "mw": "Malawi",
-    "my": "Malaysia",
-    "mv": "Maldives",
-    "ml": "Mali",
-    "mt": "Malta",
-    "mh": "Marshall Islands",
-    "mq": "Martinique",
-    "mr": "Mauritania",
-    "mu": "Mauritius",
-    "yt": "Mayotte",
-    "mx": "Mexico",
-    "fm": "Micronesia",
-    "md": "Moldova",
-    "mc": "Monaco",
-    "mn": "Mongolia",
-    "ms": "Montserrat",
-    "ma": "Morocco",
-    "mz": "Mozambique",
-    "mm": "Myanmar",
-    "na": "Namibia",
-    "nr": "Nauru",
-    "np": "Nepal",
-    "nl": "Netherlands",
-    "an": "Netherlands Antilles",
-    "nc": "New Caledonia",
-    "nz": "New Zealand",
-    "ni": "Nicaragua",
-    "ne": "Niger",
-    "ng": "Nigeria",
-    "nu": "Niue",
-    "nf": "Norfolk Island",
-    "mp": "Northern Mariana Islands",
-    "no": "Norway",
-    "om": "Oman",
-    "pk": "Pakistan",
-    "pw": "Palau",
-    "pa": "Panama",
-    "pg": "Papua New Guinea",
-    "py": "Paraguay",
-    "pe": "Peru",
-    "ph": "Philippines",
-    "pn": "Pitcairn",
-    "pl": "Poland",
-    "pt": "Portugal",
-    "pr": "Puerto Rico",
-    "qa": "Qatar",
-    "re": "Reunion",
-    "ro": "Romania",
-    "ru": "Russia",
-    "rw": "Rwanda",
-    "kn": "Saint Kitts and Nevis",
-    "lc": "Saint Lucia",
-    "vc": "Saint Vincent and the Grenadines",
-    "ws": "Samoa",
-    "sm": "San Marino",
-    "st": "Sao Tome and Principe",
-    "sa": "Saudi Arabia",
-    "sn": "Senegal",
-    "sc": "Seychelles",
-    "sl": "Sierra Leone",
-    "sg": "Singapore",
-    "sk": "Slovakia",
-    "si": "Slovenia",
-    "sb": "Solomon Islands",
-    "so": "Somalia",
-    "za": "South Africa",
-    "gs": "South Georgia and the South Sandwich Islands",
-    "es": "Spain",
-    "lk": "Sri Lanka",
-    "sh": "St. Helena",
-    "pm": "St. Pierre and Miquelon",
-    "sd": "Sudan",
-    "sr": "Suriname",
-    "sj": "Svalbard and Jan Mayen Islands",
-    "sz": "Swaziland",
-    "se": "Sweden",
-    "ch": "Switzerland",
-    "sy": "Syrian Arab Republic",
-    "tw": "Taiwan",
-    "tj": "Tajikistan",
-    "tz": "Tanzania",
-    "th": "Thailand",
-    "tg": "Togo",
-    "tk": "Tokelau",
-    "to": "Tonga",
-    "tt": "Trinidad and Tobago",
-    "tn": "Tunisia",
-    "tr": "Turkey",
-    "tm": "Turkmenistan",
-    "tc": "Turks and Caicos Islands",
-    "tv": "Tuvalu",
-    "ug": "Uganda",
-    "ua": "Ukraine",
-    "ae": "United Arab Emirates",
-    "gb": "United Kingdom",
-    "uk": "United Kingdom",
-    "us": "United States",
-    "um": "United States Minor Outlying Islands",
-    "uy": "Uruguay",
-    "uz": "Uzbekistan",
-    "vu": "Vanuatu",
-    "ve": "Venezuela",
-    "vn": "Viet Nam",
-    "vg": "Virgin Islands (British)",
-    "vi": "Virgin Islands (U.S.)",
-    "wf": "Wallis and Futuna Islands",
-    "eh": "Western Sahara",
-    "ye": "Yemen",
-    "yu": "Yugoslavia",
-    "zm": "Zambia",
-    "zw": "Zimbabwe",
-    "su": "Soviet Union"
-    }
-    return countries
-################################################################################
+
   @jsonify
-  def act(self):
-    if request.params.has_key("action") and len(request.params["action"]) > 0:
-      action = request.params["action"]
-    else:
-      action = ""
-    if request.params.has_key("comment") and len(request.params["comment"]) > 0:
-      text = request.params["comment"]
-    else:
-      text = "Default comment"
-    if request.params.has_key("siteName") and len(request.params["siteName"]) > 0:
-      site = request.params["siteName"]
-    else:
-      site = ""
-    return self.__getAction(action,text,site)
-################################################################################
-  def __getAction(self,action,text,site):
-    action = str(action)
-    text = str(text)
-    site = str(site)
-    if len(action) == 0 or len(text) == 0 or len(site) == 0:
-      c.result = {"success":"false","result":"Either action or comment message or site not defined"}
-    else:
-      RPCClient = getRPCClient("WorkloadManagement/WMSAdministrator")
-      if action == "ban":
-        result = RPCClient.banSite(site,text)
-      elif action == "unban":
-        result = RPCClient.allowSite(site,text)
+  def allowSite( self ):
+    return self.action( "Allow" )
+
+  @jsonify
+  def banSite( self ):
+    return self.action( "Ban" )
+
+
+  def action( self , act = None ):
+
+    """
+    """
+
+    RPC = getRPCClient( "WorkloadManagement/WMSAdministrator" )
+
+    if not "name" in request.params:
+      return { "success" : "false" , "error" : "Name of site is undefined" }
+    site = request.params["name"]
+    sites = site.split( "," )
+    
+    user = getUsername()
+    group = getSelectedGroup()
+
+    if not "comment" in request.params:
+      comment = "%s by %s@%s" % ( act , user , group )
+    comment = request.params["comment"]
+
+    if not act in [ "Allow" , "Ban" ]:
+      return { "success" : "false" , "error" : "Action %s is unsupported" % act }
+
+    gc = GeneralController()
+    gc.action = act
+    gc.actionSuccess = list()
+    gc.actionFailed = list()
+    gc.prefix = "Site"
+
+    for i in sites:
+      i = i.strip()
+      if act is "Allow":
+        result = RPC.allowSite( i , comment )
+      elif act is "Ban":
+        result = RPC.banSite( i , comment )
       else:
-        result = "This " + action + " action is not supported"
-      if result["OK"]:
-        result = result["Value"]
-        c.result = {"success":"true","result":result}
-      else:
-        c.result = {"success":"false","result":result["Message"]}
-    return c.result
+        continue
+      gLogger.debug( "RPC return: %s" % result )        
+      if not result["OK"]:
+        error = "%s: %s" % ( i , result[ "Message" ] )
+        gc.actionFailed.append( error )
+        gLogger.error( "Failure during %s host %s" % ( act , i ) )
+        continue
+      gc.actionSuccess.append( i )
+      gLogger.info( "Successfully %s host %s" % ( act , i ) )
+
+    return gc.aftermath()
