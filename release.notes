@@ -1,3 +1,7 @@
+[web2013012401]
+CHANGE: SiteSummary page has stardard configuration of buttons and provide the allow/ban a site or multiple sites functionallity
+FIX: Quick fixes in MetadataCatalog interface.  Any data are allowed to type-in in metadata selectors comboboxes making possible selections by metadata on file level
+
 [web2013012101]
 NEW: Initial release of SystemAdministration web page. To get it working, uncomment the line 138 in web.cfg file
 FIX: Fixing typo in ProductionMonitor.py
