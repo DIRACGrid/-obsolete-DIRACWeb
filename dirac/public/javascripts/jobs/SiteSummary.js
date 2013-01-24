@@ -184,7 +184,8 @@ function popup( sitename ){
     var msg = 'Do you want to ' + this.action ;
     if( this.site.length > 1 ){
       title = title + ' sites';
-      msg = msg + ' the sites: ' + this.site.join( ', ' ) + ' ?';
+      this.site = this.site.join( ', ' );
+      msg = msg + ' the sites: ' + this.site + ' ?';
     }else{
       title = title + ' site';
       msg = msg + ' the site: ' + this.site + ' ?';
