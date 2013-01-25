@@ -423,13 +423,51 @@ function gridContainer(  config  ){
   return grid
 }
 function initFilesPanel(){
-  var record = new Ext.data.Record.create([
-    {name:'filename'}
-  ]);
-  var columns = [
-    {header:'',name:'checkBox',id:'checkBox',width:26,sortable:false,dataIndex:'filename',renderer:chkBox,hideable:false,fixed:true,menuDisabled:true},
-    {header:'File Name',sortable:true,dataIndex:'filename',align:'left',width:'90%'}
-  ];
+  var record = new Ext.data.Record.create([{
+    name: 'filename'
+  },{
+    name: 'size'
+  },{
+    dateFormat:'Y-n-j h:i:s'
+    ,name: 'LastUpdateTime'
+    ,type: 'date'
+  },{
+    name: 'metadata'
+  }]);
+  var columns = [{
+    dataIndex:'filename'
+    ,fixed:true
+    ,header:''
+    ,hideable:false
+    ,id:'checkBox'
+    ,menuDisabled:true
+    ,name:'checkBox'
+    ,renderer:chkBox
+    ,sortable:false
+    ,width: 26
+  },{
+    align:'left'
+    ,dataIndex: 'filename'
+    ,header: 'File Name'
+    ,sortable: true
+    ,width: '50%'
+  },{
+    align:'left'
+    ,dataIndex: 'size'
+    ,header: 'Size'
+    ,sortable: true
+  },{
+    align:'left'
+    ,dataIndex: 'date'
+    ,header: 'Date'
+    ,renderer: Ext.util.Format.dateRenderer( 'Y-m-d H:i' )
+    ,sortable: true
+  },{
+    align:'left'
+    ,dataIndex: 'metadata'
+    ,header: 'Metadata'
+    ,sortable: true
+  }];
   var store = new Ext.data.Store({
     reader            : new Ext.data.JsonReader({
                           root              : 'result'
