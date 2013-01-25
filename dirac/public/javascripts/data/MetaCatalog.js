@@ -35,6 +35,7 @@ function init( initSelection ){
     navigation.insert( 0 , metaPanel ) ;
     navigation.setTitle( 'MetadataCatalog' ) ;
     renderInMainViewport([ navigation, panel ]) ;
+//    addMenu(); todo: remove entry and function if splitbutton is enough
   }) ;
 }
 function updateCache( value ){
@@ -450,23 +451,18 @@ function initFilesPanel(){
     try{
       gMainLayout.container.unmask();
     }catch(e){}
-    var show = false;
-    if(records && records.totalLength){
-      if(records.totalLength > 0){
-        show = true;
-      }
+    var disable = true;
+    if(records && records.totalLength && records.totalLength > 0){
+      disable = false;
     }
     var toolbar = dataTable.getTopToolbar();
     if(!toolbar){
       return errorReport('Unable to get toolbar of dataTable component');
     }
-    var length = toolbar.items.getCount();
-    for(var i=0; i < length; i++){
-      if(show){
-        toolbar.items.itemAt(i).enable();
-      }else{
-        toolbar.items.itemAt(i).disable();
-      }
+    for( var i=0 ; i < toolbar.items.getCount() ; i++ ){
+      try{
+        toolbar.items.itemAt(i).setDisabled( disable )//.enable();
+      }catch(e){}
     }
   });
   var tbar = [{
@@ -483,7 +479,24 @@ function initFilesPanel(){
     icon:gURLRoot+'/images/iface/unchecked.gif',
     text:'Select None',
     tooltip:'Click to uncheck selected row(s)'
-  },'->',{
+  },'->',new Ext.Toolbar.SplitButton({
+    cls:"x-btn-text-icon",
+    handler:function(){
+      showFiles(', ');
+    },
+    disabled:true,
+    icon:gURLRoot+'/images/iface/jdl.gif',
+    menu: new Ext.menu.Menu({
+		  items: [
+        {handler: function(){ showFiles(' ') } , text : 'Space separated' },
+        {handler: function(){ showFiles(', ') } , text : 'Comma separated' },
+        {handler: function(){ showFiles('; ') } , text: 'Semicolon separated' },
+		  ]
+		}),
+    text:'Export',
+    tooltip:'Click to display selected filenames as text'
+
+  }),{
     cls:"x-btn-text-icon",
     handler:function(){
       save(this);
@@ -492,9 +505,6 @@ function initFilesPanel(){
     icon:gURLRoot+'/images/iface/save.gif',
     text:'Save',
     tooltip:'Click to save selected data'
-  }];
-  var bbar = [ '->' , {
-    text: 'Displaying 0 items'
   }];
   var dataTable = new Ext.grid.GridPanel({
     autoHeight:false,
@@ -525,6 +535,61 @@ function keepButtonSize(panel,button){
   panel.remove(lastCmp);
   panel.add(tmpButton);
 }
+
+/*
+function addMenu(){
+  var menu = new Ext.menu.Menu({ items:[
+    {handler: function(){ showFiles(' ') } , text : 'Space separated' },
+    {handler: function(){ showFiles(', ') } , text : 'Comma separated' },
+    {handler: function(){ showFiles('; ') } , text: 'Semicolon separated' },
+    '-'
+  ]});
+  var button = Ext.getCmp('mainTopbarToolsButton');
+  if( Ext.isEmpty( button ) ){
+    return
+  }
+  var originalMenu = button.menu;
+  if( Ext.isEmpty( originalMenu) ){
+    return
+  }
+  var originalLength = originalMenu.items.items.length;
+  var length = menu.items.items.length;
+  if(length > 0 && !originalLength > 0){
+    menu.remove(menu.items.items[length-1]);
+  }
+  length = menu.items.items.length;
+  if(length > 0){
+    for(i=0; i<length; i++){
+      originalMenu.insert(i,menu.items.items[i]);
+    }
+  }
+  button.menu = originalMenu;
+}
+*/
+
+function showFiles( separator ){
+  var items = new Array();
+  var inputs = document.getElementsByTagName( 'input' );
+  for( var k = 0 ; k < inputs.length ; k++ ){
+    if( inputs[ k ].checked === true ){
+      items.push( inputs[ k ].id );
+    }
+  }
+  if( items.length < 1 ){
+    return showError( 'No files were selected' );
+  }
+  if( items.length < 25 ){
+    return Ext.Msg.alert( 'Files' , items.join( separator ) );
+  }
+  panel = new Ext.Panel({
+    autoScroll: true
+    ,border: 0
+    ,html: items.join( separator )
+    ,layout: 'fit'
+  });
+  return displayWin( panel , 'Files' );
+}
+
 function save(button){
   button.setIconClass('Loading');
   var files = '';
