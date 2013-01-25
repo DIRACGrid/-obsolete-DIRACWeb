@@ -9,7 +9,7 @@ except:
   from md5 import md5
 from dirac.lib.base import *
 from dirac.lib.diset import getRPCClient, getTransferClient
-from dirac.lib.sessionManager import getUsername, getSelectedGroup, getSelectedSetup
+from dirac.lib.credentials import getUsername, getSelectedGroup, getSelectedSetup
 
 from DIRAC import S_OK, S_ERROR, gLogger, gConfig
 from DIRAC.Core.Utilities import Time, List, DictCache
@@ -27,7 +27,7 @@ class AccountingplotsController( BaseController ):
   def __getUniqueKeyValues( self, typeName ):
     userGroup = getSelectedGroup()
     if 'NormalUser' in CS.getPropertiesForGroup( userGroup ):
-      cacheKey = ( getUserName(), userGroup, getSelectedSetup(), typeName )
+      cacheKey = ( getUsername(), userGroup, getSelectedSetup(), typeName )
     else:
       cacheKey = ( userGroup, getSelectedSetup(), typeName )
     data = AccountingplotsController.__keysCache.get( cacheKey )
