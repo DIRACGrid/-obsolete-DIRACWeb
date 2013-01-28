@@ -24,12 +24,6 @@ function bytesToSize(bytes, precision){
     return bytes + ' B';
   }
 }
-function loadLaunchpadOpts(options){
-  for(var i in options){
-    var ss = options[i];
-    var tt = 0;
-  }
-}
 function submitJobNew(){
   var formID = Ext.id(); // from panel
   var innID =  Ext.id(); // For JDL and Sandboxescontainer
@@ -40,22 +34,25 @@ function submitJobNew(){
   var addID = Ext.id();
   var fileAnchor = 45;
   var fieldAnchor = '-5';
-  var data = [ // Array of default key\value pairs
-    ['InputData',''],
-    ['OutputData',''],
-    ['OutputSE','DIRAC-USER'],
-    ['OutputPath',''],
-    ['CPUTime','86400'],
-    ['Site',''],
-    ['BannedSite',''],
-    ['SystemConfig','slc4_ia32_gcc34'],
-    ['Priority','5'],
-    ['StdError','std.err'],
-    ['StdOutput','std.out'],
-    ['Parameters','0'],
-    ['ParameterStart','0'],
-    ['ParameterStep','1']
-  ];
+  // Global object used to store data in "key : value" format
+  // Values can be string, array, object
+  var data = new Object({
+    'InputData'       : ''
+    ,'OutputData'     : ''
+    ,'OutputSE'       : 'DIRAC-USER'
+    ,'OutputPath'     : ''
+    ,'CPUTime'        : '86400'
+    ,'Site'           : ''
+    ,'BannedSite'     : ''
+    ,'Platform'       : 'Linux_x86_64_glibc-2.5'
+    ,'Priority'       : '5'
+    ,'StdError'       : 'std.err'
+    ,'StdOutput'      : 'std.out'
+    ,'submenu test'        : new Object({ 'test' : 'yyy' })
+    ,'Parameters'     : '0'
+    ,'ParameterStart' : '0'
+    ,'ParameterStep'  : '1'
+  });
 // check for proxy
   var proxyCheckerFunction = function(){
     showProxyStat('check');
@@ -268,167 +265,126 @@ function submitJobNew(){
       items[i] = [items[i]];
     }
     var combo = createMenu(false,name,items);
-    combo.separator = launchpadOptsSeparator;
+    // TODO: Remove OptsSeparator and make normal menu
     combo.anchor = fieldAnchor;
     combo.id = Ext.id();
-    return combo;  
+    return combo;
   }
 // Add or remove entries from the JDL panel
-  function entryMagic(item,state){
-    var panel = Ext.getCmp(jdlID);
-    if(!panel){
-      alert('Error: Can not get component by jdlID');
+  function entryMagic( item , state ){
+    var panel = Ext.getCmp( jdlID ) ;
+    if( ! panel ){
+      alert('Error: Can not get component by jdlID') ;
       return
     }
-    var form = Ext.getCmp(formID);
-    if(!form){
-      alert('Error: Can not get component by formID');
+    var form = Ext.getCmp( formID ) ;
+    if( ! form ){
+      alert('Error: Can not get component by formID') ;
       return
     }
-    var text = item.text;
-    var findJDL = panel.find('fieldLabel',text);
-    var isJDL = false;
-    if(findJDL.length > 0){
-      isJDL = true;
+    var text = item.text ;
+    var findJDL = panel.find( 'fieldLabel' , text ) ;
+    var isJDL = false ;
+    if( findJDL.length > 0 ){
+      isJDL = true ;
     }
-    if(state){
-      for(var i=0; i<data.length; i++){
-        if(data[i][0] == text && !isJDL){
-          if(typeof(data[i][1]) == 'object'){
-            var field = createList(data[i][0],data[i][1]);
-          }else{
-            var field = createText(data[i][0],data[i][1]);
-          }
-          form.form.add(field);
-          panel.add(field);
+    if( state && ! isJDL ){
+      if( item.value ){
+        if( item.value.length > 1 ){
+          var field = createList( text , item.value ) ;
+        }else{
+          var field = createText( text , item.value[ 0 ] ) ;
         }
+        form.form.add(field);
+        panel.add(field);      
       }
-    }else{
-      if(isJDL){
-        for(var i=0; i<findJDL.length; i++){
-          if(findJDL[i].fieldLabel && findJDL[i].fieldLabel == text){
-            var tmpJDL = panel.getComponent(findJDL[i].id);
-            if(!tmpJDL){
-              return
-            }
-            var itemParentNode = tmpJDL.el.up('div.x-form-item');
-            panel.remove(tmpJDL);
-            if(itemParentNode){
-              Ext.fly(itemParentNode).remove();
-            }
-            form.form.remove(tmpJDL);
+    }
+    if( ! state && isJDL ){
+      for(var i=0 ; i < findJDL.length ; i++ ){
+        if( findJDL[ i ].fieldLabel && findJDL[ i ].fieldLabel == text ){
+          var tmpJDL = panel.getComponent( findJDL[ i ].id ) ;
+          if( ! tmpJDL ){
+            return
           }
+          var itemParentNode = tmpJDL.el.up('div.x-form-item') ;
+          panel.remove( tmpJDL ) ;
+          if( itemParentNode ){
+            Ext.fly( itemParentNode ).remove() ;
+          }
+          form.form.remove(tmpJDL);
         }
       }
     }
     panel.doLayout();
   }
 // Create the specific entries for the Add Elements menu
-  function checkedMenu(text,isList){
+  function checkedMenu( text , value ){
     var item = new Ext.menu.CheckItem({
-      checkHandler:entryMagic,
-      hideOnClick:false,
-      text:text
+      checkHandler    : entryMagic
+      ,hideOnClick    : false
+      ,text           : text
+      ,value          : value
     });
     return item
   }
 // Recursively check if element is already exists in menu
-  function menuAdd(menu,items){
-    var extmenu = []
-    try{    
-      var length = menu.items.getCount();
-      for(var j = 0; j < length; j++){
-        if(menu.items.items[j].text){
-          extmenu.push(menu.items.items[j].text);
-        }
-      }  
-    }catch(e){
-      alert('Error: ' + e.name + ': ' + e.message)
-      return
+  function menuAdd( menu , items ){
+    var currentItems = menu.items ;
+    if( currentItems.getCount() > 0 ){
+      menu.add( '-' ) ;
     }
-    for(var i in items){
-      if(extmenu.indexOf(i) != -1){
-        if(typeof(items[i]) == 'object'){
-          var length = menu.items.getCount();
-          for(var j = 0; j < length; j++){
-            if(menu.items.items[j].text == i){
-              if(menu.items.items[j].menu){
-                menuAdd(menu.items.items[j].menu,items[i]);
-              }else{
-                var sub = new Ext.menu.Menu();
-                menuAdd(sub,items[i]);              
-              }
-            }
-          }
-        }
-      }else{
-        if(i == '-'){
-          menu.add('-');
-        }else if(typeof(items[i]) == 'object'){
-          var sub = new Ext.menu.Menu();
-          menu.add({text:i,menu:sub});
-          menuAdd(sub,items[i]);
+    for( var i in items ){
+      var index = currentItems.findIndex( 'text' , i ) ;
+      if( i == '-' ){
+        menu.add( '-' ) ;
+        continue ;
+      }
+      if( Ext.type( items[ i ] ) == 'array'){
+        var item = checkedMenu( i , items[ i ] ) ;
+        if( index < 0 ){
+          menu.add( item ) ;        
         }else{
-          if(launchpadOptsSeparator){
-            var list = items[i].split(launchpadOptsSeparator);
-            if(list.length > 1){
-              menu.add(checkedMenu(i,list));
-            }else{
-              menu.add(checkedMenu(i));
-            }
-          }else{
-            menu.add(checkedMenu(i));
-          }
+          menu.remove( currentItems.get( index ) ) ;
+          menu.insert( index , item) ;
         }
+        continue ;
+      }
+      if( Ext.type( items[ i ] ) == 'object'){
+        var sub = new Ext.menu.Menu() ;
+        menu.add({ text:i , menu : sub ,  }) ;
+        menuAdd( sub , items[ i ] ) ;
+        continue ;
       }
     }
   }
-// Adds new elements to data key/value massive
-  function dataAdd(items){
-    for(var i in items){
-      if(typeof(items[i]) == 'object'){
-        dataAdd(items[i]);
-      }else{
-        var list = items[i].split(launchpadOptsSeparator);
-        if(list.length > 1){
-          for(var j = 0; j < list.length; j++){
-            list[j] = list[j].replace(/^\s\s*/, '').replace(/\s\s*$/, '');
-          }
-        }
-        var add = true;
-        for(var j in data){
-          if(i == data[j][0]){
-            if(list.length > 1){
-              data[j][1] = list;
-            }else{
-              data[j][1] = list[0];
-            }
-            add = false;
-          }
-        }
-        if(add){
-          if(list.length > 1){
-            data.push([i, list]);
-          }else{
-            data.push([i, items[i]]);
-          }
-        }
+  // Adds new elements to data key/value massive
+  function dataAdd( items ){
+    for( var i in data ){
+      if( Ext.type( data[ i ] ) == 'string' ){
+        data[ i ] = new Array( data[ i ] ) ;
       }
     }
+    for( var i in items ){
+      if( Ext.type( items[ i ] ) == 'string' ){
+        items[ i ] = new Array( items[ i ] ) ;
+      }
+    }
+    data = Ext.apply( data , items ) ;
   }
-// Create/change menu entries in 'Add Parameters' menu
-  function menuShuffle(menu){
-    dataAdd(menu);
-    var add = Ext.getCmp(addID);
-    if(!launchpadOptsOverride && add.menu){
-      menuAdd(add.menu,menu);
+  // Create/change menu entries in 'Add Parameters' menu
+  function menuShuffle( menu ){
+    dataAdd( menu ) ;
+    var add = Ext.getCmp( addID ) ;
+    if( add.menu ){
+      menuAdd( add.menu , menu ) ;
     }else{
-      var sub = new Ext.menu.Menu();
-      add.menu = sub;
-      menuAdd(sub,menu);
+      var sub = new Ext.menu.Menu() ;
+      add.menu = sub ;
+      menuAdd( sub , menu ) ;
     }
   }
-// End of function declaration
+// End of functions declaration
+  dataAdd() ; // Transform all strings to arrays
   var submit = new Ext.Button({
     cls:"x-btn-text-icon",
     handler:function(){
@@ -509,39 +465,30 @@ function submitJobNew(){
     monitorResize:true,
     title:'Input Sandbox',
   });
-/*
-  var lfnbox = new Ext.form.FieldSet({
-    autoHeight:true,
-    collapsible: true,
-    items:[],
-    title:'Input Sandbox LFN',
-  });
-//*/
   var addButton = new Ext.Toolbar.Button({
     cls:"x-btn-text-icon",
     id:addID,
     icon:gURLRoot+'/images/iface/advanced.gif',
     menu:[
-      checkedMenu('InputData'),
-      checkedMenu('OutputData'),
-      checkedMenu('OutputSE'),
-      checkedMenu('OutputPath'),
+      checkedMenu( 'InputData' , data[ 'InputData' ] ),
+      checkedMenu( 'OutputData' , data[ 'OutputData' ] ),
+      checkedMenu( 'OutputSE' , data[ 'OutputSE' ] ),
+      checkedMenu( 'OutputPath' , data[ 'OutputPath' ] ),
       '-',
-      checkedMenu('CPUTime'),
-      checkedMenu('Site'),
-      checkedMenu('BannedSite'),
-      checkedMenu('SystemConfig'),
+      checkedMenu( 'CPUTime' , data[ 'CPUTime' ] ),
+      checkedMenu( 'Site' , data[ 'Site' ] ),
+      checkedMenu( 'BannedSite' , data[ 'BannedSite' ] ),
+      checkedMenu( 'Platform' , data[ 'Platform' ] ),
       '-',
-      checkedMenu('Priority'),
+      checkedMenu( 'Priority' , data[ 'Priority' ] ),
       '-',
-      checkedMenu('StdError'),
-      checkedMenu('StdOutput'),
+      checkedMenu( 'StdError' , data[ 'StdError' ] ),
+      checkedMenu( 'StdOutput' , data[ 'StdOutput' ] ),
       '-',
-      checkedMenu('Parameters'),
-      checkedMenu('ParameterStart'),
-      checkedMenu('ParameterStep')
-    ],
-//    menu:menu,    
+      checkedMenu( 'Parameters' , data[ 'Parameters' ] ),
+      checkedMenu( 'ParameterStart' , data[ 'ParameterStart' ] ),
+      checkedMenu( 'ParameterStep' , data[ 'ParameterStep' ] )
+    ],  
     text:'Add Parameters',
     tooltip:'Click to add more parameters to the JDL'
   });
@@ -622,14 +569,6 @@ function submitJobNew(){
     params:{'getLaunchpadOpts':true},
     success:function(response){
       var response = Ext.util.JSON.decode(response.responseText);
-      if(response.override && response.override == 'true'){
-        launchpadOptsOverride = true;
-      }else{
-        launchpadOptsOverride = false;
-      }
-      if(response.separator && response.separator != 'false'){
-        launchpadOptsSeparator = response.separator;
-      }
       addButton.enable();
       if(response.result){
         menuShuffle(response.result);

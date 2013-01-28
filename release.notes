@@ -1,3 +1,47 @@
+[web2013012501]
+FIX: Authentication has been fixed in accounting controller
+CHANGE: Add button "Export as" space|comma|semicolone list of files to MetadataFC interface
+
+[web2013012401]
+CHANGE: SiteSummary page has stardard configuration of buttons and provide the allow/ban a site or multiple sites functionallity
+FIX: Quick fixes in MetadataCatalog interface.  Any data are allowed to type-in in metadata selectors comboboxes making possible selections by metadata on file level
+
+[web2013012101]
+NEW: Initial release of SystemAdministration web page. To get it working, uncomment the line 138 in web.cfg file
+FIX: Fixing typo in ProductionMonitor.py
+CHANGE: Version of software displays in bottom left corner
+
+[web2012112601]
+FIX: Minor fixes in Presenter
+FIX: Rename MetaCatalogue to MetaCatalog.py
+FIX: Add __init__.py in controllers/data
+CHANGE: Both protocols http and https could be used as url for logo
+CHANGE: Registration function is re-written in modular way
+CHANGE: Hide non generic options in JobMonitor like ShowRequest or Stager Report. Can be switched on in CS
+
+[web2012092101]
+FIX: ProxyUpload from main page is fixed
+FIX: Fix convert function in Presenter.py
+FIX: Use generic method for ProductionMonitor
+FIX: Several fixes in Presenter.js
+CHANGE: Add parseFormParams method in accountingPlots
+CHANGE: Removed registration form from portal frame
+
+[web2012091201]
+CHANGE: New Presenter page. Introduce improved Save/Load mechanism
+
+[web2012082901]
+CHANGE: Platforms are taken automatically from CS. Change in menu data structure taken from CS and used in launchpad
+
+[web2012082301]
+CHANGE: Remove LHCb specific features as RunID and RunStatus
+
+[web2012072701]
+NEW: Interface to DIRAC FileCatalog. Use it on your own risk
+
+[web2012061901]
+FIX: All parameters in an url from web.cfg are taken in account
+
 [web2012061801]
 FIX: Check for exit status in Subprocess call 
 

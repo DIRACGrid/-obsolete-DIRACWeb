@@ -1,15 +1,17 @@
-import logging
+# -*- coding: utf-8 -*-
 import os
+import socket
 
 from dirac.lib.base import *
 from DIRAC import gConfig, gLogger
 from dirac.lib.diset import getRPCClient
+from DIRAC.Core.Utilities.List import uniqueElements, fromChar
 from dirac.lib.credentials import getUserDN, getUsername, getAvailableGroups
-from dirac.lib.credentials import getProperties
+from dirac.lib.credentials import getProperties, checkUserCredentials
 from DIRAC.FrameworkSystem.Client.NotificationClient import NotificationClient
-from DIRAC.Core.Utilities.List import uniqueElements
+from DIRAC.FrameworkSystem.Client.UserProfileClient import UserProfileClient
 
-log = logging.getLogger( __name__ )
+REG_PROFILE_NAME = "User Registration"
 
 class GeneralController( BaseController ):
 
@@ -208,418 +210,775 @@ class GeneralController( BaseController ):
       return {"success":"true","result":self.getVOList()}
     elif request.params.has_key("getCountries") and len(request.params["getCountries"]) > 0:
       return {"success":"true","result":self.getCountries()}
+    elif request.params.has_key("send_message") and len(request.params["send_message"]) > 0:
+      return self.__sendMessage()
     elif request.params.has_key("registration_request") and len(request.params["registration_request"]) > 0:
-      paramcopy = dict()
-      for i in request.params:
-        if not i == "registration_request" and len(request.params[i]) > 0:
-          paramcopy[i] = request.params[i]
-      return self.registerUser(paramcopy)
+      return self.__registerUser()
     else:
       return {"success":"false","error":"The request parameters can not be recognized or they are not defined"}
+################################################################################
 
-  def registerUser(self,paramcopy):
-    gLogger.info("Start processing a registration request")
+
+
+  def alreadyRequested( self , email = False ):
+
     """
-    Unfortunately there is no way to get rid of empty text values in JS,
-    so i have to hardcode it on server side. Hate it!
+    Checks if the email already saved as registration request key or not
+    Return True or False
     """
-    default_values = ["John Smith","jsmith","john.smith@gmail.com","+33 9 10 00 10 00"]
-    default_values.append("Select preferred virtual organization(s)")
-    default_values.append("Select your country")
-    default_values.append("Any additional information you want to provide to administrators")
-    # Check for having a DN but no username
-    dn = getUserDN()
-    username = getUsername()
-    gLogger.debug("User's DN: %s and DIRAC username: %s" % (dn, username))
-    if not username == "anonymous":
-      error = "You are already registered in DIRAC with username: %s" % username
-      gLogger.debug("Service response: %s" % error)
-      return {"success":"false","error":error}
-    else:
-      if not dn:
-        error = "Certificate is not loaded to a browser or DN is absent"
-        gLogger.debug("Service response: %s" % error)
-        return {"success":"false","error":error}
-    body = ""
-    userMail = False
-    vo = []
-    # Check for user's email, creating mail body
-    gLogger.debug("Request's body:")
-    for i in paramcopy:
-      gLogger.debug("%s - %s" % (i,paramcopy[i]))
-      if not paramcopy[i] in default_values:
-        if i == "email":
-          userMail = paramcopy[i]
-        if i == "vo":
-          vo = paramcopy[i].split(",")
-        body = body + str(i) + ' - "' + str(paramcopy[i]) + '"\n'
-    if not userMail:
-      error = "Can not get your email address from the request"
-      gLogger.debug("Service response: %s" % error)
-      return {"success":"false","error":error}
-    gLogger.info("User want to be register in VO(s): %s" % vo)
-    # TODO Check for previous requests
-    # Get admin mail based on requested VO i.e. mail of VO admin
-    mails = list()
-    gLogger.debug("Trying to get admin username to take care about request")
+    
+    if not email:
+      return True
+    upc = UserProfileClient( REG_PROFILE_NAME , getRPCClient )
+    result = upc.retrieveVar( email )
+    gLogger.info( result )
+    if result[ "OK" ]:
+      return True
+    return False
+
+
+
+  def getVOAdmins( self , vo = None ):
+
+    """
+    Get admin usernames for VOs in vo list
+    Argument is a list. Return value is a list
+    """
+
+    names = list()
+    if not vo:
+      return names
     for i in vo:
-      gLogger.debug("VOAdmin for VO: %s" % i)
       i = i.strip()
-      voadm = gConfig.getValue("/Registry/VO/%s/VOAdmin" % i,[])
-      gLogger.debug("/Registry/VO/%s/VOAdmin - %s" % (i,voadm))
-      for user in voadm:
-        mails.append(user)
-    # If no VOAdmin - try to get admin mails based on group properties
-    if not len(mails) > 0:
-      gLogger.debug("No VO admins found. Trying to get something based on group property")
-      groupList = list()
-      groups = gConfig.getSections("/Registry/Groups")
-      gLogger.debug("Group response: %s" % groups)
-      if groups["OK"]:
-        allGroups = groups["Value"]
-        gLogger.debug("Looking for UserAdministrator property")
-        for j in allGroups:
-          props = getProperties(j)
-          gLogger.debug("%s properties: %s" % (j,props)) #1
-          if "UserAdministrator" in props: # property which is used for user administration
-            groupList.append(j)
-      groupList = uniqueElements(groupList)
-      gLogger.debug("Chosen group(s): %s" % groupList)
-      if len(groupList) > 0:
-        for i in groupList:
-          users = gConfig.getValue("/Registry/Groups/%s/Users" % i,[])
-          gLogger.debug("%s users: %s" % (i,users))
-          for user in users:
-            mails.append(user)
-    # Last stand - Failsafe option
-    if not len(mails) > 0:
-      gLogger.debug("No suitable groups found. Trying failsafe")
-      regAdmin = gConfig.getValue("/Website/UserRegistrationAdmin",[])
-      gLogger.debug("/Website/UserRegistrationAdmin - %s" % regAdmin)
-      for user in regAdmin:
-        mails.append(user)
-    mails = uniqueElements(mails)
-    gLogger.info("Chosen admin(s): %s" % mails)
-    # Final check of usernames
-    if not len(mails) > 0:
-      error = "Can't get in contact with administrators about your request\n"
-      error = error + "Most likely this DIRAC instance is not configured yet"
-      gLogger.debug("Service response: %s" % error)
-      return {"success":"false","error":error}
-    # Convert usernames to { e-mail : full name }
-    gLogger.debug("Trying to get admin's mail and associated name")
-    sendDict = dict()
-    for user in mails:
-      email = gConfig.getValue("/Registry/Users/%s/Email" % user,"")
-      gLogger.debug("/Registry/Users/%s/Email - '%s'" % (user,email))
+      gLogger.debug( "VOAdmin for VO: %s" % i )
+      voadmins = gConfig.getValue( "/Registry/VO/%s/VOAdmin" % i , [] )
+      gLogger.debug( "/Registry/VO/%s/VOAdmin - %s" % ( i , voadmins ) )
+      names.extend( voadmins )
+
+    return names
+
+
+
+  def getUserByProperty( self , prop = "NormalUser" ):
+
+    """
+    Get usernames based on group property
+    Argument is a string. Return value is a list
+    """
+
+    groupList = list()
+    result = gConfig.getSections( "/Registry/Groups" )
+    gLogger.debug( "Group response: %s" % result )
+    if not result[ "OK" ]:
+      return groupList
+
+    groups = result[ "Value" ]
+    for j in groups:
+      props = getProperties( j )
+      gLogger.debug( "%s properties: %s" % ( j , props ) )
+      if prop in props:
+        groupList.append( j )
+
+    if not len( groupList ) > 0:
+      return groupList
+    groupList = uniqueElements( groupList )
+    gLogger.debug( "Chosen group(s): %s" % groupList )
+
+    userList = list()
+    for i in groupList:
+      users = gConfig.getValue( "/Registry/Groups/%s/Users" % i , [] )
+      gLogger.debug( "%s users: %s" % ( i , users ) )
+      if len( users ) > 0:
+        userList.extend( users )
+
+    return userList
+
+
+
+  def getMailDict( self , names = None ):
+  
+    """
+    Convert list of usernames to dict like { e-mail : full name }
+    Argument is a list. Return value is a dict
+    """
+
+    resultDict = dict()
+    if not names:
+      return resultDict
+    
+    for user in names:
+      email = gConfig.getValue( "/Registry/Users/%s/Email" % user , "" )
+      gLogger.debug( "/Registry/Users/%s/Email - '%s'" % ( user , email ) )
       emil = email.strip()
+      
       if not email:
-        gLogger.error("Can't find value for option /Registry/Users/%s/Email" % user)
+        gLogger.error( "Can't find value for option /Registry/Users/%s/Email" % user )
         continue
-      fname = gConfig.getValue("/Registry/Users/%s/FullName" % user,"")
-      gLogger.debug("/Registry/Users/%s/FullName - '%s'" % (user,fname))
+
+      fname = gConfig.getValue( "/Registry/Users/%s/FullName" % user , "" )
+      gLogger.debug( "/Registry/Users/%s/FullName - '%s'" % ( user , fname ) )
       fname = fname.strip()
+
       if not fname:
         fname = user
-        gLogger.debug("FullName is absent, name to be used: %s" % fname)
-      sendDict[email] = fname
-    # Final check of mails
-    gLogger.debug("Final dictionary with mails to be used %s" % sendDict)
-    if not len(sendDict) > 0:
-      error = "Can't get in contact with administrators about your request\n"
-      error = error + "Most likely this DIRAC instance is not configured yet"
-      gLogger.debug("Service response: %s" % error)
-      return {"success":"false","error":error}
-    # Sending a mail
+        gLogger.debug( "FullName is absent, name to be used: %s" % fname )
+
+      resultDict[ email ] = fname
+
+    return resultDict
+
+
+
+  def __getAdminList( self , vo ):
+
+    """
+    Return a list of admins who can register a new user.
+    Look first for vo admins then to user with property UserAdministrator and
+    looking at /Website/UserRegistrationAdmin as fallback
+    """
+
+    adminList = list()
+    adminList = self.getVOAdmins( vo )  
+    if not len( adminList ) > 0:
+      adminList = self.getUserByProperty( "UserAdministrator" )
+    if not len( adminList ) > 0:
+      adminList = gConfig.getValue( "/Website/UserRegistrationAdmin" , [] )
+
+    if "vhamar" in adminList:
+      index = adminList.index( "vhamar" )
+      del adminList[ index ]
+
+    return adminList
+
+
+
+  def sendMail( self , sendDict = None , title = None , body = None , fromAddress = None ):
+
+    """
+    Sending an email using sendDict: { e-mail : name } as addressbook
+    title and body is the e-mail's Subject and Body
+    fromAddress is an email address in behalf of whom the message is sent
+    Return success/failure JSON structure
+    """
+
+    if not sendDict:
+      result = ""
+      gLogger.debug( result )
+      return { "success" : "false" , "error" : result }
+
+    if not title:
+      result = "title argument is missing"
+      gLogger.debug( result )
+      return { "success" : "false" , "error" : result }
+      
+    if not body:
+      result = "body argument is missing"
+      gLogger.debug( result )
+      return { "success" : "false" , "error" : result }
+
+    if not fromAddress:
+      result = "fromAddress argument is missing"
+      gLogger.debug( result )
+      return { "success" : "false" , "error" : result }
+
     sentSuccess = list()
     sentFailed = list()
-    gLogger.debug("Initializing Notification client")
-    ntc = NotificationClient(lambda x, timeout: getRPCClient(x, timeout=timeout, static = True) )
-    gLogger.debug("Sending messages")
-    for email,name in sendDict.iteritems():
-      gLogger.debug("ntc.sendMail(%s,New user has registered,%s,%s,False" % (email,body,userMail))
-      result = ntc.sendMail(email,"New user has registered",body,userMail,False)
-      if not result["OK"]:
-        error = name + ": " + result["Message"]
-        sentFailed.append(error)
-        gLogger.error("Sent failure: ", error)
+    gLogger.debug( "Initializing Notification client" )
+    ntc = NotificationClient( lambda x , timeout: getRPCClient( x , timeout = timeout , static = True ) )
+
+    for email , name in sendDict.iteritems():
+      result = ntc.sendMail( email , title , body , fromAddress , False )
+      if not result[ "OK" ]:
+        error = name + ": " + result[ "Message" ]
+        sentFailed.append( error )
+        gLogger.error( "Sent failure: " , error )
       else:
-        gLogger.info("Successfully sent to %s" % name)
-        sentSuccess.append(name)
-    # Returning results
-    sName = ", ".join(sentSuccess)
-    gLogger.info("End of processing of a registration request")
-    gLogger.debug("Service response sent to a user:")
-    if len(sentSuccess) > 0 and len(sentFailed) > 0:
+        gLogger.info( "Successfully sent to %s" % name )
+        sentSuccess.append( name )
+
+    success = ", ".join( sentSuccess )
+    failure = "\n".join( sentFailed )
+
+    if len( success ) > 0 and len( failure ) > 0:
       result = "Your registration request were sent successfully to: "
-      result = result + sName + "\n\nFailed to sent it to:\n"
-      result = result + "\n".join(sentFailed)
-      gLogger.debug(result)
-      return {"success":"true","result":result}
-    elif len(sentSuccess) > 0 and (not len(sentFailed)) > 0:
-      result = "Your registration request were sent successfully to: %s" % sName
-      gLogger.debug(result)
-      return {"success":"true","result":result}
-    elif (not len(sentSuccess)) > 0 and len(sentFailed) > 0:
-      result = "Failed to sent your request to:\n"
-      result = result + "\n".join(sentFailed)
-      gLogger.debug(result)
-      return {"success":"false","error":result}
+      result = result + success + "\n\nFailed to sent it to:\n" + failure
+      gLogger.debug( result )
+      return { "success" : "true" , "result" : result }
+    elif len( success ) > 0 and len( failure ) < 1:
+      result = "Your registration request were sent successfully to: %s" % success
+      gLogger.debug( result )
+      return { "success" : "true" , "result" : result }
+    elif len( success ) < 1 and len( failure ) > 0:
+      result = "Failed to sent your request to:\n%s" % failure
+      gLogger.debug( result )
+      return { "success" : "false" , "error" : result }
     else:
       result = "No messages were sent to administrator due technical failure"
-      gLogger.debug(result)
-      return {"success":"false","error":result}
+      gLogger.debug( result )
+      return { "success" : "false" , "error" : result }
 
-  def getVOList(self):
-    result = gConfig.getSections("/Registry/VO")
-    if result["OK"]:
-      vo = result["Value"]
-    else:
-      vo = ""
-    return vo
+
+
+  def checkUnicode( self , text = None ):
+
+    """
+    Check if value is unicode or not and return properly converted string
+    Arguments are string and unicode/string, return value is a string
+    """
+
+    try:
+      text = text.decode( 'utf-8' , "replace" )
+    except :
+      pass
+    text = text.encode( "utf-8" )
+    gLogger.debug( text )
     
-  def getCountries(self):
+    return text
+
+
+
+  def __messageLog( user , group , title , body ):
+
+    """
+    Save sent message to a profile. Max 500 are messages allowed
+    """
+    
+    return True
+
+
+
+  def __sendMessage( self ):
+  
+    """
+    This function is used to send a mail to specific group of DIRAC user
+    Expected parameters from request are group, title, body
+    """
+    
+    gLogger.info("Start message broadcasting")
+
+    checkUserCredentials()
+    dn = getUserDN()
+    if not dn:
+      error = "Certificate is not loaded in the browser or DN is absent"
+      gLogger.error( "Service response: %s" % error )
+      return { "success" : "false" , "error" : error }
+    username = getUsername()
+    if username == "anonymous":
+      error = "Sending an anonymous message is forbidden"
+      gLogger.error( "Service response: %s" % error )
+      return { "success" : "false" , "error" : error }
+    gLogger.info( "DN: %s" % dn )
+
+    email = gConfig.getValue( "/Registry/Users/%s/Email" % username , "" )
+    gLogger.debug( "/Registry/Users/%s/Email - '%s'" % ( username , email ) )
+    emil = email.strip()
+      
+    if not email:
+      error = "Can't find value for option /Registry/Users/%s/Email" % user
+      gLogger.error( "Service response: %s" % error )
+      return { "success" : "false" , "error" : error }
+
+    test = [ "group" , "title" , "body" ]
+    for i in test:
+      if not request.params.has_key( i ):
+        error = "The required parameter %s is absent in request" % i
+        gLogger.error( "Service response: %s" % error )
+        return { "success" : "false" , "error" : error }
+
+    group = request.params[ "group" ]
+    users = gConfig.getValue( "/Registry/Groups/%s/Users" % group , [] )
+    if not len( users ) > 0:
+      error = "No users for %s group found" % group
+      gLogger.error( "Service response: %s" % error )
+      return { "success" : "false" , "error" : error }
+
+    sendDict = self.__getMailDict( users )
+    if not len( sendDict ) > 0:
+      error = "Can't get a mail address for users in %s group" % group
+      gLogger.debug( "Service response: %s" % error )
+      return { "success" : "false" , "error" : error }
+    gLogger.debug( "Final dictionary with mails to be used %s" % sendDict )
+    
+    title = self.checkUnicode( request.params[ "title" ] )
+    gLogger.debug( "email title: %s" % title )
+
+    body = self.checkUnicode( request.params[ "body" ] )
+    gLogger.debug( "email body: %s" % body )
+
+    self.__messageLog( user , group , title , body )
+
+    return self.sendMail( sendDict , title , body , email )
+
+
+
+  def __registerUser( self ):
+
+    """
+    This function is used to notify DIRAC admins about user registration request
+    The logic is simple:
+    0) Check if request from this e-mail has already registered or not
+    1) Send mail to VO admin of requested VO
+    2) Send mail to users in group with UserAdministrator property
+    3) Send mail to users indicated in /Website/UserRegistrationAdmin option
+    """
+    
+    gLogger.info("Start processing a registration request")
+
+    checkUserCredentials()
+    # Check for having a DN but no username
+    dn = getUserDN()
+    if not dn:
+      error = "Certificate is not loaded in the browser or DN is absent"
+      gLogger.error( "Service response: %s" % error )
+      return { "success" : "false" , "error" : error }
+    username = getUsername()
+    if not username == "anonymous":
+      error = "You are already registered in DIRAC with username: %s" % username
+      gLogger.error( "Service response: %s" % error )
+      return { "success" : "false" , "error" : error }
+    gLogger.info( "DN: %s" % dn )
+
+    if not request.params.has_key( "email" ):
+      error = "Can not get your email address from the request"
+      gLogger.debug( "Service response: %s" % error )
+      return { "success" : "false" , "error" : error }
+    userMail = request.params[ "email" ]
+
+    if self.alreadyRequested( userMail ):
+      error = "Request associated with %s already registered" % userMail
+      gLogger.debug( "Service response: %s" % error )
+      return { "success" : "false" , "error" : error }
+
+    vo = fromChar( request.params[ "vo" ] )
+    if not vo:
+      error = "You should indicate a VirtualOrganization for membership"
+      gLogger.debug( "Service response: %s" % error )
+      return { "success" : "false" , "error" : error }
+    gLogger.info( "User want to be register in VO(s): %s" % vo )
+
+    body = str()
+    for i in request.params:
+      if not i in [ "registration_request" , "email" , "vo" ]:
+        text = self.checkUnicode( request.params[ i ] )
+        info = "%s - %s" % ( i , text )
+        body = body + info + "\n"
+    body = body + "DN - " + dn
+    gLogger.debug( "email body: %s" % body )
+
+    adminList = self.__getAdminList( vo )
+    if not len( adminList ) > 0:
+      error = "Can't get in contact with administrators about your request\n"
+      error = error + "Most likely this DIRAC instance is not configured yet"
+      gLogger.debug( "Service response: %s" % error )
+      return { "success" : "false" , "error" : error }
+    adminList = uniqueElements( adminList )
+    gLogger.info( "Chosen admin(s): %s" % adminList )
+    
+    sendDict = self.__getMailDict( adminList )
+    if not len( sendDict ) > 0:
+      error = "Can't get in contact with administrators about your request\n"
+      error = error + "Most likely this DIRAC instance is not configured yet"
+      gLogger.debug( "Service response: %s" % error )
+      return { "success" : "false" , "error" : error }
+    gLogger.debug( "Final dictionary with mails to be used %s" % sendDict )
+
+    if socket.gethostname().find( '.' ) >= 0:
+      hostname = socket.gethostname()
+    else:
+      hostname = socket.gethostbyaddr( socket.gethostname() )[ 0 ]
+    title = "New user has sent registration request to %s" % hostname
+
+    return self.sendMail( sendDict , title , body , userMail )
+
+
+
+  def getRequesterEmail( self ):
+
+    """
+    """
+
+    user = getUsername()
+    if not user:
+      gLogger.debug( "user value is empty" )
+      return None
+
+    if user == "anonymous":
+      gLogger.debug( "user is anonymous" )
+      return None
+    
+    email = gConfig.getValue( "/Registry/Users/%s/Email" % user , "" )
+    gLogger.debug( "/Registry/Users/%s/Email - '%s'" % ( user , email ) )
+    emil = email.strip()
+      
+    if not email:
+      return None
+    return email
+
+
+
+  def grouplistFromRequest( self ):
+
+    """
+    """
+
+    if not "group" in request.params:
+      return None
+
+    if not len( request.params[ "group" ] ) > 0:
+      return None
+
+    separator = gConfig.getValue( "/Website/ListSeparator" , ":::" )
+    group = request.params[ "group" ].split( separator )
+    return group
+
+
+
+  def userlistFromRequest( self ):
+
+    """
+    """
+
+    if not "user" in request.params:
+      return None
+
+    if not len( request.params[ "user" ] ) > 0:
+      return None
+
+    separator = gConfig.getValue( "/Website/ListSeparator" , ":::" )
+    user = request.params[ "user" ].split( separator )
+    return user
+
+
+
+  def userlistFromGroup( self , groupname = None ):
+
+    """
+    """
+
+    if not groupname:
+      gLogger.debug( "Argument groupname is missing" )
+      return None
+
+    users = gConfig.getValue( "/Registry/Groups/%s/Users" % groupname , [] )
+    gLogger.debug( "%s users: %s" % ( groupname , users ) )
+    if not len( users ) > 0:
+      gLogger.debug( "No users for group %s found" % groupname )
+      return None
+    return users
+
+
+
+  def getVOList( self ):
+
+    vo = list()
+    result = gConfig.getSections( "/Registry/VO" )
+    if result[ "OK" ]:
+      vo = result[ "Value" ]
+
+    return vo
+
+  def aftermath( self ):
+
+    """
+    """
+
+    action = self.action
+
+    success = ", ".join( self.actionSuccess )
+    failure = "\n".join( self.actionFailed )
+
+    if len( self.actionSuccess ) > 1:
+      sText = self.prefix + "s"
+    else:
+      sText = self.prefix
+      
+    if len( self.actionFailed ) > 1:
+      fText = self.prefix + "s"
+    else:
+      fText = self.prefix
+
+    if len( success ) > 0 and len( failure ) > 0:
+      sMessage = "%s %sed successfully: " % ( sText , action , success)
+      fMessage = "Failed to %s %s:\n%s" % ( action , fText , failure )
+      result = sMessage + "\n\n" + fMessage
+      return { "success" : "true" , "result" : result }
+    elif len( success ) > 0 and len( failure ) < 1:
+      result = "%s %sed successfully: %s" % ( sText , action , success )
+      return { "success" : "true" , "result" : result }
+    elif len( success ) < 1 and len( failure ) > 0:
+      result = "Failed to %s %s:\n%s" % ( action , fText , failure )
+      gLogger.always( result )
+      return { "success" : "false" , "error" : result }
+    else:
+      result = "No action has performed due technical failure. Check the logs please"
+      gLogger.debug( result )
+      return { "success" : "false" , "error" : result }
+  
+
+
+
+  def getCountriesReversed(self):
+
+    """
+    Return the dictionary of country names and
+    corresponding country code top-level domain (ccTLD) 
+    """
+
+    result = self.getCountries()
+    name = dict( zip( result.values() , result ) )
+    return name
+
+
+
+  def getCountries( self ):
+
+    """
+    Return the dictionary of country code top-level domain (ccTLD) and
+    corresponding country name
+    """
+
     countries = {
-    "af": "Afghanistan",
-    "al": "Albania",
-    "dz": "Algeria",
-    "as": "American Samoa",
-    "ad": "Andorra",
-    "ao": "Angola",
-    "ai": "Anguilla",
-    "aq": "Antarctica",
-    "ag": "Antigua and Barbuda",
-    "ar": "Argentina",
-    "am": "Armenia",
-    "aw": "Aruba",
-    "au": "Australia",
-    "at": "Austria",
-    "az": "Azerbaijan",
-    "bs": "Bahamas",
-    "bh": "Bahrain",
-    "bd": "Bangladesh",
-    "bb": "Barbados",
-    "by": "Belarus",
-    "be": "Belgium",
-    "bz": "Belize",
-    "bj": "Benin",
-    "bm": "Bermuda",
-    "bt": "Bhutan",
-    "bo": "Bolivia",
-    "ba": "Bosnia and Herzegowina",
-    "bw": "Botswana",
-    "bv": "Bouvet Island",
-    "br": "Brazil",
-    "io": "British Indian Ocean Territory",
-    "bn": "Brunei Darussalam",
-    "bg": "Bulgaria",
-    "bf": "Burkina Faso",
-    "bi": "Burundi",
-    "kh": "Cambodia",
-    "cm": "Cameroon",
-    "ca": "Canada",
-    "cv": "Cape Verde",
-    "ky": "Cayman Islands",
-    "cf": "Central African Republic",
-    "td": "Chad",
-    "cl": "Chile",
-    "cn": "China",
-    "cx": "Christmas Island",
-    "cc": "Cocos Islands",
-    "co": "Colombia",
-    "km": "Comoros",
-    "cg": "Congo",
-    "cd": "Congo",
-    "ck": "Cook Islands",
-    "cr": "Costa Rica",
-    "ci": "Cote D'Ivoire",
-    "hr": "Croatia",
-    "cu": "Cuba",
-    "cy": "Cyprus",
-    "cz": "Czech Republic",
-    "dk": "Denmark",
-    "dj": "Djibouti",
-    "dm": "Dominica",
-    "do": "Dominican Republic",
-    "tp": "East Timor",
-    "ec": "Ecuador",
-    "eg": "Egypt",
-    "sv": "El Salvador",
-    "gq": "Equatorial Guinea",
-    "er": "Eritrea",
-    "ee": "Estonia",
-    "et": "Ethiopia",
-    "fk": "Falkland Islands",
-    "fo": "Faroe Islands",
-    "fj": "Fiji",
-    "fi": "Finland",
-    "fr": "France",
-    "fx": "France, metropolitan",
-    "gf": "French Guiana",
-    "pf": "French Polynesia",
-    "tf": "French Southern Territories",
-    "ga": "Gabon",
-    "gm": "Gambia",
-    "ge": "Georgia",
-    "de": "Germany",
-    "gh": "Ghana",
-    "gi": "Gibraltar",
-    "gr": "Greece",
-    "gl": "Greenland",
-    "gd": "Grenada",
-    "gp": "Guadeloupe",
-    "gu": "Guam",
-    "gt": "Guatemala",
-    "gn": "Guinea",
-    "gw": "Guinea-Bissau",
-    "gy": "Guyana",
-    "ht": "Haiti",
-    "hm": "Heard and Mc Donald Islands",
-    "va": "Vatican City",
-    "hn": "Honduras",
-    "hk": "Hong Kong",
-    "hu": "Hungary",
-    "is": "Iceland",
-    "in": "India",
-    "id": "Indonesia",
-    "ir": "Iran",
-    "iq": "Iraq",
-    "ie": "Ireland",
-    "il": "Israel",
-    "it": "Italy",
-    "jm": "Jamaica",
-    "jp": "Japan",
-    "jo": "Jordan",
-    "kz": "Kazakhstan",
-    "ke": "Kenya",
-    "ki": "Kiribati",
-    "kp": "Korea",
-    "kr": "Korea",
-    "kw": "Kuwait",
-    "kg": "Kyrgyzstan",
-    "la": "Lao",
-    "lv": "Latvia",
-    "lb": "Lebanon",
-    "ls": "Lesotho",
-    "lr": "Liberia",
-    "ly": "Libyan",
-    "li": "Liechtenstein",
-    "lt": "Lithuania",
-    "lu": "Luxembourg",
-    "mo": "Macau",
-    "mk": "Macedonia",
-    "mg": "Madagascar",
-    "mw": "Malawi",
-    "my": "Malaysia",
-    "mv": "Maldives",
-    "ml": "Mali",
-    "mt": "Malta",
-    "mh": "Marshall Islands",
-    "mq": "Martinique",
-    "mr": "Mauritania",
-    "mu": "Mauritius",
-    "yt": "Mayotte",
-    "mx": "Mexico",
-    "fm": "Micronesia",
-    "md": "Moldova",
-    "mc": "Monaco",
-    "mn": "Mongolia",
-    "ms": "Montserrat",
-    "ma": "Morocco",
-    "mz": "Mozambique",
-    "mm": "Myanmar",
-    "na": "Namibia",
-    "nr": "Nauru",
-    "np": "Nepal",
-    "nl": "Netherlands",
-    "an": "Netherlands Antilles",
-    "nc": "New Caledonia",
-    "nz": "New Zealand",
-    "ni": "Nicaragua",
-    "ne": "Niger",
-    "ng": "Nigeria",
-    "nu": "Niue",
-    "nf": "Norfolk Island",
-    "mp": "Northern Mariana Islands",
-    "no": "Norway",
-    "om": "Oman",
-    "pk": "Pakistan",
-    "pw": "Palau",
-    "pa": "Panama",
-    "pg": "Papua New Guinea",
-    "py": "Paraguay",
-    "pe": "Peru",
-    "ph": "Philippines",
-    "pn": "Pitcairn",
-    "pl": "Poland",
-    "pt": "Portugal",
-    "pr": "Puerto Rico",
-    "qa": "Qatar",
-    "re": "Reunion",
-    "ro": "Romania",
-    "ru": "Russia",
-    "rw": "Rwanda",
-    "kn": "Saint Kitts and Nevis",
-    "lc": "Saint Lucia",
-    "vc": "Saint Vincent and the Grenadines",
-    "ws": "Samoa",
-    "sm": "San Marino",
-    "st": "Sao Tome and Principe",
-    "sa": "Saudi Arabia",
-    "sn": "Senegal",
-    "sc": "Seychelles",
-    "sl": "Sierra Leone",
-    "sg": "Singapore",
-    "sk": "Slovakia",
-    "si": "Slovenia",
-    "sb": "Solomon Islands",
-    "so": "Somalia",
-    "za": "South Africa",
-    "gs": "South Georgia and the South Sandwich Islands",
-    "es": "Spain",
-    "lk": "Sri Lanka",
-    "sh": "St. Helena",
-    "pm": "St. Pierre and Miquelon",
-    "sd": "Sudan",
-    "sr": "Suriname",
-    "sj": "Svalbard and Jan Mayen Islands",
-    "sz": "Swaziland",
-    "se": "Sweden",
-    "ch": "Switzerland",
-    "sy": "Syrian Arab Republic",
-    "tw": "Taiwan",
-    "tj": "Tajikistan",
-    "tz": "Tanzania",
-    "th": "Thailand",
-    "tg": "Togo",
-    "tk": "Tokelau",
-    "to": "Tonga",
-    "tt": "Trinidad and Tobago",
-    "tn": "Tunisia",
-    "tr": "Turkey",
-    "tm": "Turkmenistan",
-    "tc": "Turks and Caicos Islands",
-    "tv": "Tuvalu",
-    "ug": "Uganda",
-    "ua": "Ukraine",
-    "ae": "United Arab Emirates",
-    "gb": "United Kingdom",
-    "uk": "United Kingdom",
-    "us": "United States",
-    "um": "United States Minor Outlying Islands",
-    "uy": "Uruguay",
-    "uz": "Uzbekistan",
-    "vu": "Vanuatu",
-    "ve": "Venezuela",
-    "vn": "Viet Nam",
-    "vg": "Virgin Islands (British)",
-    "vi": "Virgin Islands (U.S.)",
-    "wf": "Wallis and Futuna Islands",
-    "eh": "Western Sahara",
-    "ye": "Yemen",
-    "yu": "Yugoslavia",
-    "zm": "Zambia",
-    "zw": "Zimbabwe",
-    "su": "Soviet Union"
+      "af": "Afghanistan",
+      "al": "Albania",
+      "dz": "Algeria",
+      "as": "American Samoa",
+      "ad": "Andorra",
+      "ao": "Angola",
+      "ai": "Anguilla",
+      "aq": "Antarctica",
+      "ag": "Antigua and Barbuda",
+      "ar": "Argentina",
+      "am": "Armenia",
+      "aw": "Aruba",
+      "au": "Australia",
+      "at": "Austria",
+      "az": "Azerbaijan",
+      "bs": "Bahamas",
+      "bh": "Bahrain",
+      "bd": "Bangladesh",
+      "bb": "Barbados",
+      "by": "Belarus",
+      "be": "Belgium",
+      "bz": "Belize",
+      "bj": "Benin",
+      "bm": "Bermuda",
+      "bt": "Bhutan",
+      "bo": "Bolivia",
+      "ba": "Bosnia and Herzegowina",
+      "bw": "Botswana",
+      "bv": "Bouvet Island",
+      "br": "Brazil",
+      "io": "British Indian Ocean Territory",
+      "bn": "Brunei Darussalam",
+      "bg": "Bulgaria",
+      "bf": "Burkina Faso",
+      "bi": "Burundi",
+      "kh": "Cambodia",
+      "cm": "Cameroon",
+      "ca": "Canada",
+      "cv": "Cape Verde",
+      "ky": "Cayman Islands",
+      "cf": "Central African Republic",
+      "td": "Chad",
+      "cl": "Chile",
+      "cn": "China",
+      "cx": "Christmas Island",
+      "cc": "Cocos Islands",
+      "co": "Colombia",
+      "km": "Comoros",
+      "cg": "Congo",
+      "cd": "Congo",
+      "ck": "Cook Islands",
+      "cr": "Costa Rica",
+      "ci": "Cote D'Ivoire",
+      "hr": "Croatia",
+      "cu": "Cuba",
+      "cy": "Cyprus",
+      "cz": "Czech Republic",
+      "dk": "Denmark",
+      "dj": "Djibouti",
+      "dm": "Dominica",
+      "do": "Dominican Republic",
+      "tp": "East Timor",
+      "ec": "Ecuador",
+      "eg": "Egypt",
+      "sv": "El Salvador",
+      "gq": "Equatorial Guinea",
+      "er": "Eritrea",
+      "ee": "Estonia",
+      "et": "Ethiopia",
+      "fk": "Falkland Islands",
+      "fo": "Faroe Islands",
+      "fj": "Fiji",
+      "fi": "Finland",
+      "fr": "France",
+      "fx": "France, metropolitan",
+      "gf": "French Guiana",
+      "pf": "French Polynesia",
+      "tf": "French Southern Territories",
+      "ga": "Gabon",
+      "gm": "Gambia",
+      "ge": "Georgia",
+      "de": "Germany",
+      "gh": "Ghana",
+      "gi": "Gibraltar",
+      "gr": "Greece",
+      "gl": "Greenland",
+      "gd": "Grenada",
+      "gp": "Guadeloupe",
+      "gu": "Guam",
+      "gt": "Guatemala",
+      "gn": "Guinea",
+      "gw": "Guinea-Bissau",
+      "gy": "Guyana",
+      "ht": "Haiti",
+      "hm": "Heard and Mc Donald Islands",
+      "va": "Vatican City",
+      "hn": "Honduras",
+      "hk": "Hong Kong",
+      "hu": "Hungary",
+      "is": "Iceland",
+      "in": "India",
+      "id": "Indonesia",
+      "ir": "Iran",
+      "iq": "Iraq",
+      "ie": "Ireland",
+      "il": "Israel",
+      "it": "Italy",
+      "jm": "Jamaica",
+      "jp": "Japan",
+      "jo": "Jordan",
+      "kz": "Kazakhstan",
+      "ke": "Kenya",
+      "ki": "Kiribati",
+      "kp": "Korea",
+      "kr": "Korea",
+      "kw": "Kuwait",
+      "kg": "Kyrgyzstan",
+      "la": "Lao",
+      "lv": "Latvia",
+      "lb": "Lebanon",
+      "ls": "Lesotho",
+      "lr": "Liberia",
+      "ly": "Libyan",
+      "li": "Liechtenstein",
+      "lt": "Lithuania",
+      "lu": "Luxembourg",
+      "mo": "Macau",
+      "mk": "Macedonia",
+      "mg": "Madagascar",
+      "mw": "Malawi",
+      "my": "Malaysia",
+      "mv": "Maldives",
+      "ml": "Mali",
+      "mt": "Malta",
+      "mh": "Marshall Islands",
+      "mq": "Martinique",
+      "mr": "Mauritania",
+      "mu": "Mauritius",
+      "yt": "Mayotte",
+      "mx": "Mexico",
+      "fm": "Micronesia",
+      "md": "Moldova",
+      "mc": "Monaco",
+      "mn": "Mongolia",
+      "ms": "Montserrat",
+      "ma": "Morocco",
+      "mz": "Mozambique",
+      "mm": "Myanmar",
+      "na": "Namibia",
+      "nr": "Nauru",
+      "np": "Nepal",
+      "nl": "Netherlands",
+      "an": "Netherlands Antilles",
+      "nc": "New Caledonia",
+      "nz": "New Zealand",
+      "ni": "Nicaragua",
+      "ne": "Niger",
+      "ng": "Nigeria",
+      "nu": "Niue",
+      "nf": "Norfolk Island",
+      "mp": "Northern Mariana Islands",
+      "no": "Norway",
+      "om": "Oman",
+      "pk": "Pakistan",
+      "pw": "Palau",
+      "pa": "Panama",
+      "pg": "Papua New Guinea",
+      "py": "Paraguay",
+      "pe": "Peru",
+      "ph": "Philippines",
+      "pn": "Pitcairn",
+      "pl": "Poland",
+      "pt": "Portugal",
+      "pr": "Puerto Rico",
+      "qa": "Qatar",
+      "re": "Reunion",
+      "ro": "Romania",
+      "ru": "Russia",
+      "rw": "Rwanda",
+      "kn": "Saint Kitts and Nevis",
+      "lc": "Saint Lucia",
+      "vc": "Saint Vincent and the Grenadines",
+      "ws": "Samoa",
+      "sm": "San Marino",
+      "st": "Sao Tome and Principe",
+      "sa": "Saudi Arabia",
+      "sn": "Senegal",
+      "sc": "Seychelles",
+      "sl": "Sierra Leone",
+      "sg": "Singapore",
+      "sk": "Slovakia",
+      "si": "Slovenia",
+      "sb": "Solomon Islands",
+      "so": "Somalia",
+      "za": "South Africa",
+      "gs": "South Georgia and the South Sandwich Islands",
+      "es": "Spain",
+      "lk": "Sri Lanka",
+      "sh": "St. Helena",
+      "pm": "St. Pierre and Miquelon",
+      "sd": "Sudan",
+      "sr": "Suriname",
+      "sj": "Svalbard and Jan Mayen Islands",
+      "sz": "Swaziland",
+      "se": "Sweden",
+      "ch": "Switzerland",
+      "sy": "Syrian Arab Republic",
+      "tw": "Taiwan",
+      "tj": "Tajikistan",
+      "tz": "Tanzania",
+      "th": "Thailand",
+      "tg": "Togo",
+      "tk": "Tokelau",
+      "to": "Tonga",
+      "tt": "Trinidad and Tobago",
+      "tn": "Tunisia",
+      "tr": "Turkey",
+      "tm": "Turkmenistan",
+      "tc": "Turks and Caicos Islands",
+      "tv": "Tuvalu",
+      "ug": "Uganda",
+      "ua": "Ukraine",
+      "ae": "United Arab Emirates",
+      "gb": "United Kingdom",
+      "uk": "United Kingdom",
+      "us": "United States",
+      "um": "United States Minor Outlying Islands",
+      "uy": "Uruguay",
+      "uz": "Uzbekistan",
+      "vu": "Vanuatu",
+      "ve": "Venezuela",
+      "vn": "Viet Nam",
+      "vg": "Virgin Islands (British)",
+      "vi": "Virgin Islands (U.S.)",
+      "wf": "Wallis and Futuna Islands",
+      "eh": "Western Sahara",
+      "ye": "Yemen",
+      "yu": "Yugoslavia",
+      "zm": "Zambia",
+      "zw": "Zimbabwe",
+      "su": "Soviet Union"
     }
+
     return countries

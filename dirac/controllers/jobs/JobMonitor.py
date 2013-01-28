@@ -5,7 +5,7 @@ from dirac.lib.base import *
 from dirac.lib.diset import getRPCClient, getTransferClient
 from dirac.lib.credentials import authorizeAction
 from DIRAC import gConfig, gLogger
-from DIRAC.Core.Utilities.List import sortList
+from DIRAC.Core.Utilities.List import sortList, uniqueElements
 from DIRAC.Core.Utilities import Time
 from DIRAC.AccountingSystem.Client.ReportsClient import ReportsClient
 from DIRAC.Core.Utilities.DictCache import DictCache
@@ -233,23 +233,6 @@ class JobmonitorController(BaseController):
       types = [["Error happened on service side"]]
     callback["types"] = types
 ###
-    result = RPC.getRunNumbers()
-    if result["OK"]:
-      app = []
-      if len(result["Value"])>0:
-        result["Value"].reverse()
-        app.append([str("All")])
-        for i in result["Value"]:
-          i = str(int(i))
-          i = i.replace(",",";")
-          app.append([i])
-      else:
-        app = [["Nothing to display"]]
-    else:
-      gLogger.error("RPC.getRunNumbers() return error: %s" % result["Message"])
-      app = [["Error happened on service side"]]
-    callback["runNumber"] = app
-###
     groupProperty = credentials.getProperties(group)
     if user == "Anonymous":
       callback["owner"] = [["Insufficient rights"]]
@@ -336,9 +319,6 @@ class JobmonitorController(BaseController):
       if request.params.has_key("status") and len(request.params["status"]) > 0:
         if str(request.params["status"]) != "All":
           req["Status"] = str(request.params["status"]).split(separator)
-      if request.params.has_key("runNumber") and len(request.params["runNumber"]) > 0:
-        if str(request.params["runNumber"]) != "All":
-          req["runNumber"] = str(request.params["runNumber"]).split(separator)
       if request.params.has_key("minorstat") and len(request.params["minorstat"]) > 0:
         if str(request.params["minorstat"]) != "All":
           req["MinorStatus"] = str(request.params["minorstat"]).split(separator)
@@ -439,6 +419,8 @@ class JobmonitorController(BaseController):
       return self.__getStats(selector)
     elif request.params.has_key("globalStat"):
       return self.__globalStat()
+    elif request.params.has_key("getPageOptions") and len(request.params["getPageOptions"]) > 0:
+      return self.__getPageOptions()
     elif request.params.has_key("getPlotSrc") and len(request.params["getPlotSrc"]) > 0:
       id = request.params["getPlotSrc"]
       if request.params.has_key("type") and len(request.params["type"]) > 0:
@@ -466,39 +448,65 @@ class JobmonitorController(BaseController):
       c.result = {"success":"false","error":"The request parameters can not be recognized or they are not defined"}
       return c.result
 ################################################################################
-  def __getDataFromCS(self,path="/Website/Launchpad/Options"):
-    result = gConfig.getOptionsDict(path)
-    if result["OK"]:
-      options = result["Value"]
+  def __getPageOptions( self ):
+    gLogger.info( "start __getPageOptions" )
+    callback = dict()
+    for i in [ "ShowRequest" , "ShowStagerReport" , "ShowLogFile" ]:
+      value = gConfig.getValue( "/Website/JobMonitor/Context/%s" % i , 'false' )
+      callback[ i ] = value
+    gLogger.debug( "Page options: %s" % callback )
+    gLogger.info( "end __getPageOptions" )
+    return { "success" : "true" , "result" : callback }
+################################################################################
+  def __getPlatform( self ):
+    gLogger.info( "start __getPlatform" )
+    path = "/Resources/Computing/OSCompatibility"
+    result = gConfig.getOptionsDict( path )
+    gLogger.debug( result )
+    if not result[ "OK" ]:
+      return False
+    platformDict = result[ "Value" ]
+    platform = platformDict.keys()
+    gLogger.debug( "platform: %s" % platform )
+    gLogger.info( "end __getPlatform" )
+    return platform
+################################################################################
+  def __getOptionsFromCS( self , path = "/Website/Launchpad/Options" , delimiter = "," ):
+    gLogger.info( "start __getOptionsFromCS" )
+    result = gConfig.getOptionsDict( path )
+    gLogger.always( result )
+    if not result["OK"]:
+      return False
+    options = result["Value"]
+    for i in options.keys():
+      options[ i ] = options[ i ].split( delimiter )
     result = gConfig.getSections(path)
     if result["OK"]:
-      sections = result["Value"]    
+      sections = result["Value"]
     if len(sections) > 0:
       for i in sections:
-        options[i] = self.__getDataFromCS(path + '/' + i)
+        options[ i ] = self.__getOptionsFromCS( path + '/' + i , delimiter )
+    gLogger.always( "options: %s" % options )
+    gLogger.info( "end __getOptionsFromCS" )
     return options
 ################################################################################
   def __getLaunchpadOpts(self):
-    options = gConfig.getOptions("/Website/Launchpad/Options", False)
-    if options and options["OK"]:
-      options = self.__getDataFromCS()
-    else:
-      options = "false"
-    override = gConfig.getOption("/Website/Launchpad/OptionsOverride")
-    if override["OK"]:
-      override = str(override["Value"]).lower()
-      if override == "true":
-        pass
+    gLogger.info( "start __getLaunchpadOpts" )
+    delimiter = gConfig.getValue( "/Website/Launchpad/ListSeparator" , ',' )
+    options = self.__getOptionsFromCS( delimiter = delimiter)
+    platform = self.__getPlatform()
+    if platform and options:
+      if not options.has_key( "Platform" ):
+        options[ "Platform" ] = platform
       else:
-        override = "false"
-    else:
-      override = "false"
-    separator = gConfig.getOption("/Website/Launchpad/ListSeparator")
-    if separator["OK"]:
-      separator = separator["Value"]
-    else:
-      separator = "false"
-    return {"success":"true","result":options,"override":override,"separator":separator}
+        csPlatform = list( options[ "Platform" ] )
+        allPlatforms = csPlatform + platform
+        platform = uniqueElements( allPlatforms )
+        options[ "Platform" ] = platform
+    gLogger.debug( "Combined options from CS: %s" % options )
+    override = gConfig.getValue( "/Website/Launchpad/OptionsOverride" , False)
+    gLogger.info( "end __getLaunchpadOpts" )
+    return {"success":"true","result":options,"override":override,"separator":delimiter}
 ################################################################################
   def __getStats(self,selector):
     gLogger.always(" --- selector : %s" % selector)

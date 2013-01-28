@@ -4,7 +4,6 @@ from time import time, gmtime, strftime
 from dirac.lib.base import *
 from dirac.lib.diset import getRPCClient
 from DIRAC.Core.Utilities.List import sortList
-from DIRAC.WorkloadManagementSystem.Client.JobMonitoringClient import JobMonitoringClient
 from DIRAC import gConfig, gLogger
 import DIRAC.Core.Utilities.Time as Time
 import dirac.lib.credentials as credentials
@@ -20,18 +19,8 @@ class ProductionmonitorController(BaseController):
 ################################################################################
   def display(self):
     c.select = self.__getSelectionData()
-    gLogger.info("getSelectionData(): %s" % c.select )
-    separator = gConfig.getValue("/Website/TransformationMonitoring/ListSeparator",":::")
-    gLogger.info("List separator: '%s'" % separator )
     if not c.select.has_key("extra"):
-      c.select["extra"] = dict()
-      initValues = gConfig.getOptions("/Website/TransformationMonitoring/InitValues/")
-      if initValues["OK"]:
-        for i in initValues["Value"]:
-          tmpInit = gConfig.getValue("/Website/TransformationMonitoring/InitValues/%s" % i,"")
-          gLogger.info("Initial value for %s: %s" % (i, tmpInit) )
-          c.select["extra"][i] = tmpInit
-    c.select["extra"]["listSeparator"] = separator
+      c.select["extra"] = {"prodStatus":"Active::: Stopped::: New"}
     return render("jobs/ProductionMonitor.mako")
 ################################################################################
   @jsonify
@@ -121,6 +110,30 @@ class ProductionmonitorController(BaseController):
           req["TransformationID"] = testString
       else:
         req["TransformationID"] = testString
+    elif request.params.has_key("requestID") and len(request.params["requestID"]) > 0:
+      testString = str(request.params["requestID"])
+      testString = testString.strip(';, ')
+      testString = testString.split(', ')
+      if len(testString) == 1:
+        testString = testString[0].split('; ')
+        if len(testString) == 1:
+          testString = testString[0].split(' ')
+          if len(testString) == 1:
+            testString = testString[0].split(',')
+            if len(testString) == 1:
+              testString = testString[0].split(';')
+              if len(testString) == 1:
+                req["TransformationFamily"] = testString[0]
+              else:
+                req["TransformationFamily"] = testString
+            else:
+              req["TransformationFamily"] = testString
+          else:
+            req["TransformationFamily"] = testString
+        else:
+          req["TransformationFamily"] = testString
+      else:
+        req["TransformationFamily"] = testString
     else:
       result = gConfig.getOption("/Website/ListSeparator")
       if result["OK"]:
@@ -282,22 +295,9 @@ class ProductionmonitorController(BaseController):
       return self.__additionalParams(id)
     elif request.params.has_key("refreshSelection") and len(request.params["refreshSelection"]) > 0:
       return self.__getSelectionData()
-    elif request.params.has_key("getT1") and len(request.params["getT1"]) > 0:
-      return self. __getT1()
-    elif request.params.has_key("reschedule_counter") and len(request.params["reschedule_counter"]) > 0:
-      id = str(request.params["reschedule_counter"])
-      return self. __getRescheduleCounters(id)
     else:
       c.result = {"success":"false","error":"Transformation ID(s) is not defined"}
       return c.error
-################################################################################
-  def __getT1(self):
-    tier1 = gConfig.getValue("/Website/PreferredSites",[])
-    if len(tier1) > 0:
-      c.result = {"success":"true","result":tier1}
-    else:
-      c.result = {"success":"false","error":"Can't get sites from /Website/PreferredSites location in CS"}
-    return c.result
 ################################################################################
   def __logProduction(self,prodid):
     id = int(prodid)
@@ -364,7 +364,7 @@ class ProductionmonitorController(BaseController):
     if res["OK"]:
       resString = "%s extended by %s successfully" % (id,tasks)
     else:
-      resString = "%s failed to extend: %s" % (id,result["Message"])
+      resString = "%s failed to extend: %s" % (id,res["Message"])
     c.result = {"success":"true","showResult":[resString],"result":resString}
     gLogger.info("#######",res)
     return c.result
@@ -468,25 +468,29 @@ class ProductionmonitorController(BaseController):
     RPC = getRPCClient('Transformation/TransformationManager')
     res = RPC.getAdditionalParameters(id)
     if not res['OK']:
-      return {"success":"false","error":res["Message"]}
-    result = res["Value"]
-    back = []
-    for i in sortList(result.keys()):
-      back.append([i,result[i]])
-    return {"success":"true","result":back}
+      c.result = {"success":"false","error":res["Message"]}
+    else:
+      result = res["Value"]
+      back = []
+      for i in sortList(result.keys()):
+        back.append([i,result[i]])
+      c.result = {"success":"true","result":back}
+    return c.result
 ################################################################################
   def __dataQuery(self,prodid):
     id = int(prodid)
     RPC = getRPCClient("Transformation/TransformationManager")
-    res = RPC.getBookkeepingQueryForTransformation(id)
+    res = RPC.getTransformationInputDataQuery(id)
     gLogger.info("-= #######",res)
     if not res['OK']:
-      return {"success":"false","error":res["Message"]}
-    result = res["Value"]
-    back = []
-    for i in sortList(result.keys()):
-      back.append([i,result[i]])
-    return {"success":"true","result":back}
+      c.result = {"success":"false","error":res["Message"]}
+    else:
+      result = res["Value"]
+      back = []
+      for i in sortList(result.keys()):
+        back.append([i,result[i]])
+      c.result = {"success":"true","result":back}
+    return c.result
 ################################################################################
   @jsonify
   def showFileStatus(self):

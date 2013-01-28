@@ -1,19 +1,42 @@
-var dataSelect = ''; // Required to store the data for filters fields. Object.
-var dataMngr = ''; // Required to connect form and table. Object.
-var tableMngr = ''; // Required to handle configuration data for table. Object.
-var refreshRate = 0; // autorefresh is off
-var refeshID = 0;
-// Main routine
-function initSiteSummary(reponseSelect){
+var dataSelect , datagrid ;
+function init(reponseSelect){
   dataSelect = reponseSelect;
   Ext.onReady(function(){
-    var record = initRecord();
-    var store = initStore(record,{'groupBy':'FullCountry'});
-    renderData(store);
+    Ext.override( Ext.PagingToolbar , {
+      onRender :  Ext.PagingToolbar.prototype.onRender.createSequence(function(
+        ct , position
+      ){
+        this.first.hide();
+        for( var i = 9; i > 0 ; i-- ){
+          Ext.fly( this.items.get( i ).getEl() ).remove() ;
+          this.items.removeAt( i ) ;
+        }
+        this.loading.removeClass( 'x-btn-icon' );
+        this.loading.setText( 'Refresh' );
+        this.loading.addClass( 'x-btn-text-icon' );
+      })
+    });
+    datagrid = initData();
+    renderInMainViewport( [ initSidebar( datagrid ) , datagrid ] );
   });
 }
-// function describing data structure, should be individual per page
-function initRecord(){
+function initSidebar( datagrid ){
+  var select = selectPanel( datagrid );
+  var bar = sideBar();
+  bar.insert( 0 , select );
+  bar.setTitle( 'SiteSummary' );
+  var selectors = {
+    'status': 'Status'
+    ,'gridtype': 'GridType'
+    ,'maskstatus': 'MaskStatus'
+    ,'country': 'Country'
+  };
+  for( var i in selectors ){
+    select.add( createMenu( i , selectors[ i ] ) );
+  }
+  return bar
+}
+function initData(){
   var record = new Ext.data.Record.create([
     {name:'GridType'},
     {name:'Site'},
@@ -34,32 +57,15 @@ function initRecord(){
     {name:'Tier'},
     {name:'FullCountry'},
     {name:'MaskStatusIcon',mapping:'MaskStatus'},
+    {name:'SiteCheckbox',mapping:'Site'},
     {name:'StatusIcon',mapping:'Status'}
   ]);
-  return record
-}
-// Initialisation of selection sidebar, all changes with selection items should goes here
-function initSidebar(){
-  var selectStatusSiteSummary = createMenu('status','Status'); // Initializing Owner Menu
-  var selectGridType = createMenu('gridtype','GridType'); // Initializing Application status Menu
-  var selectMaskStatus = createMenu('maskstatus','MaskStatus'); // Initializing JobStatus Menu
-  var selectCountry = createMenu('country','Country'); // Initializing JobGroup Menu
-  var dateSelect = dateSelectMenu(); // Initializing date dialog
-  var id = genericID('id','JobID'); // Initialize field for JobIDs
-  var select = selectPanel(); // Initializing container for selection objects
-//  select.buttons[2].hide(); // Remove refresh button
-  // Insert object to container BEFORE buttons:
-  select.insert(0,selectStatusSiteSummary);
-  select.insert(1,selectGridType);
-  select.insert(2,selectMaskStatus);
-  select.insert(3,selectCountry);
-  var bar = sideBar();
-  bar.insert(0,select);
-  bar.setTitle('SiteSummary');
-  return bar
-}
-function initData(store){
+  var store = initStore( record , { 'groupBy' : 'FullCountry' } );
+  var sm = new Ext.grid.CheckboxSelectionModel({
+    header: ''
+  }) ;
   var columns = [
+    sm,
     {header:'Name',sortable:true,dataIndex:'Site',align:'left',hideable:false},
     {header:'Tier',sortable:true,dataIndex:'Tier',align:'left'},
     {header:'GridType',sortable:true,dataIndex:'GridType',align:'left'},
@@ -81,131 +87,158 @@ function initData(store){
     {header:'Stalled',sortable:true,dataIndex:'Stalled',align:'left'},
     {header:'Failed',sortable:true,dataIndex:'Failed',align:'left'}
   ];
-  var refresh = new Ext.Toolbar.Button({
-    cls:"x-btn-text-icon",
-    handler:function(){
-      refreshCycle();
-    },
-    iconCls:'Refresh',
-    text:'Refresh',
-    tooltip:'Click the button for manual refresh.'
-  });
-  var timeStamp = {
-    disabled:true,
-    disabledClass:'my-disabled',
-    hidden:true,
-    id:'timeStamp',
-    text:'Updated: '
-  };
-  var auto = new Ext.Toolbar.Button({
-    cls:"x-btn-text",
-    id:'autoButton',
-    menu:new Ext.menu.Menu({items:[
-      {checked:setChk(0),checkHandler:function(){refreshYO(0,true);},group:'refresh',text:'Disabled'},
-      {checked:setChk(900000),checkHandler:function(){refreshYO(900000,true,'Each 15m');},group:'refresh',text:'15 Minutes'},
-      {checked:setChk(3600000),checkHandler:function(){refreshYO(3600000,true,'Each Hour');},group:'refresh',text:'One Hour'},
-      {checked:setChk(86400000),checkHandler:function(){refreshYO(86400000,true,'Each Day');},group:'refresh',text:'One Day'},
-    ]}),
-    text:'Disabled',
-    tooltip:'Click to set the time for autorefresh'
-  });
-  auto.on('menuhide',function(button,menu){
-    var length = menu.items.getCount();
-    for(var i = 0; i < length; i++){
-      if(menu.items.items[i].checked){
-        button.setText(menu.items.items[i].text);
+  var tbar = [{
+    cls: 'x-btn-text-icon'
+    ,icon: gURLRoot + '/images/iface/ban.gif'
+    ,text: 'Ban'
+    ,tooltip: 'Click to ban selected sites(s)'
+  },{
+    cls: 'x-btn-text-icon'
+    ,icon: gURLRoot + '/images/iface/unban.gif'
+    ,text: 'Allow'
+    ,tooltip: 'Click to allow selected site(s)'
+  }];
+  for( var i = 0 ; i < tbar.length ; i++ ){
+    tbar[ i ] = new Ext.Toolbar.Button( tbar[ i ] );
+    tbar[ i ].on( 'click' , function( btn ){
+      var records = grid.getSelectionModel().getSelections();
+      var sites = new Array();
+      for( var i = 0 ; i < records.length ; i++ ){
+        var status = records[ i ].get( 'MaskStatus' );
+        if( btn.text == 'Ban' && status == 'Active' ){
+          sites.push( records[ i ].get( 'Site' ) );
+        }else if( btn.text == 'Allow' && status == 'Banned' ){
+          sites.push( records[ i ].get( 'Site' ) );
+        }
       }
-    }
-  });
-  dirac.tbar = ['->',refresh,'-','Auto:',auto,timeStamp];
+      if( ! sites.length > 0 ){
+        return showError( 'Please, select properly the sites to perform action on it' );
+      }
+      var act = new popup( sites );
+      Ext.apply( act , {
+        action: btn.text.toLowerCase()
+        ,finnaly: function(){ grid.getStore().load() }
+      });
+      act.showMsg();
+    });
+  }
   var view = new Ext.grid.GroupingView({
-    groupTextTpl: '<tpl if="dataMngr.store.groupField==\'FullCountry\'">{group}:</tpl><tpl if="dataMngr.store.groupField!=\'FullCountry\'">{text},</tpl> {[values.rs.length]} {[values.rs.length > 1 ? "Sites" : "Site"]}',
+    groupTextTpl: '<tpl if="datagrid.getStore().groupField==\'FullCountry\'">{group}:</tpl><tpl if="datagrid.getStore().groupField!=\'FullCountry\'">{text},</tpl> {[values.rs.length]} {[values.rs.length > 1 ? "Sites" : "Site"]}',
   })
   store.setDefaultSort('FullCountry','ASC'); // Default sorting
-  tableMngr = {'store':store,'columns':columns,'tbar':dirac.tbar,'view':view};
-  var t = table(tableMngr);
-  t.addListener('cellclick',function(table,rowIndex,columnIndex){
-    showMenu('main',table,rowIndex,columnIndex);
+  var grid = new getDatagrid({
+    autorefresh: true
+    ,disableIPP: true
+    ,columns: columns
+    ,menu: getMenu
+    ,sm: sm
+    ,store: store
+    ,tbar: tbar
+    ,view: view
   });
-  var bar = t.getBottomToolbar();
-  bar.hide();
-  t.footer = false;
-  return t
+  return grid
 }
-function setChk(value){
-  if(value == refreshRate){
-    return true
-  }else{
-    return false
-  }
-}
-function refreshYO(delay,start,text){
-  var select = Ext.getCmp('selectPanel');
-  if(select && select.form){
-    select.form.submit();
-  }
-  if(refeshID != 0){
-    clearTimeout(refeshID);
-  }
-  if(delay == 0){
-    clearTimeout(refeshID);
-  }else{
-    if(!start){
-      var select = Ext.getCmp('selectPanel');
-      if(select && select.form){
-        select.form.submit();
+
+function getMenu( record , grid ){
+  var site = record.get( 'Site' );
+  var mask = record.get( 'MaskStatus' );
+  var act = new popup( [ site ] );
+  Ext.apply( act , { finnaly: function(){ grid.getStore().load() } } );
+  var menu = new Ext.menu.Menu({
+    items:[{
+      handler:function(){ jump( site ) }
+      ,icon: gURLRoot + '/images/iface/go.gif'
+      ,text:'Show Job(s)'
+    },{
+      handler: function(){
+        Ext.apply( act , { action: 'ban' } );
+        act.showMsg();
       }
-    }
-    start = false;
-    refeshID = setTimeout('refreshYO(' + delay + ',false)',delay);
-  }
-}
-function setMenuItems(selections){
-  if(selections){
-    var id = selections.Site;
+      ,icon: gURLRoot + '/images/iface/ban.gif'
+      ,text: 'Ban Site'
+    },{
+      handler: function(){
+        Ext.apply( act , { action: 'allow' } );
+        act.showMsg();
+      }
+      ,icon: gURLRoot + '/images/iface/unban.gif'
+      ,text: 'Allow Site'
+    }]
+  });
+  if( mask == 'Active' ){
+    menu.items.items[ 2 ].disable();
   }else{
-    return
+    menu.items.items[ 1 ].disable();
   }
-  if(dirac.menu){
-    dirac.menu.add(
-      {handler:function(){jump('site',id)},text:'Show Job(s)'}
+  return menu
+}
+
+function popup( sitename ){
+  this.site = sitename;
+  this.action = undefined;
+  this.finnaly = function(){
+    return new Ext.emptyFn
+  }
+  this.showMsg = function(){
+    var title = this.action.charAt( 0 ).toUpperCase() + this.action.slice( 1 );
+    var msg = 'Do you want to ' + this.action ;
+    if( this.site.length > 1 ){
+      title = title + ' sites';
+      this.site = this.site.join( ', ' );
+      msg = msg + ' the sites: ' + this.site + ' ?';
+    }else{
+      title = title + ' site';
+      msg = msg + ' the site: ' + this.site + ' ?';
+    }
+    msg = msg + '<br><br>' + 'Comment:';
+    Ext.Msg.prompt( title , msg ,
+      function( btn , text ){
+        if( btn == 'ok' ){
+          ajax({
+            end: this.finnaly
+            ,mask: true
+            ,params: {
+              comment: text
+              ,name: this.site
+            }
+            ,success: success
+            ,url: this.action + 'Site'
+          });
+        }
+      } , this , 50 ,
+      this.action + ' by ' + gPageDescription.userData.username
+        + '@' + gPageDescription.userData.group
     );
   }
 }
-function renderData(store){
-  var leftBar = initSidebar();
-  var mainContent = initData(store);
-  renderInMainViewport([ leftBar, mainContent ]);
-  dataMngr = {'form':leftBar,'store':store};
-}
-function afterDataLoad(store){
-  var stamp = Ext.getCmp('timeStamp');
-  if(stamp){
-    var d = new Date();
-    var hh = d.getHours();
-    if(hh < 10){
-      hh = '0' + hh;
-    }
-    var mm = d.getMinutes()
-    if(mm < 10){
-      mm = '0' + mm;
-    }
-    stamp.setText('Updated: ' + hh + ":" + mm);
-    stamp.show();
+
+function success( response , opt ){
+  Ext.getBody().unmask();
+  var msg = Ext.util.JSON.decode( response.responseText ) ;
+  if( Ext.isEmpty( msg ) ){
+    return showError( 'Server response is null or empty' );
   }
+  if( ! Ext.isEmpty( msg.error ) ){
+    return showError( msg.error );
+  }
+  if( ! Ext.isEmpty( opt.end ) ){
+    opt.end();
+  }
+  if( ! Ext.isEmpty( msg.result ) ){
+    return showTip( msg.result );
+  }
+  return showError( 'Server response have no success nor error messages' );
 }
-function jump(type,id){
-  var url = document.location.protocol + '//' + document.location.hostname + gURLRoot + '/' + gPageDescription.selectedSetup
-  url = url + '/' + gPageDescription.userData.group + '/jobs/JobMonitor/display';
-  var post_req = '<form id="redirform" action="' + url + '" method="POST" >';
-  post_req = post_req + '<input type="hidden" name="' + type + '" value="' + id + '">';
-  post_req = post_req + '</form>';
+
+function jump( id ){
+  var url = document.location.protocol + '//' + document.location.hostname
+              + gURLRoot + '/' + gPageDescription.selectedSetup + '/' 
+              + gPageDescription.userData.group + '/jobs/JobMonitor/display';
+  var post_req = '<form id="redirform" action="' + url + '" method="POST" >'
+                   + '<input type="hidden" name="site" value="' + id + '">'
+                   + '</form>';
   document.body.innerHTML = document.body.innerHTML + post_req;
   var form = document.getElementById('redirform');
   form.submit();
 }
-function AJAXsuccess(value,id,response){
-  try{
-    gMainLayout.container.unmask();
-  }catch(e){}
-}
+function afterDataLoad(){};

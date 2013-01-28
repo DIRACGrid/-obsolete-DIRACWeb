@@ -176,7 +176,8 @@ Ext.ux.form.LovCombo = Ext.extend(Ext.form.ComboBox, {
 	 */
 	,getCheckedDisplay:function() {
 		var re = new RegExp(this.separator, "g");
-		return this.getCheckedValue(this.displayField).replace(re, this.separator + ' ');
+		return this.getCheckedValue(this.displayField).replace(re, this.separator);
+//		return this.getCheckedValue(this.displayField).replace(re, this.separator + ' ');
 	} // eo function getCheckedDisplay
 	// }}}
 	// {{{
@@ -276,6 +277,10 @@ Ext.ux.form.LovCombo = Ext.extend(Ext.form.ComboBox, {
             this.fireEvent('select', this, record, index);
         }
 	} // eo function onSelect
+	,getRealValue:function(){
+        var value = this.getValue().split(this.separator);
+        return value
+	}
 	// }}}
 	// {{{
 	/**

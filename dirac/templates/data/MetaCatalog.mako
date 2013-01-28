@@ -4,13 +4,14 @@
 
 <%def name="head_tags()">
 ${ h.javascript_link( "/javascripts/lovCombo.js" ) }
+${ h.javascript_link( "/javascripts/dencodelight.js" ) }
 ${ h.javascript_link( "/javascripts/jobs/Lib.js" ) }
-${ h.javascript_link( "/javascripts/web/Presenter.js" ) }
+${ h.javascript_link( "/javascripts/data/MetaCatalog.js" ) }
 ${ h.stylesheet_link( "/stylesheets/lovCombo.css" ) }
 </%def>
 
 <%def name="body()">
 <script type="text/javascript">
-  initLoop(${c.select});
+  init(${c.select});
 </script>
 </%def>

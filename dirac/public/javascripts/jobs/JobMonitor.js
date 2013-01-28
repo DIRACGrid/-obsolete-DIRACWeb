@@ -2,10 +2,9 @@ var dataSelect = ''; // Required to store the data for filters fields. Object.
 var dataMngr = ''; // Required to connect form and table. Object.
 var tableMngr = ''; // Required to handle configuration data for table. Object.
 var user = false; // user treated as anonymous
-var isLaunchpadOpts = false; // Used in launchpad.js shows is there any custom options for launchpad
-var launchpadOptsOverride = false; // Used in launchpad.js if true the default LP options menu should be overwritten by new from CS
-var launchpadOptsSeparator = false; // Used in launchpad.js to separate values if they are list of values
-var proxy = false; // Used in launchpad.js storing proxy status
+var isShowRequest = false ;
+var isShowStagerReport = false ;
+var isShowLogFile = false ;
 // Main routine
 function initLoop(reponseSelect){
   dataSelect = reponseSelect;
@@ -30,6 +29,12 @@ function initLoop(reponseSelect){
     }else{
       alert('Error: Cannot distinguish your username or group. You will be treated as anonymous');
     }
+    Ext.Ajax.request({
+      method: 'POST'
+      ,params: { 'getPageOptions' : true }
+      ,success: getPageOptions
+      ,url: 'action'
+    });
     Ext.override(Ext.PagingToolbar, {
       onRender :  Ext.PagingToolbar.prototype.onRender.createSequence(function(ct, position){
         this.loading.removeClass('x-btn-icon');
@@ -39,6 +44,18 @@ function initLoop(reponseSelect){
     });
     renderData(store);
   });
+}
+function getPageOptions( response ){
+  var jsonData = Ext.decode( response.responseText );
+  if( jsonData[ 'result' ] ){
+    isShowRequest = Ext.util.Format.undef( jsonData.result[ 'ShowRequest' ] );
+    isShowStagerReport =
+      Ext.util.Format.undef( jsonData.result[ 'ShowStagerReport' ] );
+    isShowLogFile = Ext.util.Format.undef( jsonData.result[ 'ShowLogFile' ] );
+    isShowRequest = ( isShowRequest.toLowerCase() === 'true' );
+    isShowStagerReport = ( isShowStagerReport.toLowerCase() === 'true' );
+    isShowLogFile = ( isShowLogFile.toLowerCase() === 'true' );
+  }
 }
 // function describing data structure, should be individual per page
 function initRecord(){
@@ -78,7 +95,6 @@ function initRecord(){
     {name:'DeletedFlag'},
     {name:'TaskQueueID'},
     {name:'JobType'},
-    {name:'RunNumber'},
     {name:'JobIDcheckBox',mapping:'JobID'},
     {name:'StatusIcon',mapping:'Status'},
     {name:'OwnerGroup'}
@@ -98,7 +114,6 @@ function initSidebar(){
   var prodSelect = createMenu('prod','JobGroup'); // Initializing JobGroup Menu
   var typesSelect = createMenu('types','JobType');
   var id = genericID('id','JobID'); // Initialize field for JobIDs
-  var runid = genericID('runNumber','RunNumber','','','None'); // Initialize field for JobIDs
   var dateSelect = dateTimeWidget(); // Initializing date dialog
   var select = selectPanel(); // Initializing container for selection objects
   // Insert object to container BEFORE buttons:
@@ -110,8 +125,7 @@ function initSidebar(){
   select.insert(5,prodSelect);
   select.insert(6,typesSelect);
   select.insert(7,id);
-  select.insert(8,runid);
-  select.insert(9,dateSelect);
+  select.insert(8,dateSelect);
   var sortGlobal = sortGlobalPanel(); // Initializing the global sort panel
 /*
   id - String/Int, custom id
@@ -154,7 +168,6 @@ function initData(store){
     {header:'OSandboxReadyFlag',sortable:true,dataIndex:'OSandboxReadyFlag',align:'left',hidden:true},
     {header:'Owner',sortable:true,dataIndex:'Owner',align:'left'},
     {header:'TaskQueueID',sortable:true,dataIndex:'TaskQueueID',align:'left',hidden:true},
-    {header:'RunNumber',sortable:true,dataIndex:'RunNumber',align:'left',hidden:true},
     {header:'OwnerGroup',sortable:true,dataIndex:'OwnerGroup',align:'left',hidden:true}
   ];
   var tbar = [
@@ -302,9 +315,6 @@ function setMenuItems(selections){
       {handler:function(){AJAXrequest('LoggingInfo',id)},text:'Logging info'},
       '-',
       {handler:function(){AJAXrequest('getStandardOutput',id)},text:'Peek StandardOutput'},
-      {handler:function(){AJAXrequest('LogURL',id)},text:'Get LogFile'},
-      {handler:function(){AJAXrequest('getPending',id)},text:'Get PendingRequest'},
-      {handler:function(){AJAXrequest('getStagerReport',id)},text:'Get StagerReport'},
       '-',
       {text:'Actions',icon:gURLRoot + '/images/iface/action.gif',menu:({items:[
         {handler:function(){action('job','kill',id)},icon:gURLRoot + '/images/iface/close.gif',text:'Kill'},
@@ -323,18 +333,43 @@ function setMenuItems(selections){
       var reschedule = new Ext.menu.Item({handler:function(){action('job','reschedule',id)},icon:gURLRoot + '/images/iface/reschedule.gif',text:'Reschedule'});
       if(user == 'admin'){
         var reset = new Ext.menu.Item({handler:function(){action('job','reset',id)},icon:gURLRoot + '/images/iface/resetButton.gif',text:'Reset'});
-        dirac.menu.items.items[11].menu.insert(0,reset);
-        dirac.menu.items.items[11].menu.insert(1,reschedule);
+        dirac.menu.items.items[8].menu.insert(0,reset);
+        dirac.menu.items.items[8].menu.insert(1,reschedule);
       }else{
-        dirac.menu.items.items[11].menu.insert(0,reschedule);
+        dirac.menu.items.items[8].menu.insert(0,reschedule);
       }
     }
-    if((status == 'Done')||(status == 'Failed')){
-      dirac.menu.items.items[9].enable();
+    if( isShowStagerReport ){
+      dirac.menu.insert( 7 , new Ext.menu.Item({
+        handler: function(){
+          AJAXrequest( 'getStagerReport' , id );
+        }
+        ,text: 'Get StagerReport'
+      }));
+    }
+    if( ( status == 'Done' ) || ( status == 'Failed' ) ){
+      dirac.menu.items.items[ 7 ].enable();
     }else{
-      dirac.menu.items.items[9].disable();
+      dirac.menu.items.items[ 7 ].disable();
+    }
+    if( isShowRequest ){
+      dirac.menu.insert( 7 , new Ext.menu.Item({
+        handler: function(){
+          AJAXrequest( 'getPending' , id );
+        }
+        ,text: 'Show Request'
+      }));
+    }  
+    if( isShowLogFile ){
+      dirac.menu.insert( 7 , new Ext.menu.Item({
+        handler: function(){
+          AJAXrequest( 'LogURL' , id ) ;
+        }
+        ,text: 'Get LogFile'
+      }));
     }
   }
+  return dirac.menu
 };
 function AJAXsuccess(value,id,response){
   try{
