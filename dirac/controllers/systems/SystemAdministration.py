@@ -274,7 +274,7 @@ class SystemadministrationController( BaseController ):
       gLogger.debug( error )
       return { "success" : "false" , "error" : error }
 
-    if action not in [ "restart" , "start" , "stop" ]:
+    if action not in [ "restart" , "start" , "stop" , "uninstall" ]:
       error = "The request parameters action '%s' is unknown" % action
       gLogger.debug( error )
       return { "success" : "false" , "error" : error }
@@ -328,6 +328,9 @@ class SystemadministrationController( BaseController ):
             result = client.startComponent( system , component )
           elif action == "stop":
             result = client.stopComponent( system , component )
+          elif action == "uninstall":
+            print action
+            result = client.uninstallComponent( system , component )
           else:
             result = list()
             result[ "Message" ] = "Action %s is not valid" % action

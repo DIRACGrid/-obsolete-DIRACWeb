@@ -174,10 +174,9 @@ function menuHost( record ){
       }
       ,icon: gURLRoot + '/images/iface/resetButton.gif'
       ,text:'Restart'
-      /*
     },{
       handler:function(){
-        act.doHostAction( 'update' );
+        act.hostUpdate( host );
       }
       ,icon: gURLRoot + '/images/iface/lightning.png'
       ,text:'Update'
@@ -187,7 +186,6 @@ function menuHost( record ){
       }
       ,icon: gURLRoot + '/images/iface/error.png'
       ,text:'Show Errors'
-      */
     }]  
   });
   return menu
@@ -329,8 +327,16 @@ function initData( host ){
     ,icon: gURLRoot + '/images/iface/stop.gif'
     ,text: 'Stop'
     ,tooltip: 'Click to stop selected service(s), agent(s) or mind(s)'
+  } , '-' , {
+    cls: 'x-btn-text-icon'
+    ,icon: gURLRoot + '/images/iface/close.gif'
+    ,text: 'Uninstall'
+    ,tooltip: 'Alternatively, use "uninstall <System> <Component>" in dirac-admin-sysadmin-cli utility'
   }];
   for( var i = 0 ; i < tbar.length ; i++ ){
+    if( tbar[ i ] == '-' ){
+      continue;
+    }
     tbar[ i ] = new Ext.Toolbar.Button( tbar[ i ] );
     tbar[ i ].on( 'click' , function( btn ){
       var records = grid.getSelectionModel().getSelections();
@@ -467,6 +473,12 @@ function getMenu( record , grid ){
       }
       ,icon: gURLRoot + '/images/iface/submit.gif'
       ,text: 'Start'
+    } , '-' , {
+      handler: function(){
+        act.doCmpAction( 'uninstall' );
+      }
+      ,icon: gURLRoot + '/images/iface/close.gif'
+      ,text: 'Uninstall'
     }]  
   });
   var status = record.get( 'RunitStatus' ) ;
