@@ -1,3 +1,8 @@
+from pygments import highlight
+from pygments.lexers import ValaLexer
+#from pygments.lexers import PythonLexer
+from pygments.formatters import HtmlFormatter
+
 from dirac.lib.base import *
 from dirac.lib.credentials import getUserDN, getUsername, getAvailableGroups
 from dirac.lib.credentials import getProperties, checkUserCredentials, getSelectedGroup
@@ -179,6 +184,37 @@ class SystemadministrationController( BaseController ):
       return { "success" : "false" , "error" : result }
 
 
+  def showLog( self ):
+
+
+    DN = getUserDN()
+    group = getSelectedGroup()
+    
+    if not "host" in request.params:
+      return "Name of the host is missing or not defined"
+    host = str( request.params[ "host" ] )
+
+    if not "system" in request.params:
+      return "Name of the system is missing or not defined"
+    system = str( request.params[ "system" ] )
+
+    if not "component" in request.params:
+      return "Name of component is missing or not defined"
+    name = str( request.params[ "component" ] )
+
+    client = SystemAdministratorClient( host , None , delegatedDN=DN , delegatedGroup=group )
+
+    result = client.getLogTail( system , name )
+    gLogger.debug( result )
+    if not result[ "OK" ]:
+      return result[ "Message" ]
+    result = result[ "Value" ]
+    key = system + "_" + name
+    if not key in result:
+      return "%s key is absent in service response" % key
+    log = result[ key ]
+    return highlight( log , ValaLexer() , HtmlFormatter() )
+
 
   @jsonify
   def sysinfo( self ):
@@ -329,7 +365,6 @@ class SystemadministrationController( BaseController ):
           elif action == "stop":
             result = client.stopComponent( system , component )
           elif action == "uninstall":
-            print action
             result = client.uninstallComponent( system , component )
           else:
             result = list()
