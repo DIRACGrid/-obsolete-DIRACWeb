@@ -176,7 +176,7 @@ function menuHost( record ){
       ,text:'Restart'
     },{
       handler:function(){
-        act.hostUpdate( host );
+        act.doHostAction( 'update' );
       }
       ,icon: gURLRoot + '/images/iface/lightning.png'
       ,text:'Update'
@@ -414,12 +414,26 @@ function action( record ){
       }
     } , { scope: this });
   }
+  this.showPrompt = function(){
+    return Ext.Msg.prompt( this.title , 'Version to install' , function( btn , text ){
+      if (btn == 'ok'){
+        this.scope.params[ 'version' ] = text;
+        ajax({
+          end: this.scope.finnaly
+          ,mask: true
+          ,params: this.scope.params
+          ,success: success
+          ,url: this.scope.url
+        });
+      }
+    } , { scope: this } );
+  }
   this.doHostAction = function( action ){
     if( ! this.check() ){
       return false;
     }
+    this.postfix = 'host';
     this.action = action.toLowerCase();
-    this.postfix = 'DIRAC components on host';
     this.url = this.action + 'Host';
     this.prepare();
     var hosts = new Array();
@@ -429,8 +443,12 @@ function action( record ){
       this.msg = this.msg + ' ' + host + ', ';
     }
     this.params[ 'hostname' ] = hosts.join( ',' );
-    this.showMsg();
-  }  
+    if( action != 'update' ){
+      this.showMsg();
+    }else{
+      this.showPrompt();
+    }
+  }
   this.doCmpAction = function( action ){
     if( ! this.check() ){
       return false;
@@ -457,6 +475,12 @@ function getMenu( record , grid ){
   var menu = new Ext.menu.Menu({
     items:[{
       handler:function(){
+        showLog( record );
+      }
+      ,icon: gURLRoot + '/images/iface/log.png'
+      ,text:'Log'
+    },{
+      handler:function(){
         act.doCmpAction( 'restart' );
       }
       ,icon: gURLRoot + '/images/iface/resetButton.gif'
@@ -479,7 +503,7 @@ function getMenu( record , grid ){
       }
       ,icon: gURLRoot + '/images/iface/close.gif'
       ,text: 'Uninstall'
-    }]  
+    }]
   });
   var status = record.get( 'RunitStatus' ) ;
   if( status == 'Run' ){
@@ -488,6 +512,58 @@ function getMenu( record , grid ){
     menu.items.items[ 1 ].disable();
   }
   return menu
+}
+
+function showLog( record ){
+  var host = record.get( 'Host' );
+  var system = record.get( 'System' );
+  var cmp = record.get( 'Name' );
+  var width = Ext.num( Ext.getBody().getViewSize().width , 640 ) ;
+  var x = Ext.num( Ext.EventObject.xy[ 0 ] , 0 ) ;
+  var winWidth = ( 2 * width ) / 3 ;
+  if( width - winWidth < x ){
+    x = width - winWidth - 10 ;
+  }
+  x = x - 8 ;
+  var height = Ext.num( Ext.getBody().getViewSize().height , 480 ) ;
+  var y = Ext.num( Ext.EventObject.xy[ 1 ] , 0 ) ;
+  var winHeight = ( 2 * height ) / 3
+  if( height - winHeight < y ){
+    y = height - winHeight - 10 ;
+  }
+  y = y - 8 ;
+  return new Ext.Window({
+    collapsible: false
+    ,closable: true
+    ,constrain: true
+    ,constrainHeader: true
+    ,height: winHeight
+    ,iconCls: 'Log'
+    ,items: new Ext.Panel({
+      autoLoad: {
+        params: {
+          component: cmp
+          ,host: host
+          ,system: system
+        }
+        ,nocache: true
+        ,timeout: 60
+        ,url: 'showLog'
+      }
+      ,autoScroll: true
+      ,bodyStyle: 'padding: 5px'
+    })
+    ,layout: 'fit'
+    ,maximizable: true
+    ,minHeight: 200
+    ,minWidth: 300
+    ,plain: false
+    ,shim: false
+    ,title: 'Log file for ' + cmp + '@' + system
+    ,width: winWidth
+    ,x: x
+    ,y: y
+  }).show();
 }
 
 function success( response , opt ){
