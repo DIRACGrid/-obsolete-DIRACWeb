@@ -8,6 +8,7 @@ ${ h.javascript_link( "/javascripts/lovCombo.js" ) }
 ${ h.javascript_link( "/javascripts/systems/SystemAdministration.js" ) }
 ${ h.javascript_link( "/javascripts/systems/SendMessage.js" ) }
 ${ h.stylesheet_link( "/stylesheets/lovCombo.css" ) }
+${ h.stylesheet_link( "/stylesheets/pigments.css" ) }
 </%def>
 
 <%def name="body()">

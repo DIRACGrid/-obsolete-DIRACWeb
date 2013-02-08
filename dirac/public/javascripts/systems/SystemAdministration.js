@@ -37,13 +37,25 @@ function sysInfo(){
   var record = new Ext.data.Record.create([
     { name: 'Host' }
     ,{ name: 'Status' }
-    ,{ name: 'Version' }
+    ,{ name: 'DIRAC' }
     ,{ name: 'Load1' }
     ,{ name: 'Load5' }
     ,{ name: 'Load15' }
     ,{ name: 'Memory' }
     ,{ name: 'Disk' }
     ,{ name: 'Swap' }
+    ,{ name: 'CPUClock' }
+    ,{ name: 'CPUModel' }
+    ,{ name: 'CertificateDN' }
+    ,{ name: 'CertificateIssuer' }
+    ,{ name: 'CertificateValidity' }
+    ,{ name: 'Cores' }
+    ,{ name: 'PhysicalCores' }
+    ,{ name: 'OpenFiles' }
+    ,{ name: 'OpenPipes' }
+    ,{ name: 'OpenSockets' }
+    ,{ name: 'Setup' }
+    ,{ name: 'Uptime' }
   ]);
   var store = new Ext.data.Store({
     autoLoad: true
@@ -75,7 +87,7 @@ function sysInfo(){
     ,sortable: true
   },{
     align: 'left'
-    ,dataIndex: 'Version'
+    ,dataIndex: 'DIRAC'
     ,header: 'Version'
     ,sortable: true
   },{
@@ -112,17 +124,84 @@ function sysInfo(){
     ,header: 'Swap'
     ,renderer: pbar
     ,sortable: true
+  },{
+    align: 'left'    
+    ,dataIndex: 'CPUClock'
+    ,header: 'CPUClock'
+    ,sortable: true
+  },{
+    align: 'left'
+    ,dataIndex: 'CPUModel'
+    ,header: 'CPUModel'
+    ,sortable: true
+  },{
+    align: 'left'
+    ,dataIndex: 'CertificateDN'
+    ,header: 'CertificateDN'
+    ,sortable: true
+  },{
+    align: 'left'
+    ,dataIndex: 'CertificateIssuer'
+    ,header: 'CertificateIssuer'
+    ,sortable: true
+  },{
+    align: 'left'
+    ,dataIndex: 'CertificateValidity'
+    ,header: 'CertificateValidity'
+    ,sortable: true
+  },{
+    align: 'left'
+    ,dataIndex: 'Cores'
+    ,header: 'Cores'
+    ,sortable: true
+  },{
+    align: 'left'
+    ,dataIndex: 'PhysicalCores'
+    ,header: 'PhysicalCores'
+    ,sortable: true
+  },{
+    align: 'left'
+    ,dataIndex: 'OpenFiles'
+    ,header: 'OpenFiles'
+    ,sortable: true
+  },{
+    align: 'left'
+    ,dataIndex: 'OpenPipes'
+    ,header: 'OpenPipes'
+    ,sortable: true
+  },{
+    align: 'left'
+    ,dataIndex: 'OpenSockets'
+    ,header: 'OpenSockets'
+    ,sortable: true
+  },{
+    align: 'left'
+    ,dataIndex: 'Setup'
+    ,header: 'Setup'
+    ,sortable: true
+  },{
+    align: 'left'
+    ,dataIndex: 'Uptime'
+    ,header: 'Uptime'
+    ,sortable: true
   }];
   var tbar = [{
     cls: 'x-btn-text-icon'
-    ,icon: gURLRoot + '/images/iface/resetButton.gif'
+    ,icon: gURLRoot + '/images/iface/lightning.png'
     ,text: 'Restart'
     ,tooltip: 'Restart all DIRAC components except Web server'
-//  },{
-//    cls: 'x-btn-text-icon'
-//    ,icon: gURLRoot + '/images/iface/lightning.png'
-//    ,text: 'Update'
-//    ,tooltip: 'Click to update DIRAC software'
+/*
+  },{
+    cls: 'x-btn-text-icon'
+    ,icon: gURLRoot + '/images/iface/package.png'
+    ,text: 'Update'
+    ,tooltip: 'Click to update DIRAC software'
+*/
+  },{
+    cls: 'x-btn-text-icon'
+    ,icon: gURLRoot + '/images/iface/undo.png'
+    ,text: 'Revert'
+    ,tooltip: 'Replace link <DIRACROOT>/pro by <DIRACROOT>/old'
   }];
   for( var i = 0 ; i < tbar.length ; i++ ){
     tbar[ i ] = new Ext.Toolbar.Button( tbar[ i ] );
@@ -172,22 +251,28 @@ function menuHost( record ){
       handler:function(){
         act.doHostAction( 'restart' );
       }
-      ,icon: gURLRoot + '/images/iface/resetButton.gif'
-      ,text:'Restart'
-      /*
-    },{
-      handler:function(){
-        act.doHostAction( 'update' );
-      }
       ,icon: gURLRoot + '/images/iface/lightning.png'
-      ,text:'Update'
+      ,text:'Restart'
+/*
     },{
       handler:function(){
-        errorDisplay( host );
+        updateHost( record );
+      }
+      ,icon: gURLRoot + '/images/iface/package.png'
+      ,text:'Update'
+*/
+    },{
+      handler:function(){
+        act.doHostAction( 'revert' );
+      }
+      ,icon: gURLRoot + '/images/iface/undo.png'
+      ,text:'Revert'
+    },{
+      handler:function(){
+        logError( record );
       }
       ,icon: gURLRoot + '/images/iface/error.png'
       ,text:'Show Errors'
-      */
     }]  
   });
   return menu
@@ -329,8 +414,16 @@ function initData( host ){
     ,icon: gURLRoot + '/images/iface/stop.gif'
     ,text: 'Stop'
     ,tooltip: 'Click to stop selected service(s), agent(s) or mind(s)'
+  } , '-' , {
+    cls: 'x-btn-text-icon'
+    ,icon: gURLRoot + '/images/iface/close.gif'
+    ,text: 'Uninstall'
+    ,tooltip: 'Alternatively, use "uninstall <System> <Component>" in dirac-admin-sysadmin-cli utility'
   }];
   for( var i = 0 ; i < tbar.length ; i++ ){
+    if( tbar[ i ] == '-' ){
+      continue;
+    }
     tbar[ i ] = new Ext.Toolbar.Button( tbar[ i ] );
     tbar[ i ].on( 'click' , function( btn ){
       var records = grid.getSelectionModel().getSelections();
@@ -408,12 +501,26 @@ function action( record ){
       }
     } , { scope: this });
   }
+  this.showPrompt = function(){
+    return Ext.Msg.prompt( this.title , 'Version to install' , function( btn , text ){
+      if (btn == 'ok'){
+        this.scope.params[ 'version' ] = text;
+        ajax({
+          end: this.scope.finnaly
+          ,mask: true
+          ,params: this.scope.params
+          ,success: success
+          ,url: this.scope.url
+        });
+      }
+    } , { scope: this } );
+  }
   this.doHostAction = function( action ){
     if( ! this.check() ){
       return false;
     }
+    this.postfix = 'host';
     this.action = action.toLowerCase();
-    this.postfix = 'DIRAC components on host';
     this.url = this.action + 'Host';
     this.prepare();
     var hosts = new Array();
@@ -423,8 +530,12 @@ function action( record ){
       this.msg = this.msg + ' ' + host + ', ';
     }
     this.params[ 'hostname' ] = hosts.join( ',' );
-    this.showMsg();
-  }  
+    if( action != 'update' ){
+      this.showMsg();
+    }else{
+      this.showPrompt();
+    }
+  }
   this.doCmpAction = function( action ){
     if( ! this.check() ){
       return false;
@@ -445,11 +556,30 @@ function action( record ){
   }
 }
 
+function errorMenu( record ){
+  var menu = new Ext.menu.Menu({
+    items:[{
+      handler: function(){
+        logCmp( record );
+      }
+      ,icon: gURLRoot + '/images/iface/log.png'
+      ,text: 'Log'
+    }]
+  });
+  return menu
+}
+
 function getMenu( record , grid ){
   var act = new action( [ record ] );
   Ext.apply( act , { finnaly: function(){ grid.getStore().load() } } );
   var menu = new Ext.menu.Menu({
     items:[{
+      handler:function(){
+        logCmp( record );
+      }
+      ,icon: gURLRoot + '/images/iface/log.png'
+      ,text:'Log'
+    },{
       handler:function(){
         act.doCmpAction( 'restart' );
       }
@@ -467,7 +597,13 @@ function getMenu( record , grid ){
       }
       ,icon: gURLRoot + '/images/iface/submit.gif'
       ,text: 'Start'
-    }]  
+    } , '-' , {
+      handler: function(){
+        act.doCmpAction( 'uninstall' );
+      }
+      ,icon: gURLRoot + '/images/iface/close.gif'
+      ,text: 'Uninstall'
+    }]
   });
   var status = record.get( 'RunitStatus' ) ;
   if( status == 'Run' ){
@@ -476,6 +612,121 @@ function getMenu( record , grid ){
     menu.items.items[ 1 ].disable();
   }
   return menu
+}
+
+function logError( record ){
+  var host = record.get( 'Host' );
+  var item = new getDatagrid({
+    autorefresh: true
+    ,disableIPP: true
+    ,columns: [{
+      align: 'left' , dataIndex: 'System' , header: 'System' , sortable: true , width: 150 , fixed: true
+    },{
+      align: 'left' , dataIndex: 'Name' , header: 'Component' , sortable: true , width: 150 , fixed: true
+    },{
+      align: 'left' , dataIndex: 'ErrorsDay' , header: 'Errors per day' , sortable: true , width: 100 , fixed: true
+    },{
+      align: 'left' , dataIndex: 'ErrorsHour' , header: 'Errors per hour' , sortable: true , width: 100 , fixed: true
+    },{
+      align: 'left' , dataIndex: 'LastError' , header: 'Last Error' , sortable: true
+    }]
+    ,region: undefined
+    ,menu: errorMenu
+    ,split: undefined
+    ,store: new Ext.data.JsonStore({
+      autoLoad: true
+      ,baseParams: {  host: host }
+      ,fields: [ 'Host' , 'System' , 'Name' , 'ErrorsDay' , 'ErrorsHour' , 'LastError' ]
+      ,idProperty: 'err'
+      ,root: 'result'
+      ,sortInfo: { field: 'ErrorsHour' , direction: 'DESC' }
+      ,timeout: 360000
+      ,totalProperty: 'total'
+      ,url: 'showHostErrors'
+    })
+    ,view: new Ext.grid.GridView({ autoFill: true , forceFit: true })
+  });
+  var getLog = new logs();
+  Ext.apply( getLog , {
+    icon: 'ErrorLog'
+    ,item: item
+    ,title: 'Show errors for ' + host
+  });
+  getLog.show();
+}
+
+function logCmp( record ){
+  var host = record.get( 'Host' );
+  var system = record.get( 'System' );
+  var cmp = record.get( 'Name' );
+  var getLog = new logs();
+  var item = new Ext.Panel({
+    autoLoad: {
+      params: {
+        component: cmp
+        ,host: host
+        ,system: system    
+      }
+      ,nocache: true
+      ,timeout: 60
+      ,url: 'showLog'
+    }
+    ,autoScroll: true
+    ,bodyStyle: 'padding: 5px'
+  })
+  Ext.apply( getLog , {
+    item: item
+    ,title: 'Log file for ' + cmp + '/' + system + '@' + host
+  });
+  getLog.show();
+}
+
+function logs(){
+  this.title = 'Untitled';
+  this.x = 10;
+  this.y = 10;
+  this.width = 640;
+  this.height = 480;
+  this.item = undefined;
+  this.icon = 'Log';
+  this.calculate = function(){
+    var tmpW = Ext.num( Ext.getBody().getViewSize().width , 640 ) ;
+    var x = Ext.num( Ext.EventObject.xy[ 0 ] , 0 ) ;
+    this.width = ( 2 * tmpW ) / 3 ;
+    if( tmpW - this.width < x ){
+      this.x = tmpW - this.width - 10 ;
+    }
+    this.x = x - 8 ;
+    var tmpH = Ext.num( Ext.getBody().getViewSize().height , 480 ) ;
+    var y = Ext.num( Ext.EventObject.xy[ 1 ] , 0 ) ;
+    this.height = ( 2 * tmpH ) / 3
+    if( tmpH - this.height < y ){
+      this.y = tmpH - this.height - 10 ;
+    }
+    this.y = y - 8 ;
+  }
+  this.show = function(){
+    this.calculate();
+    return new Ext.Window({
+      collapsible: false
+      ,closable: true
+      ,constrain: true
+      ,constrainHeader: true
+      ,height: this.height
+      ,iconCls: this.icon
+      ,items: this.item
+      ,layout: 'fit'
+      ,maximizable: true
+      ,minHeight: 200
+      ,minWidth: 300
+      ,plain: false
+      ,shim: false
+      ,title: this.title
+      ,width: this.width
+      ,x: this.x
+      ,y: this.y
+    }).show();
+  }
 }
 
 function success( response , opt ){
