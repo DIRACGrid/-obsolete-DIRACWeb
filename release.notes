@@ -1,3 +1,8 @@
+[web2013020801]
+NEW: Add show component log and show host errors to SystemAdministration page
+CHANGE: Add new function to SystemAdministrator handler
+FIX: Minor fixes in log and external links
+
 [web2013012501]
 FIX: Authentication has been fixed in accounting controller
 CHANGE: Add button "Export as" space|comma|semicolone list of files to MetadataFC interface
