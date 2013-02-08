@@ -113,7 +113,7 @@ function initTopFrame( pageDescription ){
       var cnfObj = { text : areaObject.text, menu : handleredMenu };
       if(areaObject.text == 'Info'){
         cnfObj.cls = 'x-btn-icon';
-        cnfObj.icon = gURLRoot+'/images/iface/dlogo.gif';
+        cnfObj.icon = gURLRoot+'/images/iface/dlogo.png';
         cnfObj.minWidth = '16';
         delete cnfObj.text;
       }

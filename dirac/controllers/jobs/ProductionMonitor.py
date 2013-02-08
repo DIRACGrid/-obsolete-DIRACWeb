@@ -1,13 +1,3 @@
-#import logging, string
-#from time import time, gmtime, strftime
-
-#from dirac.lib.base import *
-#from dirac.lib.diset import getRPCClient
-#from DIRAC import S_OK, S_ERROR, gConfig
-#from DIRAC.Core.Utilities import Time, List
-#from DIRAC.AccountingSystem.Client.ReportsClient import ReportsClient
-#from dirac.lib.webBase import defaultRedirect
-
 import logging, string
 from time import time, gmtime, strftime
 
@@ -28,7 +18,6 @@ globalSort = [["TransformationID","DESC"]]
 class ProductionmonitorController(BaseController):
 ################################################################################
   def display(self):
-    pagestart = time()
     c.select = self.__getSelectionData()
     if not c.select.has_key("extra"):
       c.select["extra"] = {"prodStatus":"Active::: Stopped::: New"}
@@ -98,7 +87,6 @@ class ProductionmonitorController(BaseController):
       numberOfJobs = 25
       pageNumber = 0
     if request.params.has_key("productionID") and len(request.params["productionID"]) > 0:
-      gLogger.info(" !!!!!!!!!!!!!!!!!!!!!11 productionID - ",request.params["productionID"])
       testString = str(request.params["productionID"])
       testString = testString.strip(';, ')
       testString = testString.split(', ')
@@ -187,25 +175,12 @@ class ProductionmonitorController(BaseController):
         tmp[i] = str(request.params[i])
       callback["extra"] = tmp
     RPC = getRPCClient("Transformation/TransformationManager")
-#    result = RPC.getTransformationSummaryWeb()
-#    if result["OK"]:
-#      prod = []
-#      prods = result["Value"]
-#      if len(prods)>0:
-#        for keys,i in prods.items():
-#          id = str(int(keys)).zfill(8)
-#          prod.append([str(id)])
-#      else:
-#        prod = "Nothing to display"
-#    else:
-#      prod = "Error during RPC call"
-#    callback["prod"] = prod
 ####
     result = RPC.getDistinctAttributeValues("Plugin",{})
     if result["OK"]:
       plugin = []
       if len(result["Value"])>0:
-        plugin.append([str("All")])
+        plugin.append(["All"])
         for i in result["Value"]:
           plugin.append([str(i)])
       else:
@@ -217,7 +192,6 @@ class ProductionmonitorController(BaseController):
     result = RPC.getDistinctAttributeValues("Status",{})
     if result["OK"]:
       status = []
-#    status = [["New"],["Active"],["ValidatingInput"],["ValidatingOuptut"],["WaitingIntegrity"],["ValidatedOutputs"],["RemovingFiles"],["RemovedFiles"],["Completed"],["Archived"],["Cleaning"],["Stopped"]]
       if len(result["Value"])>0:
         status.append([str("All")])
         for i in result["Value"]:
