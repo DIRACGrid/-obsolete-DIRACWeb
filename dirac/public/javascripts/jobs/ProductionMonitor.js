@@ -495,7 +495,7 @@ function AJAXsuccess(value,id,response){
     var html = '<pre>' + result + '</pre>';
     panel = new Ext.Panel({border:0,autoScroll:true,html:html,layout:'fit'})
   }
-  var titleID = 'Production: ' + id;
+  var titleID = 'Transformation: ' + id;
   displayWin(panel,titleID)
 }
 function jump(type,id,submited){

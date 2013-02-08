@@ -128,10 +128,6 @@ function setMenuItems(selections){
   if(jobID == '-'){
     dirac.menu.items.items[0].disable();
   }
-  if(status != 'Done'){
-    dirac.menu.items.items[1].disable();
-    dirac.menu.items.items[2].disable();
-  }
 };
 function AJAXsuccess(value,id,response){
   try{
