@@ -1,7 +1,7 @@
-from pygments import highlight
-from pygments.lexers import ValaLexer
+#from pygments import highlight
+#from pygments.lexers import ValaLexer
 #from pygments.lexers import PythonLexer
-from pygments.formatters import HtmlFormatter
+#from pygments.formatters import HtmlFormatter
 
 from dirac.lib.base import *
 from dirac.lib.credentials import getUserDN, getUsername, getAvailableGroups
@@ -183,9 +183,37 @@ class SystemadministrationController( BaseController ):
       gLogger.debug( result )
       return { "success" : "false" , "error" : result }
 
+  @jsonify
+  def showHostErrors( self ):
+
+    DN = getUserDN()
+    group = getSelectedGroup()
+    
+    if not "host" in request.params:
+      return { "success" : "false" , "error" : "Name of the host is missing or not defined" }
+    host = str( request.params[ "host" ] )
+
+    client = SystemAdministratorClient( host , None , delegatedDN=DN , delegatedGroup=group )
+
+    result = client.checkComponentLog( "*" )
+    gLogger.debug( result )
+    if not result[ "OK" ]:
+      return { "success" : "false" , "error" : result[ "Message" ] }
+    result = result[ "Value" ]
+    
+    callback = list()
+    for key, value in result.items():
+      system, component = key.split( "/" )
+      value[ "System" ] = system
+      value[ "Name" ] = component
+      value[ "Host" ] = host
+      callback.append( value )
+    total = len( callback )
+
+    return { "success" : "true" , "result" : callback , "total" : total }
+
 
   def showLog( self ):
-
 
     DN = getUserDN()
     group = getSelectedGroup()
@@ -205,6 +233,7 @@ class SystemadministrationController( BaseController ):
     client = SystemAdministratorClient( host , None , delegatedDN=DN , delegatedGroup=group )
 
     result = client.getLogTail( system , name )
+#    result = client.checkComponentLog( "*" )
     gLogger.debug( result )
     if not result[ "OK" ]:
       return result[ "Message" ]
@@ -213,7 +242,8 @@ class SystemadministrationController( BaseController ):
     if not key in result:
       return "%s key is absent in service response" % key
     log = result[ key ]
-    return highlight( log , ValaLexer() , HtmlFormatter() )
+    return log.replace( "\n" , "<br>" )
+ #   return highlight( log , ValaLexer() , HtmlFormatter() )
 
 
   @jsonify
@@ -252,8 +282,7 @@ class SystemadministrationController( BaseController ):
 
 
 
-  @jsonify
-  def restartHost( self ):
+  def __actionHost( self ):
 
     """
     Restart all DIRAC components on a given host
@@ -266,14 +295,21 @@ class SystemadministrationController( BaseController ):
     DN = getUserDN()
     group = getSelectedGroup()
 
-    self.action = "restart"
     self.actionSuccess = list()
     self.actionFailed = list()
 
     for i in hosts:
       client = SystemAdministratorClient( str( i ) , None , delegatedDN=DN ,
                                           delegatedGroup=group )
-      result = client.restartComponent( str( "*" ) , str( "*" ) )
+      if self.action is "restart":
+        result = client.restartComponent( str( "*" ) , str( "*" ) )
+      elif self.action is "revert":
+        result = client.revertSoftware()
+      else:
+        error = i + ": Action %s is not defined" % self.action
+        self.actionFailed.append( error )
+        continue
+
       gLogger.always( result )
 
       if not result[ "OK" ]:
@@ -284,13 +320,28 @@ class SystemadministrationController( BaseController ):
           continue
         error = i + ": " + result[ "Message" ]
         self.actionFailed.append( error )
-        gLogger.error( "Failure during restarting components on host: %s" % i )
+        gLogger.error( error )
       else:
-        gLogger.always( "Successfully restart components on host %s" % i )
+        gLogger.info( result[ "Value" ] )
         self.actionSuccess.append( i )
       
     self.prefix = "Host"
     return self.__aftermath()
+
+
+
+  @jsonify
+  def restartHost( self ):
+    self.action = "restart"
+    return self.__actionHost()
+
+
+
+  @jsonify
+  def revertHost( self ):
+    self.action = "revert"
+    return self.__actionHost()
+
 
 
   def __componentAction( self , action = None ):
