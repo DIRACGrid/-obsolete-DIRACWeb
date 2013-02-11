@@ -68,11 +68,11 @@ function rmQuerySelector( item ){
 }
 function querySelector( metaname , type ){
   var label = new Ext.Toolbar.TextItem({
-    text              : metaname + ': ' 
+    text: metaname + ': ' 
   }) ; 
   // TODO: check the length of the text in the label and decrease it if needed
   var menu = new Ext.menu.Menu({
-    items             : [{
+    items: [{
                           handler : function(){
                                       button.value = '=' ;
                                       button.setIconClass( 'Equal' ) ;
@@ -115,15 +115,15 @@ function querySelector( metaname , type ){
                           ,iconCls: 'LessEqual'
                           ,text   : 'Less then or equal to'
                         }]
-  }) ;
+  });
   var button = new Ext.Button({
-    cls               : 'x-btn-icon'
-    ,ctCls            : 'paddingButton'
-    ,icon             : gURLRoot + '/images/iface/equal.gif'
-    ,minWidth         : '25'
-    ,menu             : menu
-    ,value            : '='
-  }) ;
+    cls: 'x-btn-icon'
+    ,ctCls: 'paddingButton'
+    ,icon: gURLRoot + '/images/iface/equal.gif'
+    ,minWidth: '25'
+    ,menu: menu
+    ,value: '='
+  });
   var selector = createRemoteMenu({
     baseParams        : { 'getMeta' : metaname }
     ,name             : metaname
@@ -141,41 +141,90 @@ function querySelector( metaname , type ){
   }
   selector.setWidth( 100 ) ;
   if( type.indexOf( 'char' ) > 0 ){
-    selector.setWidth( 140 ) ;
+    selector.setWidth( 140 );
     button = '';
   }
-  selector.ctCls = 'paddingButton' ;
+  selector.ctCls = 'paddingButton';
+  selector.on( 'collapse' , function( me ){
+    updateMeta( metaname , me.getRawValue() );
+  });
   var reset = new Ext.Button({
-    cls               : 'x-btn-icon'
-    ,ctCls            : 'paddingButton'
-    ,handler          : function(){ selector.reset() }
-    ,icon             : gURLRoot + '/images/iface/resetButton.gif'
-    ,minWidth         : '25'
-  }) ; 
+    cls: 'x-btn-icon'
+    ,ctCls: 'paddingButton'
+    ,handler: function(){ selector.reset() }
+    ,icon: gURLRoot + '/images/iface/resetButton.gif'
+    ,minWidth: '25'
+  });
+  reset.on( 'click' , function(){
+    updateMeta( metaname , '' );
+  });
   var kill = new Ext.Button({
-    cls               : 'x-btn-icon'
-    ,ctCls            : 'paddingButton'
-    ,handler          : function(){ rmQuerySelector( bar ) }
-    ,icon             : gURLRoot + '/images/iface/close.gif'
-    ,minWidth         : '25'
-    ,style            : 'margin: 5px !important;'
-  }) ;
+    cls: 'x-btn-icon'
+    ,ctCls: 'paddingButton'
+    ,handler: function(){ rmQuerySelector( bar ) }
+    ,icon: gURLRoot + '/images/iface/close.gif'
+    ,minWidth: '25'
+    ,style: 'margin: 5px !important;'
+  });
   var bar = new Ext.Toolbar({
-    cls               : 'metaselect'
-    ,items            : [
-                          label
-                          , '->'
-                          , button
-                          , selector
-                          , reset
-                          , kill
-                        ]
-    ,width            : 300
+    cls: 'metaselect'
+    ,items: [
+      label
+      , '->'
+      , button
+      , selector
+      , reset
+      , kill
+    ]
+    ,width: 300
   });
   bar.on( 'render' , function( el , position ){
     el.removeClass( 'x-toolbar' );
-  })
+  });
   return bar
+}
+function updateMeta( meta , value ){
+  params = new Object();
+  params[ meta ] = value
+  Ext.Ajax.request({
+    method: 'POST'
+    ,params: params
+    ,success: function( response  ){
+      response.responseText ? response = response.responseText : '';
+      var data = Ext.util.JSON.decode( response );
+      if( Ext.isEmpty( data.result ) ){
+        return
+      }
+      var len = gBroker.queryPanel.items.getCount();
+      for( var i = 0 ; i < len ; i++ ){
+        var item = gBroker.queryPanel.items.itemAt( i ) ;
+        var selector = item.initialConfig.items[ 3 ] ;
+        if( Ext.isEmpty( selector ) ){
+          continue;
+        }
+        var tName = selector.name;
+        if( data.result[ tName ] && data.result[ tName ].length < 1 ){
+          item.disable();
+        }else{
+          item.enable();
+        }
+      }
+      var store = gBroker.metaPanel.getStore();
+      if( value == '' ){
+        return store.clearFilter();
+      }
+      var reg = new Array( meta );
+      for( var i in data.result ){
+        if( data.result[ i ].length > 0 ){
+          reg.push( i );
+        }
+      }
+      var regExp = new RegExp( reg.join( '|' ) );
+      store.filter( 'Name' , regExp );
+    }
+    ,timeout: 10000
+    ,url: 'updateMetadata'
+  });
 }
 function metaLogic(){
   if( ! gBroker.metaPanel || ! gBroker.queryPanel ){
@@ -338,6 +387,9 @@ function initMetaPanel( ){
     ,root             : 'result'
     ,url              : 'action'
   });
+  store.on( 'datachanged' , function(){
+    button.setDisabled( store.isFiltered() );
+  });
   var columns = [{
     align             : 'left'
     ,css              : 'cursor:pointer;cursor:hand;'
@@ -429,7 +481,7 @@ function initFilesPanel(){
     name: 'size'
   },{
     dateFormat:'Y-n-j h:i:s'
-    ,name: 'LastUpdateTime'
+    ,name: 'date'
     ,type: 'date'
   },{
     name: 'metadata'
@@ -450,18 +502,21 @@ function initFilesPanel(){
     ,dataIndex: 'filename'
     ,header: 'File Name'
     ,sortable: true
-    ,width: '50%'
   },{
     align:'left'
     ,dataIndex: 'size'
+    ,fixed: true
     ,header: 'Size'
     ,sortable: true
+    ,width: 120
   },{
     align:'left'
     ,dataIndex: 'date'
+    ,fixed: true
     ,header: 'Date'
     ,renderer: Ext.util.Format.dateRenderer( 'Y-m-d H:i' )
     ,sortable: true
+    ,width: 120
   },{
     align:'left'
     ,dataIndex: 'metadata'
@@ -469,11 +524,12 @@ function initFilesPanel(){
     ,sortable: true
   }];
   var store = new Ext.data.Store({
-    reader            : new Ext.data.JsonReader({
-                          root              : 'result'
-                          ,totalProperty    : 'total'
-                        },record)
-    ,url              : 'submit'
+    reader: new Ext.data.JsonReader({
+      root: 'result'
+      ,totalProperty: 'total'
+    } , record )
+    ,view: new Ext.grid.GridView({ autoFill: true , forceFit: true })
+    ,url: 'submit'
   });
   store.on( 'beforeload' , function(){
     try{
@@ -499,7 +555,7 @@ function initFilesPanel(){
     }
     for( var i=0 ; i < toolbar.items.getCount() ; i++ ){
       try{
-        toolbar.items.itemAt(i).setDisabled( disable )//.enable();
+        toolbar.items.itemAt(i).setDisabled( disable );
       }catch(e){}
     }
   });
@@ -561,6 +617,7 @@ function initFilesPanel(){
     store:store,
     stripeRows:true,
     tbar:tbar
+    ,view: new Ext.grid.GridView({ autoFill: true , forceFit: true })
   });
   gBroker.filesPanel = dataTable;
   return dataTable
