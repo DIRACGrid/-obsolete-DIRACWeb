@@ -144,8 +144,6 @@ class MetacatalogController(BaseController):
         return self.__getSelectorGrid()
       elif request.params.has_key("getCache"):
         return self.__getMetaCache( request.params["getCache"]  )
-      elif ( "getMeta" in request.params ) and len( request.params[ "getMeta" ] ) > 0:
-        return self.__getMetadata( request.params[ "getMeta" ] )
       elif request.params.has_key("getFile") and len(request.params["getFile"]) > 0:
         return self.__prepareURL( request.params["getFile"] )
       else:
@@ -174,12 +172,17 @@ class MetacatalogController(BaseController):
 
 
   @jsonify
-  def updateMetadata( self ):
+  def getCompatible( self ):
 
-    compat = dict()
+    if not "meta" in request.params:
+      return { "success" : "false" , "error" : "Meta key is absent" }
+
+    if not "value" in request.params:
+      return { "success" : "false" , "error" : "Value key is absent" }
+
     try:
-      for key in request.params:
-        compat[ str( key ) ] = str( request.params[ key ] )
+      compat = dict()
+      compat[ str( request.params[ "meta" ] ) ] = str( request.params[ "value" ] )
     except Exception, e:
       return { "success" : "false" , "error" : e }
 
@@ -190,36 +193,56 @@ class MetacatalogController(BaseController):
 
     if not result[ "OK" ]:
       return { "success" : "false" , "error" : result[ "Message" ] }
-    return { "success" : "true" , "result" : result[ "Value" ] }
+    result = result[ "Value" ]
+    
+    callback = dict()
+    for i in result:
+      if not len( result[ i ] ) > 0:
+        continue
+      callback[ i ] = True
+    return { "success" : "true" , "result" : callback }
 
 
+  @jsonify
+  def getMetadata( self ):
 
-  def __getMetadata( self , key = False ):
-
-    if not key:
+    if not "getValue" in request.params:
       return { "success" : "false" , "error" : "Metadata key is absent" }
 
     try:
-      key = str( key )
+      meta = str( request.params[ "getValue" ] )
+      compat = dict()
+      for key in request.params:
+        key = str( key )
+        prefix = key[ :12 ]
+        postfix = key[ 12: ]
+        if not "_compatible_" in prefix:
+          continue
+        if not len( postfix ) > 0:
+          continue 
+        compat[ postfix ] = str( request.params[ key ] )
     except Exception, e:
       return { "success" : "false" , "error" : e }
-
-    print key
+    gLogger.always( compat )    
 
     RPC = getRPCClient( "DataManagement/FileCatalog" )
 
-    result = RPC.getCompatibleMetadata({})
+    result = RPC.getCompatibleMetadata( compat )
     gLogger.always( result )
+
     if not result[ "OK" ]:
       return { "success" : "false" , "error" : result[ "Message" ] }
     result = result[ "Value" ]
 
-    if key in result:
-      result = result[ key ]
+    if not meta in result:
+      return { "success" : "true" , "result" : {} }
     callback = []
-    for i in result:
-      callback.append({"name":i})
-    return {"success":"true","result":callback}  
+    for i in result[ meta ]:
+      callback.append( { "name" : i} )
+    return { "success" : "true" , "result" : callback }
+
+
+
 ################################################################################
   def __getSelector(self,select="All"):
     RPC = getRPCClient("DataManagement/FileCatalog")
