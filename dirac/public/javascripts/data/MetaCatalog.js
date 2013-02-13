@@ -125,18 +125,19 @@ function querySelector( metaname , type ){
     ,value: '='
   });
   var selector = createRemoteMenu({
-    baseParams        : { 'getMeta' : metaname }
-    ,name             : metaname
+    baseParams: { getValue : metaname }
+    ,name: metaname
+    ,url: 'getMetadata'
   });
   selector.forceSelection = false;
   if( type == 'datetime' ){
     selector = new Ext.form.DateField({
-      emptyText       : 'YYYY-mm-dd'
-      ,format         : 'Y-m-d'
-      ,name           : metaname
-      ,selectOnFocus  : true
-      ,startDay       : 1
-      ,value          : ''
+      emptyText: 'YYYY-mm-dd'
+      ,format: 'Y-m-d'
+      ,name: metaname
+      ,selectOnFocus: true
+      ,startDay: 1
+      ,value: ''
     });
   }
   selector.setWidth( 100 ) ;
@@ -146,7 +147,14 @@ function querySelector( metaname , type ){
   }
   selector.ctCls = 'paddingButton';
   selector.on( 'collapse' , function( me ){
-    updateMeta( metaname , me.getRawValue() );
+    getCompatible( metaname , me.getRawValue() );
+  });
+  selector.on( 'beforequery' , function( q ){
+    selector.store.reload({
+      params: getMetadata( selector )
+    });
+    q.cancel = true;
+    return q;
   });
   var reset = new Ext.Button({
     cls: 'x-btn-icon'
@@ -156,7 +164,7 @@ function querySelector( metaname , type ){
     ,minWidth: '25'
   });
   reset.on( 'click' , function(){
-    updateMeta( metaname , '' );
+    gBroker.metaPanel.getStore().clearFilter();
   });
   var kill = new Ext.Button({
     cls: 'x-btn-icon'
@@ -183,47 +191,60 @@ function querySelector( metaname , type ){
   });
   return bar
 }
-function updateMeta( meta , value ){
-  params = new Object();
-  params[ meta ] = value
+function getMetadata( selector ){
+  var params = new Object();
+  var query = gBroker.queryPanel.items;
+  if( query.getCount() < 1 ){
+    return params
+  }
+  for( var i = 0 ; i < query.getCount() ; i++ ){
+    var item = query.itemAt( i );
+    var selector = item.initialConfig.items[ 3 ] ;
+    if( Ext.isEmpty( selector ) ){
+      continue;
+    }
+    var value = selector.getRawValue();
+    if( ! Ext.isEmpty( value ) ){
+      params[ '_compatible_' + selector.name ] = value;
+    }
+  }
+  return params
+}
+function getCompatible( meta , value ){
   Ext.Ajax.request({
     method: 'POST'
-    ,params: params
+    ,params: { meta : meta , value : value }
     ,success: function( response  ){
       response.responseText ? response = response.responseText : '';
       var data = Ext.util.JSON.decode( response );
       if( Ext.isEmpty( data.result ) ){
         return
       }
-      var len = gBroker.queryPanel.items.getCount();
-      for( var i = 0 ; i < len ; i++ ){
+      data.result[ meta ] = true;
+
+      for( var i = 0 ; i < gBroker.queryPanel.items.getCount() ; i++ ){
         var item = gBroker.queryPanel.items.itemAt( i ) ;
         var selector = item.initialConfig.items[ 3 ] ;
         if( Ext.isEmpty( selector ) ){
           continue;
         }
-        var tName = selector.name;
-        if( data.result[ tName ] && data.result[ tName ].length < 1 ){
-          item.disable();
-        }else{
+        if( data.result[ selector.name ] ){
           item.enable();
+        }else{
+          item.disable();
         }
       }
+
       var store = gBroker.metaPanel.getStore();
-      if( value == '' ){
-        return store.clearFilter();
-      }
       var reg = new Array( meta );
       for( var i in data.result ){
-        if( data.result[ i ].length > 0 ){
-          reg.push( i );
-        }
+        reg.push( i );
       }
       var regExp = new RegExp( reg.join( '|' ) );
       store.filter( 'Name' , regExp );
     }
     ,timeout: 10000
-    ,url: 'updateMetadata'
+    ,url: 'getCompatible'
   });
 }
 function metaLogic(){
@@ -316,11 +337,14 @@ function initQueryPanel( selection ){
     ,text             : 'Submit'
   }) ;
   var reset = new Ext.Button({
-    cls               : 'x-btn-text-icon'
-    ,handler          : function(){ removePanelItems( panel ) }
-    ,icon             : gURLRoot + '/images/iface/reset.gif'
-    ,text             : 'Reset'
-    ,width            : 100
+    cls: 'x-btn-text-icon'
+    ,handler: function(){
+      removePanelItems( panel );
+      gBroker.metaPanel.getStore().clearFilter();
+    }
+    ,icon: gURLRoot + '/images/iface/reset.gif'
+    ,text: 'Reset'
+    ,width: 100
   }) ;
   var label = new Ext.Toolbar.TextItem({
     text              : 'Path to start from: ' 
