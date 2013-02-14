@@ -182,7 +182,10 @@ class MetacatalogController(BaseController):
 
     try:
       compat = dict()
-      compat[ str( request.params[ "meta" ] ) ] = str( request.params[ "value" ] )
+      meta = str( request.params[ "meta" ] )
+      value = str( request.params[ "value" ] )
+      if len( value ) > 0:
+        compat[ meta ] = value
     except Exception, e:
       return { "success" : "false" , "error" : e }
 
