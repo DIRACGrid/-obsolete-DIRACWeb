@@ -164,7 +164,12 @@ function querySelector( metaname , type ){
     ,minWidth: '25'
   });
   reset.on( 'click' , function(){
-    gBroker.metaPanel.getStore().clearFilter();
+    var store = gBroker.metaPanel.getStore()
+    store.clearFilter();
+    if( store.myFilter ){
+      delete store.myFilter;
+    }
+    getCompatible( metaname , '' );
   });
   var kill = new Ext.Button({
     cls: 'x-btn-icon'
@@ -188,6 +193,12 @@ function querySelector( metaname , type ){
   });
   bar.on( 'render' , function( el , position ){
     el.removeClass( 'x-toolbar' );
+  });
+  bar.on( 'disable' , function(){
+    selector.disable();
+  });
+  bar.on( 'enable' , function(){
+    selector.enable();
   });
   return bar
 }
@@ -240,8 +251,8 @@ function getCompatible( meta , value ){
       for( var i in data.result ){
         reg.push( i );
       }
-      var regExp = new RegExp( reg.join( '|' ) );
-      store.filter( 'Name' , regExp );
+      store.myFilter = new RegExp( reg.join( '|' ) );
+      store.filter( 'Name' , store.myFilter );
     }
     ,timeout: 10000
     ,url: 'getCompatible'
@@ -340,7 +351,11 @@ function initQueryPanel( selection ){
     cls: 'x-btn-text-icon'
     ,handler: function(){
       removePanelItems( panel );
-      gBroker.metaPanel.getStore().clearFilter();
+      var store = gBroker.metaPanel.getStore();
+      store.clearFilter();
+      if( store.myFilter ){
+        delete store.myFilter;
+      }
     }
     ,icon: gURLRoot + '/images/iface/reset.gif'
     ,text: 'Reset'
@@ -411,8 +426,10 @@ function initMetaPanel( ){
     ,root             : 'result'
     ,url              : 'action'
   });
-  store.on( 'datachanged' , function(){
-    button.setDisabled( store.isFiltered() );
+  store.on( 'load' , function(){
+    if( store.myFilter ){
+      store.filter( 'Name' , store.myFilter );
+    }
   });
   var columns = [{
     align             : 'left'
