@@ -400,20 +400,20 @@ class GeneralController( BaseController ):
     failure = "\n".join( sentFailed )
 
     if len( success ) > 0 and len( failure ) > 0:
-      result = "Your registration request were sent successfully to: "
-      result = result + success + "\n\nFailed to sent it to:\n" + failure
+      result = "Successfully sent e-mail to: "
+      result = result + success + "\n\nFailed to send e-mail to:\n" + failure
       gLogger.debug( result )
       return { "success" : "true" , "result" : result }
     elif len( success ) > 0 and len( failure ) < 1:
-      result = "Your registration request were sent successfully to: %s" % success
+      result = "Successfully sent e-mail to: %s" % success
       gLogger.debug( result )
       return { "success" : "true" , "result" : result }
     elif len( success ) < 1 and len( failure ) > 0:
-      result = "Failed to sent your request to:\n%s" % failure
+      result = "Failed to sent email to:\n%s" % failure
       gLogger.debug( result )
       return { "success" : "false" , "error" : result }
     else:
-      result = "No messages were sent to administrator due technical failure"
+      result = "No messages were sent due technical failure"
       gLogger.debug( result )
       return { "success" : "false" , "error" : result }
 
