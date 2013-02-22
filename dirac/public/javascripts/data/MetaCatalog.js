@@ -68,10 +68,11 @@ function rmQuerySelector( item ){
 }
 function querySelector( metaname , type ){
   var label = new Ext.Toolbar.TextItem({
-    text              : metaname + ': ' 
-  }) ;
+    text: metaname + ': ' 
+  }) ; 
+  // TODO: check the length of the text in the label and decrease it if needed
   var menu = new Ext.menu.Menu({
-    items             : [{
+    items: [{
                           handler : function(){
                                       button.value = '=' ;
                                       button.setIconClass( 'Equal' ) ;
@@ -114,67 +115,148 @@ function querySelector( metaname , type ){
                           ,iconCls: 'LessEqual'
                           ,text   : 'Less then or equal to'
                         }]
-  }) ;
+  });
   var button = new Ext.Button({
-    cls               : 'x-btn-icon'
-    ,ctCls            : 'paddingButton'
-    ,icon             : gURLRoot + '/images/iface/equal.gif'
-    ,minWidth         : '25'
-    ,menu             : menu
-    ,value            : '='
-  }) ;
+    cls: 'x-btn-icon'
+    ,ctCls: 'paddingButton'
+    ,icon: gURLRoot + '/images/iface/equal.gif'
+    ,minWidth: '25'
+    ,menu: menu
+    ,value: '='
+  });
   var selector = createRemoteMenu({
-    baseParams        : { 'getMeta' : metaname }
-    ,name             : metaname
+    baseParams: { getValue : metaname }
+    ,name: metaname
+    ,url: 'getMetadata'
   });
   selector.forceSelection = false;
   if( type == 'datetime' ){
     selector = new Ext.form.DateField({
-      emptyText       : 'YYYY-mm-dd'
-      ,format         : 'Y-m-d'
-      ,name           : metaname
-      ,selectOnFocus  : true
-      ,startDay       : 1
-      ,value          : ''
+      emptyText: 'YYYY-mm-dd'
+      ,format: 'Y-m-d'
+      ,name: metaname
+      ,selectOnFocus: true
+      ,startDay: 1
+      ,value: ''
     });
   }
   selector.setWidth( 100 ) ;
   if( type.indexOf( 'char' ) > 0 ){
-    selector.setWidth( 140 ) ;
+    selector.setWidth( 140 );
     button = '';
   }
-  selector.ctCls = 'paddingButton' ;
+  selector.ctCls = 'paddingButton';
+  selector.on( 'collapse' , function( me ){
+    getCompatible( metaname , me.getRawValue() );
+  });
+  selector.on( 'beforequery' , function( q ){
+    selector.store.reload({
+      params: getMetadata( selector )
+    });
+    q.cancel = true;
+    return q;
+  });
   var reset = new Ext.Button({
-    cls               : 'x-btn-icon'
-    ,ctCls            : 'paddingButton'
-    ,handler          : function(){ selector.reset() }
-    ,icon             : gURLRoot + '/images/iface/resetButton.gif'
-    ,minWidth         : '25'
-  }) ; 
+    cls: 'x-btn-icon'
+    ,ctCls: 'paddingButton'
+    ,handler: function(){ selector.reset() }
+    ,icon: gURLRoot + '/images/iface/resetButton.gif'
+    ,minWidth: '25'
+  });
+  reset.on( 'click' , function(){
+    var store = gBroker.metaPanel.getStore()
+    store.clearFilter();
+    if( store.myFilter ){
+      delete store.myFilter;
+    }
+    getCompatible( metaname , '' );
+  });
   var kill = new Ext.Button({
-    cls               : 'x-btn-icon'
-    ,ctCls            : 'paddingButton'
-    ,handler          : function(){ rmQuerySelector( bar ) }
-    ,icon             : gURLRoot + '/images/iface/close.gif'
-    ,minWidth         : '25'
-    ,style            : 'margin: 5px !important;'
-  }) ;
+    cls: 'x-btn-icon'
+    ,ctCls: 'paddingButton'
+    ,handler: function(){ rmQuerySelector( bar ) }
+    ,icon: gURLRoot + '/images/iface/close.gif'
+    ,minWidth: '25'
+    ,style: 'margin: 5px !important;'
+  });
   var bar = new Ext.Toolbar({
-    cls               : 'metaselect'
-    ,items            : [
-                          label
-                          , '->'
-                          , button
-                          , selector
-                          , reset
-                          , kill
-                        ]
-    ,width            : 300
+    cls: 'metaselect'
+    ,items: [
+      label
+      , '->'
+      , button
+      , selector
+      , reset
+      , kill
+    ]
+    ,width: 300
   });
   bar.on( 'render' , function( el , position ){
     el.removeClass( 'x-toolbar' );
-  })
+  });
+  bar.on( 'disable' , function(){
+    selector.disable();
+  });
+  bar.on( 'enable' , function(){
+    selector.enable();
+  });
   return bar
+}
+function getMetadata( selector ){
+  var params = new Object();
+  var query = gBroker.queryPanel.items;
+  if( query.getCount() < 1 ){
+    return params
+  }
+  for( var i = 0 ; i < query.getCount() ; i++ ){
+    var item = query.itemAt( i );
+    var selector = item.initialConfig.items[ 3 ] ;
+    if( Ext.isEmpty( selector ) ){
+      continue;
+    }
+    var value = selector.getRawValue();
+    if( ! Ext.isEmpty( value ) ){
+      params[ '_compatible_' + selector.name ] = value;
+    }
+  }
+  return params
+}
+function getCompatible( meta , value ){
+  Ext.Ajax.request({
+    method: 'POST'
+    ,params: { meta : meta , value : value }
+    ,success: function( response  ){
+      response.responseText ? response = response.responseText : '';
+      var data = Ext.util.JSON.decode( response );
+      if( Ext.isEmpty( data.result ) ){
+        return
+      }
+      data.result[ meta ] = true;
+
+      for( var i = 0 ; i < gBroker.queryPanel.items.getCount() ; i++ ){
+        var item = gBroker.queryPanel.items.itemAt( i ) ;
+        var selector = item.initialConfig.items[ 3 ] ;
+        if( Ext.isEmpty( selector ) ){
+          continue;
+        }
+        if( data.result[ selector.name ] ){
+          item.enable();
+        }else{
+          item.disable();
+        }
+      }
+
+      var store = gBroker.metaPanel.getStore();
+      var reg = new Array( meta );
+      for( var i in data.result ){
+        reg.push( i );
+      }
+      store.myFilter = new RegExp( reg.join( '|' ) );
+      store.filter( 'Name' , store.myFilter );
+    }
+    ,timeout: 10000
+    ,url: 'getCompatible'
+  });
 }
 function metaLogic(){
   if( ! gBroker.metaPanel || ! gBroker.queryPanel ){
@@ -266,11 +348,18 @@ function initQueryPanel( selection ){
     ,text             : 'Submit'
   }) ;
   var reset = new Ext.Button({
-    cls               : 'x-btn-text-icon'
-    ,handler          : function(){ removePanelItems( panel ) }
-    ,icon             : gURLRoot + '/images/iface/reset.gif'
-    ,text             : 'Reset'
-    ,width            : 100
+    cls: 'x-btn-text-icon'
+    ,handler: function(){
+      removePanelItems( panel );
+      var store = gBroker.metaPanel.getStore();
+      store.clearFilter();
+      if( store.myFilter ){
+        delete store.myFilter;
+      }
+    }
+    ,icon: gURLRoot + '/images/iface/reset.gif'
+    ,text: 'Reset'
+    ,width: 100
   }) ;
   var label = new Ext.Toolbar.TextItem({
     text              : 'Path to start from: ' 
@@ -346,6 +435,11 @@ function initMetaPanel( ){
     ,idProperty       : 'Name'
     ,root             : 'result'
     ,url              : 'action'
+  });
+  store.on( 'load' , function(){
+    if( store.myFilter ){
+      store.filter( 'Name' , store.myFilter );
+    }
   });
   var columns = [{
     align             : 'left'
@@ -432,19 +526,61 @@ function gridContainer(  config  ){
   return grid
 }
 function initFilesPanel(){
-  var record = new Ext.data.Record.create([
-    {name:'filename'}
-  ]);
-  var columns = [
-    {header:'',name:'checkBox',id:'checkBox',width:26,sortable:false,dataIndex:'filename',renderer:chkBox,hideable:false,fixed:true,menuDisabled:true},
-    {header:'File Name',sortable:true,dataIndex:'filename',align:'left',width:'90%'}
-  ];
+  var record = new Ext.data.Record.create([{
+    name: 'filename'
+  },{
+    name: 'size'
+  },{
+    dateFormat:'Y-n-j h:i:s'
+    ,name: 'date'
+    ,type: 'date'
+  },{
+    name: 'metadata'
+  }]);
+  var columns = [{
+    dataIndex:'filename'
+    ,fixed:true
+    ,header:''
+    ,hideable:false
+    ,id:'checkBox'
+    ,menuDisabled:true
+    ,name:'checkBox'
+    ,renderer:chkBox
+    ,sortable:false
+    ,width: 26
+  },{
+    align:'left'
+    ,dataIndex: 'filename'
+    ,header: 'File Name'
+    ,sortable: true
+  },{
+    align:'left'
+    ,dataIndex: 'size'
+    ,fixed: true
+    ,header: 'Size'
+    ,sortable: true
+    ,width: 120
+  },{
+    align:'left'
+    ,dataIndex: 'date'
+    ,fixed: true
+    ,header: 'Date'
+    ,renderer: Ext.util.Format.dateRenderer( 'Y-m-d H:i' )
+    ,sortable: true
+    ,width: 120
+  },{
+    align:'left'
+    ,dataIndex: 'metadata'
+    ,header: 'Metadata'
+    ,sortable: true
+  }];
   var store = new Ext.data.Store({
-    reader            : new Ext.data.JsonReader({
-                          root              : 'result'
-                          ,totalProperty    : 'total'
-                        },record)
-    ,url              : 'submit'
+    reader: new Ext.data.JsonReader({
+      root: 'result'
+      ,totalProperty: 'total'
+    } , record )
+    ,view: new Ext.grid.GridView({ autoFill: true , forceFit: true })
+    ,url: 'submit'
   });
   store.on( 'beforeload' , function(){
     try{
@@ -470,7 +606,7 @@ function initFilesPanel(){
     }
     for( var i=0 ; i < toolbar.items.getCount() ; i++ ){
       try{
-        toolbar.items.itemAt(i).setDisabled( disable )//.enable();
+        toolbar.items.itemAt(i).setDisabled( disable );
       }catch(e){}
     }
   });
@@ -532,6 +668,7 @@ function initFilesPanel(){
     store:store,
     stripeRows:true,
     tbar:tbar
+    ,view: new Ext.grid.GridView({ autoFill: true , forceFit: true })
   });
   gBroker.filesPanel = dataTable;
   return dataTable

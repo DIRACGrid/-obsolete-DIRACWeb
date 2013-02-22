@@ -37,19 +37,35 @@ class MetacatalogController(BaseController):
     RPC = getRPCClient( "DataManagement/FileCatalog" )
     req = self.__request()
     gLogger.debug( "submit: incoming request %s" % req )
-    result = RPC.findFilesByMetadata( req["selection"] , req["path"] )
-    gLogger.debug( "submit: result of findFilesByMetadata %s" % result )
+    result = RPC.findFilesByMetadataDetailed( req["selection"] , req["path"] )
+    gLogger.debug( "submit: result of findFilesByMetadataDetailed %s" % result )
     if not result[ "OK" ] :
       gLogger.error( "submit: %s" % result[ "Message" ] )
       return { "success" : "false" , "error" : result[ "Message" ] }
     result = result[ "Value" ]
+    gLogger.always( "Result of findFilesByMetadataDetailed %s" % result )
+
     if not len(result) > 0:
       return { "success" : "true" , "result" : {} , "total" : 0 }
+
     callback = list()
     for key , value in result.items() :
-      if len( value ) > 0 :
-        for j in value :
-          callback.append({ "filename" : key + "/" + j })
+
+      size = ""
+      if "Size" in value:
+        size = value[ "Size" ]
+
+      date = ""
+      if "CreationDate" in value:
+        date = str( value[ "CreationDate" ] )
+
+      meta = ""
+      if "Metadata" in value:
+        m = value[ "Metadata" ]
+        meta = '; '.join( [ '%s: %s' % ( i , j ) for ( i , j ) in m.items() ] )
+
+      callback.append({ "filename" : key , "date" : date , "size" : size ,
+                            "metadata" : meta })
     return { "success" : "true" , "result" : callback , "total" : len( callback )}
 ################################################################################
   def __request(self):
@@ -121,23 +137,22 @@ class MetacatalogController(BaseController):
 ################################################################################
   @jsonify
   def action(self):
-    pagestart = time()
-    if request.params.has_key("getSelector") and len(request.params["getSelector"]) > 0:
-      return self.__getSelector( str(request.params["getSelector"]) )
-    if request.params.has_key("getSelectorGrid"):
-      return self.__getSelectorGrid()
-    elif request.params.has_key("getCache"):
-      return self.__getMetaCache( str( request.params["getCache"] ) )
-    elif request.params.has_key("getMeta") and len(request.params["getMeta"]) > 0:
-      return self.__getMetadata( str(request.params["getMeta"]) )
-    elif request.params.has_key("getFile") and len(request.params["getFile"]) > 0:
-      return self.__prepareURL( str(request.params["getFile"]) )
-    else:
-      return {"success":"false","error":"The request parameters can not be recognized or they are not defined"}
+
+      if request.params.has_key("getSelector") and len(request.params["getSelector"]) > 0:
+        return self.__getSelector( request.params["getSelector"] )
+      if request.params.has_key("getSelectorGrid"):
+        return self.__getSelectorGrid()
+      elif request.params.has_key("getCache"):
+        return self.__getMetaCache( request.params["getCache"]  )
+      elif request.params.has_key("getFile") and len(request.params["getFile"]) > 0:
+        return self.__prepareURL( request.params["getFile"] )
+      else:
+        return {"success":"false","error":"The request parameters can not be recognized or they are not defined"}
+
 ################################################################################
   def __getMetaCache( self , param ):
-    result = {"EvtType":[{"Name":"aa_e1e1e3e3_o"},{"Name":"Z_uds"}],"NumberOfEvents":[{"Name": 10},{"Name": 1500000}],"BXoverlayed":[{"Name":60}],"Polarisation":[{"Name":"m80p20"},{"Name":"p80m20"}],"Datatype":[{"Name": "DST"},{"Name": "gen"}],"Luminosity": [{"Name": 98.76},{"Name": 294.4}],"Energy": [{"Name": "1.4tev"},{"Name": "1000"}],"MachineParams": [{"Name": "B1b_ws"}],"DetectorType": [{"Name": "ILD"},{"Name": "SIM"}],"Machine":[{"Name":"3tev"},{"Name":"ilc"}],"Owner":[{"Name":"alucacit"},{"Name":"yimingli"}],"DetectorModel":[{"Name":"clic_sid_cdr"},{"Name":"clic_sid_cdr3"}],"JobType":[{"Name":"gen"}]}
-    return {"success":"true","result":result}
+#    result = {"EvtType":[{"Name":"aa_e1e1e3e3_o"},{"Name":"Z_uds"}],"NumberOfEvents":[{"Name": 10},{"Name": 1500000}],"BXoverlayed":[{"Name":60}],"Polarisation":[{"Name":"m80p20"},{"Name":"p80m20"}],"Datatype":[{"Name": "DST"},{"Name": "gen"}],"Luminosity": [{"Name": 98.76},{"Name": 294.4}],"Energy": [{"Name": "1.4tev"},{"Name": "1000"}],"MachineParams": [{"Name": "B1b_ws"}],"DetectorType": [{"Name": "ILD"},{"Name": "SIM"}],"Machine":[{"Name":"3tev"},{"Name":"ilc"}],"Owner":[{"Name":"alucacit"},{"Name":"yimingli"}],"DetectorModel":[{"Name":"clic_sid_cdr"},{"Name":"clic_sid_cdr3"}],"JobType":[{"Name":"gen"}]}
+    return { "success" : "true" , "result" : "" }
 ################################################################################  
   def __prepareURL(self,files):
 
@@ -153,21 +168,84 @@ class MetacatalogController(BaseController):
     httpURLs = result['HttpURL']
     httpKey = result['HttpKey']
     return {"success":"true","result":{"url":httpURLs,"cookie":httpKey}}
-################################################################################
-  def __getMetadata(self,key=False):
-    if not key:
-      return {"success":"false","error":""}
-    RPC = getRPCClient("DataManagement/FileCatalog")
-    result = RPC.getCompatibleMetadata({})
-    if not result["OK"]:
-      return {"success":"false","error":result["Message"]}
-    result = result["Value"]
-    if result.has_key(key):
-      result = result[key]
-    callback = []
+
+
+
+  @jsonify
+  def getCompatible( self ):
+
+    if not "meta" in request.params:
+      return { "success" : "false" , "error" : "Meta key is absent" }
+
+    if not "value" in request.params:
+      return { "success" : "false" , "error" : "Value key is absent" }
+
+    try:
+      compat = dict()
+      meta = str( request.params[ "meta" ] )
+      value = str( request.params[ "value" ] )
+      if len( value ) > 0:
+        compat[ meta ] = value
+    except Exception, e:
+      return { "success" : "false" , "error" : e }
+
+    RPC = getRPCClient( "DataManagement/FileCatalog" )
+
+    result = RPC.getCompatibleMetadata( compat )
+    gLogger.always( result )
+
+    if not result[ "OK" ]:
+      return { "success" : "false" , "error" : result[ "Message" ] }
+    result = result[ "Value" ]
+    
+    callback = dict()
     for i in result:
-      callback.append({"name":i})
-    return {"success":"true","result":callback}  
+      if not len( result[ i ] ) > 0:
+        continue
+      callback[ i ] = True
+    return { "success" : "true" , "result" : callback }
+
+
+  @jsonify
+  def getMetadata( self ):
+
+    if not "getValue" in request.params:
+      return { "success" : "false" , "error" : "Metadata key is absent" }
+
+    try:
+      meta = str( request.params[ "getValue" ] )
+      compat = dict()
+      for key in request.params:
+        key = str( key )
+        prefix = key[ :12 ]
+        postfix = key[ 12: ]
+        if not "_compatible_" in prefix:
+          continue
+        if not len( postfix ) > 0:
+          continue 
+        compat[ postfix ] = str( request.params[ key ] )
+    except Exception, e:
+      return { "success" : "false" , "error" : e }
+    gLogger.always( compat )    
+
+    RPC = getRPCClient( "DataManagement/FileCatalog" )
+
+    result = RPC.getCompatibleMetadata( compat )
+    gLogger.always( result )
+
+    if not result[ "OK" ]:
+      return { "success" : "false" , "error" : result[ "Message" ] }
+    result = result[ "Value" ]
+
+    if not meta in result:
+      return { "success" : "true" , "result" : {} }
+    callback = []
+    for i in result[ meta ]:
+      callback.append( { "name" : i} )
+    return { "success" : "true" , "result" : callback }
+
+
+
 ################################################################################
   def __getSelector(self,select="All"):
     RPC = getRPCClient("DataManagement/FileCatalog")
