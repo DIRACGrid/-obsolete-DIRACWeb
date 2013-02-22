@@ -89,6 +89,7 @@ function sysInfo(){
     align: 'left'
     ,dataIndex: 'DIRAC'
     ,header: 'Version'
+    ,renderer: releaseNotes
     ,sortable: true
   },{
     align: 'left'
@@ -577,7 +578,7 @@ function getMenu( record , grid ){
       handler:function(){
         logCmp( record );
       }
-      ,icon: gURLRoot + '/images/iface/log.png'
+      ,icon: gURLRoot + '/images/iface/jdl.gif'
       ,text:'Log'
     },{
       handler:function(){
@@ -607,9 +608,9 @@ function getMenu( record , grid ){
   });
   var status = record.get( 'RunitStatus' ) ;
   if( status == 'Run' ){
-    menu.items.items[ 2 ].disable();
+    menu.items.items[ 3 ].disable();
   }else if( status == 'Down' ){
-    menu.items.items[ 1 ].disable();
+    menu.items.items[ 2 ].disable();
   }
   return menu
 }
@@ -662,17 +663,37 @@ function logCmp( record ){
   var getLog = new logs();
   var item = new Ext.Panel({
     autoLoad: {
-      params: {
-        component: cmp
-        ,host: host
-        ,system: system    
-      }
-      ,nocache: true
-      ,timeout: 60
-      ,url: 'showLog'
-    }
+          params: {
+            component: cmp
+            ,host: host
+            ,system: system    
+          }
+          ,nocache: true
+          ,timeout: 60
+          ,url: 'showLog'
+        }
     ,autoScroll: true
+    ,bbar:[ {
+      cls: 'x-btn-text-icon'
+      ,handler: function(){
+        item.load({
+          params: {
+            component: cmp
+            ,host: host
+            ,system: system    
+          }
+          ,nocache: true
+          ,timeout: 60
+          ,url: 'showLog'
+        })
+      }
+      ,iconCls: 'Refresh'
+      ,text: 'Refresh'
+      ,tooltip: 'Click button for manual refresh'
+      ,scope: item
+    } , '->' ]
     ,bodyStyle: 'padding: 5px'
+    ,border: false
   })
   Ext.apply( getLog , {
     item: item
@@ -745,6 +766,11 @@ function success( response , opt ){
     return showTip( msg.result );
   }
   return showError( 'Server response have no success nor error messages' );
+}
+
+function releaseNotes( value ){
+  var url = 'http://raw.github.com/DIRACGrid/DIRAC/' + value + '/release.notes';
+  return '<a href="' + url + '" target="_blank">' + value + '</a>';
 }
 
 function uptime( value , cell , record ){
