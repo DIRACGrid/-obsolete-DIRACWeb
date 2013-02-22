@@ -1,3 +1,8 @@
+[web2013022201]
+NEW: Selectors shows compatible metadata in DFC page
+NEW: SystemAdministration page has a refresh button on component logs
+FIX: Order in context menu of SystemAdministration page
+
 [web2013020801]
 NEW: Add show component log and show host errors to SystemAdministration page
 CHANGE: Add new function to SystemAdministrator handler
