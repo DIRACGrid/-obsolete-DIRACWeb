@@ -206,16 +206,16 @@ class GeneralController( BaseController ):
 ################################################################################
   @jsonify
   def action(self):
-    if request.params.has_key("getVOList") and len(request.params["getVOList"]) > 0:
-      return {"success":"true","result":self.getVOList()}
-    elif request.params.has_key("getCountries") and len(request.params["getCountries"]) > 0:
-      return {"success":"true","result":self.getCountries()}
-    elif request.params.has_key("send_message") and len(request.params["send_message"]) > 0:
+    if "getVOList" in request.params:
+      return { "success" : "true" , "result" : self.getVOList() }
+    elif "getCountries" in request.params:
+      return { "success" : "true" , "result" : self.getCountries() }
+    elif "send_message" in request.params:
       return self.__sendMessage()
-    elif request.params.has_key("registration_request") and len(request.params["registration_request"]) > 0:
+    elif "registration_request" in request.params:
       return self.__registerUser()
     else:
-      return {"success":"false","error":"The request parameters can not be recognized or they are not defined"}
+      return { "success" : "false" , "error" : "Request parameters are not defined"}
 ################################################################################
 
 
@@ -340,7 +340,7 @@ class GeneralController( BaseController ):
     adminList = list()
     adminList = self.getVOAdmins( vo )  
     if not len( adminList ) > 0:
-      adminList = self.getUserByProperty( "UserAdministrator" )
+      adminList = self.getUserByProperty( "UserManager" )
     if not len( adminList ) > 0:
       adminList = gConfig.getValue( "/Website/UserRegistrationAdmin" , [] )
 
@@ -400,20 +400,20 @@ class GeneralController( BaseController ):
     failure = "\n".join( sentFailed )
 
     if len( success ) > 0 and len( failure ) > 0:
-      result = "Your registration request were sent successfully to: "
-      result = result + success + "\n\nFailed to sent it to:\n" + failure
+      result = "Successfully sent e-mail to: "
+      result = result + success + "\n\nFailed to send e-mail to:\n" + failure
       gLogger.debug( result )
       return { "success" : "true" , "result" : result }
     elif len( success ) > 0 and len( failure ) < 1:
-      result = "Your registration request were sent successfully to: %s" % success
+      result = "Successfully sent e-mail to: %s" % success
       gLogger.debug( result )
       return { "success" : "true" , "result" : result }
     elif len( success ) < 1 and len( failure ) > 0:
-      result = "Failed to sent your request to:\n%s" % failure
+      result = "Failed to sent email to:\n%s" % failure
       gLogger.debug( result )
       return { "success" : "false" , "error" : result }
     else:
-      result = "No messages were sent to administrator due technical failure"
+      result = "No messages were sent due technical failure"
       gLogger.debug( result )
       return { "success" : "false" , "error" : result }
 
@@ -480,7 +480,7 @@ class GeneralController( BaseController ):
 
     test = [ "group" , "title" , "body" ]
     for i in test:
-      if not request.params.has_key( i ):
+      if not i in request.params:
         error = "The required parameter %s is absent in request" % i
         gLogger.error( "Service response: %s" % error )
         return { "success" : "false" , "error" : error }
@@ -538,7 +538,7 @@ class GeneralController( BaseController ):
       return { "success" : "false" , "error" : error }
     gLogger.info( "DN: %s" % dn )
 
-    if not request.params.has_key( "email" ):
+    if not "email" in request.params:
       error = "Can not get your email address from the request"
       gLogger.debug( "Service response: %s" % error )
       return { "success" : "false" , "error" : error }
