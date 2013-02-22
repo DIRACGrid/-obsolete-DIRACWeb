@@ -1,8 +1,3 @@
-#from pygments import highlight
-#from pygments.lexers import ValaLexer
-#from pygments.lexers import PythonLexer
-#from pygments.formatters import HtmlFormatter
-
 from dirac.lib.base import *
 from dirac.lib.credentials import getUserDN, getUsername, getAvailableGroups
 from dirac.lib.credentials import getProperties, checkUserCredentials, getSelectedGroup
@@ -41,9 +36,6 @@ class SystemadministrationController( BaseController ):
         tmp[ i ] = request.params[ i ]
       callback[ "extra" ] = tmp
 
-#    if user == "Anonymous":
-#      callback["prod"] = [["Insufficient rights"]]
-      
     result = gConfig.getSections( "/Registry/Hosts" )
     gLogger.debug( "Hosts: %s" % result )
     if not result[ "OK" ]:
@@ -145,8 +137,8 @@ class SystemadministrationController( BaseController ):
         continue
       req[ key ] = value
 
-    gLogger.always( "Service incoming request: %s" % request.params )  
-    gLogger.always("Finalized request: %s" % req )
+    gLogger.debug( "Service incoming request: %s" % request.params )  
+    gLogger.debug("Finalized request: %s" % req )
 
     return req
 
@@ -165,9 +157,9 @@ class SystemadministrationController( BaseController ):
       if ( get == "email" ) and ( "user" in request.params ):
         return self.__returnEmail()
       elif get == "user":
-        return self.__returnListFromCS( "/Registry/Users" )
+        return self.__returnAllUsers()
       elif get == "group":
-        return self.__returnListFromCS( "/Registry/Groups" )
+        return self.__returnAllGroup()
       else:
         error = "The request parameters get '%s' is not defined" % get
         gLogger.debug( error )
@@ -233,17 +225,18 @@ class SystemadministrationController( BaseController ):
     client = SystemAdministratorClient( host , None , delegatedDN=DN , delegatedGroup=group )
 
     result = client.getLogTail( system , name )
-#    result = client.checkComponentLog( "*" )
     gLogger.debug( result )
     if not result[ "OK" ]:
       return result[ "Message" ]
     result = result[ "Value" ]
+
     key = system + "_" + name
     if not key in result:
       return "%s key is absent in service response" % key
     log = result[ key ]
+
     return log.replace( "\n" , "<br>" )
- #   return highlight( log , ValaLexer() , HtmlFormatter() )
+
 
 
   @jsonify
@@ -531,11 +524,20 @@ class SystemadministrationController( BaseController ):
     return { "success" : "false" , "error" : result }
 
 
+  def __returnAllUsers( self ):
+    self.mapper = "user"
+    return self.__getSectionsFromCS( "/Registry/Users" )
 
-  def __returnListFromCS( self , path = None ):
+
+  def __returnAllGroup( self ):
+    self.mapper = "group"
+    return self.__getSectionsFromCS( "/Registry/Groups" )
+
+
+  def __getSectionsFromCS( self , path = None ):
 
     """
-    Return list of subsections from section defined by path argument as JSON
+    Return JSON list of subsections from section defined by path argument
     """
     
     if not path:
@@ -543,9 +545,11 @@ class SystemadministrationController( BaseController ):
     result = gConfig.getSections( path )
     if not result[ "OK" ]:
       return { "success" : "false" , "error" : result[ "Message" ] }
-    groups = result[ "Value" ]
-    groups = map( lambda x : { "user" : x } , groups )
-    return { "success" : "true" , "result" : groups }
+    result = result[ "Value" ]
+    if not self.mapper:
+      return { "success" : "true" , "result" : result }
+    result = map( lambda x : { self.mapper : x } , result )
+    return { "success" : "true" , "result" : result }
 
 
 
