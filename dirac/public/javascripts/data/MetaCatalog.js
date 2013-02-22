@@ -406,6 +406,16 @@ function initQueryPanel( selection ){
     var bWidth = button.getEl().getWidth() ;
     var nWidth = width - bWidth - 98 ;
     path.setWidth( nWidth ) ;
+    if( ! panel.items ){
+      return
+    }
+    if( panel.items.getCount() < 1 ){
+      return
+    }
+    for( i = 0 ; i < panel.items.getCount() ; i++ ){
+      var tmpItem = panel.getComponent( i );
+      tmpItem.setWidth( width - 15 );
+    }
   });
   gBroker.queryPanel = panel ;
   return panel
