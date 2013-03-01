@@ -23,8 +23,8 @@ function ajax( cfg ){
     Ext.getBody().mask( cfg.msg ? cfg.msg : 'Communicating with server' ) ;
   }
   Ext.Ajax.request({
-    failure           : cfg.failure ? cfg.failure : errorReport 
-    ,headers          : cfg.headers ? cfg.headers : undefined 
+    failure           : cfg.failure ? cfg.failure : errorReport
+    ,headers          : cfg.headers ? cfg.headers : undefined
     ,method           : cfg.method ? cfg.method : 'POST'
     ,params           : cfg.params ? cfg.params : undefined
 //    ,scope            : cfg.scope ? cfg.scope : this
@@ -82,7 +82,7 @@ function dropdownMenu( cfg ){
         newValue.push( nameList[ i ] ) ;
       }
     }
-    newValue = ( this.combo ) ? 
+    newValue = ( this.combo ) ?
       newValue.join( this.separator ) : newValue[ 0 ] ;
     combo.setValue( newValue ) ;
     delete dataSelect.extra[ this.hiddenName ] ;
@@ -93,7 +93,7 @@ function toolbarElementsAutoresize( bar , elements ){
   /*
   bar        : Object. Instance of Ext.Toolbar
   elements   : Array of objects. Items from toolbar items collection
-  
+
   Function is checking for existance of passed elements in toolbar. Calculates
   the width without objects from elements array. Dividing the remain width by
   number of elements. New width should be more then 25 pixels. Set new width on
@@ -216,7 +216,7 @@ function formWindow( cfg ){
     ,maximizable      : cfg.maximizable ? cfg.maximizable : false
     ,minHeight        : minHeight
     ,minWidth         : minWidth
-    ,modal            : cfg.modal ? cfg.modal : true 
+    ,modal            : cfg.modal ? cfg.modal : true
     ,plain            : false
     ,shim             : false
     ,title            : cfg.title ? cfg.title : 'Default title'
@@ -786,7 +786,7 @@ function sortGlobalPanel(){
     if(tableMngr){
       if(tableMngr.bbar){
         if(tableMngr.bbar.pageSize){
-          dataMngr.store.baseParams.sort = value; 
+          dataMngr.store.baseParams.sort = value;
           dataMngr.store.load({params:{start:0,limit:tableMngr.bbar.pageSize,sort:value}});
         }else{
           alert('Error: Failed to get ExtJS component: tableMngr.bbar.pageSize');
@@ -1093,7 +1093,7 @@ function selectPanel(newID){
       addr = addr.slice(0,addr.length-1);
     }
     document.title = title;
-//    window.location.hash = addr; 
+//    window.location.hash = addr;
     if(tableMngr){
       if(tableMngr.bbar){
         panel.form.submit({
@@ -1317,7 +1317,7 @@ function createRemoteMenu(item){
 }
 function createMenu(dataName,title,altValue){
   var data = 'Nothing to display';
-// test for dataSelect existence  
+// test for dataSelect existence
   try{
     if(!altValue){
       data = dataSelect[dataName];
@@ -1385,7 +1385,7 @@ function createMenu(dataName,title,altValue){
 function createDropdownMenu(dataName,title,altValue){
   var data = 'Nothing to display';
   if(altValue && altValue.constructor == Array){
-    data = altValue;  
+    data = altValue;
   }else{
     if(dataSelect && dataSelect[dataName] && dataSelect[dataName].constructor == Array){
       data = dataSelect[dataName];
@@ -1559,7 +1559,7 @@ function setTitle(value,id){
   return title;
 }
 function status(value){
-  if((value == 'Done')||(value == 'Completed')||(value == 'Good')||(value == 'Active')||(value == 'Cleared')||(value == 'Completing')){
+  if((value == 'Done')||(value == 'Good')||(value == 'Active')||(value == 'Cleared')){
     return '<img src="'+gURLRoot+'/images/monitoring/done.gif">';
   }else if(value == 'Bad'){
     return '<img src="'+gURLRoot+'/images/monitoring/bad.gif">';
@@ -1575,6 +1575,8 @@ function status(value){
     return '<img src="'+gURLRoot+'/images/monitoring/running.gif">';
   }else if(value == 'NoMask'){
     return '<img src="'+gURLRoot+'/images/monitoring/unknown.gif">';
+  }else if((value == 'Completed') || (value == 'Completing')){
+    return '<img src="'+gURLRoot+'/images/monitoring/completed.gif">';
   }else{
     return '<img src="'+gURLRoot+'/images/monitoring/unknown.gif">';
   }
@@ -1953,7 +1955,7 @@ function sPanel(title,kind,initObject){
     monitorResize:true,
     minWidth: 200,
     store:storeGrid,
-    stripeRows:true, 
+    stripeRows:true,
     tbar:[combo],
     title:title,
     viewConfig:{forceFit:true}
@@ -2004,7 +2006,7 @@ function updateStats(id,formID){
     }
     var form = Ext.getCmp(formID);
     if(form){
-      selections = form.getForm().getValues(); 
+      selections = form.getForm().getValues();
     }
     grid.store.baseParams = selections;//{'stats':value,'pageName':pageName,'selections':selections};
     grid.store.baseParams['getStat'] = selector
@@ -2336,7 +2338,7 @@ function dateTimeWidget(pin){
       manualSelection();
     }
   });
-  
+
   var datePin = {xtype:'checkbox',id:'datePin',fieldLabel:'',name:'datePin',boxLabel:'Pin the date'};
   var panel = new Ext.Panel({
     layout:'table',

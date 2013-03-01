@@ -159,7 +159,7 @@ function dropdownMenu( cfg ){
         newValue.push( nameList[ i ] ) ;
       }
     }
-    newValue = ( this.combo ) ? 
+    newValue = ( this.combo ) ?
       newValue.join( this.separator ) : newValue[ 0 ] ;
     combo.setValue( newValue ) ;
     delete dataSelect.extra[ this.hiddenName ] ;
@@ -170,7 +170,7 @@ function toolbarElementsAutoresize( bar , elements ){
   /*
   bar        : Object. Instance of Ext.Toolbar
   elements   : Array of objects. Items from toolbar items collection
-  
+
   Function is checking for existance of passed elements in toolbar. Calculates
   the width without objects from elements array. Dividing the remain width by
   number of elements. New width should be more then 25 pixels. Set new width on
@@ -178,11 +178,11 @@ function toolbarElementsAutoresize( bar , elements ){
   elements, create-delete-insertButton for toolbar buttons.
 
   Example:
-  
+
     gridpanel.on( 'resize' , function(){
       toolbarElementsAutoresize( toolbar , [ button ] ) ;
     }) ;
-    
+
   */
   if( ! bar.isXType( 'toolbar' , true ) ){
     return false ;
@@ -308,7 +308,7 @@ function displayWindow( cfg ){
     ,maximizable      : cfg.maximizable ? cfg.maximizable : false
     ,minHeight        : minHeight
     ,minWidth         : minWidth
-    ,modal            : cfg.modal ? cfg.modal : true 
+    ,modal            : cfg.modal ? cfg.modal : true
     ,plain            : false
     ,shim             : false
     ,title            : cfg.title ? cfg.title : 'Default title'
@@ -374,7 +374,7 @@ function formWindow( cfg ){
     ,maximizable      : cfg.maximizable ? cfg.maximizable : false
     ,minHeight        : minHeight
     ,minWidth         : minWidth
-    ,modal            : cfg.modal ? cfg.modal : true 
+    ,modal            : cfg.modal ? cfg.modal : true
     ,plain            : false
     ,shim             : false
     ,title            : cfg.title ? cfg.title : 'Default title'
@@ -596,13 +596,13 @@ function selectPanel( datagrid ){
 }
 function status( value ){
   if( ( value == 'Done' ) ||
-      ( value == 'Completed' ) ||
       ( value == 'Good' ) ||
       ( value == 'Active' )||
-      ( value == 'Cleared' )||
-      ( value == 'Completing' )
+      ( value == 'Cleared' )
   ){
     return '<img src="' + gURLRoot + '/images/monitoring/done.gif">' ;
+  }else if((value == 'Completed') || (value == 'Completing')){
+    return '<img src="'+gURLRoot+'/images/monitoring/completed.gif">';
   }else if( value == 'Bad' ){
     return '<img src="' + gURLRoot + '/images/monitoring/bad.gif">' ;
   }else if( ( value == 'Failed' ) ||
