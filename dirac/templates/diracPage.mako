@@ -3,9 +3,11 @@
 <%
 import dirac.lib.credentials as credentials
 import dirac.lib.webBase as webBase
+from dirac.lib.webconfig import gWebConfig
 
 credentials.checkUserCredentials()
 
+icon = gWebConfig.getSpecificIcon()
 pageTitle = webBase.htmlPageTitle()
 jsDiracPageObject = webBase.getJSPageData()
 selectedSetup = credentials.getSelectedSetup()
@@ -15,7 +17,7 @@ pageTitle = "%s as %s@%s" % ( pageTitle, selectedGroup, selectedSetup )
 <html>
  <head>
   <title>${pageTitle}</title>
-  <link rel="SHORTCUT ICON" href='${ h.url_for( "/images/favicon.ico" )}'>
+  <link rel="SHORTCUT ICON" href='${ h.url_for(icon)}'>
   ${ h.javascript_link( "/ext/adapter/ext/ext-base.js" ) }
   ${ h.javascript_link( "/ext/ext-all-debug.js" ) }
   ${ h.javascript_link( "/ext/Multiselect.js" ) }
@@ -38,7 +40,8 @@ pageTitle = "%s as %s@%s" % ( pageTitle, selectedGroup, selectedSetup )
  <body>
   <script type="text/javascript">
    var pageDescription = ${ jsDiracPageObject };
-   initDiracPage( "${ h.url_for( '/' ) }", pageDescription);
+   var jsicon = ${ icon };
+   initDiracPage( "${ h.url_for( '/' ) }", pageDescription, jsicon);
   </script>
   ${self.body()}
 <script type="text/javascript">

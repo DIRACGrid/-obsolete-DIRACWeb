@@ -2,6 +2,7 @@ var gURLRoot = ''; // Required to set-up the proper path to the pictures.
                     // String.
 var gMainLayout = false; // Main Layout object
 var gPageDescription = {}; // Main object describing the page layout
+var gIcon = null;
 
 function showError( msg ){
   if( Ext.isEmpty( msg )){
@@ -14,12 +15,13 @@ function showError( msg ){
   );
 }
 
-function initDiracPage( urlRoot, pageDescription ){
+function initDiracPage( urlRoot, pageDescription, icon ){
   if( urlRoot[ urlRoot.length - 1 ] == "/" ){
     urlRoot = urlRoot.substring( 0, urlRoot.length -1 );
   }
   gURLRoot = urlRoot;
   gPageDescription = pageDescription;
+  gIcon = icon;
   Ext.QuickTips.init();
   Ext.namespace('dirac');
   //Check for lastLocationHash
@@ -113,7 +115,7 @@ function initTopFrame( pageDescription ){
       var cnfObj = { text : areaObject.text, menu : handleredMenu };
       if(areaObject.text == 'Info'){
         cnfObj.cls = 'x-btn-icon';
-        cnfObj.icon = gURLRoot+'/images/iface/dlogo.png';
+        cnfObj.icon = gURLRoot+ gIcon;
         cnfObj.minWidth = '16';
         delete cnfObj.text;
       }
@@ -233,7 +235,7 @@ function redirectWithHashHandler( item ){
     }
 		setCookie( "lastLocationHash", document.location.hash, expiration, gURLRoot || "/" );
 	}
-	
+
 	window.location = newLocation;
 }
 
@@ -250,10 +252,10 @@ function setCookie( cookieName, value, expirationDate, path, domain, secure ){
 
   if ( domain )
         cookie_string += "; domain=" + escape ( domain );
-  
+
   if ( secure )
         cookie_string += "; secure";
- 
+
   document.cookie = cookie_string;
 }
 
