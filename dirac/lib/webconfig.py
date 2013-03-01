@@ -97,4 +97,7 @@ class WebConfig:
   def getIconLocation( self ):
     return gConfig.getValue( "%s/IconLocation" % self.webSection, "" )
 
+  def getSpecificIcon(self):
+    return gConfig.getValue( "%s/SpecificIcon" % self.webSection, "/images/favicon.ico" )
+
 gWebConfig = WebConfig()
