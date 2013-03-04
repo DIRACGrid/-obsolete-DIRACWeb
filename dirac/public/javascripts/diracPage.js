@@ -116,6 +116,7 @@ function initTopFrame( pageDescription ){
         cnfObj.icon = gURLRoot+'/images/iface/dlogo.png';
         cnfObj.minWidth = '16';
         delete cnfObj.text;
+        cnfObj.menu.push({ handler: showVersion , text : 'About' });
       }
       if(cnfObj.text == 'Help'){
         cnfObj.menu.reverse();
@@ -212,6 +213,22 @@ function initBottomFrame( pageDescription ){
     ,region: 'south'
   }) ;
   return bottomBar ;
+}
+
+function showVersion(){
+  return new Ext.Window({
+    width:800,
+    height:400,
+    collapsible:false,
+    layout:'fit',
+    title:'About',
+    items: new Ext.Panel({
+      autoLoad: { timeout: 60 , url: 'getVersions' }
+      ,autoScroll: true
+      ,bodyStyle: 'padding: 5px'
+      ,border: false
+    })
+  }).show();
 }
 
 function mainPageRedirectHandler( item, a, b ){
