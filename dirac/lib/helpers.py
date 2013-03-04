@@ -29,3 +29,8 @@ def _modTag( urls, attrs, functor ):
           url = "/%s%s" % ( sN, url )
         nUrls.append( url )
   return functor( *nUrls, **attrs )
+
+def logo_wrap( fn ):
+  def wrap( self = None ):
+    return "<html><body><img src='/images/logos/logo.png'/><br><br><br><br>" + fn( self ) + "</body></html>"
+  return wrap
