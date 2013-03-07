@@ -55,7 +55,7 @@ def initDIRAC( rootPath, enableDebug = False ):
     gLogger.initialize( "Web", "/Website" )
     gLogger.setLevel( "VERBOSE" )
 
-    from DIRAC import gMonitor, gConfig
+    from DIRAC import gMonitor, gConfig, rootPath as droot
     from DIRAC.Core.Utilities import CFG
     from DIRAC.ConfigurationSystem.Client.Helpers import getCSExtensions
     gMonitor.setComponentType( gMonitor.COMPONENT_WEB )
@@ -66,7 +66,8 @@ def initDIRAC( rootPath, enableDebug = False ):
 
     extModules = [ '%sDIRAC' % module for module in getCSExtensions() ]
     #Load web.cfg of modules
-    cfgFilePaths = [ os.path.join( rootPath, "web.cfg" ) ]
+    cfgFilePaths = [ os.path.join( droot, "etc", "web.cfg" ) ]
+    print rootPath
     for extModule in extModules:
       gLogger.info( "Adding web.cfg for %s extension" % extModule )
       extModulePath = os.path.join( diracRootPath, extModule )
