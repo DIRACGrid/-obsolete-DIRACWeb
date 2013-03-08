@@ -121,13 +121,19 @@ def getSchemaContents( section = "" ):
       subContents.append( "{ text: '%s', menu : %s }" % ( subSection.capitalize(), subJSTxt ) )
   for page in gWebConfig.getSchemaPages( section ):
     pageData = gWebConfig.getSchemaPageData( "%s/%s" % ( section, page ) )
-    if len( pageData ) < 3 or checkPropertiesWithUser( pageData[2:] ):
-      if pageData[0].find( "http" ) == 0:
-        pagePath = pageData[0]
-      else:
-        pagePath = diracURL( "/%s" % ( pageData[0] ) )
-      subContents.append( "{ text : '%s', url : '%s' }" % ( page, pagePath ) )
-  return "[%s]" % ",".join( subContents )
+    if len( pageData ) is not 3:
+      continue
+    if not checkPropertiesWithUser( pageData[2:] ):
+      continue
+    if pageData[0].find( "http" ) == 0:
+      pagePath = pageData[0]
+    else:
+      pagePath = diracURL( "/%s" % ( pageData[0] ) )
+    subContents.append( "{ text : '%s', url : '%s' }" % ( page, pagePath ) )
+
+  if len( subContents ) > 0:
+    return "[%s]" % ",".join( subContents )
+  return ""
 
 def getSetups():
   availableSetups = [ "{ text : '%s', url : '%s' }" % ( setupName,

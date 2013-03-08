@@ -150,6 +150,10 @@ p.footer {
   font: 12px arial,tahoma,helvetica,sans-serif;
   padding : 0px 0px 5px 0px;
 }
+.lrg{
+  text-align: center;
+  font-size: large;
+}
 .my-disabled * {
   cursor:default ! important;
 }
