@@ -27,54 +27,15 @@ class BaseController(WSGIController):
     return WSGIController.__call__(self, environ, start_response)
 
   @w
-  def getVersions( self ):
+  def getVersion( self ):
 
     """
     Return dict with lists of version both DIRAC and extensions 
     from all the hosts registered in /Registry/Hosts
     """
-
-    from dirac.lib.credentials import getUserDN, getSelectedGroup
-
-    DN = getUserDN()
-    group = getSelectedGroup()
-    #TODO: remove hosts code after v6r7 since it will be built-in
-
-    result = gConfig.getSections( "/Registry/Hosts" )
-    if not result[ "Value" ]:
-      return result[ "Message" ]
-    hosts = result[ "Value" ]
-
-    client = SystemAdministratorIntegrator( hosts = hosts , delegatedDN=DN ,
-                                                delegatedGroup=group )
-    result = client.getInfo()
-    if not result[ "OK" ]:
-      return result[ "Message" ]
-    result = result[ "Value" ]
-
-    versions = dict( { "DIRAC" : list() } )
-    for host in result:
-      if not result[ host ][ "OK" ]:
-        continue
-      tmp = result[ host ][ "Value" ]
-
-      if "DIRAC" in tmp:
-        if not tmp[ "DIRAC" ] in versions[ "DIRAC" ]:
-          versions[ "DIRAC" ].append( tmp[ "DIRAC" ] )
-
-      if "Extensions" in tmp:
-        for key , value in tmp[ "Extensions" ].items():
-          if not key in versions:
-            versions[ key ] = list()
-          if not value in versions[ key ]:
-            versions[ key ].append( value )
-
-    for key , value in versions.items():
-      versions[ key ] = ", ".join( value )
-
-    final = '<br/>'.join( [ '%s: %s' % ( key , value )
-                            for ( key , value ) in versions.items() ] )
-    return "Version of software used on this installation:<br/><br/>%s" % final
+    if 'version' not in config:
+      config[ 'version' ] = "Unknown"
+    return "Web portal version: %s" % config[ 'version' ]
 
 
 # Include the '_' function in the public names
