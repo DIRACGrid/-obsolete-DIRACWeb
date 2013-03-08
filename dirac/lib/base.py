@@ -9,7 +9,6 @@ from pylons.controllers.util import abort, etag_cache, redirect_to
 from pylons.decorators import jsonify, validate
 from pylons.i18n import _, ungettext, N_
 from pylons.templating import render
-from DIRAC import gConfig, gLogger
 
 import dirac.lib.helpers as h
 import dirac.model as model
