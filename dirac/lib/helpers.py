@@ -32,5 +32,11 @@ def _modTag( urls, attrs, functor ):
 
 def logo_wrap( fn ):
   def wrap( self = None ):
-    return "<html><body><img src='/images/logos/logo.png'/><br><br><br><br>" + fn( self ) + "</body></html>"
+    return "<html><body><img src='/images/logos/logo.png'/><br><br><br><br><p class='lrg'>\
+            The <a href='http://diracgrid.org'>DIRAC</a> project is a complete \
+            Grid solution for a community of users needing access to \
+            distributed computing resources.</p><br><p class='lrg'>Do you want \
+            to help your community? Get <a href='https://github.com/DIRACGrid'>\
+            involved</a>!</p><br>\
+            <p class='footer'>" + fn( self ) + "</p></body></html>"
   return wrap
