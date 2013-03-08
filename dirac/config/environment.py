@@ -34,6 +34,7 @@ def load_environment( global_conf, app_conf ):
 
     # Customize templating options via this variable
     tmpl_options = config['buffet.template_options']
+    config['version'] = diracConfig['portalVersion']
 
 
 def initDIRAC( rootPath, enableDebug = False ):
@@ -64,10 +65,12 @@ def initDIRAC( rootPath, enableDebug = False ):
 
     gLogger.info( "DIRAC Initialized" )
 
+    configDict['portalVersion'] = portalVersion( rootPath )
+    gLogger.info( "DIRAC portal version: %s" % configDict['portalVersion'] )
+
     extModules = [ '%sDIRAC' % module for module in getCSExtensions() ]
     #Load web.cfg of modules
     cfgFilePaths = [ os.path.join( droot, "etc", "web.cfg" ) ]
-    print rootPath
     for extModule in extModules:
       gLogger.info( "Adding web.cfg for %s extension" % extModule )
       extModulePath = os.path.join( diracRootPath, extModule )
@@ -122,3 +125,43 @@ def initDIRAC( rootPath, enableDebug = False ):
     return configDict
 
 
+def getRelease( rootPath ):
+
+  filename = "release.notes"
+  rootPath = os.path.dirname( rootPath )
+  
+  name = os.path.join( rootPath , filename )
+  if not os.path.exists( name ):
+    print name
+    return "Unknown"
+  f = open( name , "r" )
+  version = ""
+  while len( version ) < 1:
+    version = f.readline()
+    if len( version ) == 0:
+      break
+    version = version.strip().lstrip("[").rstrip("]")
+  f.close()
+  if len( version ) < 1:
+    return "Unknown"
+  return version
+
+
+def portalVersion( rootPath ):
+
+  from DIRAC.Core.Utilities import InstallTools
+  from DIRAC.ConfigurationSystem.Client.Helpers.CSGlobals import getCSExtensions
+
+  result = InstallTools.getInfo( getCSExtensions() )
+
+  if not result[ "OK" ]:
+    return getRelease( rootPath )
+  version = result[ "Value" ]
+
+  if not version[ "Extensions" ]:
+    return getRelease( rootPath )
+  extensions = version[ "Extensions" ]
+
+  if not extensions[ "DIRACWeb" ]:
+    return getRelease( rootPath )
+  return extensions[ "DIRACWeb" ]
