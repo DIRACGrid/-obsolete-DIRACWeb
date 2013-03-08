@@ -11,10 +11,17 @@ import urllib2
 import zipfile
 import shutil
 
+from DIRAC import rootPath
+
 basedir = sys.path[0]
 dataDir = os.path.join( basedir, 'data', 'production' )
 if not os.path.isdir( dataDir ):
   os.makedirs( dataDir, mode = 0777 )
+
+master = os.path.join( rootPath , "etc" , "web.cfg" )
+release = os.path.join( basedir , "dirac" , "web.cfg" )
+if not os.path.exists( master ):
+  shutil.copy( release , master )
 
 publicDir = os.path.join( basedir, 'dirac', 'public' )
 
