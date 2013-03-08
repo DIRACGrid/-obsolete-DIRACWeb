@@ -217,14 +217,15 @@ function initBottomFrame( pageDescription ){
 
 function showVersion(){
   return new Ext.Window({
-    width:800,
+    width:620,
     height:400,
     collapsible:false,
     layout:'fit',
+    resizable: false,
     title:'About',
     items: new Ext.Panel({
-      autoLoad: { timeout: 60 , url: 'getVersions' }
-      ,autoScroll: true
+      autoLoad: { timeout: 60 , url: 'getVersion' }
+      ,autoScroll: false
       ,bodyStyle: 'padding: 5px'
       ,border: false
     })
