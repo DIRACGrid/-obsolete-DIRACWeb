@@ -802,13 +802,13 @@ function getDatagrid( cfg ){
   if( cfg.tbar ){
     var selection = [{
         cls: 'x-btn-text-icon'
-        ,handler: function(){ grid.getSelectionModel().selectAll() }
+        ,handler: function(){ datagrid.getSelectionModel().selectAll() }
         ,icon: gURLRoot + '/images/iface/checked.gif'
         ,text: 'Select All'
         ,tooltip: 'Click to select all rows'
       },{
         cls: 'x-btn-text-icon'
-        ,handler: function(){ grid.getSelectionModel().clearSelections() }
+        ,handler: function(){ datagrid.getSelectionModel().clearSelections() }
         ,icon: gURLRoot + '/images/iface/unchecked.gif'
         ,text: 'Select None'
         ,tooltip: 'Click to uncheck selected row(s)'
