@@ -13,7 +13,7 @@ class ExternalController(BaseController):
     dn = getUserDN()
     user = getUsername()
     group = getSelectedGroup()
-    gLogger.always( "User: %s, Group: %s, DN: %s" % ( user , group , dn )
+    gLogger.always( "User: %s, Group: %s, DN: %s" % ( user , group , dn ) )
     if dn and user == "anonymous":
       return render("/register.mako")
     if not dn or dn == "":
