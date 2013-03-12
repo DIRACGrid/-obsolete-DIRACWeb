@@ -1,8 +1,8 @@
 # -*- coding: utf-8 -*-
 
-<%include file="header.html"/>
+<%include file="reg_header.html"/>
 
 <div class="main-container">
-<%include file="conditions.html"/>
+<%include file="reg_conditions.html"/>
 
-<%include file="footer.html"/>
+<%include file="reg_footer.html"/>
