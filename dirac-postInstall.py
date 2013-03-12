@@ -23,6 +23,18 @@ release = os.path.join( basedir , "dirac" , "web.cfg" )
 if not os.path.exists( master ):
   shutil.copy( release , master )
 
+tarName = os.path.join( basedir, 'tarballs', 'html', 'site.tar.gz' )
+targetDir = os.path.join( rootPath , "webRoot" , 'www' )
+if os.system( 'tar xzkf %s -C %s' % ( tarName , targetDir ) ):
+  sys.exit( 1 )
+
+html = [ "footer" , "header" , "conditions" , "form" , "done" ]
+for name in html:
+  fname = "reg_%s.html" % name
+  tpath = os.path.join( rootPath , "webRoot" , "www" , fname )
+  if os.path.exists( tpath ):
+    os.symlink( tpath , os.path.join( basedir , "dirac" , "templates" , fname ) )
+
 publicDir = os.path.join( basedir, 'dirac', 'public' )
 
 jsTarballsDir = os.path.join( basedir, 'tarballs', 'js' )
