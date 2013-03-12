@@ -213,28 +213,34 @@ class GeneralController( BaseController ):
     elif "send_message" in request.params:
       return self.__sendMessage()
     elif "registration_request" in request.params:
-      return self.__registerUser()
+      return self.registerUser()
     else:
       return { "success" : "false" , "error" : "Request parameters are not defined"}
 ################################################################################
 
 
 
-  def alreadyRequested( self , email = False ):
+  def registerRequest( self , dn , email ):
+
+    """
+    Save hash made of email address to a profile REG_PROFILE_NAME
+    Return S_OK, S_ERROR
+    """
+
+    upc = UserProfileClient( REG_PROFILE_NAME , getRPCClient )
+    return upc.storeVar( dn , email )
+
+
+
+  def isRequested( self , dn ):
 
     """
     Checks if the email already saved as registration request key or not
     Return True or False
     """
     
-    if not email:
-      return True
     upc = UserProfileClient( REG_PROFILE_NAME , getRPCClient )
-    result = upc.retrieveVar( email )
-    gLogger.info( result )
-    if result[ "OK" ]:
-      return True
-    return False
+    return upc.retrieveVar( dn )
 
 
 
@@ -492,7 +498,7 @@ class GeneralController( BaseController ):
       gLogger.error( "Service response: %s" % error )
       return { "success" : "false" , "error" : error }
 
-    sendDict = self.__getMailDict( users )
+    sendDict = self.getMailDict( users )
     if not len( sendDict ) > 0:
       error = "Can't get a mail address for users in %s group" % group
       gLogger.debug( "Service response: %s" % error )
@@ -510,8 +516,8 @@ class GeneralController( BaseController ):
     return self.sendMail( sendDict , title , body , email )
 
 
-
-  def __registerUser( self ):
+  @jsonify
+  def registerUser( self ):
 
     """
     This function is used to notify DIRAC admins about user registration request
@@ -544,10 +550,15 @@ class GeneralController( BaseController ):
       return { "success" : "false" , "error" : error }
     userMail = request.params[ "email" ]
 
-    if self.alreadyRequested( userMail ):
-      error = "Request associated with %s already registered" % userMail
-      gLogger.debug( "Service response: %s" % error )
-      return { "success" : "false" , "error" : error }
+    result = self.isRequested( userMail ):
+    gLogger.debug( result )
+    if result[ "OK" ]:
+      return render( "registered.mako" )
+
+    result = self.registerRequest( dn , userMail ):
+    gLogger.debug( result )
+    if not result[ "OK" ]:
+      return { "success" : "false" , "error" : result[ "Message" ] }
 
     vo = fromChar( request.params[ "vo" ] )
     if not vo:
@@ -574,7 +585,7 @@ class GeneralController( BaseController ):
     adminList = uniqueElements( adminList )
     gLogger.info( "Chosen admin(s): %s" % adminList )
     
-    sendDict = self.__getMailDict( adminList )
+    sendDict = self.getMailDict( adminList )
     if not len( sendDict ) > 0:
       error = "Can't get in contact with administrators about your request\n"
       error = error + "Most likely this DIRAC instance is not configured yet"
