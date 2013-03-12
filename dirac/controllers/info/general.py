@@ -21,9 +21,6 @@ class GeneralController( BaseController ):
   def diracOverview( self ):
     return render( "/info/diracOverview.mako" )
 
-  def ext4test( self ):
-    return render( "/info/ext4test.mako" )
-
   @jsonify
   def proxyUpload(self):
     """
@@ -553,7 +550,7 @@ class GeneralController( BaseController ):
     result = self.isRequested( userMail ):
     gLogger.debug( result )
     if result[ "OK" ]:
-      return render( "registered.mako" )
+      return render( "reg_done.mako" )
 
     result = self.registerRequest( dn , userMail ):
     gLogger.debug( result )
