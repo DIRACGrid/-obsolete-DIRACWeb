@@ -15,9 +15,9 @@ class ExternalController(BaseController):
     group = getSelectedGroup()
     gLogger.always( "User: %s, Group: %s, DN: %s" % ( user , group , dn ) )
     if dn and user == "anonymous":
-      return render("/register.mako")
+      return render("/reg_form.mako")
     if not dn or dn == "":
-      return render("/info.mako")
+      return render("/reg_info.mako")
 
     if "site" not in request.params:
       c.select =  gConfig.getValue( "/Website/DefaultExternalURL", "http://diracgrid.org" )
