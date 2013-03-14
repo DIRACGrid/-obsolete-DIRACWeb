@@ -1,3 +1,10 @@
+[v1r0p0]
+NEW: Switch to DIRAC standard version notation
+NEW: web.cfg is taken from <DIRACROOT>/etc/web.cfg
+NEW: Favicon taken from CS option
+NEW: Add about menu entry
+NEW: Portal version is displayed at startup
+
 [web2013022201]
 NEW: Selectors shows compatible metadata in DFC page
 NEW: SystemAdministration page has a refresh button on component logs
