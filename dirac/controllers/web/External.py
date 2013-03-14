@@ -2,6 +2,7 @@ from dirac.lib.base import *
 from DIRAC import gConfig, gLogger
 from dirac.lib.credentials import getUserDN, getUsername
 from dirac.lib.credentials import getSelectedGroup, checkUserCredentials
+from DIRAC.FrameworkSystem.Client.UserProfileClient import UserProfileClient
 
 class ExternalController(BaseController):
 
@@ -15,7 +16,12 @@ class ExternalController(BaseController):
     group = getSelectedGroup()
     gLogger.always( "User: %s, Group: %s, DN: %s" % ( user , group , dn ) )
     if dn and user == "anonymous":
-      return render("/reg_form.mako")
+      upc = UserProfileClient( REG_PROFILE_NAME , getRPCClient )
+      result =  upc.retrieveVar( dn )
+      if result[ "OK" ]:
+        return render( "/reg_done.mako" )
+      else:
+        return render("/reg_form.mako")
     if not dn or dn == "":
       return render("/reg_info.mako")
 
