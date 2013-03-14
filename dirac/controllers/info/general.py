@@ -547,12 +547,12 @@ class GeneralController( BaseController ):
       return { "success" : "false" , "error" : error }
     userMail = request.params[ "email" ]
 
-    result = self.isRequested( userMail ):
+    result = self.isRequested( userMail )
     gLogger.debug( result )
     if result[ "OK" ]:
-      return render( "reg_done.mako" )
+      return render( "/reg_done.mako" )
 
-    result = self.registerRequest( dn , userMail ):
+    result = self.registerRequest( dn , userMail )
     gLogger.debug( result )
     if not result[ "OK" ]:
       return { "success" : "false" , "error" : result[ "Message" ] }
