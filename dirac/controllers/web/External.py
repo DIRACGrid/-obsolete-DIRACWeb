@@ -19,6 +19,7 @@ class ExternalController(BaseController):
       upc = UserProfileClient( REG_PROFILE_NAME , getRPCClient )
       result =  upc.retrieveVar( dn )
       if result[ "OK" ]:
+        c.sent = result[ "Value" ]
         return render( "/reg_done.mako" )
       else:
         return render("/reg_form.mako")
