@@ -12,7 +12,8 @@ from dirac.lib.diset import getRPCClient, getTransferClient
 from dirac.lib.credentials import getUsername, getSelectedGroup, getSelectedSetup
 
 from DIRAC import S_OK, S_ERROR, gLogger, gConfig
-from DIRAC.Core.Utilities import Time, List, DictCache
+from DIRAC.Core.Utilities import Time, List
+from DIRAC.Core.Utilities.DictCache import DictCache
 from DIRAC.Core.Security import CS
 from DIRAC.AccountingSystem.Client.ReportsClient import ReportsClient
 from dirac.lib.webBase import defaultRedirect
