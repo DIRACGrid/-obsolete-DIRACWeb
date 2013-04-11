@@ -24,7 +24,7 @@ if not os.path.exists( master ):
   print "Moving web.cfg to <DIRACROOT>/etc/ directory"
   shutil.copy( release , master )
 
-tarName = os.path.join( basedir, 'tarballs', 'html', 'default.tar.gz' )
+tarName = os.path.join( basedir, 'tarballs', 'html', 'welcomePage.tar.gz' )
 targetDir = os.path.join( rootPath , "webRoot" , 'www' )
 print "Deploying web site files to %s" % targetDir
 os.system( 'tar xzkf %s -C %s' % ( tarName , targetDir ) )
