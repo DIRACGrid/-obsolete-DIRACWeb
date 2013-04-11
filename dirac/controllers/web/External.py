@@ -1,5 +1,8 @@
 from dirac.lib.base import *
 from DIRAC import gConfig, gLogger
+from dirac.lib.credentials import getUserDN, getUsername
+from dirac.lib.credentials import getSelectedGroup, checkUserCredentials
+from DIRAC.FrameworkSystem.Client.UserProfileClient import UserProfileClient
 
 class ExternalController(BaseController):
 
@@ -7,6 +10,27 @@ class ExternalController(BaseController):
     return self.display() 
 
   def display(self):
+    checkUserCredentials()
+    dn = getUserDN()
+    user = getUsername()
+    group = getSelectedGroup()
+    gLogger.always( "User: %s, Group: %s, DN: %s" % ( user , group , dn ) )
+    if dn and user == "anonymous":
+      upc = UserProfileClient( REG_PROFILE_NAME , getRPCClient )
+      result =  upc.retrieveVar( dn )
+      if result[ "OK" ]:
+        c.sent = result[ "Value" ]
+        return render( "/reg_done.mako" )
+      else:
+        return render("/reg_form.mako")
+    if not dn or dn == "":
+      return render("/reg_info.mako")
+
+    if "site" not in request.params:
+      c.select =  gConfig.getValue( "/Website/DefaultExternalURL", "http://diracgrid.org" )
+      return render( "web/External.mako" )
+
+    # No idea what this code should do...
     if request.params.has_key( "site" ) and len( request.params[ "site" ] ) > 0:
       if str( request.params[ "site" ] ) != "All":
         c.select = str( request.params[ "site" ] )
@@ -19,7 +43,6 @@ class ExternalController(BaseController):
             except Exception,x:
               gLogger.error("Exception: %s" % str(x))
               pass
-    else:
-      c.select =  gConfig.getValue( "/Website/DefaultExternalURL", "http://diracgrid.org" )
+
     return render( "web/External.mako" )
 
