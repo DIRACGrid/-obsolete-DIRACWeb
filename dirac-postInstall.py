@@ -21,7 +21,23 @@ if not os.path.isdir( dataDir ):
 master = os.path.join( rootPath , "etc" , "web.cfg" )
 release = os.path.join( basedir , "dirac" , "web.cfg" )
 if not os.path.exists( master ):
+  print "Moving web.cfg to <DIRACROOT>/etc/ directory"
   shutil.copy( release , master )
+
+tarName = os.path.join( basedir, 'tarballs', 'html', 'welcomePage.tar.gz' )
+targetDir = os.path.join( rootPath , "webRoot" , 'www' )
+print "Deploying web site files to %s" % targetDir
+os.system( 'tar xzkf %s -C %s' % ( tarName , targetDir ) )
+# keep-file option is always throwing an error
+
+html = [ "footer" , "header" , "conditions" , "form" , "done" ]
+for name in html:
+  fname = "reg_%s.html" % name
+  tpath = os.path.join( rootPath , "webRoot" , "www" , "templates" , fname )
+  lpath = os.path.join( basedir , "dirac" , "templates" , fname )
+  if ( os.path.exists( tpath ) ) and not ( os.path.exists( lpath ) ):
+    print "Creating link: %s %s" % ( tpath , lpath )
+    os.symlink( tpath , lpath )
 
 publicDir = os.path.join( basedir, 'dirac', 'public' )
 
