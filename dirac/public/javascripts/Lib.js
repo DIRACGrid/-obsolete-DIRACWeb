@@ -823,7 +823,7 @@ function getDatagrid( cfg ){
     ,labelAlign: cfg.labelAlign ? cfg.labelAlign : 'left'
     ,loadMask: cfg.loadMask ? cfg.loadMask : true
     ,margins: cfg.margins ? cfg.margins : '2 0 2 0'
-    ,menu: cfg.menu ? cfg.menu : new Ext.menu.Menu()
+    ,menu: cfg.menu ? cfg.menu : function(){ return new Ext.menu.Menu() }
     ,region: cfg.region ? cfg.region : 'center'
     ,sm: cfg.params ? cfg.params : undefined
     ,split: cfg.split ? cfg.split : true

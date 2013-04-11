@@ -124,10 +124,21 @@ function querySelector( metaname , type ){
     ,menu: menu
     ,value: '='
   });
-  var selector = createRemoteMenu({
-    baseParams: { getValue : metaname }
-    ,name: metaname
-    ,url: 'getMetadata'
+  var selector = new Ext.form.ComboBox({
+    anchor: '-15',
+    displayField: 'name',
+    emptyText: 'Select item from the menu',
+    fieldLabel: metaname,
+    forceSelection: true,
+    name: metaname,
+    selectOnFocus: true,
+    store: new Ext.data.JsonStore({
+      baseParams: { getValue: metaname },
+      fields: [ 'name' ],
+      root: 'result',
+      url: 'getMetadata'
+    }),
+    typeAhead:true
   });
   selector.forceSelection = false;
   if( type == 'datetime' ){
@@ -366,7 +377,23 @@ function initQueryPanel( selection ){
   }) ;
   var reg = new RegExp( /^[a-zA-Z0-9\"\'\|\{\}\.\/;\\\[\]\-=+_,`()%\^\$#!@~&*:<>\? ]+$/ ) ;
   var altText = 'Valid characters are corresponds to IBM PC keyboard layout' ;
-  var path = genericID( 'dfc_path' , '' , reg , altText ) ;
+  var value = '';
+  try{
+    value = dataSelect.extra.name;
+    delete dataSelect.extra.name;
+  }catch(e){}
+  var path =  new Ext.form.TextField({
+    anchor:'-15',
+    allowBlank:true,
+    enableKeyEvents:true,
+    fieldLabel:'',
+    mode:'local',
+    name:'dfc_path',
+    regex:reg,
+    regexText:altText,
+    selectOnFocus:true,
+    value:value
+  })
   path.on( 'valid' , addPath2Store ) ;
   path.setValue( '/' ) ;
   var pathReset = new Ext.Button({
@@ -526,29 +553,18 @@ function gridContainer(  config  ){
   return grid
 }
 function initFilesPanel(){
-  var record = new Ext.data.Record.create([{
-    name: 'filename'
-  },{
-    name: 'size'
-  },{
-    dateFormat:'Y-n-j h:i:s'
-    ,name: 'date'
-    ,type: 'date'
-  },{
-    name: 'metadata'
-  }]);
-  var columns = [{
-    dataIndex:'filename'
-    ,fixed:true
-    ,header:''
-    ,hideable:false
-    ,id:'checkBox'
-    ,menuDisabled:true
-    ,name:'checkBox'
-    ,renderer:chkBox
-    ,sortable:false
-    ,width: 26
-  },{
+  var record = new Ext.data.Record.create([
+    { name: 'filename' }
+    ,{ name: 'size' }
+    ,{ dateFormat:'Y-n-j h:i:s' , name: 'date' , type: 'date' }
+    ,{ name: 'metadata' }
+  ]);
+  var sm = new Ext.grid.CheckboxSelectionModel({
+    header: ''
+  }) ;
+  var columns = [
+    sm
+  ,{
     align:'left'
     ,dataIndex: 'filename'
     ,header: 'File Name'
@@ -556,14 +572,12 @@ function initFilesPanel(){
   },{
     align:'left'
     ,dataIndex: 'size'
-    ,fixed: true
     ,header: 'Size'
     ,sortable: true
     ,width: 120
   },{
     align:'left'
     ,dataIndex: 'date'
-    ,fixed: true
     ,header: 'Date'
     ,renderer: Ext.util.Format.dateRenderer( 'Y-m-d H:i' )
     ,sortable: true
@@ -582,20 +596,7 @@ function initFilesPanel(){
     ,view: new Ext.grid.GridView({ autoFill: true , forceFit: true })
     ,url: 'submit'
   });
-  store.on( 'beforeload' , function(){
-    try{
-      gMainLayout.container.mask('Loading...');
-    }catch(e){}
-  }) ;
-  store.on( 'loadexception' , function(){
-    try{
-      gMainLayout.container.unmask();
-    }catch(e){}
-  }) ;
   store.on( 'load' , function(records){
-    try{
-      gMainLayout.container.unmask();
-    }catch(e){}
     var disable = true;
     if(records && records.totalLength && records.totalLength > 0){
       disable = false;
@@ -610,32 +611,18 @@ function initFilesPanel(){
       }catch(e){}
     }
   });
-  var tbar = [{
-    cls               : 'x-btn-text-icon'
-    ,handler          : function(){ selectAll( 'all' ) }
-    ,disabled         : true
-    ,icon             : gURLRoot + '/images/iface/checked.gif'
-    ,text             : 'Select All'
-    ,tooltip          : 'Click to select all rows'
-  },{
-    cls:"x-btn-text-icon",
-    handler:function(){selectAll('none')},
-    disabled:true,
-    icon:gURLRoot+'/images/iface/unchecked.gif',
-    text:'Select None',
-    tooltip:'Click to uncheck selected row(s)'
-  },'->',new Ext.Toolbar.SplitButton({
+  var tbar = [ new Ext.Toolbar.SplitButton({
     cls:"x-btn-text-icon",
     handler:function(){
-      showFiles(', ');
+      showFiles( dataTable , ', ');
     },
     disabled:true,
     icon:gURLRoot+'/images/iface/jdl.gif',
     menu: new Ext.menu.Menu({
 		  items: [
-        {handler: function(){ showFiles(' ') } , text : 'Space separated' },
-        {handler: function(){ showFiles(', ') } , text : 'Comma separated' },
-        {handler: function(){ showFiles('; ') } , text: 'Semicolon separated' },
+        {handler: function(){ showFiles( dataTable , ' ') } , text : 'Space separated' },
+        {handler: function(){ showFiles( dataTable , ', ') } , text : 'Comma separated' },
+        {handler: function(){ showFiles( dataTable , '; ') } , text: 'Semicolon separated' },
 		  ]
 		}),
     text:'Export',
@@ -651,6 +638,7 @@ function initFilesPanel(){
     text:'Save',
     tooltip:'Click to save selected data'
   }];
+  /*
   var dataTable = new Ext.grid.GridPanel({
     autoHeight:false,
     bbar: new Ext.PagingToolbar({
@@ -670,6 +658,19 @@ function initFilesPanel(){
     tbar:tbar
     ,view: new Ext.grid.GridView({ autoFill: true , forceFit: true })
   });
+  */
+  var dataTable = new getDatagrid({
+    autorefresh: true
+    ,disableIPP: true
+    ,columns: columns
+    ,region: 'center'
+    ,menu: undefined
+    ,sm: sm
+    ,split: true
+    ,store: store
+    ,tbar: tbar
+    ,view: new Ext.grid.GridView({ autoFill: true , forceFit: true })
+  });
   gBroker.filesPanel = dataTable;
   return dataTable
 }
@@ -682,44 +683,11 @@ function keepButtonSize(panel,button){
   panel.add(tmpButton);
 }
 
-/*
-function addMenu(){
-  var menu = new Ext.menu.Menu({ items:[
-    {handler: function(){ showFiles(' ') } , text : 'Space separated' },
-    {handler: function(){ showFiles(', ') } , text : 'Comma separated' },
-    {handler: function(){ showFiles('; ') } , text: 'Semicolon separated' },
-    '-'
-  ]});
-  var button = Ext.getCmp('mainTopbarToolsButton');
-  if( Ext.isEmpty( button ) ){
-    return
-  }
-  var originalMenu = button.menu;
-  if( Ext.isEmpty( originalMenu) ){
-    return
-  }
-  var originalLength = originalMenu.items.items.length;
-  var length = menu.items.items.length;
-  if(length > 0 && !originalLength > 0){
-    menu.remove(menu.items.items[length-1]);
-  }
-  length = menu.items.items.length;
-  if(length > 0){
-    for(i=0; i<length; i++){
-      originalMenu.insert(i,menu.items.items[i]);
-    }
-  }
-  button.menu = originalMenu;
-}
-*/
-
-function showFiles( separator ){
-  var items = new Array();
-  var inputs = document.getElementsByTagName( 'input' );
-  for( var k = 0 ; k < inputs.length ; k++ ){
-    if( inputs[ k ].checked === true ){
-      items.push( inputs[ k ].id );
-    }
+function showFiles( grid , separator ){
+  var record = grid.getSelectionModel().getSelections();
+  var items = [];
+  for( var k = 0 ; k < record.length ; k++ ){
+    items.push( record[ k ].get( 'filename' ) );
   }
   if( items.length < 1 ){
     return showError( 'No files were selected' );
@@ -812,3 +780,4 @@ function metastatus( value ){
     return '<img src="' + gURLRoot + '/images/monitoring/unknown.gif">' ;
   }
 }
+function afterDataLoad(){}
