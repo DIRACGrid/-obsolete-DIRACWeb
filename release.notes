@@ -1,3 +1,6 @@
+[v1r0p1]
+FIX: Change import in accounting plot acontroller
+
 [v1r0p0]
 NEW: Switch to DIRAC standard version notation
 NEW: web.cfg is taken from <DIRACROOT>/etc/web.cfg
