@@ -158,10 +158,10 @@ def portalVersion( rootPath ):
     return getRelease( rootPath )
   version = result[ "Value" ]
 
-  if not version[ "Extensions" ]:
+  if not "Extensions" in version:
     return getRelease( rootPath )
   extensions = version[ "Extensions" ]
 
-  if not extensions[ "DIRACWeb" ]:
+  if not "DIRACWeb" in extensions:
     return getRelease( rootPath )
   return extensions[ "DIRACWeb" ]
