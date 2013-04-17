@@ -1,5 +1,7 @@
+import os
+
 from dirac.lib.base import *
-from DIRAC import gConfig, gLogger
+from DIRAC import gConfig, gLogger, rootPath
 from dirac.lib.credentials import getUserDN, getUsername
 from dirac.lib.credentials import getSelectedGroup, checkUserCredentials
 from DIRAC.FrameworkSystem.Client.UserProfileClient import UserProfileClient
@@ -15,6 +17,15 @@ class ExternalController(BaseController):
     user = getUsername()
     group = getSelectedGroup()
     gLogger.always( "User: %s, Group: %s, DN: %s" % ( user , group , dn ) )
+    templates = [ "reg_%s.mako" % i for i in [ "done" , "form" , "info" ] ]
+    html = [ "reg_%s.html" % i for i in [ "footer" , "header" , "conditions" , "form" , "done" ] ]
+    files = templates + html
+    basedir = os.path.join( rootPath , "Web" , "dirac" , "templates" )
+    for i in files:
+      f = os.path.join( basedir , i )
+      if not os.path.exists( f ):
+        gLogger.error( "File does not exists: %s" % f )
+        return render( "web/External.mako" )
     if dn and user == "anonymous":
       upc = UserProfileClient( REG_PROFILE_NAME , getRPCClient )
       result =  upc.retrieveVar( dn )
@@ -45,4 +56,3 @@ class ExternalController(BaseController):
               pass
 
     return render( "web/External.mako" )
-
