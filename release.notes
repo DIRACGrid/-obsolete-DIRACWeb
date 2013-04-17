@@ -1,3 +1,6 @@
+[v1r0p3]
+FIX: Check if templates are exists
+
 [v1r0p2]
 FIX: Better check for presence of an element in a list
 
