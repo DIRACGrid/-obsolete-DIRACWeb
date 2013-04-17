@@ -1,3 +1,7 @@
+[v1r0p4]
+FIX: Icon path should be a string
+FIX: Add missing import and rename UP used to store registration requests
+
 [v1r0p3]
 FIX: Check if templates are exists
 
