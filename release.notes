@@ -1,3 +1,6 @@
+[v1r0p2]
+FIX: Better check for presence of an element in a list
+
 [v1r0p1]
 FIX: Change import in accounting plot acontroller
 
