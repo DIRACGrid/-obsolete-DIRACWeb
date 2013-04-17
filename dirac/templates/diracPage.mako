@@ -40,7 +40,7 @@ pageTitle = "%s as %s@%s" % ( pageTitle, selectedGroup, selectedSetup )
  <body>
   <script type="text/javascript">
    var pageDescription = ${ jsDiracPageObject };
-   var jsicon = ${ icon };
+   var jsicon = "${ icon }";
    initDiracPage( "${ h.url_for( '/' ) }", pageDescription, jsicon);
   </script>
   ${self.body()}

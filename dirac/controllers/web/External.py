@@ -2,6 +2,7 @@ import os
 
 from dirac.lib.base import *
 from DIRAC import gConfig, gLogger, rootPath
+from dirac.lib.diset import getRPCClient
 from dirac.lib.credentials import getUserDN, getUsername
 from dirac.lib.credentials import getSelectedGroup, checkUserCredentials
 from DIRAC.FrameworkSystem.Client.UserProfileClient import UserProfileClient
@@ -27,7 +28,7 @@ class ExternalController(BaseController):
         gLogger.error( "File does not exists: %s" % f )
         return render( "web/External.mako" )
     if dn and user == "anonymous":
-      upc = UserProfileClient( REG_PROFILE_NAME , getRPCClient )
+      upc = UserProfileClient( "Registration" , getRPCClient )
       result =  upc.retrieveVar( dn )
       if result[ "OK" ]:
         c.sent = result[ "Value" ]
