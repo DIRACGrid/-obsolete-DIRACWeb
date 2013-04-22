@@ -14,8 +14,8 @@ import dirac.lib.credentials as credentials
 
 log = logging.getLogger(__name__)
 
-R_NUMBER = 25 #
-P_NUMBER = 0 # 
+L_NUMBER = 25 #
+S_NUMBER = 0 # 
 
 class MetacatalogController(BaseController):
   __imgCache = DictCache()
@@ -37,13 +37,16 @@ class MetacatalogController(BaseController):
     RPC = getRPCClient( "DataManagement/FileCatalog" )
     req = self.__request()
     gLogger.debug( "submit: incoming request %s" % req )
-    result = RPC.findFilesByMetadataDetailed( req["selection"] , req["path"] )
+    result = RPC.findFilesByMetadataWeb( req["selection"] , req["path"] , S_NUMBER , L_NUMBER)
     gLogger.debug( "submit: result of findFilesByMetadataDetailed %s" % result )
     if not result[ "OK" ] :
       gLogger.error( "submit: %s" % result[ "Message" ] )
       return { "success" : "false" , "error" : result[ "Message" ] }
     result = result[ "Value" ]
     gLogger.always( "Result of findFilesByMetadataDetailed %s" % result )
+
+    total = result[ "TotalRecords" ]
+    result = result[ "Records" ]
 
     if not len(result) > 0:
       return { "success" : "true" , "result" : {} , "total" : 0 }
@@ -70,14 +73,14 @@ class MetacatalogController(BaseController):
 ################################################################################
   def __request(self):
     req = { "selection" : {} , "path" : "/" }  
-    global R_NUMBER
-    global P_NUMBER
-    R_NUMBER = 25
+    global L_NUMBER
+    global S_NUMBER
+    L_NUMBER = 25
     if request.params.has_key( "limit" ) and len( request.params[ "limit" ] ) > 0:
-      R_NUMBER = int( request.params[ "limit" ] )
-    P_NUMBER = 0
+      L_NUMBER = int( request.params[ "limit" ] )
+    S_NUMBER = 0
     if request.params.has_key( "start" ) and len( request.params[ "start" ] ) > 0:
-      P_NUMBER = int( request.params[ "start" ] )
+      S_NUMBER = int( request.params[ "start" ] )
     result = gConfig.getOption( "/Website/ListSeparator" )
     if result[ "OK" ] :
       separator = result[ "Value" ]
