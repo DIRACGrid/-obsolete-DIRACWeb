@@ -1,3 +1,6 @@
+[v1r1p0]
+NEW: Support for paggination in MetaData catalog page
+
 [v1r0p4]
 FIX: Icon path should be a string
 FIX: Add missing import and rename UP used to store registration requests
