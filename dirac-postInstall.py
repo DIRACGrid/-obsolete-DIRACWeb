@@ -11,17 +11,16 @@ import urllib2
 import zipfile
 import shutil
 
-from DIRAC import rootPath
-
 basedir = sys.path[0]
 dataDir = os.path.join( basedir, 'data', 'production' )
 if not os.path.isdir( dataDir ):
   os.makedirs( dataDir, mode = 0777 )
 
+rootPath = os.path.dirname( basedir )
+
 master = os.path.join( rootPath , "etc" , "web.cfg" )
 release = os.path.join( basedir , "dirac" , "web.cfg" )
 if not os.path.exists( master ):
-  print "Moving web.cfg to <DIRACROOT>/etc/ directory"
   shutil.copy( release , master )
 
 tarName = os.path.join( basedir, 'tarballs', 'html', 'welcomePage.tar.gz' )

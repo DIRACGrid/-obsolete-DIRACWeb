@@ -122,6 +122,7 @@ function initTopFrame( pageDescription ){
   navItems.push( setupButton );
   
   if( 'voIcon' in pageDescription )
+  {
 	  var iconLocation = pageDescription[ 'voIcon' ];
 	  while( iconLocation[0 ] == "/" )
 		  iconLocation = iconLocation.substring( 1, iconLocation.length );
@@ -132,6 +133,7 @@ function initTopFrame( pageDescription ){
 	    	  click : function(){ window.open( pageDescription[ 'voURL' ], '_newtab' ) }
 	      },
 	  } ) );
+  };
 
   var topBar = Ext.create( 'Ext.toolbar.Toolbar', {
     id:'diracTopBar',
