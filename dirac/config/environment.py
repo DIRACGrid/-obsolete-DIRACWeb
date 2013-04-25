@@ -51,6 +51,7 @@ def initDIRAC( rootPath, enableDebug = False ):
     from DIRAC.Core.Base import Script
     Script.registerSwitch( "r", "reload", "Reload for pylons" )
     Script.localCfg.addDefaultEntry( "/DIRAC/Security/UseServerCertificate", "yes" )
+    Script.localCfg.addDefaultEntry( "LogColor", True )
     Script.initialize( script = "Website", ignoreErrors = True, initializeMonitor = False )
     gLogger._systemName = "Framework"
     gLogger.initialize( "Web", "/Website" )
