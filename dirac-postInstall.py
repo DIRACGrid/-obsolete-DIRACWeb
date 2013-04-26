@@ -16,7 +16,7 @@ dataDir = os.path.join( basedir, 'data', 'production' )
 if not os.path.isdir( dataDir ):
   os.makedirs( dataDir, mode = 0777 )
 
-rootPath = os.path.dirname( basedir )
+rootPath = os.path.dirname( os.path.dirname( os.path.realpath( __file__ ) ) )
 
 master = os.path.join( rootPath , "etc" , "web.cfg" )
 release = os.path.join( basedir , "dirac" , "web.cfg" )
