@@ -123,6 +123,8 @@ function querySelector( metaname , type ){
     fieldLabel: metaname,
     forceSelection: true,
     name: metaname,
+    loadingText: 'Loading...',
+    mode: 'remote',
     selectOnFocus: true,
     store: new Ext.data.JsonStore({
       baseParams: { getValue: metaname },
@@ -207,6 +209,14 @@ function querySelector( metaname , type ){
 }
 function getMetadata( selector ){
   var params = new Object();
+  var path = "/"
+  try{
+    var store = gBroker.filesPanel.getStore();
+    path = store.path;
+  }catch( error ){
+    showError( 'Failed to get directory path. Starting from root' );
+  }
+  params.path = path;
   var query = gBroker.queryPanel.items;
   if( query.getCount() < 1 ){
     return params
@@ -225,9 +235,16 @@ function getMetadata( selector ){
   return params
 }
 function getCompatible( meta , value ){
+  var path = "/"
+  try{
+    var store = gBroker.filesPanel.getStore();
+    path = store.path;
+  }catch( error ){
+    showError( 'Failed to get directory path. Starting from root' );
+  }
   Ext.Ajax.request({
     method: 'POST'
-    ,params: { meta : meta , value : value }
+    ,params: { meta : meta , value : value , path: path }
     ,success: function( response  ){
       response.responseText ? response = response.responseText : '';
       var data = Ext.util.JSON.decode( response );
@@ -344,6 +361,13 @@ function submitMetaQuery( panel ){
   store.load() ;
 }
 function initQueryPanel( selection ){
+  function resetFilter(){
+    var store = gBroker.metaPanel.getStore();
+    store.clearFilter();
+    if( store.myFilter ){
+      delete store.myFilter;
+    }
+  }
   var submit = new Ext.Button({
     cls               : 'x-btn-text-icon'
     ,handler          : function(){ submitMetaQuery( panel ) }
@@ -354,11 +378,7 @@ function initQueryPanel( selection ){
     cls: 'x-btn-text-icon'
     ,handler: function(){
       removePanelItems( panel );
-      var store = gBroker.metaPanel.getStore();
-      store.clearFilter();
-      if( store.myFilter ){
-        delete store.myFilter;
-      }
+      resetFilter();
     }
     ,icon: gURLRoot + '/images/iface/reset.gif'
     ,text: 'Reset'
@@ -410,7 +430,12 @@ function initQueryPanel( selection ){
     ,title            : 'Metadata Query'
     ,width            : 315
     ,viewConfig       : { forceFit  : true , scrollOffset : 1 }
-  }) ;
+  });
+  panel.addListener( 'remove' , function(){
+    if( panel.items.getCount < 1 ){
+      resetFilter();
+    }
+  });
   panel.addListener( 'resize' , function(){
     var width = this.getInnerWidth();
     var newSubmit = submit.cloneConfig({ minWidth  : ( ( 2 * width ) / 3 ) - 4 }) ;
@@ -453,6 +478,7 @@ function initMetaPanel( ){
     ,fields           : [ 'Name' , 'Type' ]
     ,idProperty       : 'Name'
     ,root             : 'result'
+    ,sortInfo         : { field: 'Name' , direction: 'ASC' }
     ,url              : 'action'
   });
   store.on( 'load' , function(){
