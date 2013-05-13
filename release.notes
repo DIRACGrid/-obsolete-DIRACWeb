@@ -1,3 +1,10 @@
+[v1r2p0]
+NEW: MetadataCatalog support for filter reset on selection field destroy. Current path is taking in account while looking for compatible metadata. Meta tags are sorted ASC
+FIX: Remove hardcoded value from user registration procedure
+FIX: In production monitor EventsPerJob is replaced by EventsPerTask
+FIX: Calculate root path independently of PYTHONPATH in web post install script
+NEW: Add colors to the web log file
+
 [v1r1p0]
 NEW: Support for paggination in MetaData catalog page
 
