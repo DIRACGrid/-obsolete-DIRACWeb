@@ -347,10 +347,6 @@ class GeneralController( BaseController ):
     if not len( adminList ) > 0:
       adminList = gConfig.getValue( "/Website/UserRegistrationAdmin" , [] )
 
-    if "vhamar" in adminList:
-      index = adminList.index( "vhamar" )
-      del adminList[ index ]
-
     return adminList
 
 
