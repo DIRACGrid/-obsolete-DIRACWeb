@@ -1,3 +1,6 @@
+[v1r2p1]
+FIX: Add missing tarball with html templates using for registration page
+
 [v1r2p0]
 NEW: MetadataCatalog support for filter reset on selection field destroy. Current path is taking in account while looking for compatible metadata. Meta tags are sorted ASC
 FIX: Remove hardcoded value from user registration procedure
