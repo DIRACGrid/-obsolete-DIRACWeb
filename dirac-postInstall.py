@@ -21,7 +21,10 @@ rootPath = os.path.dirname( os.path.dirname( os.path.realpath( __file__ ) ) )
 master = os.path.join( rootPath , "etc" , "web.cfg" )
 release = os.path.join( basedir , "dirac" , "web.cfg" )
 if not os.path.exists( master ):
-  shutil.copy( release , master )
+  try:
+    shutil.copy( release , master )
+  except:
+    pass
 
 tarName = os.path.join( basedir, 'tarballs', 'html', 'welcomePage.tar.gz' )
 targetDir = os.path.join( rootPath , "webRoot" , 'www' )
