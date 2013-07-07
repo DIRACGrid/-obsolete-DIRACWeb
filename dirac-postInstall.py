@@ -23,7 +23,9 @@ release = os.path.join( basedir , "dirac" , "web.cfg" )
 if not os.path.exists( master ):
   try:
     shutil.copy( release , master )
-  except:
+  except Exception, x:
+    print "Exception while copying the web.cfg to etc/"
+    print str(x)
     pass
 
 tarName = os.path.join( basedir, 'tarballs', 'html', 'welcomePage.tar.gz' )
