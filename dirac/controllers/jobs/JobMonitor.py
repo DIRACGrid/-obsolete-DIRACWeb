@@ -1,14 +1,16 @@
 import logging, datetime, tempfile
-from time import time, gmtime, strftime
+from time import time
 
-from dirac.lib.base import *
+from dirac.lib.base import BaseController, render, c, jsonify, request, response
 from dirac.lib.diset import getRPCClient, getTransferClient
-from dirac.lib.credentials import authorizeAction
-from DIRAC import gConfig, gLogger
+from DIRAC import gConfig, gLogger, S_OK
 from DIRAC.Core.Utilities.List import sortList, uniqueElements
 from DIRAC.Core.Utilities import Time
 from DIRAC.AccountingSystem.Client.ReportsClient import ReportsClient
 from DIRAC.Core.Utilities.DictCache import DictCache
+from DIRAC.WorkloadManagementSystem.Service.JobPolicy import JobPolicy, RIGHT_GET_INFO
+from DIRAC.ConfigurationSystem.Client.Helpers.Operations import Operations
+
 import dirac.lib.credentials as credentials
 #from DIRAC.Interfaces.API.Dirac import Dirac
 
@@ -25,14 +27,45 @@ class JobmonitorController(BaseController):
   def display(self):
     pagestart = time()
     group = credentials.getSelectedGroup()
-    if group == "visitor" and credentials.getUserDN == "":
+    if group == "visitor" and credentials.getUserDN() == "":
       return render("/login.mako")
     c.select = self.__getSelectionData()
     if not c.select.has_key("extra"):
       groupProperty = credentials.getProperties(group)
-      if ( "JobAdministrator" or "JobSharing" ) not in groupProperty: #len(groupProperty) == 1 and groupProperty[0] == "NormalUser":
+      if "JobAdministrator" not in groupProperty and "JobSharing" not in groupProperty:
         c.select["extra"] = {"owner":credentials.getUsername()}
     return render("jobs/JobMonitor.mako")
+################################################################################  
+  def __getEligibleOwners( self, userDN, group ):
+    """ Get users which jobs can be in principle shown in the page
+    """
+    owners = []
+    allInfo = Operations( group = group ).getValue('/Services/JobMonitoring/GlobalJobsInfo', False )
+    jobPolicy = JobPolicy( userDN, group, allInfo = allInfo )
+    result = jobPolicy.getControlledUsers( RIGHT_GET_INFO ) 
+    if not result['OK']:
+      return result
+    elif result['Value']:
+      allowedUsers = []
+      if result['Value'] != "ALL":
+        for aUser, aGroup in result['Value']:
+          allowedUsers.append( aUser )
+        allowedUsers = list( set( allowedUsers ) )  
+      RPC = getRPCClient("WorkloadManagement/JobMonitoring")
+      result = RPC.getOwners()
+      if result["OK"]:
+        if len(result["Value"])>0:
+          owners.append( str("All") )
+          for owner in result["Value"]:
+            if allowedUsers and owner in allowedUsers:
+              owners.append( str( owner ) )
+            elif not allowedUsers:
+              owners.append( str(  owner ) )
+      else:
+        gLogger.error( "RPC.getOwners() return error:", result["Message"] )
+        return result
+      
+    return S_OK( owners )  
 ################################################################################
   def __getJobSummary(self,jobs,head):
     valueList = []
@@ -45,16 +78,24 @@ class JobmonitorController(BaseController):
     pagestart = time()
     RPC = getRPCClient("WorkloadManagement/JobMonitoring")
     user = str(credentials.getUsername())
+    userDN = str(credentials.getUserDN())
+    group = str(credentials.getSelectedGroup())
     result = RPC.getOwners()
+    haveJobsToDisplay = False
     if result["OK"]:
-      defaultGroup = gConfig.getValue("/Registry/DefaultGroup","")
-      if defaultGroup == "":
-        return {"success":"false","error":"Option /Registry/DefaultGroup is undefined, please set the default group in the CS"}
-      group = str(credentials.getSelectedGroup())
-      groupProperty = credentials.getProperties(group)
-      if user not in result["Value"] and ( "JobAdministrator" or "JobSharing" ) not in groupProperty:
-        c.result = {"success":"false","error":"You don't have any jobs in the DIRAC system"}
-        return c.result
+      resultEligible = self.__getEligibleOwners( userDN, group )
+      if resultEligible['OK']:
+        for own in resultEligible['Value']:
+          if own in result["Value"]:
+            # There is something to display probably
+            haveJobsToDisplay = True
+            break
+        if not haveJobsToDisplay:  
+          c.result = {"success":"false","error":"You don't have any jobs eligible to display"}
+          return c.result  
+      else:
+        c.result = {"success":"false","error":"Failed to evaluate eligible users"}
+        return c.result      
     else:
       c.result = {"success":"false","error":result["Message"]}
       return c.result
@@ -233,25 +274,17 @@ class JobmonitorController(BaseController):
       types = [["Error happened on service side"]]
     callback["types"] = types
 ###
-    groupProperty = credentials.getProperties(group)
-    if user == "Anonymous":
-      callback["owner"] = [["Insufficient rights"]]
-    elif ( "JobAdministrator" or "JobSharing" ) not in groupProperty:
-      callback["owner"] = [["All"],[str(credentials.getUsername())]]
+    userDN = credentials.getUserDN()
+    result = self.__getEligibleOwners( userDN, group )
+    if not result['OK']:
+      callback["owner"] = [["Failed to evaluate access rights"]]
     else:
-      result = RPC.getOwners()
-      if result["OK"]:
-        owner = []
-        if len(result["Value"])>0:
-          owner.append([str("All")])
-          for i in result["Value"]:
-            owner.append([str(i)])
-        else:
-          owner = [["Nothing to display"]]
+      eligibleOwners = result['Value']
+      if not eligibleOwners:
+        callback["owner"] = [["Nothing to display"]]
       else:
-        gLogger.error("RPC.getOwners() return error: %s" % result["Message"])
-        owner = [["Error happened on service side"]]
-      callback["owner"] = owner
+        callback["owner"] = [ [str( own )] for own in eligibleOwners ]
+      
     return callback
 ################################################################################
   def __request(self):
