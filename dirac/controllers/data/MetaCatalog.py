@@ -183,10 +183,14 @@ class MetacatalogController(BaseController):
     if not "value" in request.params:
       return { "success" : "false" , "error" : "Value key is absent" }
 
+    if not "path" in request.params:
+      return { "Success" : "false", "error" : "Path key is absent"}
+
     try:
       compat = dict()
       meta = str( request.params[ "meta" ] )
       value = str( request.params[ "value" ] )
+      path = str( request.params[ "path" ] )
       if len( value ) > 0:
         compat[ meta ] = value
     except Exception, e:
@@ -194,7 +198,7 @@ class MetacatalogController(BaseController):
 
     RPC = getRPCClient( "DataManagement/FileCatalog" )
 
-    result = RPC.getCompatibleMetadata( compat )
+    result = RPC.getCompatibleMetadata( compat, path )
     gLogger.always( result )
 
     if not result[ "OK" ]:
@@ -233,7 +237,7 @@ class MetacatalogController(BaseController):
 
     RPC = getRPCClient( "DataManagement/FileCatalog" )
 
-    result = RPC.getCompatibleMetadata( compat )
+    result = RPC.getCompatibleMetadata( compat, '/' )
     gLogger.always( result )
 
     if not result[ "OK" ]:
