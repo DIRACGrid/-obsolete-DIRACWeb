@@ -23,7 +23,7 @@ class MetacatalogController(BaseController):
   def display(self):
     pagestart = time()
     group = credentials.getSelectedGroup()
-    if group == "visitor" and credentials.getUserDN == "":
+    if group == "visitor" and not credentials.getUserDN():
       return render("/login.mako")
 #    c.select = self.__getSelectionData()
 #    if not c.select.has_key("extra"):
