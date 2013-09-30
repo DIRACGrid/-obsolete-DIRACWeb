@@ -1,3 +1,13 @@
+[v1r3p1]
+
+FIX: FileCatalog page takes properly the user credentials into account
+FIX: FileCatalog page - bug fixed in getting compatible metadata
+FIX: FileCatalog page - proper pagination of selected files
+
+[v1r3]
+
+NEW: enabled use of JobPolicy in the JobMonitor
+
 [v1r2p1]
 FIX: Add missing tarball with html templates using for registration page
 
