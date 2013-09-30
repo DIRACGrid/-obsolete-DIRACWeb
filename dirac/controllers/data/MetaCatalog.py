@@ -69,7 +69,7 @@ class MetacatalogController(BaseController):
 
       callback.append({ "filename" : key , "date" : date , "size" : size ,
                             "metadata" : meta })
-    return { "success" : "true" , "result" : callback , "total" : len( callback )}
+    return { "success" : "true" , "result" : callback , "total" : total}
 ################################################################################
   def __request(self):
     req = { "selection" : {} , "path" : "/" }  
