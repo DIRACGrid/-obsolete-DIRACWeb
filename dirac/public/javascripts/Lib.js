@@ -780,8 +780,8 @@ function getDatagrid( cfg ){
     var newvalue = this.getValue();
     var current = bbar.pageSize;
     if( current != newvalue ){
-      bbar.pageSize = newvalue;
-      //we now need to get to page 1, still looking for the solution
+      bbar.pageSize = newvalue/1;
+      datagrid.getStore().load();
     }
   });
   if( ! cfg.disableIPP ){
