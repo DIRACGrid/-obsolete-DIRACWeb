@@ -615,19 +615,16 @@ function initFilesPanel(){
     ,url: 'submit'
   });
   store.on('loadexception',function(){
-    if(store.reader.jsonData){
-      try{
-        if( store.reader.jsonData.success == 'false' ){
-          if( ! Ext.isEmpty(store.reader.jsonData.error ){
-            alert( store.reader.jsonData.error );
-          }else{
-            alert( "Undefined error. Maybe trying again will solve the problem. Otherwise, see with the experts.")
-          }
+    // If the returned JSON data is not correct
+    try{
+      if( store.reader.jsonData.success == 'false' ){
+        if( ! Ext.isEmpty(store.reader.jsonData.error ){
+          alert( store.reader.jsonData.error );
+        }else{
+          alert( "Undefined error. Maybe trying again will solve the problem. Otherwise, see with the experts.")
         }
-      }catch(e){
-        alert("There is an exception while loading data. Please, refresh table");
-      }  
-    }else{
+      }
+    }catch(e){
       alert("There is an exception while loading data. Please, refresh table");
     }
     dataTable.getStore().removeAll();
