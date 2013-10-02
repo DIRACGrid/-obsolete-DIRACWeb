@@ -619,6 +619,7 @@ function initFilesPanel(){
       if(store.reader.jsonData){
         if(store.reader.jsonData.success == 'false'){
           alert(store.reader.jsonData.error);
+          dataTable.getStore().removeAll();
         }
       }else{
         alert("There is an exception while loading data. Please, refresh table");
