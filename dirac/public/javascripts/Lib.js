@@ -781,6 +781,7 @@ function getDatagrid( cfg ){
     var current = bbar.pageSize;
     if( current != newvalue ){
       bbar.pageSize = newvalue/1;
+      datagrid.getStore().baseParams[ 'limit' ] = newvalue/1;
       datagrid.getStore().load();
     }
   });
