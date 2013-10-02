@@ -37,8 +37,8 @@ class MetacatalogController(BaseController):
     RPC = getRPCClient( "DataManagement/FileCatalog" )
     res = self.__request()
     if not res['OK']:
-      gLogger.error("")
-      return {"success" : "false" , "error" : result[ "Message" ]}
+      gLogger.error("error:", res['Message'])
+      return {"success" : "false" , "error" : res[ "Message" ]}
     req = res['Value']
     gLogger.debug( "submit: incoming request %s" % req )
     result = RPC.findFilesByMetadataWeb( req["selection"] , req["path"] , S_NUMBER , L_NUMBER)
