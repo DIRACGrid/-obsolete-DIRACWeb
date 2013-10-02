@@ -614,6 +614,20 @@ function initFilesPanel(){
     ,view: new Ext.grid.GridView({ autoFill: true , forceFit: true })
     ,url: 'submit'
   });
+  store.on('loadexception',function(){
+    try{
+      if(store.reader.jsonData){
+        if(store.reader.jsonData.success == 'false'){
+          alert(store.reader.jsonData.error);
+        }
+      }else{
+        alert("There is an exception while loading data. Please, refresh table");
+      }
+    }catch(e){
+      alert("There is an exception while loading data. Please, refresh table");
+    }
+  });
+
   store.on( 'load' , function(records){
     var disable = true;
     if(records && records.totalLength && records.totalLength > 0){
