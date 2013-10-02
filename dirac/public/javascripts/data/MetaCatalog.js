@@ -623,16 +623,14 @@ function initFilesPanel(){
           }else{
             alert( "Undefined error. Maybe trying again will solve the problem. Otherwise, see with the experts.")
           }
-          dataTable.getStore().removeAll();
         }
       }catch(e){
         alert("There is an exception while loading data. Please, refresh table");
-        dataTable.getStore().removeAll();
       }  
     }else{
       alert("There is an exception while loading data. Please, refresh table");
-      dataTable.getStore().removeAll();
     }
+    dataTable.getStore().removeAll();
   });
 
   store.on( 'load' , function(records){
