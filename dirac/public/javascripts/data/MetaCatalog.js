@@ -623,9 +623,11 @@ function initFilesPanel(){
         }
       }else{
         alert("There is an exception while loading data. Please, refresh table");
+        dataTable.getStore().removeAll();
       }
     }catch(e){
       alert("There is an exception while loading data. Please, refresh table");
+      dataTable.getStore().removeAll();
     }
   });
 
