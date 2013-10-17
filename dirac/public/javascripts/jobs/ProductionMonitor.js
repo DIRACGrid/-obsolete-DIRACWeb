@@ -21,7 +21,7 @@ function initProductionMonitor(reponseSelect){
   dataSelect = reponseSelect;
   dataSelect.globalSort = '';
   var record = initRecord();
-  var store = initStore(record,{'groupBy':'TransformationFamily'});
+  var store = initStore(record,{'groupBy':'TransformationGroup'});
   store.addListener('beforeload',function(store){
     if(store.totalLength){
       testObject = {}
@@ -221,7 +221,7 @@ function initData(store){
   var view = new Ext.grid.GroupingView({
     groupTextTpl:'<tpl>{text}</tpl>'
   })
-  store.setDefaultSort('TransformationFamily','DESC'); // Default sorting
+  store.setDefaultSort('TransformationGroup','DESC'); // Default sorting
   var autorefreshMenu = [
     {checked:setChk(900000),checkHandler:function(){setRefresh(900000,store);},group:'refresh',text:'15 Minutes'},
     {checked:setChk(1800000),checkHandler:function(){setRefresh(1800000,store);},group:'refresh',text:'30 Minutes'},
@@ -324,7 +324,7 @@ function setMenuItems(selections){
     var id = selections.TransformationID;
     var status = selections.Status;
     var submited = selections.Jobs_Submitted;
-    var family = selections.TransformationFamily;
+    var family = selections.TransformationGroup;
     var type = selections.Type;
   }else{
     return
