@@ -780,7 +780,7 @@ function save(button, table){
       return errorReport(message);
     },
     method:'POST',
-    params:{'getFile':files},
+    params:{getFile:files},
     success:function(response){
       button.setIconClass('Save');
       try{
