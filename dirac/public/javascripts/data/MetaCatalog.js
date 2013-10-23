@@ -649,7 +649,7 @@ function initFilesPanel(){
   }),{
     cls:"x-btn-text-icon",
     handler:function(){
-      save(this);
+      save(this, dataTable);
     },
     disabled:true,
     icon:gURLRoot+'/images/iface/save.gif',
@@ -740,15 +740,34 @@ function showFiles( grid , separator ){
   });
   return displayWin( panel , 'Files' );
 }
-
-function save(button){
+function errorReport( strobj ){
+	  var prefix = 'Error: ' ;
+	  var postfix = '' ;
+	  var error = 'Action has finished with error' ;
+	  if( ! strobj ){
+	    return alert( prefix + error + postfix ) ;
+	  }
+	  if( strobj.substring ){
+	      error = strobj ;
+	  }else{
+	    try{
+	      if( strobj.failureType == 'connect' ){
+	        error = 'Can not recieve service response' ;
+	      }
+	    }catch(e){}
+	    try{
+	      error = error + '\nService Response: ' + strobj.statusText ;
+	    }catch(e){}
+	  }
+	  return alert( prefix + error + postfix ) ;
+	}
+function save(button, table){
   button.setIconClass('Loading');
-  var files = '';
-  var inputs = document.getElementsByTagName('input');
-  for (var i = 0; i < inputs.length; i++){
-    if (inputs[i].checked === true){
-      files = files + inputs[i].id + ',';
-    }
+  var record = table.getSelectionModel().getSelections();
+  var items = [];
+  var files = ''
+  for( var k = 0 ; k < record.length ; k++ ){
+    files = files + record[ k ].get( 'filename' ) + ',';
   }
   files = files.replace(/,$/,'');
   Ext.Ajax.request({
