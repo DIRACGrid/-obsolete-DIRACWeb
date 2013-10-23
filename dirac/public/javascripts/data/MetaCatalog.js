@@ -770,6 +770,9 @@ function save(button, table){
     files = files + record[ k ].get( 'filename' ) + ',';
   }
   files = files.replace(/,$/,'');
+  if( files =='' ){
+	  return errorReport("No files selected")
+  }
   Ext.Ajax.request({
     failure:function(response){
       button.setIconClass('Save');
