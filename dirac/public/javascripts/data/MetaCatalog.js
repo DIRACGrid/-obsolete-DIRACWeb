@@ -699,7 +699,27 @@ function keepButtonSize(panel,button){
   panel.remove(lastCmp);
   panel.add(tmpButton);
 }
-
+function displayWin(panel,title){
+	  var window = new Ext.Window({
+	    iconCls:'icon-grid',
+	    closable:true,
+	    autoScroll:true,
+//	    autoHeight:true,
+	    width:600,
+	    height:350,
+	    border:true,
+	    collapsible:true,
+	    constrain:true,
+	    constrainHeader:true,
+	    maximizable:true,
+	    layout:'fit',
+	    plain:true,
+	    shim:false,
+	    title:"ID: " + title,
+	    items:[panel]
+	  })
+	  window.show()
+	}
 function showFiles( grid , separator ){
   var record = grid.getSelectionModel().getSelections();
   var items = [];
