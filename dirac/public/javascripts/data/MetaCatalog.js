@@ -665,7 +665,7 @@ function initFilesPanel(){
   }),{
     cls:"x-btn-text-icon",
     handler:function(){
-      save(this);
+      save(this, dataTable);
     },
     disabled:true,
     icon:gURLRoot+'/images/iface/save.gif',
@@ -715,7 +715,27 @@ function keepButtonSize(panel,button){
   panel.remove(lastCmp);
   panel.add(tmpButton);
 }
-
+function displayWin(panel,title){
+	  var window = new Ext.Window({
+	    iconCls:'icon-grid',
+	    closable:true,
+	    autoScroll:true,
+//	    autoHeight:true,
+	    width:600,
+	    height:350,
+	    border:true,
+	    collapsible:true,
+	    constrain:true,
+	    constrainHeader:true,
+	    maximizable:true,
+	    layout:'fit',
+	    plain:true,
+	    shim:false,
+	    title:"ID: " + title,
+	    items:[panel]
+	  })
+	  window.show()
+	}
 function showFiles( grid , separator ){
   var record = grid.getSelectionModel().getSelections();
   var items = [];
@@ -736,17 +756,39 @@ function showFiles( grid , separator ){
   });
   return displayWin( panel , 'Files' );
 }
-
-function save(button){
+function errorReport( strobj ){
+	  var prefix = 'Error: ' ;
+	  var postfix = '' ;
+	  var error = 'Action has finished with error' ;
+	  if( ! strobj ){
+	    return alert( prefix + error + postfix ) ;
+	  }
+	  if( strobj.substring ){
+	      error = strobj ;
+	  }else{
+	    try{
+	      if( strobj.failureType == 'connect' ){
+	        error = 'Can not recieve service response' ;
+	      }
+	    }catch(e){}
+	    try{
+	      error = error + '\nService Response: ' + strobj.statusText ;
+	    }catch(e){}
+	  }
+	  return alert( prefix + error + postfix ) ;
+	}
+function save(button, table){
   button.setIconClass('Loading');
-  var files = '';
-  var inputs = document.getElementsByTagName('input');
-  for (var i = 0; i < inputs.length; i++){
-    if (inputs[i].checked === true){
-      files = files + inputs[i].id + ',';
-    }
+  var record = table.getSelectionModel().getSelections();
+  var items = [];
+  var files = ''
+  for( var k = 0 ; k < record.length ; k++ ){
+    files = files + record[ k ].get( 'filename' ) + ',';
   }
   files = files.replace(/,$/,'');
+  if( files =='' ){
+	  return errorReport("No files selected")
+  }
   Ext.Ajax.request({
     failure:function(response){
       button.setIconClass('Save');
@@ -754,7 +796,7 @@ function save(button){
       return errorReport(message);
     },
     method:'POST',
-    params:{'getFile':files},
+    params:{getFile:files},
     success:function(response){
       button.setIconClass('Save');
       try{

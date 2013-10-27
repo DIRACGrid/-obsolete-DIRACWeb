@@ -168,6 +168,9 @@ class MetacatalogController(BaseController):
     if not len(files) > 0:
       return {"success":"false","error":"No LFN given"}
     se = getRPCClient("DataManagement/StorageElementProxy")
+    res = se.ping()
+    if not res['OK']:
+      return {"success":"false", 'error':"StorageElementProxy server is not available"}
     result = se.prepareFileForHTTP(files)
     gLogger.always(" *** ",result)    
     if not result["OK"]:
