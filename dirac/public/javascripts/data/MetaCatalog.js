@@ -614,6 +614,22 @@ function initFilesPanel(){
     ,view: new Ext.grid.GridView({ autoFill: true , forceFit: true })
     ,url: 'submit'
   });
+  store.on('loadexception',function(){
+    // If the returned JSON data is not correct
+    try{
+      if( store.reader.jsonData.success == 'false' ){
+        if( ! Ext.isEmpty(store.reader.jsonData.error ){
+          alert( store.reader.jsonData.error );
+        }else{
+          alert( "Undefined error. Maybe trying again will solve the problem. Otherwise, see with the experts.")
+        }
+      }
+    }catch(e){
+      alert("There is an exception while loading data. Please, refresh table");
+    }
+    dataTable.getStore().removeAll();
+  });
+
   store.on( 'load' , function(records){
     var disable = true;
     if(records && records.totalLength && records.totalLength > 0){
