@@ -35,7 +35,11 @@ class MetacatalogController(BaseController):
   @jsonify
   def submit( self ) :
     RPC = getRPCClient( "DataManagement/FileCatalog" )
-    req = self.__request()
+    res = self.__request()
+    if not res['OK']:
+      gLogger.error("error:", res['Message'])
+      return {"success" : "false" , "error" : res[ "Message" ]}
+    req = res['Value']
     gLogger.debug( "submit: incoming request %s" % req )
     result = RPC.findFilesByMetadataWeb( req["selection"] , req["path"] , S_NUMBER , L_NUMBER)
     gLogger.debug( "submit: result of findFilesByMetadataDetailed %s" % result )
@@ -91,16 +95,16 @@ class MetacatalogController(BaseController):
     gLogger.debug( "request: %s" % result )
     if not result["OK"]:
       gLogger.error( "request: %s" % result[ "Message" ] )
-      return req
+      return result
     result = result["Value"]
     if not result.has_key( "FileMetaFields" ):
       error = "Service response has no FileMetaFields key. Return empty dict"
       gLogger.error( "request: %s" % error )
-      return req
+      return S_ERROR(error)
     if not result.has_key( "DirectoryMetaFields" ):
       error = "Service response has no DirectoryMetaFields key. Return empty dict"
       gLogger.error( "request: %s" % error )
-      return req
+      return S_ERROR(error)
     filemeta = result[ "FileMetaFields" ]
     dirmeta = result[ "DirectoryMetaFields" ]
     meta = []
@@ -136,7 +140,7 @@ class MetacatalogController(BaseController):
     if request.params.has_key("path") :
       req["path"] = request.params["path"]
     gLogger.always(" REQ: ",req)
-    return req
+    return S_OK(req)
 ################################################################################
   @jsonify
   def action(self):
