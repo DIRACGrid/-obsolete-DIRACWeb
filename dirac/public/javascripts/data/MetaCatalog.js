@@ -618,7 +618,7 @@ function initFilesPanel(){
     // If the returned JSON data is not correct
     try{
       if( store.reader.jsonData.success == 'false' ){
-        if( ! Ext.isEmpty(store.reader.jsonData.error ){
+        if( ! Ext.isEmpty(store.reader.jsonData.error )){
           alert( store.reader.jsonData.error );
         }else{
           alert( "Undefined error. Maybe trying again will solve the problem. Otherwise, see with the experts.")
