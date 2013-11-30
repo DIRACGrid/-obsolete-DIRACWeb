@@ -4,7 +4,7 @@ from time import time, gmtime, strftime
 from dirac.lib.base import *
 from dirac.lib.diset import getRPCClient
 from dirac.lib.credentials import authorizeAction
-from DIRAC import gConfig, gLogger
+from DIRAC import gConfig, gLogger, S_OK, S_ERROR
 from DIRAC.Core.Utilities.List import sortList
 from DIRAC.Core.Utilities import Time
 from DIRAC.AccountingSystem.Client.ReportsClient import ReportsClient
