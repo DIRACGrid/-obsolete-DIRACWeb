@@ -23,6 +23,8 @@ function init( init ){
       ,margins:'2 0 2 0'
       ,region: 'center'
       ,split: true
+      ,autoScroll : true
+      ,enableTabScroll : true
     });
     if( init && init[ "hosts" ] ){
       for( var i = 0; i < init[ "hosts" ].length; i++){
@@ -126,7 +128,7 @@ function sysInfo(){
     ,renderer: pbar
     ,sortable: true
   },{
-    align: 'left'    
+    align: 'left'
     ,dataIndex: 'CPUClock'
     ,header: 'CPUClock'
     ,sortable: true
@@ -210,7 +212,7 @@ function sysInfo(){
       var act = new action( grid.getSelectionModel().getSelections() );
       act.doHostAction( btn.text );
     });
-  }  
+  }
   var grid = new getDatagrid({
     autorefresh: true
     ,disableIPP: true
@@ -274,7 +276,7 @@ function menuHost( record ){
       }
       ,icon: gURLRoot + '/images/iface/error.png'
       ,text:'Show Errors'
-    }]  
+    }]
   });
   return menu
 }
@@ -666,7 +668,7 @@ function logCmp( record ){
           params: {
             component: cmp
             ,host: host
-            ,system: system    
+            ,system: system
           }
           ,nocache: true
           ,timeout: 60
@@ -680,7 +682,7 @@ function logCmp( record ){
           params: {
             component: cmp
             ,host: host
-            ,system: system    
+            ,system: system
           }
           ,nocache: true
           ,timeout: 60

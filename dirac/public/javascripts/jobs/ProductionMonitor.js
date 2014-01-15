@@ -30,6 +30,7 @@ function initProductionMonitor(reponseSelect){
         try{
           testObject[record.data.TransformationID] = {};
           testObject[record.data.TransformationID]['Jobs_Created'] = record.data['Jobs_Created'];
+          testObject[record.data.TransformationID]['Jobs_TotalCreated'] = record.data['Jobs_TotalCreated'];
           testObject[record.data.TransformationID]['Jobs_Done'] = record.data['Jobs_Done'];
           testObject[record.data.TransformationID]['Jobs_Failed'] = record.data['Jobs_Failed'];
           testObject[record.data.TransformationID]['Jobs_Running'] = record.data['Jobs_Running'];
@@ -56,7 +57,7 @@ function initProductionMonitor(reponseSelect){
         this.loading.addClass('x-btn-text-icon');
       })
     });
-    renderData(store);   
+    renderData(store);
   });
 }
 function diffValues(value,metaData,record,rowIndex,colIndex,store){
@@ -83,7 +84,7 @@ function diffValues(value,metaData,record,rowIndex,colIndex,store){
     return value;
   }
 }
-// function describing data structure, should be individual per page 
+// function describing data structure, should be individual per page
 function initRecord(){
   var record = new Ext.data.Record.create([
     {name:'TransformationIDcheckBox',mapping:'TransformationID'},
@@ -113,6 +114,7 @@ function initRecord(){
     {name:'Files_Processed'},
     {name:'Files_Problematic'},
     {name:'Jobs_Created'},
+    {name:'Jobs_TotalCreated'},
     {name:'Jobs_Submitted'},
     {name:'Jobs_Waiting'},
     {name:'Jobs_Running'},
@@ -172,6 +174,7 @@ function initData(store){
     {header:'Files Problematic',sortable:true,dataIndex:'Files_Problematic',align:'left',hidden:true,renderer:diffValues},
     {header:'Files Unused',sortable:true,dataIndex:'Files_Unused',align:'left',hidden:true,renderer:diffValues},
     {header:'Created',sortable:true,dataIndex:'Jobs_Created',align:'left',renderer:diffValues},
+    {header:'Total Created',sortable:true,dataIndex:'Jobs_TotalCreated',align:'left',renderer:diffValues},
     {header:'Submitted',sortable:true,dataIndex:'Jobs_Submitted',align:'left',renderer:diffValues},
     {header:'Waiting',sortable:true,dataIndex:'Jobs_Waiting',align:'left',renderer:diffValues},
     {header:'Running',sortable:true,dataIndex:'Jobs_Running',align:'left',renderer:diffValues},
@@ -242,7 +245,7 @@ function setChk(value){
     return true
   }else{
     return false
-  } 
+  }
 }
 function setRefresh(time,store){
   if(time == 900000 || time == 3600000 || time == 1800000){
@@ -316,8 +319,8 @@ function extendTransformation(id){
     }else{
       this.hide();
     }
-  });   
-}  
+  });
+}
 
 function setMenuItems(selections){
   if(selections){
@@ -456,7 +459,7 @@ function AJAXsuccess(value,id,response){
     }
     var store = new Ext.data.Store({
       data:result,
-      reader:reader 
+      reader:reader
     }),
     panel = new Ext.grid.GridPanel({
       columns:columns,
