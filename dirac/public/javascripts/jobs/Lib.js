@@ -1577,6 +1577,8 @@ function status(value){
     return '<img src="'+gURLRoot+'/images/monitoring/unknown.gif">';
   }else if((value == 'Completed') || (value == 'Completing')){
     return '<img src="'+gURLRoot+'/images/monitoring/completed.gif">';
+  }else if (value == 'Idle'){
+    return '<img src="'+gURLRoot+'/images/monitoring/idle.gif">';
   }else{
     return '<img src="'+gURLRoot+'/images/monitoring/unknown.gif">';
   }
