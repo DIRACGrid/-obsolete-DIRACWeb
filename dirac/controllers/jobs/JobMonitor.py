@@ -663,15 +663,18 @@ class JobmonitorController(BaseController):
     except Exception,x:
       c.result = {"success":"false","error":"%s" % str(x)}
       return c.result
-    RPC = getRPCClient("WorkloadManagement/JobMonitoring")
-    result = RPC.getJobParameters(id)
+    RPC = getRPCClient( "RequestManagement/ReqManager" )
+    result = RPC.readRequestsForJobs( [id] )
     if result["OK"]:
-      attr = result["Value"]
       c.result = []
-      for i in attr.items():
-        if i[0] != "StandardOutput":
-          c.result.append([i[0],i[1]])
-      c.result = {"success":"true","result":c.result}
+      if id in result['Value']['Successful']:
+        req = Request(result['Value']['Successful'][id]).getDigest()['Value']
+        c.result.append( ["PendingRequest", req] )
+        c.result = {"success":"true", "result":c.result}
+      elif id in result['Value']['Failed']: # when no request associated to the job
+        c.result = {"success":"false", "error":result['Value']["Failed"][id]}
+      else:
+        c.result = {"success":"false", "error":"No request found with unknown reason"}
     else:
       c.result = {"success":"false","error":result["Message"]}
     gLogger.info("Params:",id)
