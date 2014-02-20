@@ -469,10 +469,10 @@ class JobmonitorController(BaseController):
         img = request.params["img"]
       else:
         img = "False"
-      return self.__getPlotSrc(type,id,timeToSet,img)
-    elif request.params.has_key("getPending") and len(request.params["getPending"]) > 0:
-      return self.__getParams(request.params["getPending"])
-    elif request.params.has_key("canRunJobs") and request.params["canRunJobs"]:
+      return self.__getPlotSrc( type, id, timeToSet, img )
+    elif request.params.has_key( "getPending" ) and len( request.params["getPending"] ) > 0:
+      return self.__getPending( request.params["getPending"] )
+    elif request.params.has_key( "canRunJobs" ) and request.params["canRunJobs"]:
       return self.__canRunJobs()
     elif request.params.has_key("getProxyStatus") and len(request.params["getProxyStatus"]) > 0:
       return self.__getProxyStatus()
@@ -658,7 +658,7 @@ class JobmonitorController(BaseController):
     gLogger.info("LoggingInfo:",id)
     return c.result
 ################################################################################
-  def __getParams(self,id):
+  def __getPending(self,id):
     try:
       id = int(id)
     except Exception,x:
@@ -676,6 +676,26 @@ class JobmonitorController(BaseController):
         c.result = {"success":"false", "error":result['Value']["Failed"][id]}
       else:
         c.result = {"success":"false", "error":"No request found with unknown reason"}
+    else:
+      c.result = {"success":"false","error":result["Message"]}
+    gLogger.info("Params:",id)
+    return c.result
+  ################################################################################
+  def __getParams(self,id):
+    try:
+      id = int(id)
+    except Exception,x:
+      c.result = {"success":"false","error":"%s" % str(x)}
+      return c.result
+    RPC = getRPCClient("WorkloadManagement/JobMonitoring")
+    result = RPC.getJobParameters(id)
+    if result["OK"]:
+      attr = result["Value"]
+      c.result = []
+      for i in attr.items():
+        if i[0] != "StandardOutput":
+          c.result.append([i[0],i[1]])
+      c.result = {"success":"true","result":c.result}
     else:
       c.result = {"success":"false","error":result["Message"]}
     gLogger.info("Params:",id)
