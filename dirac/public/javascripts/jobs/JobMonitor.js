@@ -208,7 +208,7 @@ function initData(store){
     };
     var a = tbar.slice(), b = a.splice( 3 );
     a[3] = rescheduleButton;
-    tbar = a.concat( b );  
+    tbar = a.concat( b );
   }
   if(user && user == 'admin'){
     var resetButton = {
@@ -359,7 +359,7 @@ function setMenuItems(selections){
         }
         ,text: 'Show Request'
       }));
-    }  
+    }
     if( isShowLogFile ){
       dirac.menu.insert( 7 , new Ext.menu.Item({
         handler: function(){
@@ -421,7 +421,7 @@ function AJAXsuccess(value,id,response){
         {header:'Operation',sortable:true,dataIndex:'operation',align:'left'},
         {header:'Status',sortable:true,dataIndex:'status',align:'left'},
         {header:'Order',sortable:true,dataIndex:'order',align:'left'},
-        {header:'Targert SE',sortable:true,dataIndex:'targetSE',align:'left'},
+        {header:'Target SE',sortable:true,dataIndex:'targetSE',align:'left'},
         {header:'File',sortable:true,dataIndex:'file',align:'left'}
       ];
       var mark = 0;

@@ -10,6 +10,7 @@ from DIRAC.AccountingSystem.Client.ReportsClient import ReportsClient
 from DIRAC.Core.Utilities.DictCache import DictCache
 from DIRAC.WorkloadManagementSystem.Service.JobPolicy import JobPolicy, RIGHT_GET_INFO
 from DIRAC.ConfigurationSystem.Client.Helpers.Operations import Operations
+from DIRAC.RequestManagementSystem.Client.Request       import Request
 
 import dirac.lib.credentials as credentials
 #from DIRAC.Interfaces.API.Dirac import Dirac
@@ -35,14 +36,14 @@ class JobmonitorController(BaseController):
       if "JobAdministrator" not in groupProperty and "JobSharing" not in groupProperty:
         c.select["extra"] = {"owner":credentials.getUsername()}
     return render("jobs/JobMonitor.mako")
-################################################################################  
+################################################################################
   def __getEligibleOwners( self, userDN, group ):
     """ Get users which jobs can be in principle shown in the page
     """
     owners = []
     allInfo = Operations( group = group ).getValue('/Services/JobMonitoring/GlobalJobsInfo', False )
     jobPolicy = JobPolicy( userDN, group, allInfo = allInfo )
-    result = jobPolicy.getControlledUsers( RIGHT_GET_INFO ) 
+    result = jobPolicy.getControlledUsers( RIGHT_GET_INFO )
     if not result['OK']:
       return result
     elif result['Value']:
@@ -50,7 +51,7 @@ class JobmonitorController(BaseController):
       if result['Value'] != "ALL":
         for aUser, aGroup in result['Value']:
           allowedUsers.append( aUser )
-        allowedUsers = list( set( allowedUsers ) )  
+        allowedUsers = list( set( allowedUsers ) )
       RPC = getRPCClient("WorkloadManagement/JobMonitoring")
       result = RPC.getOwners()
       if result["OK"]:
@@ -64,8 +65,8 @@ class JobmonitorController(BaseController):
       else:
         gLogger.error( "RPC.getOwners() return error:", result["Message"] )
         return result
-      
-    return S_OK( owners )  
+
+    return S_OK( owners )
 ################################################################################
   def __getJobSummary(self,jobs,head):
     valueList = []
@@ -90,12 +91,12 @@ class JobmonitorController(BaseController):
             # There is something to display probably
             haveJobsToDisplay = True
             break
-        if not haveJobsToDisplay:  
+        if not haveJobsToDisplay:
           c.result = {"success":"false","error":"You don't have any jobs eligible to display"}
-          return c.result  
+          return c.result
       else:
         c.result = {"success":"false","error":"Failed to evaluate eligible users"}
-        return c.result      
+        return c.result
     else:
       c.result = {"success":"false","error":result["Message"]}
       return c.result
@@ -207,7 +208,7 @@ class JobmonitorController(BaseController):
           site.append([str(i)])
         for i in s:
           if i not in tier1:
-            site.append([str(i)])    
+            site.append([str(i)])
       else:
         site = [["Nothing to display"]]
     else:
@@ -284,7 +285,7 @@ class JobmonitorController(BaseController):
         callback["owner"] = [["Nothing to display"]]
       else:
         callback["owner"] = [ [str( own )] for own in eligibleOwners ]
-      
+
     return callback
 ################################################################################
   def __request(self):
@@ -468,10 +469,10 @@ class JobmonitorController(BaseController):
         img = request.params["img"]
       else:
         img = "False"
-      return self.__getPlotSrc(type,id,timeToSet,img)
-    elif request.params.has_key("getPending") and len(request.params["getPending"]) > 0:
-      return self.__getParams(request.params["getPending"])
-    elif request.params.has_key("canRunJobs") and request.params["canRunJobs"]:
+      return self.__getPlotSrc( type, id, timeToSet, img )
+    elif request.params.has_key( "getPending" ) and len( request.params["getPending"] ) > 0:
+      return self.__getPending( request.params["getPending"] )
+    elif request.params.has_key( "canRunJobs" ) and request.params["canRunJobs"]:
       return self.__canRunJobs()
     elif request.params.has_key("getProxyStatus") and len(request.params["getProxyStatus"]) > 0:
       return self.__getProxyStatus()
@@ -596,9 +597,9 @@ class JobmonitorController(BaseController):
       return False
 ################################################################################
   def __getProxyStatus(self,secondsOverride = None):
-      
+
     from DIRAC.FrameworkSystem.Client.ProxyManagerClient import ProxyManagerClient
-    
+
     proxyManager = ProxyManagerClient()
     group = str(credentials.getSelectedGroup())
     if group == "visitor":
@@ -657,6 +658,29 @@ class JobmonitorController(BaseController):
     gLogger.info("LoggingInfo:",id)
     return c.result
 ################################################################################
+  def __getPending(self,id):
+    try:
+      id = int(id)
+    except Exception,x:
+      c.result = {"success":"false","error":"%s" % str(x)}
+      return c.result
+    RPC = getRPCClient( "RequestManagement/ReqManager" )
+    result = RPC.readRequestsForJobs( [id] )
+    if result["OK"]:
+      c.result = []
+      if id in result['Value']['Successful']:
+        req = Request(result['Value']['Successful'][id]).getDigest()['Value']
+        c.result.append( ["PendingRequest", req] )
+        c.result = {"success":"true", "result":c.result}
+      elif id in result['Value']['Failed']: # when no request associated to the job
+        c.result = {"success":"false", "error":result['Value']["Failed"][id]}
+      else:
+        c.result = {"success":"false", "error":"No request found with unknown reason"}
+    else:
+      c.result = {"success":"false","error":result["Message"]}
+    gLogger.info("Params:",id)
+    return c.result
+  ################################################################################
   def __getParams(self,id):
     try:
       id = int(id)
@@ -846,7 +870,7 @@ class JobmonitorController(BaseController):
     time = str(timeToSet)
     now = datetime.datetime.utcnow()
     if  timeToSet == 'day':
-      timeSpan = now - datetime.timedelta( seconds = 86400 ) 
+      timeSpan = now - datetime.timedelta( seconds = 86400 )
     elif timeToSet == 'week':
       timeSpan = now - datetime.timedelta( seconds = 86400 * 7 )
     elif timeToSet == 'month':
