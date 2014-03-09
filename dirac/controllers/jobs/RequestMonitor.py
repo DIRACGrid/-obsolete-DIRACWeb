@@ -1,8 +1,5 @@
 import logging
-from time import time, gmtime, strftime
-
-from DIRAC.Core.Utilities import Time
-
+from time import time
 from dirac.lib.base import *
 from dirac.lib.diset import getRPCClient
 from dirac.lib.credentials import authorizeAction
@@ -33,7 +30,7 @@ class RequestmonitorController(BaseController):
 ################################################################################
   @jsonify
   def submit(self):
-    RPC = getRPCClient("RequestManagement/centralURL")
+    RPC = getRPCClient("RequestManagement/ReqManager")
     result = self.__request()
     result = RPC.getRequestSummaryWeb(result,globalSort,pageNumber,numberOfJobs)
     if result["OK"]:
@@ -78,25 +75,25 @@ class RequestmonitorController(BaseController):
       for i in request.params:
         tmp[i] = str(request.params[i])
       callback["extra"] = tmp
-    RPC = getRPCClient("RequestManagement/centralURL")
+    RPC = getRPCClient("RequestManagement/ReqManager")
 ### R E Q U E S T T Y P E
-    result = RPC.getDistinctValues("RequestType")
-    gLogger.info("getDistinctValues(RequestType)",result)
-    if result["OK"]:
-      reqtype = list()
-      if len(result["Value"])>0:
+#    result = RPC.getDistinctValues("RequestType")
+#    gLogger.info("getDistinctValues(RequestType)",result)
+#    if result["OK"]:
+#      reqtype = list()
+#      if len(result["Value"])>0:
 #        if len(result["Value"])>3:
 #          reqtype.append(["All"])
-        reqtype.append(["All"])
-        for i in result["Value"]:
-          reqtype.append([str(i)])
-      else:
-        reqtype = [["Nothing to display"]]
-    else:
-      reqtype = [["Error during RPC call"]]
-    callback["requestType"] = reqtype
+#        reqtype.append(["All"])
+#        for i in result["Value"]:
+#          reqtype.append([str(i)])
+#      else:
+#        reqtype = [["Nothing to display"]]
+#    else:
+#      reqtype = [["Error during RPC call"]]
+    callback["requestType"] = [["Any"]]
 ### O P E R A T I O N
-    result = RPC.getDistinctValues("Operation")
+    result = RPC.getDistinctValues("Type")
     gLogger.info("getDistinctValues(Operation)",result)
     if result["OK"]:
       operation = list()
@@ -225,12 +222,12 @@ class RequestmonitorController(BaseController):
         separator = result["Value"]
       else:
         separator = ":::"
-      if request.params.has_key("requestType") and len(request.params["requestType"]) > 0:
-        if str(request.params["requestType"]) != "All":
-          req["RequestType"] = str(request.params["requestType"]).split(separator)
+#      if request.params.has_key("requestType") and len(request.params["requestType"]) > 0:
+#        if str(request.params["requestType"]) != "All":
+#          req["RequestType"] = str(request.params["requestType"]).split(separator)
       if request.params.has_key("operation") and len(request.params["operation"]) > 0:
         if str(request.params["operation"]) != "All":
-          req["Operation"] = str(request.params["operation"]).split(separator)
+          req["Type"] = str(request.params["operation"]).split(separator)
       if request.params.has_key("ownerGroup") and len(request.params["ownerGroup"]) > 0:
         if str(request.params["ownerGroup"]) != "All":
           req["OwnerGroup"] = []
@@ -285,3 +282,4 @@ class RequestmonitorController(BaseController):
     else:
       c.result = {"success":"false","error":"The request parameters can not be recognized or they are not defined"}
       return c.result
+
