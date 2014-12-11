@@ -10,9 +10,8 @@
                 collapsible : true,
                 constrain : true,
                 constrainHeader : false,
-                closable : true,
+                closable : false,
                 height : 130,
-                border : true,
                 style : {
                   borderColor : 'red',
                   borderStyle : 'solid'
@@ -26,8 +25,15 @@
                 shim : false,
                 width : 400,
                 title : "New web portal is available!!!!",
-                html : html
+                html : html,
+                listeners : {
+                  show : function() {
+                    this.el.setStyle('right', '');
+                    this.el.setStyle('top', '');
+                  }
+                }
               });
+
           win.show();
         }
 
