@@ -99,5 +99,8 @@ class WebConfig:
 
   def getSpecificIcon(self):
     return gConfig.getValue( "%s/SpecificIcon" % self.webSection, "/images/favicon.ico" )
-
+  
+  def getBannerLink(self):
+    return gConfig.getValue( "%s/BannerHost" % self.webSection, "" )
+  
 gWebConfig = WebConfig()
