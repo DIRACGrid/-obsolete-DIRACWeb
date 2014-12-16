@@ -13,6 +13,7 @@ jsDiracPageObject = webBase.getJSPageData()
 selectedSetup = credentials.getSelectedSetup()
 selectedGroup = credentials.getSelectedGroup()
 pageTitle = "%s as %s@%s" % ( pageTitle, selectedGroup, selectedSetup )
+baner = gWebConfig.getBannerLink()
 %>
 <html>
  <head>
@@ -34,7 +35,7 @@ pageTitle = "%s as %s@%s" % ( pageTitle, selectedGroup, selectedSetup )
   ${ h.stylesheet_link( "/stylesheets/lovCombo.css" ) }
   ${ h.stylesheet_link( "/ext/resources/css/ext-all.css" ) }
   ${ h.stylesheet_link( "/ext/resources/css/Multiselect.css" ) }
-
+  
   ${self.head_tags()}
  </head>
  <body>
@@ -52,7 +53,11 @@ document.write(unescape("%3Cscript src='" + gaJsHost + "google-analytics.com/ga.
 var pageTracker = _gat._getTracker("UA-2149799-2");
 pageTracker._initData();
 pageTracker._trackPageview();
+document.baner = '${ baner }';
 </script>
+
+<script type="text/javascript" src="/DIRAC/javascripts/baner.js"></script>
+
  </body>
 </html>
 
