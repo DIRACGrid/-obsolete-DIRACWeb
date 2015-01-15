@@ -4,7 +4,8 @@
         if (document.baner) {
 
           var html = '<!DOCTYPE html> <html> <body> <p><font color="blue">Dear ' + gPageDescription.userData.username + ',<br>' + 'This portal will be not used any more. We have a new portal which is available: </font></p> <p><font color="read"> <a href="' + document.baner
-              + '" style="color:red" >' + document.baner + '</a> </font></p></body> </html>'
+              + '" style="color:red" >' + document.baner + '</a> </font></p><br><p>' + document.extraMessage + '</p> </body> </html>'
+
           win = new Ext.Window({
                 border : true,
                 collapsible : true,
@@ -12,7 +13,7 @@
                 constrainHeader : false,
                 shadow : false,
                 closable : false,
-                height : 130,
+                height : (document.extraMessage != "") ? 170 : 130,
                 style : {
                   borderColor : 'red',
                   borderStyle : 'solid'
