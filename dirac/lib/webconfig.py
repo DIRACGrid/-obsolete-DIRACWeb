@@ -104,6 +104,6 @@ class WebConfig:
     return gConfig.getValue( "%s/BannerHost" % self.webSection, "" )
   
   def getBannerExtraMessage(self):
-    return gConfig.getValue( "%s/getBannerExtraMessage" % self.webSection, "" )
+    return gConfig.getValue( "%s/BannerExtraMessage" % self.webSection, "" )
   
 gWebConfig = WebConfig()
