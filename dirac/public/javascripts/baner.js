@@ -10,6 +10,7 @@
                 collapsible : true,
                 constrain : true,
                 constrainHeader : false,
+                shadow : false,
                 closable : false,
                 height : 130,
                 style : {
@@ -35,6 +36,9 @@
               });
 
           win.show();
+          if (gPageDescription.userData.username == "Anonymous") {
+            win.collapse();
+          }
         }
 
       });
