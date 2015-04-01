@@ -624,7 +624,7 @@ class JobmonitorController(BaseController):
 ################################################################################
   def __getJdl(self,id):
     RPC = getRPCClient("WorkloadManagement/JobMonitoring")
-    result = RPC.getJobJDL(id)
+    result = RPC.getJobJDL( id, False )
     if result["OK"]:
       c.result = result["Value"]
       c.result = {"success":"true","result":c.result}
