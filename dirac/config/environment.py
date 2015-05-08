@@ -69,7 +69,9 @@ def initDIRAC( rootPath, enableDebug = False ):
     configDict['portalVersion'] = portalVersion( rootPath )
     gLogger.info( "DIRAC portal version: %s" % configDict['portalVersion'] )
 
-    extModules = [ '%sDIRAC' % module for module in getCSExtensions() ]
+    extModules = []
+    for module in getCSExtensions():
+      extModules.append( '%sDIRAC' % module.replace( 'DIRACDIRAC', 'DIRAC' ))
     #Load web.cfg of modules
     cfgFilePaths = [ os.path.join( droot, "etc", "web.cfg" ) ]
     for extModule in extModules:
