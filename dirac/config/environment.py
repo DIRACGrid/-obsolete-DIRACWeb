@@ -71,7 +71,7 @@ def initDIRAC( rootPath, enableDebug = False ):
 
     extModules = []
     for module in getCSExtensions():
-      extModules.append( '%sDIRAC' % module.replace( 'DIRACDIRAC', 'DIRAC' ))
+      extModules.append( ('%sDIRAC' % module).replace( 'DIRACDIRAC', 'DIRAC' ) )
     #Load web.cfg of modules
     cfgFilePaths = [ os.path.join( droot, "etc", "web.cfg" ) ]
     for extModule in extModules:
