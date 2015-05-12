@@ -16,7 +16,7 @@ class DiracWebApp( PylonsApp ):
     #Find base modules path
     self.__baseControllerPaths = []
     for module in getCSExtensions():
-      module = "%sDIRAC" % module
+      module = ("%sDIRAC" % module).replace( 'DIRACDIRAC', 'DIRAC' )
       modulePath = os.path.join( rootPath, module )
       if os.path.isdir( os.path.join( modulePath, "Web", "controllers" ) ):
         self.__baseControllerPaths.append( "%s.Web.controllers" % module )
