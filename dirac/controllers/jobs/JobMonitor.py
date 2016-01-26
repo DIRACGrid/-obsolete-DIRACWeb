@@ -362,7 +362,9 @@ class JobmonitorController(BaseController):
       if request.params.has_key("types") and len(request.params["types"]) > 0:
         if str(request.params["types"]) != "All":
           req["JobType"] = str(request.params["types"]).split(separator)
-      if not "JobAdministrator" in groupProperty and not "JobSharing" in groupProperty:
+      if not "JobAdministrator" in groupProperty \
+         and not "JobSharing" in groupProperty \
+         and not "JobMonitor" in groupProperty:
         if not request.params.has_key("globalStat"):
           req["Owner"] = str(user)
       else:
