@@ -7,9 +7,10 @@ import dirac.lib.yuiWidgets as yuiWidgets
 from dirac.lib.webconfig import gWebConfig
 import dirac.lib.helpers as helpers
 from pylons import request
-from DIRAC import gMonitor, gLogger
+from DIRAC import gLogger
+from DIRAC.FrameworkSystem.Client.MonitoringClient import gMonitor
 from DIRAC.ConfigurationSystem.Client.Helpers.CSGlobals import getCSExtensions
-from DIRAC.Core.Utilities import InstallTools
+from DIRAC.FrameworkSystem.Client.ComponentInstaller import gComponentInstaller
 
 
 def currentPath():
@@ -143,7 +144,7 @@ def getSetups():
   return "[%s]" % ",".join( availableSetups )
 
 def getVersion():
-  result = InstallTools.getInfo( getCSExtensions() )
+  result = gComponentInstaller.getInfo( getCSExtensions() )
   if not result[ "OK" ]:
     return ""
 
