@@ -57,7 +57,8 @@ def initDIRAC( rootPath, enableDebug = False ):
     gLogger.initialize( "Web", "/Website" )
     gLogger.setLevel( "VERBOSE" )
 
-    from DIRAC import gMonitor, gConfig, rootPath as droot
+    from DIRAC import gConfig, rootPath as droot
+    from DIRAC.FrameworkSystem.Client.MonitoringClient import gMonitor
     from DIRAC.Core.Utilities import CFG
     from DIRAC.ConfigurationSystem.Client.Helpers import getCSExtensions
     gMonitor.setComponentType( gMonitor.COMPONENT_WEB )
@@ -152,10 +153,10 @@ def getRelease( rootPath ):
 
 def portalVersion( rootPath ):
 
-  from DIRAC.Core.Utilities import InstallTools
+  from DIRAC.FrameworkSystem.Client.ComponentInstaller import gComponentInstaller
   from DIRAC.ConfigurationSystem.Client.Helpers.CSGlobals import getCSExtensions
 
-  result = InstallTools.getInfo( getCSExtensions() )
+  result = gComponentInstaller.getInfo( getCSExtensions() )
 
   if not result[ "OK" ]:
     return getRelease( rootPath )
